@@ -241,3 +241,102 @@ export interface RespostaIA {
   tokens: { entrada: number | null; saida: number | null };
   duracao_ms: number;
 }
+
+// ---------------------------------------------------------------------------
+// Comercial
+// ---------------------------------------------------------------------------
+export interface TipoDocumento {
+  cod: string;
+  nome: string;
+  /** Como lança na contabilidade: venda, venda_pronto, adiantamento,
+   *  nota_debito, nota_credito, recibo, nenhum. */
+  contab: string;
+  exige_cliente?: boolean;
+  iva?: boolean;
+  ref?: boolean;
+  pagamento?: boolean;
+  fiscal?: boolean;
+}
+
+export interface Terceiro {
+  id: string;
+  numero: string;
+  nome: string;
+  nif: string | null;
+  localidade: string | null;
+  telefone: string | null;
+  conta: string | null;
+  estado: string;
+}
+
+export interface Vendedor {
+  id: string;
+  nome: string;
+  tipo_comissao: "percentagem" | "fixo";
+  comissao_perc: string;
+  estado: string;
+}
+
+export interface LinhaVenda {
+  ordem: number;
+  artigo_id: string | null;
+  descricao: string | null;
+  unidade: string | null;
+  qtd: string;
+  preco: string;
+  total: string;
+}
+
+export interface Venda {
+  id: string;
+  numero: string | null;
+  tipo_doc: string;
+  tipo: string;
+  data: string;
+  cliente_id: string | null;
+  cliente_nome: string | null;
+  vendedor_id?: string | null;
+  iva_perc?: string;
+  subtotal: string;
+  iva: string;
+  total: string;
+  estado: string;
+  numero_op: string | null;
+  codigo_validacao: string | null;
+  emitido_em?: string | null;
+  linhas?: LinhaVenda[];
+}
+
+export interface ResumoComercial {
+  total_vendas: string;
+  total_faturado: string;
+  n_vendas: number;
+  n_faturadas: number;
+  por_faturar: string;
+}
+
+export interface Comissao {
+  vendedor: string;
+  perc: string;
+  tipo: string;
+  base: string;
+  vendas: number;
+  comissao: string;
+}
+
+// ---------------------------------------------------------------------------
+// Logística
+// ---------------------------------------------------------------------------
+export interface Artigo {
+  id: string;
+  codigo: string;
+  descricao: string;
+  familia: string | null;
+  unidade: string | null;
+  tipo_artigo: string | null;
+  preco_venda: string;
+  preco_compra: string;
+  taxa_iva: string;
+  stock_min: string;
+  estado: string;
+}

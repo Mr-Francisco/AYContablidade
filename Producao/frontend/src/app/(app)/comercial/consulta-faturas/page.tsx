@@ -1,0 +1,313 @@
+"use client";
+
+import { Search, X } from "lucide-react";
+import { Dialog } from "radix-ui";
+import { useDeferredValue, useMemo, useState } from "react";
+import useSWR from "swr";
+
+import {
+  ACarregar,
+  BarraFiltros,
+  CabecalhoPagina,
+  Campo,
+  Cartao,
+  Entrada,
+  EnvolveTabela,
+  Selector,
+  Selo,
+  Tabela,
+  Td,
+  Th,
+  Tr,
+  Vazio,
+} from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
+import { buscador } from "@/lib/api";
+import { formataMoeda } from "@/lib/dinheiro";
+import type { TipoDocumento, Venda } from "@/types";
+
+export default function ConsultaFaturas() {
+  const { empresa } = useAuth();
+  const moeda = empresa?.moeda ?? "Kz";
+
+  const [procura, setProcura] = useState("");
+  const [tipo, setTipo] = useState("todos");
+  const [detalhe, setDetalhe] = useState<string | null>(null);
+  const procuraAdiada = useDeferredValue(procura);
+
+  const { data: tipos } = useSWR<TipoDocumento[]>(
+    "/api/comercial/tipos-documento",
+    buscador,
+    { revalidateOnFocus: false },
+  );
+  // Só documentos emitidos: um rascunho não é uma factura.
+  const { data: vendas, isLoading } = useSWR<Venda[]>(
+    "/api/comercial/vendas?estado=emitida&limite=500",
+    buscador,
+  );
+
+  const filtradas = useMemo(() => {
+    const termo = procuraAdiada.trim().toLowerCase();
+    return (vendas ?? []).filter((v) => {
+      if (tipo !== "todos" && v.tipo_doc !== tipo) return false;
+      if (!termo) return true;
+      return (
+        (v.numero ?? "").toLowerCase().includes(termo) ||
+        (v.cliente_nome ?? "").toLowerCase().includes(termo) ||
+        (v.codigo_validacao ?? "").toLowerCase().includes(termo) ||
+        (v.numero_op ?? "").toLowerCase().includes(termo)
+      );
+    });
+  }, [vendas, procuraAdiada, tipo]);
+
+  return (
+    <>
+      <CabecalhoPagina
+        titulo="Consulta de Facturas"
+        descricao="Documentos emitidos. Procure por número, cliente, código de validação ou nº de operação."
+        accoes={<Selo cor="#3d7fe0">{filtradas.length} documentos</Selo>}
+      />
+
+      <BarraFiltros className="mb-4">
+        <Campo rotulo="Pesquisar" className="min-w-[260px] flex-1">
+          <div className="relative">
+            <Search
+              size={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
+              aria-hidden
+            />
+            <Entrada
+              type="search"
+              value={procura}
+              onChange={(e) => setProcura(e.target.value)}
+              placeholder="FT 2026/0001, cliente, código…"
+              className="pl-9"
+            />
+          </div>
+        </Campo>
+        <Selector
+          rotulo="Tipo"
+          valor={tipo}
+          aoMudar={setTipo}
+          opcoes={[
+            { valor: "todos", rotulo: "Todos os tipos" },
+            ...(tipos ?? []).map((t) => ({
+              valor: t.cod,
+              rotulo: `${t.cod} — ${t.nome}`,
+            })),
+          ]}
+          larguraMinima="16rem"
+        />
+      </BarraFiltros>
+
+      <Cartao className="p-0">
+        {isLoading ? (
+          <ACarregar />
+        ) : filtradas.length === 0 ? (
+          <Vazio>
+            {procura.trim()
+              ? "Nenhum documento corresponde à pesquisa."
+              : "Ainda não há documentos emitidos."}
+          </Vazio>
+        ) : (
+          <EnvolveTabela className="rounded-none border-0">
+            <Tabela>
+              <thead>
+                <tr>
+                  <Th>Número</Th>
+                  <Th>Tipo</Th>
+                  <Th>Data</Th>
+                  <Th>Cliente</Th>
+                  <Th numerico>Total</Th>
+                  <Th>Cód. validação</Th>
+                  <Th>Nº Operação</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtradas.map((v) => (
+                  <Tr
+                    key={v.id}
+                    className="cursor-pointer"
+                    onClick={() => setDetalhe(v.id)}
+                  >
+                    <Td className="tabular font-bold">{v.numero}</Td>
+                    <Td>
+                      <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>
+                    </Td>
+                    <Td className="tabular">
+                      {new Date(v.data).toLocaleDateString("pt-PT")}
+                    </Td>
+                    <Td className="max-w-[240px] truncate">
+                      {v.cliente_nome || (
+                        <span className="text-texto-suave">
+                          Consumidor final
+                        </span>
+                      )}
+                    </Td>
+                    <Td numerico className="font-semibold">
+                      {formataMoeda(v.total, moeda)}
+                    </Td>
+                    <Td className="tabular text-texto-suave">
+                      {v.codigo_validacao ?? "—"}
+                    </Td>
+                    <Td className="tabular text-texto-suave">
+                      {v.numero_op ?? "—"}
+                    </Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Tabela>
+          </EnvolveTabela>
+        )}
+      </Cartao>
+
+      {detalhe && (
+        <DetalheFactura
+          id={detalhe}
+          moeda={moeda}
+          aoFechar={() => setDetalhe(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function DetalheFactura({
+  id,
+  moeda,
+  aoFechar,
+}: {
+  id: string;
+  moeda: string;
+  aoFechar: () => void;
+}) {
+  const { data, isLoading } = useSWR<Venda>(
+    `/api/comercial/vendas/${id}`,
+    buscador,
+  );
+
+  return (
+    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(820px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
+          <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
+            <Dialog.Title className="truncate text-[15px] font-bold">
+              {data?.tipo_doc} {data?.numero}
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                aria-label="Fechar"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+              >
+                <X size={15} />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          <div className="min-w-0 overflow-auto p-5">
+            {isLoading || !data ? (
+              <ACarregar />
+            ) : (
+              <>
+                <dl className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <Info rotulo="Data">
+                    {new Date(data.data).toLocaleDateString("pt-PT")}
+                  </Info>
+                  <Info rotulo="Cliente">
+                    {data.cliente_nome || "Consumidor final"}
+                  </Info>
+                  <Info rotulo="Natureza">
+                    {data.tipo === "servicos" ? "Serviços" : "Mercadorias"}
+                  </Info>
+                  <Info rotulo="Nº Operação">{data.numero_op ?? "—"}</Info>
+                  <Info rotulo="Código de validação">
+                    {data.codigo_validacao ?? "—"}
+                  </Info>
+                  <Info rotulo="Taxa de IVA">{data.iva_perc ?? "0"} %</Info>
+                  <Info rotulo="Emitido em">
+                    {data.emitido_em
+                      ? new Date(data.emitido_em).toLocaleString("pt-PT")
+                      : "—"}
+                  </Info>
+                  <Info rotulo="Estado">
+                    {data.estado === "emitida" ? "Emitido" : "Rascunho"}
+                  </Info>
+                </dl>
+
+                <EnvolveTabela>
+                  <Tabela>
+                    <thead>
+                      <tr>
+                        <Th>Descrição</Th>
+                        <Th>Un.</Th>
+                        <Th numerico>Qtd.</Th>
+                        <Th numerico>Preço</Th>
+                        <Th numerico>Total</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.linhas?.map((l) => (
+                        <Tr key={l.ordem}>
+                          <Td className="max-w-[320px] truncate">
+                            {l.descricao || "—"}
+                          </Td>
+                          <Td className="text-texto-suave">
+                            {l.unidade || "—"}
+                          </Td>
+                          <Td numerico>{l.qtd}</Td>
+                          <Td numerico>{formataMoeda(l.preco, moeda)}</Td>
+                          <Td numerico className="font-semibold">
+                            {formataMoeda(l.total, moeda)}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <Td colSpan={4} className="text-right text-texto-suave">
+                          Subtotal
+                        </Td>
+                        <Td numerico>{formataMoeda(data.subtotal, moeda)}</Td>
+                      </tr>
+                      <tr>
+                        <Td colSpan={4} className="text-right text-texto-suave">
+                          IVA
+                        </Td>
+                        <Td numerico>{formataMoeda(data.iva, moeda)}</Td>
+                      </tr>
+                      <tr className="bg-superficie-2 font-extrabold">
+                        <Td colSpan={4} className="text-right">
+                          TOTAL
+                        </Td>
+                        <Td numerico>{formataMoeda(data.total, moeda)}</Td>
+                      </tr>
+                    </tfoot>
+                  </Tabela>
+                </EnvolveTabela>
+              </>
+            )}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function Info({
+  rotulo,
+  children,
+}: {
+  rotulo: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11.5px] uppercase tracking-[0.4px] text-texto-suave">
+        {rotulo}
+      </dt>
+      <dd className="truncate text-sm font-semibold">{children}</dd>
+    </div>
+  );
+}

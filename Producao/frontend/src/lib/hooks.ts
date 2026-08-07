@@ -5,6 +5,7 @@ import useSWR from "swr";
 
 import { buscador } from "@/lib/api";
 import type {
+  Artigo,
   CentroCusto,
   Conta,
   Diario,
@@ -88,4 +89,21 @@ export function usePeriodos() {
     { revalidateOnFocus: false },
   );
   return { periodos: data ?? [] };
+}
+
+/** Artigos activos, para os selectores de linha de documento. */
+export function useArtigos(soAtivos = true) {
+  const { data, isLoading } = useSWR<Artigo[]>(
+    `/api/logistica/artigos${soAtivos ? "?so_ativos=true" : ""}`,
+    buscador,
+    { revalidateOnFocus: false },
+  );
+
+  const porId = useMemo(() => {
+    const m = new Map<string, Artigo>();
+    for (const a of data ?? []) m.set(a.id, a);
+    return m;
+  }, [data]);
+
+  return { artigos: data ?? [], porId, isLoading };
 }

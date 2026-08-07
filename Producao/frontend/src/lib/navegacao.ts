@@ -218,7 +218,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/comercial",
-        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "comercial.ver",
@@ -226,7 +225,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/comercial/vendas",
-        pendente: true,
         rotulo: "Vendas",
         seccao: "Comercial",
         cap: "comercial.ver",
@@ -234,7 +232,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/comercial/consulta-faturas",
-        pendente: true,
         rotulo: "Consulta de Faturas",
         seccao: "Comercial",
         cap: "comercial.ver",
@@ -242,7 +239,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/comercial/clientes",
-        pendente: true,
         rotulo: "Clientes",
         seccao: "Comercial",
         cap: "comercial.ver",
@@ -250,7 +246,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/comercial/vendedores",
-        pendente: true,
         rotulo: "Vendedores",
         seccao: "Comercial",
         cap: "comercial.ver",
