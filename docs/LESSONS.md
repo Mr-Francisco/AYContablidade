@@ -1,0 +1,35 @@
+# Lições Aprendidas
+
+- Nunca correr `npm run build` com o dev server activo — ambos escrevem em `.next` e o dev server corrompe (500 ENOENT em manifests); parar o dev primeiro, ou validar só com lint e fazer o build no fim.
+- `python-magic` e `python-magic-bin` instalados juntos causam segfault no import — manter apenas o `-bin` no Windows.
+- Em Edit replace_all, se o old_string acaba em espaço o new_string tem de o preservar (perdeu-se "Selecionar " → "Seleccionar" sem espaço); após qualquer replace_all em massa, grep ao resultado para confirmar.
+- Os rewrites do next.config.ts são compilados no `next build` (routes-manifest) — `BACKEND_API_URL` tem de ser build ARG no Dockerfile do frontend (env de runtime no compose não chega); validar o proxy sempre ATRAVÉS do frontend containerizado, não só com curl directo ao backend.
+- O decorator `@limiter.limit` do slowapi rebenta (TypeError ForwardRef) em módulos com `from __future__ import annotations` — não usar annotations adiadas em ficheiros com rotas rate-limited.
+- `env_file: .env` no compose despeja TODAS as vars do host no container — paths Windows vazam para o Linux; vars sensíveis a plataforma têm de ser fixadas em `environment:` (que tem precedência).
+- `docker compose build | tail` mascara o exit code (o do tail é 0) — validar builds com `build > log; echo $?`, nunca em pipeline.
+- Comandos `docker compose exec` com caminhos `/app/...` no Git Bash sofrem path conversion do MSYS — usar `MSYS_NO_PATHCONV=1`.
+- O Browser pane do Claude corre a página como `document.hidden` — rAF e eventos de scroll NUNCA disparam lá (e screenshots dão timeout); UI scroll-driven valida-se com `window.dispatchEvent(new Event("scroll"))` manual via javascript_tool, e o código de produção deve ter fallback por evento além de rAF.
+- Edições a hooks/efeitos em page.tsx podem não ser aplicadas pelo Fast Refresh do Turbopack — fazer `location.reload()` antes de concluir que um efeito "não corre".
+- `cmd > log 2>&1; echo "EXIT=$?"` em background: a notificação da tarefa devolve o código do `echo` (0), não o do comando — ler sempre o EXIT impresso no ficheiro antes de dar um build por bom.
+- `docker compose cp <dir> <svc>:/caminho/<dir>` copia PARA DENTRO se o destino já existe (fica `/caminho/dir/dir`) — usar o directório-pai como destino.
+- Os testes não podem usar `os.environ.setdefault` para limites de rate: com `env_file: .env` o container já traz `RATE_LIMIT_LOGIN` e o setdefault é no-op → 429 conforme a ordem dos testes. Atribuir directamente.
+- Itens de grelha/flex têm `min-width:auto` e não encolhem: coluna com conteúdo largo transborda em mobile — pôr `min-w-0` no item (o `overflow-x-auto` do `Table` já trata das tabelas).
+- O ambiente Python local tem bcrypt 5.x, incompatível com passlib 1.7.4 (`requirements.txt` fixa `bcrypt<4.1`) — correr `pytest` no container do backend, que tem o stack completo e as versões certas.
+- O SQLite dos testes ignora chaves estrangeiras por omissão — o conftest liga `PRAGMA foreign_keys=ON`; sem isso, DELETEs que o Postgres recusa passavam nos testes (aconteceu com `users` ← `password_reset_tokens`).
+- IMAP `STORE` exige as flags entre parênteses (`"(\\Seen)"`): servidores estritos (GreenMail, e vários corporativos) devolvem BAD à forma sem parênteses e os emails ficam por marcar.
+- Caminhos de log: usar `resolve_log_path()` de `logger_setup` — quem escreve e quem lê tinham fontes de config diferentes e o ecrã de registos nunca encontrava o ficheiro.
+- Testar email a sério com GreenMail (`greenmail/standalone`, SMTP 3025 / IMAP 3143) na rede do compose, em vez de assumir que o caminho funciona.
+- Revisões delegadas a subagentes têm de citar código da árvore de trabalho e ser reconfirmadas no HEAD antes de se corrigir nada: uma revisão inteira saiu contra o commit anterior e ~60% dos achados já estavam resolvidos (as linhas citadas batiam com o commit-pai, não com o disco).
+- Um `curl`/healthcheck a um endpoint no CI ou no compose não prova que a rota existe — o `stack-smoke` chamava `/api/health` do frontend, que não existia (404). Ao adicionar uma probe, confirmar o ficheiro `route.ts`/handler correspondente.
+- Um container a correr pode ser mais antigo que o código: a imagem do backend tinha 35 h e nem PyJWT trazia. Antes de correr `pytest` no container, confirmar que as dependências do commit actual estão lá (ou reconstruir).
+- Testes que fazem monkeypatch de funções re-exportadas quebram em silêncio quando a lógica se move de módulo — substituir o seam no módulo onde a função é *usada*, e correr a suite completa depois de mover código.
+- Overrides de auth em testes de rotas (`dependency_overrides[...] = lambda: None`) rebentam assim que o handler passar a ler `user.email` (ex.: auditoria) — devolver um objecto com os campos que a rota usa, não `None`.
+- Um 500 em `/api/notifications` (ou noutra rota Prisma) é quase sempre desvio de esquema, não bug de código: correr `npx prisma migrate status` com o `DATABASE_URL` do `.env.local` antes de depurar. Atenção que o Postgres do compose está publicado em **15432**, não 5432 (5432 pertence a outro projecto na mesma máquina).
+- Efeito de persistência que corre no mount grava o valor INICIAL antes de a detecção correr: o `ThemeContext` gravava `"light"` no localStorage e desligava o seguimento do `prefers-color-scheme`. Flags do tipo "o utilizador já escolheu" começam em `false`.
+- `read_console_messages` devolve o buffer ACUMULADO do tab (erros de compilações antigas persistem após navegações): diagnosticar erros de build com `preview_logs` + `tsc --noEmit`, e só confiar na consola num tab acabado de criar.
+- O cwd do Bash persiste entre chamadas: um `rm -rf frontend/.next` com cwd já em `frontend/` apaga um caminho inexistente em silêncio — usar caminhos absolutos ou re-`cd` explícito antes de operações destrutivas.
+- Subagentes de verificação NÃO devem fazer uploads reais: um PDF de teste no chat accionou o `operational_sync` e poluiu a BD demo. Verificar uploads com dry-run ou dados do universo demo.
+- Rótulos revelados a `xl:` (1280px) no `Header` transbordavam exactamente a 1280 porque é o breakpoint onde aparecem; e o email do utilizador não tinha largura máxima. Texto vindo de dados precisa de `min-w-0 max-w-[...] truncate`, não só de um breakpoint maior.
+- No Browser pane, `window.innerWidth` não é fiável para detectar overflow após `resize_window` (chegou a devolver 507 num viewport de 375, coincidindo com o próprio `scrollWidth`, mascarando o bug) — usar sempre `document.documentElement.scrollWidth <= document.documentElement.clientWidth`.
+- O `document.hidden` do Browser pane também bloqueia a entrega de pointer-events aos handlers do Radix (não só rAF/scroll) — activação de Tabs/menus em verificação faz-se invocando as props React directamente via javascript_tool.
+- Cookies em `localhost` são partilhados entre PORTAS: outro projecto na mesma máquina usava o mesmo cookie `access_token` e o proxy dele apagava/substituía a sessão desta app ("logout automático" sem nenhum 401 nos logs). Nomes de cookie têm de ser únicos por app.
