@@ -12,6 +12,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+from src.api.json import RespostaJSON
 from src.core.config import get_settings
 from src.services.contabilidade import ErroContabilistico
 
@@ -27,6 +28,8 @@ def criar_app() -> FastAPI:
         version="0.1.0",
         docs_url="/docs" if settings.AMBIENTE != "producao" else None,
         redoc_url=None,
+        # Valores monetários viajam como string — ver src/api/json.py.
+        default_response_class=RespostaJSON,
     )
 
     app.state.limiter = limiter

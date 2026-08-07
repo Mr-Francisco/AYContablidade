@@ -205,5 +205,11 @@ class Exercicio(UUIDMixin, TimestampMixin, Base):
     estado: Mapped[str] = mapped_column(String(20), default="aberto", nullable=False)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    # Resultado do último Apuramento de Resultados deste exercício:
+    # {em, ate, resultado, lancamento_ids, detalhe}. NULL = por apurar.
+    # Guardado aqui, como no Piloto (`ex.apuramento`), porque é o que permite
+    # reabrir o apuramento e remover exactamente os lançamentos que ele gerou.
+    apuramento: Mapped[dict | None] = mapped_column(JSONB)
+
     def __repr__(self) -> str:
         return f"<Exercicio {self.nome} {self.estado}>"

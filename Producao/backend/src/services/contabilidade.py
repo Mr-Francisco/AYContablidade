@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session
 
 from src.core.pgc import natureza_conta, periodo_label
 from src.db.models.contabilidade import (
+    CentroCusto,
     Conta,
-    Diario,
     DiarioFecho,
     Lancamento,
     LancamentoLinha,
@@ -125,6 +125,26 @@ def numero_operacao(mes: str, documento_codigo: str, sequencia: int) -> str:
     return f"{mes or '00'}/{documento_codigo}.{sequencia:03d}"
 
 
+def exercicio_efetivo(
+    db: Session, empresa_id: UUID, exercicio_id: UUID | None = None
+) -> UUID | None:
+    """Exercício a usar: o indicado ou, na falta dele, o activo mais recente.
+
+    Tem de ser usado por TODA a gente que trabalhe com exercícios — lançar,
+    fechar um diário, apurar. Se o fecho gravar `exercicio_id` nulo e o
+    lançamento resolver para o exercício activo, o período dá-se por fechado
+    mas continua a aceitar movimentos, e ninguém dá por isso.
+    """
+    if exercicio_id is not None:
+        return exercicio_id
+    return db.scalar(
+        select(Exercicio.id)
+        .where(Exercicio.empresa_id == empresa_id, Exercicio.ativo.is_(True))
+        .order_by(Exercicio.inicio.desc())
+        .limit(1)
+    )
+
+
 # ---------------------------------------------------------------------------
 # Postar
 # ---------------------------------------------------------------------------
@@ -158,14 +178,7 @@ def postar(
 
     mes = mes or (f"{data.month:02d}" if data else "00")
 
-    # --- Exercício: o indicado, senão o activo mais recente ---
-    if exercicio_id is None:
-        exercicio_id = db.scalar(
-            select(Exercicio.id)
-            .where(Exercicio.empresa_id == empresa_id, Exercicio.ativo.is_(True))
-            .order_by(Exercicio.inicio.desc())
-            .limit(1)
-        )
+    exercicio_id = exercicio_efetivo(db, empresa_id, exercicio_id)
 
     if exercicio_id is not None:
         ex = db.get(Exercicio, exercicio_id)
@@ -364,3 +377,259 @@ def balancete(
             "saldo_credor": tot_sc,
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Razão / Extracto
+# ---------------------------------------------------------------------------
+def _contraparte(linhas: list[LancamentoLinha], atual: LancamentoLinha) -> str:
+    """Conta do outro lado do lançamento — "Diversas" se houver mais do que uma.
+
+    Só conta o lado oposto: para uma linha a débito, as contrapartidas são as
+    linhas a crédito.
+    """
+    outras = [
+        x
+        for x in linhas
+        if x is not atual and (x.credito > 0 if atual.debito > 0 else x.debito > 0)
+    ]
+    if not outras:
+        return ""
+    return outras[0].conta_codigo if len(outras) == 1 else "Diversas"
+
+
+def razao(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    conta_codigo: str,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+    incluir_subcontas: bool = False,
+    entidade: str | None = None,
+) -> dict:
+    """Movimentos de uma conta com saldo corrido.
+
+    O saldo acumula na natureza da conta: numa conta credora, um crédito faz
+    subir o saldo. Mostrar sempre débito-menos-crédito daria saldos negativos em
+    todas as contas de proveitos e de capital.
+    """
+    q = (
+        select(Lancamento, LancamentoLinha)
+        .join(LancamentoLinha, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(Lancamento.empresa_id == empresa_id, Lancamento.diferido.is_(False))
+        .order_by(Lancamento.data, Lancamento.numero)
+    )
+    if incluir_subcontas:
+        q = q.where(LancamentoLinha.conta_codigo.startswith(conta_codigo))
+    else:
+        q = q.where(LancamentoLinha.conta_codigo == conta_codigo)
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+    if de is not None:
+        q = q.where(Lancamento.data >= de)
+    if ate is not None:
+        q = q.where(Lancamento.data <= ate)
+    if entidade:
+        q = q.where(LancamentoLinha.entidade.ilike(f"%{entidade}%"))
+
+    natureza_d = natureza_conta(conta_codigo) != "C"
+    linhas: list[dict] = []
+    saldo = tot_d = tot_c = Decimal("0")
+
+    for lanc, linha in db.execute(q):
+        debito = linha.debito or Decimal("0")
+        credito = linha.credito or Decimal("0")
+        saldo += (debito - credito) if natureza_d else (credito - debito)
+        tot_d += debito
+        tot_c += credito
+        linhas.append(
+            {
+                "lancamento_id": lanc.id,
+                "numero": lanc.numero,
+                "numero_op": lanc.numero_op or "",
+                "data": lanc.data,
+                "diario": lanc.diario_codigo,
+                "documento": lanc.documento_codigo,
+                "documento_ref": lanc.documento_ref or "",
+                "descricao": linha.descricao or lanc.descricao,
+                "entidade": linha.entidade or "",
+                "contraparte": _contraparte(list(lanc.linhas), linha),
+                "iva_perc": linha.iva_perc,
+                "debito": debito,
+                "credito": credito,
+                "saldo": saldo,
+            }
+        )
+
+    return {
+        "codigo": conta_codigo,
+        "linhas": linhas,
+        "total_debito": tot_d,
+        "total_credito": tot_c,
+        "saldo_final": saldo,
+        "natureza": "D" if natureza_d else "C",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Contas correntes
+# ---------------------------------------------------------------------------
+def contas_correntes(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    prefixo: str,
+    natureza: str = "D",
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> dict:
+    """Contas de movimento sob um prefixo, com débito, crédito e saldo.
+
+    `natureza`: "D" = a receber (clientes, 31…), "C" = a pagar (fornecedores, 32…).
+    """
+    q = (
+        select(
+            LancamentoLinha.conta_codigo,
+            LancamentoLinha.conta_nome,
+            LancamentoLinha.debito,
+            LancamentoLinha.credito,
+            LancamentoLinha.entidade,
+        )
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(
+            Lancamento.empresa_id == empresa_id,
+            Lancamento.diferido.is_(False),
+            LancamentoLinha.conta_codigo.startswith(prefixo),
+        )
+    )
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+    if de is not None:
+        q = q.where(Lancamento.data >= de)
+    if ate is not None:
+        q = q.where(Lancamento.data <= ate)
+
+    nat_d = natureza != "C"
+    grupos: dict[str, dict] = {}
+    for codigo, nome, debito, credito, entidade in db.execute(q):
+        g = grupos.setdefault(
+            codigo,
+            {
+                "codigo": codigo,
+                "nome": nome or "",
+                "debito": Decimal("0"),
+                "credito": Decimal("0"),
+                "mov": 0,
+                "_ents": set(),
+            },
+        )
+        g["debito"] += debito or Decimal("0")
+        g["credito"] += credito or Decimal("0")
+        g["mov"] += 1
+        if entidade:
+            g["_ents"].add(entidade)
+
+    linhas = []
+    for g in sorted(grupos.values(), key=lambda x: x["codigo"]):
+        g["saldo"] = (
+            g["debito"] - g["credito"] if nat_d else g["credito"] - g["debito"]
+        )
+        g["entidade"] = ", ".join(sorted(g.pop("_ents")))
+        linhas.append(g)
+
+    totais = {
+        "debito": sum((l["debito"] for l in linhas), Decimal("0")),
+        "credito": sum((l["credito"] for l in linhas), Decimal("0")),
+        "saldo": sum((l["saldo"] for l in linhas), Decimal("0")),
+    }
+    # Meio cêntimo de tolerância, como no Piloto: evita contar como "com saldo"
+    # contas fechadas que ficaram com resíduo de arredondamento.
+    com_saldo = sum(1 for l in linhas if abs(l["saldo"]) > Decimal("0.005"))
+
+    return {
+        "linhas": linhas,
+        "totais": totais,
+        "natureza": "D" if nat_d else "C",
+        "com_saldo": com_saldo,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Contabilidade analítica
+# ---------------------------------------------------------------------------
+SEM_CENTRO = "—"
+
+
+def analitica_mapa(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> dict:
+    """Custos e proveitos por centro de custo.
+
+    Só entram as classes 6 e 7. As linhas dessas classes sem centro atribuído
+    caem em "(Sem centro)" em vez de desaparecerem — é o que dá visibilidade
+    sobre o que falta classificar.
+    """
+    q = (
+        select(
+            LancamentoLinha.conta_codigo,
+            LancamentoLinha.centro_codigo,
+            LancamentoLinha.debito,
+            LancamentoLinha.credito,
+        )
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(Lancamento.empresa_id == empresa_id, Lancamento.diferido.is_(False))
+    )
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+    if de is not None:
+        q = q.where(Lancamento.data >= de)
+    if ate is not None:
+        q = q.where(Lancamento.data <= ate)
+
+    nomes = {
+        c.codigo: c.nome
+        for c in db.scalars(
+            select(CentroCusto).where(CentroCusto.empresa_id == empresa_id)
+        ).all()
+    }
+
+    grupos: dict[str, dict] = {}
+    for conta_codigo, centro, debito, credito in db.execute(q):
+        if not conta_codigo or conta_codigo[0] not in ("6", "7"):
+            continue
+        cod = centro or SEM_CENTRO
+        g = grupos.setdefault(
+            cod,
+            {
+                "codigo": cod,
+                "nome": "(Sem centro)" if cod == SEM_CENTRO else nomes.get(cod, cod),
+                "debito": Decimal("0"),
+                "credito": Decimal("0"),
+                "n": 0,
+            },
+        )
+        g["debito"] += debito or Decimal("0")
+        g["credito"] += credito or Decimal("0")
+        g["n"] += 1
+
+    linhas = []
+    for g in sorted(
+        grupos.values(), key=lambda x: (x["codigo"] == SEM_CENTRO, x["codigo"])
+    ):
+        g["saldo"] = g["debito"] - g["credito"]
+        linhas.append(g)
+
+    totais = {
+        "debito": sum((l["debito"] for l in linhas), Decimal("0")),
+        "credito": sum((l["credito"] for l in linhas), Decimal("0")),
+        "saldo": sum((l["saldo"] for l in linhas), Decimal("0")),
+    }
+    return {"linhas": linhas, "totais": totais}
