@@ -64,6 +64,11 @@ class Settings(BaseSettings):
 
     # ---------- OpenAI (só o módulo autorizado de perguntas e respostas) ----------
     OPENAI_API_KEY: str | None = None
+    # O nome do modelo é configuração, não constante: a lista da OpenAI muda com
+    # frequência e um nome fixo no código fica desactualizado ou inválido. O
+    # endpoint GET /api/ia/modelos lista os que a chave consegue usar.
+    OPENAI_MODELO: str = "gpt-4o"
+    OPENAI_TIMEOUT_SEGUNDOS: int = 90
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod

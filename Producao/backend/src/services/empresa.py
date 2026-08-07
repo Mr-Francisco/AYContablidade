@@ -34,6 +34,7 @@ from src.db.models.contabilidade import (
     NotaTexto,
     SequenciaDocumento,
 )
+from src.db.models.ia import ConsultaIA
 from src.db.models.imobilizados import Ativo, ProcessoAmortizacao
 from src.db.models.logistica import Armazem, Artigo, MovimentoStock
 from src.db.models.rh import (
@@ -96,8 +97,10 @@ def remover_empresa(db: Session, empresa_id: UUID) -> dict[str, int]:
     # 5. Exercícios — os lançamentos que lhes apontavam já não existem.
     _apagar(Exercicio, Exercicio.empresa_id == empresa_id)
 
-    # 6. Núcleo. Os pedidos de licença ficam com empresa_id a NULL (SET NULL),
-    #    para o histórico de aprovações não desaparecer.
+    # 6. Núcleo. As consultas de IA saem antes dos utilizadores que as fizeram.
+    _apagar(ConsultaIA, ConsultaIA.empresa_id == empresa_id)
+    # Os pedidos de licença ficam com empresa_id a NULL (SET NULL), para o
+    # histórico de aprovações não desaparecer.
     _apagar(User, User.empresa_id == empresa_id)
     _apagar(Licenca, Licenca.empresa_id == empresa_id)
     _apagar(ConfigEmpresa, ConfigEmpresa.empresa_id == empresa_id)

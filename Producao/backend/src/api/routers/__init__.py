@@ -13,6 +13,7 @@ from src.api.routers import (
     compras_router,
     contabilidade_router,
     empresa_router,
+    ia_router,
     imobilizados_router,
     licenca_router,
     logistica_router,
@@ -36,6 +37,7 @@ ROUTERS = (
     comercial_router.router,
     compras_router.router,
     imobilizados_router.router,
+    ia_router.router,
 )
 
 __all__ = [
@@ -46,6 +48,7 @@ __all__ = [
     "compras_router",
     "contabilidade_router",
     "empresa_router",
+    "ia_router",
     "imobilizados_router",
     "licenca_router",
     "logistica_router",
