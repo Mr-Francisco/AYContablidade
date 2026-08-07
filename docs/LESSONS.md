@@ -33,3 +33,10 @@
 - No Browser pane, `window.innerWidth` não é fiável para detectar overflow após `resize_window` (chegou a devolver 507 num viewport de 375, coincidindo com o próprio `scrollWidth`, mascarando o bug) — usar sempre `document.documentElement.scrollWidth <= document.documentElement.clientWidth`.
 - O `document.hidden` do Browser pane também bloqueia a entrega de pointer-events aos handlers do Radix (não só rAF/scroll) — activação de Tabs/menus em verificação faz-se invocando as props React directamente via javascript_tool.
 - Cookies em `localhost` são partilhados entre PORTAS: outro projecto na mesma máquina usava o mesmo cookie `access_token` e o proxy dele apagava/substituía a sessão desta app ("logout automático" sem nenhum 401 nos logs). Nomes de cookie têm de ser únicos por app.
+- Entradas animadas que comecam em `opacity:0` deixam o conteudo INVISIVEL sempre que a animacao nao corre (documento oculto, rAF suspenso, impressao) — o Chrome pausa animacoes CSS em separadores de fundo tal como as de JS; animar so `transform` e a opacidade fica sempre a 1.
+- O `form_input` do Browser pane define o `value` mas nao dispara o `onChange` do React: inputs controlados ficam com estado vazio — usar o setter nativo de `HTMLInputElement.prototype.value` mais `dispatchEvent(new Event("input",{bubbles:true}))`.
+- Supressoes do Biome tem de ter a razao numa SO linha, e `biome-ignore-all` so funciona no topo do ficheiro — multi-linha ou dentro de um bloco e ignorado e conta como erro novo.
+- `pathlib.write_text` no Windows converte `
+` em CRLF e o formatador do Biome acusa o ficheiro inteiro — abrir com `newline="
+"` ao reescrever ficheiros do frontend.
+- `runtimeExecutable` relativo no `.claude/launch.json` da ENOENT mesmo com `cwd` definido — usar caminho absoluto.

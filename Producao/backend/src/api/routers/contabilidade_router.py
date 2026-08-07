@@ -92,6 +92,27 @@ def periodos() -> list[dict]:
     return [{"codigo": c, "nome": n} for c, n in PERIODOS]
 
 
+@router.get("/exercicios", dependencies=[VER])
+def listar_exercicios(empresa: EmpresaAtual, db: DB) -> list[dict]:
+    """Exercícios económicos da empresa, mais recente primeiro.
+
+    Vários podem estar activos em simultâneo (transição de ano) — `ativo` é um
+    interruptor independente, não uma escolha exclusiva, como no Piloto.
+    """
+    from src.db.models.tenancy import Exercicio
+
+    exs = db.scalars(
+        select(Exercicio)
+        .where(Exercicio.empresa_id == empresa.id)
+        .order_by(Exercicio.inicio.desc())
+    ).all()
+    return [
+        {"id": e.id, "nome": e.nome, "inicio": e.inicio, "fim": e.fim,
+         "estado": e.estado, "ativo": e.ativo, "apuramento": e.apuramento}
+        for e in exs
+    ]
+
+
 @router.get("/contas", dependencies=[VER])
 def listar_contas(
     empresa: EmpresaAtual,

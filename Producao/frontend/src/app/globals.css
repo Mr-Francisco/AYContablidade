@@ -1,1 +1,181 @@
+/* biome-ignore-all lint/complexity/noImportantStyles: o reset de movimento reduzido tem de vencer as animacoes inline que o Framer Motion escreve no elemento, senao nao cumpre a preferencia do utilizador. */
 @import "tailwindcss";
+
+/* Tema escuro por atributo em <html>, não por media query: o utilizador
+   escolhe, como no Piloto. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------------------------------------------------------------------------
+   Sistema de design — transposto de Piloto/assets/css/style.css
+   Tema Azul Marinho. As variáveis mantêm os mesmos valores do Piloto para a
+   Produção ser reconhecível como o mesmo produto.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-marca: #0b3d91; /* azul marinho — botões, logo */
+  --color-marca-escuro: #082c6b;
+  --color-acento: #3d7fe0; /* azul claro — separadores, tabs, KPI */
+  --color-acento-claro: #6fa3ec;
+
+  --color-rosa: #e6007e;
+  --color-magenta: #b81893;
+  --color-roxo: #7a3aab;
+  --color-indigo: #4a4ecb;
+  --color-azul: #1e5fcc;
+
+  --color-fundo: #f5f7fb;
+  --color-superficie: #ffffff;
+  --color-superficie-2: #edf1f9;
+  --color-texto: #1a1a2e;
+  --color-texto-suave: #62657a;
+  --color-borda: #dfe4f0;
+
+  --color-sucesso: #1a9c5f;
+  --color-perigo: #e0284f;
+  --color-aviso: #c98a10;
+
+  --radius-cartao: 14px;
+
+  --shadow-suave: 0 2px 10px rgba(11, 30, 70, 0.07);
+  --shadow-forte: 0 12px 32px rgba(11, 30, 70, 0.15);
+
+  --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+/* Tema escuro: os mesmos nomes, outros valores. */
+[data-theme="dark"] {
+  --color-marca: #6f95e0;
+  --color-marca-escuro: #93b3ec;
+  --color-acento: #4fa0e8;
+  --color-acento-claro: #7fc0f0;
+
+  --color-fundo: #0c1220;
+  --color-superficie: #141b2b;
+  --color-superficie-2: #1b2436;
+  --color-texto: #f1f1f7;
+  --color-texto-suave: #a1a1b8;
+  --color-borda: #283249;
+
+  --shadow-suave: 0 2px 10px rgba(0, 0, 0, 0.4);
+  --shadow-forte: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* Paleta de gráficos, exposta como variáveis CSS para o Recharts as poder ler.
+   Muda com o tema, como no Piloto. */
+:root {
+  --grafico-1: #e6007e;
+  --grafico-2: #4a4ecb;
+  --grafico-3: #7a3aab;
+  --grafico-4: #1e5fcc;
+  --grafico-5: #b81893;
+  --grafico-6: #1a9c5f;
+  --grafico-7: #8a8ba0;
+  --gradiente-marca: linear-gradient(100deg, #0b3d91 0%, #3d7fe0 100%);
+}
+[data-theme="dark"] {
+  --grafico-1: #ff3fa0;
+  --grafico-2: #6d9bff;
+  --grafico-3: #b57edc;
+  --grafico-4: #6d9bff;
+  --grafico-5: #ff6fbb;
+  --grafico-6: #2ec7a9;
+  --grafico-7: #a1a1b8;
+  --gradiente-marca: linear-gradient(100deg, #16264a 0%, #2b5da8 100%);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  [data-theme="dark"] {
+    color-scheme: dark;
+  }
+  body {
+    background: var(--color-fundo);
+    color: var(--color-texto);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    /* A transição fica só nas cores: animar mais do que isto ao trocar de tema
+       provoca reflow visível em páginas com tabelas grandes. */
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+  /* Números em tabelas alinham pela casa decimal. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .gradiente-marca {
+    background: var(--gradiente-marca);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Revelação em cascata.
+
+   A animação NÃO toca na opacidade, de propósito. Uma entrada que comece em
+   `opacity: 0` deixa o conteúdo INVISÍVEL sempre que a animação não corra — e
+   ela não corre com o documento oculto, nem com rAF suspenso, nem em
+   impressão. O Chrome pausa animações CSS em separadores em segundo plano tal
+   como pausa as de JavaScript, por isso passar de Framer Motion para CSS não
+   resolveria nada: as duas abordagens deixavam os KPIs do painel invisíveis na
+   verificação.
+
+   Animando só o `transform`, o pior caso é o conteúdo aparecer sem deslizar.
+   Legível é mais importante do que animado.
+
+   `backwards` faz o elemento assumir o estado inicial durante o atraso, para
+   não haver salto antes de a animação começar.
+--------------------------------------------------------------------------- */
+@keyframes revelar {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.revelar-grelha > * {
+  animation: revelar 0.35s ease-out backwards;
+}
+.revelar-grelha > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.revelar-grelha > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.revelar-grelha > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.revelar-grelha > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.revelar-grelha > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.revelar-grelha > *:nth-child(6) {
+  animation-delay: 200ms;
+}
+.revelar-grelha > *:nth-child(7) {
+  animation-delay: 240ms;
+}
+.revelar-grelha > *:nth-child(n + 8) {
+  animation-delay: 280ms;
+}
+
+/* Quem pediu menos movimento não o recebe — regra do CLAUDE.md e requisito de
+   acessibilidade. Cobre também as animações do Framer Motion, que caem para
+   duração zero. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
