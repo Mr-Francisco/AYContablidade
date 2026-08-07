@@ -66,14 +66,19 @@ class AlteracaoMensal(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
 
     __tablename__ = "rh_alteracoes"
     __table_args__ = (
-        UniqueConstraint("empresa_id", "colaborador_id", "mes", name="alteracao_mes"),
+        UniqueConstraint(
+            "empresa_id", "colaborador_id", "exercicio_id", "mes",
+            name="alteracao_mes", postgresql_nulls_not_distinct=True,
+        ),
     )
 
     colaborador_id: Mapped[UUID] = mapped_column(
         ForeignKey("colaboradores.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    # "AAAA-MM"
-    mes: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
+    exercicio_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("exercicios.id", ondelete="CASCADE"), index=True
+    )
+    mes: Mapped[str] = mapped_column(String(2), nullable=False, index=True)
 
     # Dias. O desconto é salário_base / 30 × faltas (base 30 dias, como no Piloto).
     faltas: Mapped[Decimal] = mapped_column(
@@ -91,9 +96,21 @@ class ProcessamentoSalarial(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base)
     """Processamento da folha de um mês, com um lançamento agregado."""
 
     __tablename__ = "rh_processamentos"
-    __table_args__ = (UniqueConstraint("empresa_id", "mes", name="processamento_mes"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "empresa_id", "exercicio_id", "mes", name="processamento_mes",
+            postgresql_nulls_not_distinct=True,
+        ),
+    )
 
-    mes: Mapped[str] = mapped_column(String(7), nullable=False)
+    # Desvio justificado ao Piloto: lá o mês ("03") e único em todo o histórico,
+    # portanto no SEGUNDO ano de utilização Março apareceria como ja processado e
+    # seria impossivel processá-lo. Não é um comportamento a preservar, é um
+    # defeito latente. O período passa a ser único POR EXERCÍCIO.
+    exercicio_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("exercicios.id", ondelete="CASCADE"), index=True
+    )
+    mes: Mapped[str] = mapped_column(String(2), nullable=False)
     # {"bruto", "inss", "irt", "liquido", "inssEmpresa"}
     totais: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     lancado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -113,9 +130,17 @@ class PagamentoSalarial(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "rh_pagamentos"
-    __table_args__ = (UniqueConstraint("empresa_id", "mes", name="pagamento_mes"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "empresa_id", "exercicio_id", "mes", name="pagamento_mes",
+            postgresql_nulls_not_distinct=True,
+        ),
+    )
 
-    mes: Mapped[str] = mapped_column(String(7), nullable=False)
+    exercicio_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("exercicios.id", ondelete="CASCADE"), index=True
+    )
+    mes: Mapped[str] = mapped_column(String(2), nullable=False)
     valor: Mapped[Decimal] = mapped_column(Money, nullable=False)
     conta: Mapped[str | None] = mapped_column(String(20))
     lancado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -156,7 +181,7 @@ class Honorario(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     )
     nome: Mapped[str | None] = mapped_column(String(200))
     data: Mapped[date] = mapped_column(Date, nullable=False)
-    mes: Mapped[str | None] = mapped_column(String(7))
+    mes: Mapped[str | None] = mapped_column(String(2))
     descricao: Mapped[str | None] = mapped_column(Text)
 
     bruto: Mapped[Decimal] = mapped_column(Money, nullable=False)
@@ -187,13 +212,19 @@ class MapaIrtLinha(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
 
     __tablename__ = "rh_mapa_irt"
     __table_args__ = (
-        UniqueConstraint("empresa_id", "colaborador_id", "mes", name="mapa_irt_mes"),
+        UniqueConstraint(
+            "empresa_id", "colaborador_id", "exercicio_id", "mes",
+            name="mapa_irt_mes", postgresql_nulls_not_distinct=True,
+        ),
     )
 
     colaborador_id: Mapped[UUID] = mapped_column(
         ForeignKey("colaboradores.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    mes: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
+    exercicio_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("exercicios.id", ondelete="CASCADE"), index=True
+    )
+    mes: Mapped[str] = mapped_column(String(2), nullable=False, index=True)
 
     # ---- Subsídios NÃO sujeitos a IRT ----
     sub_alimentacao: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)

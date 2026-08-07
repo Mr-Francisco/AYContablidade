@@ -11,6 +11,7 @@ from src.api.routers import (
     empresa_router,
     licenca_router,
     relatorios_router,
+    rh_router,
     user_router,
 )
 
@@ -24,6 +25,7 @@ ROUTERS = (
     contabilidade_router.router,
     relatorios_router.router,
     apuramentos_router.router,
+    rh_router.router,
 )
 
 __all__ = [
@@ -34,5 +36,6 @@ __all__ = [
     "empresa_router",
     "licenca_router",
     "relatorios_router",
+    "rh_router",
     "user_router",
 ]

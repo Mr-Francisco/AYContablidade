@@ -67,6 +67,156 @@ def proxima_subconta(db: Session, empresa_id: UUID, codigo_mae: str) -> str:
     return f"{codigo_mae}{maximo + 1:03d}"
 
 
+def mover_movimentos(db: Session, empresa_id: UUID, de: str, para: str) -> int:
+    """Move todas as linhas de lançamento de uma conta para outra."""
+    nome_para = db.scalar(
+        select(Conta.nome).where(Conta.empresa_id == empresa_id, Conta.codigo == para)
+    )
+    conta_para = db.scalar(
+        select(Conta).where(Conta.empresa_id == empresa_id, Conta.codigo == para)
+    )
+    linhas = db.scalars(
+        select(LancamentoLinha)
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(Lancamento.empresa_id == empresa_id, LancamentoLinha.conta_codigo == de)
+    ).all()
+    for linha in linhas:
+        linha.conta_codigo = para
+        if conta_para is not None:
+            linha.conta_id = conta_para.id
+        if nome_para:
+            linha.conta_nome = nome_para
+    if linhas:
+        db.flush()
+    return len(linhas)
+
+
+def criar_subconta(
+    db: Session, empresa_id: UUID, parent_codigo: str, codigo: str, nome: str
+) -> dict:
+    """Cria uma subconta ao estilo Primavera.
+
+    A PRIMEIRA subconta transforma a mãe em integradora e herda todos os
+    movimentos dela. As seguintes são apenas contas de movimento novas.
+
+    Sem esta transferência, a mãe ficaria integradora com movimentos — o estado
+    exacto que a validação do lançamento proíbe, e o balancete passaria a contar
+    esses valores duas vezes (na mãe e na agregação dos filhos).
+    """
+    parent = db.scalar(
+        select(Conta).where(Conta.empresa_id == empresa_id, Conta.codigo == parent_codigo)
+    )
+    if parent is None:
+        raise ErroContabilistico(f"Conta-mãe {parent_codigo} não existe.")
+    if not codigo.startswith(parent_codigo) or len(codigo) <= len(parent_codigo):
+        sugestao = proxima_subconta(db, empresa_id, parent_codigo)
+        raise ErroContabilistico(
+            f"A subconta tem de estender o código {parent_codigo} (ex.: {sugestao})."
+        )
+    if db.scalar(
+        select(Conta.id).where(Conta.empresa_id == empresa_id, Conta.codigo == codigo)
+    ):
+        raise ErroContabilistico(f"Já existe a conta {codigo}.")
+
+    sem_filhos = (
+        db.scalar(
+            select(Conta.id).where(
+                Conta.empresa_id == empresa_id,
+                Conta.codigo != parent_codigo,
+                Conta.codigo.startswith(parent_codigo),
+            ).limit(1)
+        )
+        is None
+    )
+
+    nova = Conta(
+        empresa_id=empresa_id, codigo=codigo,
+        nome=nome or (parent.nome if sem_filhos else f"{parent.nome} {codigo[len(parent_codigo):]}"),
+        tipo="M", natureza=parent.natureza, ativa=True,
+    )
+    db.add(nova)
+    db.flush()
+
+    if sem_filhos:
+        movidos = mover_movimentos(db, empresa_id, parent_codigo, codigo)
+        parent.tipo = "I"
+        db.flush()
+        return {"criada": codigo, "tornou_integradora": True, "movidos": movidos}
+    return {"criada": codigo, "tornou_integradora": False, "movidos": 0}
+
+
+def criar_conta(
+    db: Session, empresa_id: UUID, codigo: str, nome: str, natureza: str | None = None
+) -> dict:
+    """Regra geral de criação de conta.
+
+    Se o código estende uma conta de MOVIMENTO existente, essa mãe passa a
+    integradora e os movimentos dela migram para a nova — assim uma integradora
+    nunca fica com movimentos. Caso contrário cria uma conta de movimento normal.
+    """
+    codigo = (codigo or "").strip()
+    if not codigo:
+        raise ErroContabilistico("Código obrigatório.")
+    if db.scalar(
+        select(Conta.id).where(Conta.empresa_id == empresa_id, Conta.codigo == codigo)
+    ):
+        raise ErroContabilistico(f"Já existe a conta {codigo}.")
+
+    todas = db.scalars(select(Conta).where(Conta.empresa_id == empresa_id)).all()
+    candidatos = [
+        c for c in todas
+        if codigo.startswith(c.codigo)
+        and len(c.codigo) < len(codigo)
+        and eh_movimento(c, todas)
+    ]
+    if candidatos:
+        mae = max(candidatos, key=lambda c: len(c.codigo))
+        return criar_subconta(db, empresa_id, mae.codigo, codigo, nome)
+
+    db.add(
+        Conta(
+            empresa_id=empresa_id, codigo=codigo, nome=nome,
+            natureza=natureza or natureza_conta(codigo), tipo="M", ativa=True,
+        )
+    )
+    db.flush()
+    return {"criada": codigo, "tornou_integradora": False, "movidos": 0}
+
+
+def conta_corrente(db: Session, empresa_id: UUID, base: str, nome: str) -> str:
+    """Devolve (criando se preciso) a subconta de movimento de uma entidade.
+
+    Reutiliza a que já existir com o mesmo nome — é o que faz com que processar
+    salários duas vezes não crie duas contas para o mesmo colaborador.
+    """
+    base_conta = db.scalar(
+        select(Conta).where(Conta.empresa_id == empresa_id, Conta.codigo == base)
+    )
+    if base_conta is None:
+        return base
+
+    alvo = (nome or "").strip().lower()
+    todas = db.scalars(select(Conta).where(Conta.empresa_id == empresa_id)).all()
+    for c in todas:
+        if (
+            c.codigo != base
+            and c.codigo.startswith(base)
+            and (c.nome or "").strip().lower() == alvo
+            and eh_movimento(c, todas)
+        ):
+            return c.codigo
+
+    codigo = proxima_subconta(db, empresa_id, base)
+    try:
+        criar_subconta(db, empresa_id, base, codigo, nome or f"Conta {codigo}")
+    except ErroContabilistico:
+        try:
+            criar_conta(db, empresa_id, codigo, nome, natureza_conta(base))
+        except ErroContabilistico:
+            return base
+    return codigo
+
+
 # ---------------------------------------------------------------------------
 # Equilíbrio
 # ---------------------------------------------------------------------------
