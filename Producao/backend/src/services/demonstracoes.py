@@ -376,3 +376,500 @@ def balanco(db: Session, **opts) -> dict:
         "resultado": resultado,
         "equilibrado": total_activo == total_cp_passivo,
     }
+
+
+def resumo_resultado(db: Session, **opts) -> dict:
+    """Custos, proveitos e resultado do exercício, para o painel.
+
+    Exclui o apuramento: o painel mostra sempre a actividade real do ano.
+    """
+    from src.services.contabilidade import balancete
+
+    b = balancete(db, **{**opts, "excluir_apuramento": True})
+    custos = proveitos = ZERO
+    for g in b["linhas"]:
+        if g["classe"] == "7":
+            custos += g["debito"] - g["credito"]
+        elif g["classe"] == "6":
+            proveitos += g["credito"] - g["debito"]
+    return {"custos": custos, "proveitos": proveitos, "resultado": proveitos - custos}
+
+
+# ---------------------------------------------------------------------------
+# Notas às Contas
+# ---------------------------------------------------------------------------
+# sinal: 1 = saldo devedor positivo (activos/custos)
+#       -1 = saldo credor positivo (proveitos/capital/passivo)
+#        0 = resultado (proveito positivo, custo negativo)
+NOTAS_DEF: tuple[dict, ...] = (
+    {"n": 1, "grupo": "BL", "titulo": "Identificação da Empresa e Atividade", "texto": "empresa"},
+    {"n": 2, "grupo": "BL", "titulo": "Referencial Contabilístico de Preparação", "texto": "referencial"},
+    {"n": 3, "grupo": "BL", "titulo": "Principais Políticas Contabilísticas", "texto": "politicas"},
+    {"n": 4, "grupo": "BL", "titulo": "Imobilizações Corpóreas", "prefixos": ("11",), "amort": ("181",), "sinal": 1},
+    {"n": 5, "grupo": "BL", "titulo": "Imobilizações Incorpóreas", "prefixos": ("12",), "amort": ("182",), "sinal": 1},
+    {"n": 6, "grupo": "BL", "titulo": "Investimentos em Subsidiárias e Associadas", "prefixos": ("13",), "sinal": 1},
+    {"n": 7, "grupo": "BL", "titulo": "Outros Activos Financeiros", "prefixos": ("14", "19"), "sinal": 1},
+    {"n": 8, "grupo": "BL", "titulo": "Existências", "prefixos": ("21", "22", "23", "24", "25", "26", "27"), "sinal": 1},
+    {"n": 9, "grupo": "BL", "titulo": "Contas a Receber", "prefixos": ("31",), "sinal": 1, "so_positivos": True},
+    {"n": 10, "grupo": "BL", "titulo": "Disponibilidades", "prefixos": ("41", "42", "43", "44", "45"), "sinal": 1},
+    {"n": 11, "grupo": "BL", "titulo": "Outros Activos Correntes", "prefixos": ("28", "34", "35", "38"), "sinal": 1, "so_positivos": True},
+    {"n": 12, "grupo": "BL", "titulo": "Capital", "prefixos": ("51",), "sinal": -1},
+    {"n": 13, "grupo": "BL", "titulo": "Reservas", "prefixos": ("55", "57", "58"), "sinal": -1},
+    {"n": 14, "grupo": "BL", "titulo": "Resultados Transitados", "prefixos": ("56", "81"), "sinal": -1},
+    {"n": 15, "grupo": "BL", "titulo": "Empréstimos de Médio e Longo Prazo", "prefixos": ("33",), "sinal": -1},
+    {"n": 16, "grupo": "BL", "titulo": "Impostos Diferidos", "prefixos": ("276",), "sinal": -1},
+    {"n": 17, "grupo": "BL", "titulo": "Provisões para Pensões", "prefixos": ("291",), "sinal": -1},
+    {"n": 18, "grupo": "BL", "titulo": "Provisões para Outros Riscos e Encargos", "prefixos": ("39",), "sinal": -1},
+    {"n": 19, "grupo": "BL", "titulo": "Contas a Pagar (Fornecedores e Outros)", "prefixos": ("32", "37"), "sinal": -1, "so_negativos": True},
+    {"n": 20, "grupo": "BL", "titulo": "Empréstimos de Curto Prazo", "prefixos": ("331",), "sinal": -1},
+    {"n": 21, "grupo": "BL", "titulo": "Outros Passivos Correntes", "prefixos": ("34", "36", "38"), "sinal": -1, "so_negativos": True},
+    {"n": 22, "grupo": "DR", "titulo": "Vendas", "prefixos": ("61",), "sinal": -1},
+    {"n": 23, "grupo": "DR", "titulo": "Prestações de Serviços", "prefixos": ("62",), "sinal": -1},
+    {"n": 24, "grupo": "DR", "titulo": "Outros Proveitos Operacionais", "prefixos": ("63",), "sinal": -1},
+    {"n": 25, "grupo": "DR", "titulo": "Variações nos Produtos Acabados e em Curso", "prefixos": ("64",), "sinal": -1},
+    {"n": 26, "grupo": "DR", "titulo": "Trabalhos para a Própria Empresa", "prefixos": ("65",), "sinal": -1},
+    {"n": 27, "grupo": "DR", "titulo": "Custo das Mercadorias Vendidas e Matérias Consumidas", "prefixos": ("71",), "sinal": 1},
+    {"n": 28, "grupo": "DR", "titulo": "Custos com o Pessoal", "prefixos": ("72",), "sinal": 1},
+    {"n": 29, "grupo": "DR", "titulo": "Amortizações", "prefixos": ("73",), "sinal": 1},
+    {"n": 30, "grupo": "DR", "titulo": "Outros Custos e Perdas Operacionais", "prefixos": ("75",), "sinal": 1},
+    {"n": 31, "grupo": "DR", "titulo": "Resultados Financeiros", "prefixos": ("66", "76"), "sinal": 0},
+    {"n": 32, "grupo": "DR", "titulo": "Resultados de Filiais e Associadas", "prefixos": ("67", "77"), "sinal": 0},
+    {"n": 33, "grupo": "DR", "titulo": "Resultados Não Operacionais", "prefixos": ("68", "78"), "sinal": 0},
+    {"n": 34, "grupo": "DR", "titulo": "Resultados Extraordinários", "prefixos": ("69", "79"), "sinal": 0},
+    {"n": 35, "grupo": "DR", "titulo": "Imposto Sobre o Rendimento", "prefixos": ("87",), "sinal": 1},
+)
+
+
+def _categoria_nota(defn: dict) -> str:
+    """Categoria da nota, que define o tom da análise textual."""
+    if defn["grupo"] == "BL":
+        if defn.get("sinal") == 1:
+            return "activo"
+        if 12 <= defn["n"] <= 14:
+            return "capital"
+        return "passivo"
+    if defn.get("sinal") == -1:
+        return "proveito"
+    if defn.get("sinal") == 1:
+        return "custo"
+    return "resultado"
+
+
+_VERBO = {
+    "activo": "representa o valor dos activos afectos a esta rubrica",
+    "capital": "traduz os fundos próprios da empresa nesta rubrica",
+    "passivo": "reflecte as responsabilidades da empresa nesta rubrica",
+    "proveito": "reflecte os proveitos reconhecidos no exercício",
+    "custo": "reflecte os custos incorridos no exercício",
+    "resultado": "apura o resultado líquido desta natureza",
+}
+
+
+def _fmt_moeda(v: Decimal, moeda: str) -> str:
+    """Formata à portuguesa: milhares com espaço fino, decimais com vírgula."""
+    inteiro, _, dec = f"{abs(v):.2f}".partition(".")
+    grupos = []
+    while len(inteiro) > 3:
+        grupos.insert(0, inteiro[-3:])
+        inteiro = inteiro[:-3]
+    grupos.insert(0, inteiro)
+    return f"{' '.join(grupos)},{dec} {moeda}"
+
+
+def _gerar_analise(
+    defn: dict, rubricas: list[dict], total: Decimal, moeda: str, ano: str
+) -> str:
+    """Comentário que acompanha a tabela da nota. Vazio se não houver valores."""
+    reais = [r for r in rubricas if not r.get("amort")]
+    if not reais or total == 0:
+        return ""
+
+    cat = _categoria_nota(defn)
+    t = (
+        f"No exercício de {ano}, a rubrica «{defn['titulo']}» {_VERBO[cat]}, "
+        f"ascendendo a {_fmt_moeda(total, moeda)}."
+    )
+
+    ord_ = sorted(reais, key=lambda r: abs(r["valor"]), reverse=True)
+    denom = abs(total) or Decimal("1")
+    if len(ord_) == 1:
+        r = ord_[0]
+        conta = f" (conta {r['codigo']})" if r["codigo"] else ""
+        t += f" Este montante corresponde integralmente a {r['nome']}{conta}."
+    else:
+        top = [
+            f"{r['nome']} com {_fmt_moeda(r['valor'], moeda)} "
+            f"({round(abs(r['valor']) / denom * 100)}%)"
+            for r in ord_[:3]
+        ]
+        t += " Decompõe-se essencialmente em " + "; ".join(top)
+        t += ", entre outras contas." if len(ord_) > 3 else "."
+        maior = ord_[0]
+        pct = round(abs(maior["valor"]) / denom * 100)
+        if pct >= 60:
+            t += f" A rubrica {maior['nome']} concentra a maior parte do saldo ({pct}%)."
+
+    amort = next((r for r in rubricas if r.get("amort")), None)
+    if amort:
+        bruto = sum((r["valor"] for r in reais), ZERO) + abs(amort["valor"])
+        pct = round(abs(amort["valor"]) / (bruto or Decimal("1")) * 100)
+        t += (
+            f" O valor líquido resulta de um custo de aquisição de "
+            f"{_fmt_moeda(bruto, moeda)}, deduzido de amortizações acumuladas de "
+            f"{_fmt_moeda(amort['valor'], moeda)} ({pct}% de depreciação)."
+        )
+    if cat == "proveito":
+        t += " Não existe comparativo do exercício anterior."
+    return t
+
+
+def notas(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    exercicio_id: UUID | None = None,
+    ate: Date | None = None,
+    mes: str | None = None,
+) -> list[dict]:
+    """Notas às Contas: composição de cada rubrica do Balanço e da DR.
+
+    As notas do Balanço usam os saldos COM apuramento (reflectem o fecho) e as
+    da DR usam os saldos SEM apuramento (mostram a actividade real do ano) —
+    é a mesma distinção que separa o balancete da demonstração de resultados.
+
+    Um texto gravado manualmente sobrepõe-se ao automático, mas o automático
+    continua a ser devolvido em `automatico`, para o utilizador poder voltar
+    atrás.
+    """
+    from src.db.models.contabilidade import NotaTexto
+    from src.db.models.tenancy import Empresa, Exercicio
+
+    base = {"empresa_id": empresa_id, "exercicio_id": exercicio_id, "ate": ate, "mes": mes}
+    sal = saldos_acum(db, **base)
+    sal_dr = saldos_acum(db, **base, excluir_apuramento=True)
+
+    emp = db.get(Empresa, empresa_id)
+    moeda = (emp.moeda if emp else None) or "Kz"
+    ano = ""
+    if exercicio_id is not None:
+        ex = db.get(Exercicio, exercicio_id)
+        if ex is not None:
+            ano = str(ex.inicio.year)
+
+    overrides = {
+        n.numero: n.texto
+        for n in db.scalars(
+            select(NotaTexto).where(
+                NotaTexto.empresa_id == empresa_id,
+                NotaTexto.exercicio_id == exercicio_id,
+            )
+        ).all()
+    }
+
+    nomes = {
+        c.codigo: c.nome
+        for c in db.scalars(select(Conta).where(Conta.empresa_id == empresa_id)).all()
+    }
+
+    textos_fixos = {
+        "empresa": lambda: (
+            f"{(emp.nome if emp else None) or 'A empresa'} "
+            f"(NIF {(emp.nif if emp else None) or '—'}), com sede em "
+            f"{(emp.morada if emp else None) or (emp.localizacao if emp else None) or 'Angola'}, "
+            "tem por atividade principal a atividade comercial e de prestação de "
+            f"serviços. As presentes demonstrações financeiras são expressas em {moeda}."
+        ),
+        "referencial": lambda: (
+            "As demonstrações financeiras foram preparadas de acordo com o Plano "
+            "Geral de Contabilidade de Angola (PGC-AR), no pressuposto da "
+            "continuidade das operações e segundo o regime do acréscimo "
+            "(especialização dos exercícios)."
+        ),
+        "politicas": lambda: (
+            "As imobilizações são registadas ao custo de aquisição e amortizadas "
+            "pelo método das quotas constantes. As existências são valorizadas ao "
+            "custo. As contas a receber e a pagar são registadas pelo valor "
+            "nominal. Os proveitos e custos são reconhecidos no período a que "
+            "respeitam."
+        ),
+    }
+
+    resultado: list[dict] = []
+    for defn in NOTAS_DEF:
+        if "texto" in defn:
+            auto = textos_fixos[defn["texto"]]()
+            nota = {
+                "n": defn["n"], "grupo": defn["grupo"], "titulo": defn["titulo"],
+                "texto": auto, "rubricas": [], "total": ZERO, "narrativa": True,
+                "automatico": auto, "editada": False,
+            }
+            if defn["n"] in overrides:
+                nota["texto"] = overrides[defn["n"]]
+                nota["editada"] = True
+            resultado.append(nota)
+            continue
+
+        sal_nota = sal_dr if defn["grupo"] == "DR" else sal
+        prefixos = defn["prefixos"]
+        amort_pref = defn.get("amort")
+
+        rubricas: list[dict] = []
+        for cod in sorted(sal_nota):
+            if not cod.startswith(prefixos):
+                continue
+            if amort_pref and cod.startswith(amort_pref):
+                continue  # tratada à parte, abaixo
+            net = sal_nota[cod]
+            if defn.get("so_positivos") and net < 0:
+                continue
+            if defn.get("so_negativos") and net >= 0:
+                continue
+            valor = net if defn["sinal"] == 1 else -net
+            if valor == 0:
+                continue
+            rubricas.append({"codigo": cod, "nome": nomes.get(cod, cod), "valor": valor})
+
+        if amort_pref:
+            amort = -sum(
+                (v for cod, v in sal.items() if cod.startswith(amort_pref)), ZERO
+            )
+            if amort:
+                rubricas.append(
+                    {"codigo": "", "nome": "Amortizações acumuladas",
+                     "valor": -amort, "amort": True}
+                )
+
+        total = sum((r["valor"] for r in rubricas), ZERO)
+        auto = _gerar_analise(defn, rubricas, total, moeda, ano)
+        nota = {
+            "n": defn["n"], "grupo": defn["grupo"], "titulo": defn["titulo"],
+            "rubricas": rubricas, "total": total, "analise": auto,
+            "automatico": auto, "editada": False,
+        }
+        if defn["n"] in overrides:
+            nota["analise"] = overrides[defn["n"]]
+            nota["editada"] = True
+        resultado.append(nota)
+
+    return resultado
+
+
+# ---------------------------------------------------------------------------
+# Demonstração de Fluxos de Caixa
+# ---------------------------------------------------------------------------
+def _eh_monetaria(codigo: str) -> bool:
+    """Conta de caixa (45) ou de banco (43)."""
+    return codigo.startswith(("43", "45"))
+
+
+def categoria_fluxo(codigo: str) -> dict:
+    """Categoriza um movimento pela conta da contraparte.
+
+    A ordem dos testes importa: 18/19 (amortizações e provisões) têm de ser
+    apanhados antes do "1" genérico, senão cairiam em investimentos financeiros.
+    """
+    c = str(codigo or "")
+    if c[:2] in {"10", "11", "12", "13", "14", "15", "16", "17"}:
+        return {"grupo": "Investimento", "rubrica": "Aquisição de imobilizado"}
+    if c.startswith(("18", "19")):
+        return {"grupo": "Investimento", "rubrica": "Amortizações/Provisões"}
+    if c.startswith("1"):
+        return {"grupo": "Investimento", "rubrica": "Investimentos financeiros"}
+    if c.startswith("33"):
+        return {"grupo": "Financiamento", "rubrica": "Empréstimos"}
+    if c.startswith("5"):
+        return {"grupo": "Financiamento", "rubrica": "Capital / Suprimentos"}
+    if c.startswith("31"):
+        return {"grupo": "Operacional", "rubrica": "Recebimentos de clientes"}
+    if c.startswith("32"):
+        return {"grupo": "Operacional", "rubrica": "Pagamentos a fornecedores"}
+    if c.startswith("36"):
+        return {"grupo": "Operacional", "rubrica": "Pagamentos ao pessoal"}
+    if c.startswith("34"):
+        return {"grupo": "Operacional", "rubrica": "Impostos e Estado"}
+    if c.startswith("6"):
+        return {"grupo": "Operacional", "rubrica": "Recebimentos de exploração"}
+    if c.startswith("7"):
+        return {"grupo": "Operacional", "rubrica": "Pagamentos de exploração"}
+    if c.startswith("2"):
+        return {"grupo": "Operacional", "rubrica": "Existências / compras"}
+    return {"grupo": "Operacional", "rubrica": "Outros recebimentos/pagamentos"}
+
+
+def categoria_fluxo_de(db: Session, empresa_id: UUID, fluxo_codigo: str) -> dict | None:
+    """Categoria a partir da rubrica de fluxo indicada manualmente na linha.
+
+    O grupo vem do 1.º dígito do código: 1 Operacional, 2 Investimento,
+    3 Financiamento — como em FLUXOS_DEFAULT.
+    """
+    from src.db.models.contabilidade import Fluxo
+
+    f = db.scalar(
+        select(Fluxo).where(Fluxo.empresa_id == empresa_id, Fluxo.codigo == fluxo_codigo)
+    )
+    if f is None:
+        return None
+    grupo = (
+        "Investimento" if f.codigo[0] == "2"
+        else "Financiamento" if f.codigo[0] == "3"
+        else "Operacional"
+    )
+    return {"grupo": grupo, "rubrica": f.descricao}
+
+
+def mapa_fluxos(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> list[dict]:
+    """Mapa pela tabela de Fluxos: só conta linhas com rubrica atribuída
+    manualmente. Entradas positivas, saídas negativas."""
+    from src.db.models.contabilidade import Fluxo
+
+    q = (
+        select(
+            LancamentoLinha.fluxo_codigo,
+            LancamentoLinha.debito,
+            LancamentoLinha.credito,
+        )
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(
+            Lancamento.empresa_id == empresa_id,
+            Lancamento.diferido.is_(False),
+            LancamentoLinha.fluxo_codigo.is_not(None),
+        )
+    )
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+    if de is not None:
+        q = q.where(Lancamento.data >= de)
+    if ate is not None:
+        q = q.where(Lancamento.data <= ate)
+
+    valores: dict[str, Decimal] = {}
+    for codigo, debito, credito in db.execute(q):
+        valores[codigo] = valores.get(codigo, ZERO) + (debito or ZERO) - (credito or ZERO)
+
+    lista = db.scalars(
+        select(Fluxo).where(Fluxo.empresa_id == empresa_id).order_by(Fluxo.codigo)
+    ).all()
+
+    def valor_de(f) -> Decimal:
+        if f.tipo == "M":
+            return valores.get(f.codigo, ZERO)
+        # Intermédio ou raiz: soma só os filhos de movimento, para não duplicar.
+        return sum(
+            (valores.get(o.codigo, ZERO)
+             for o in lista
+             if o.codigo != f.codigo and o.codigo.startswith(f.codigo) and o.tipo == "M"),
+            ZERO,
+        )
+
+    return [
+        {"codigo": f.codigo, "descricao": f.descricao, "tipo": f.tipo, "valor": valor_de(f)}
+        for f in lista
+    ]
+
+
+def saldo_monetario(
+    db: Session, *, empresa_id: UUID, ate: Date | None = None,
+    exercicio_id: UUID | None = None,
+) -> Decimal:
+    """Saldo de caixa e bancos até uma data."""
+    q = (
+        select(LancamentoLinha.conta_codigo, LancamentoLinha.debito, LancamentoLinha.credito)
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(Lancamento.empresa_id == empresa_id, Lancamento.diferido.is_(False))
+    )
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+    if ate is not None:
+        q = q.where(Lancamento.data <= ate)
+    return sum(
+        ((d or ZERO) - (c or ZERO) for cod, d, c in db.execute(q) if _eh_monetaria(cod)),
+        ZERO,
+    )
+
+
+def demonstracao_fluxos(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> dict:
+    """Demonstração de Fluxos de Caixa, construída automaticamente.
+
+    Todo o movimento que toque em caixa (45) ou banco (43) alimenta o mapa,
+    categorizado pela contraparte. Entrada = débito na conta monetária.
+
+    A rubrica indicada manualmente na linha tem prioridade sobre a
+    categorização automática — esta serve de reserva para lançamentos antigos
+    ou gerados por módulos que ainda não a preenchem.
+    """
+    from datetime import timedelta
+
+    q = (
+        select(Lancamento)
+        .where(Lancamento.empresa_id == empresa_id, Lancamento.diferido.is_(False))
+        .order_by(Lancamento.data)
+    )
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+    if de is not None:
+        q = q.where(Lancamento.data >= de)
+    if ate is not None:
+        q = q.where(Lancamento.data <= ate)
+
+    grupos: dict[str, dict[str, Decimal]] = {
+        "Operacional": {}, "Investimento": {}, "Financiamento": {}
+    }
+    variacao = ZERO
+
+    for lanc in db.scalars(q).all():
+        linhas = list(lanc.linhas)
+        cash = [x for x in linhas if _eh_monetaria(x.conta_codigo)]
+        if not cash:
+            continue
+        # Contrapartida dominante: a linha de maior valor fora de caixa/banco.
+        contra = sorted(
+            (x for x in linhas if not _eh_monetaria(x.conta_codigo)),
+            key=lambda x: (x.debito or ZERO) + (x.credito or ZERO),
+            reverse=True,
+        )
+        for cx in cash:
+            val = (cx.debito or ZERO) - (cx.credito or ZERO)
+            if not val:
+                continue
+            variacao += val
+            cat = None
+            if cx.fluxo_codigo:
+                cat = categoria_fluxo_de(db, empresa_id, cx.fluxo_codigo)
+            if cat is None:
+                cat = (
+                    categoria_fluxo(contra[0].conta_codigo) if contra
+                    else {"grupo": "Operacional", "rubrica": "Outros recebimentos/pagamentos"}
+                )
+            g = grupos[cat["grupo"]]
+            g[cat["rubrica"]] = g.get(cat["rubrica"], ZERO) + val
+
+    saldo_inicial = (
+        saldo_monetario(
+            db, empresa_id=empresa_id, ate=de - timedelta(days=1),
+            exercicio_id=exercicio_id,
+        )
+        if de is not None
+        else ZERO
+    )
+    subtotais = {g: sum(v.values(), ZERO) for g, v in grupos.items()}
+    return {
+        "grupos": grupos,
+        "subtotais": subtotais,
+        "variacao": variacao,
+        "saldo_inicial": saldo_inicial,
+        "saldo_final": saldo_inicial + variacao,
+    }
