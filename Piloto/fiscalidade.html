@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiscalidade — Impostos — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="dash-hero">
+      <div class="dh-eyebrow">Fiscalidade · Angola / AGT</div>
+      <h1>Catálogo de Impostos</h1>
+      <div class="dh-sub">Impostos em vigor em Angola, com incidência, taxas, forma de cálculo e modelos obrigatórios. As taxas devem ser confirmadas com a legislação em vigor.</div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="busca" placeholder="Pesquisar imposto…" class="grow">
+      <select id="fCat"><option value="">Todas as categorias</option></select>
+    </div>
+    <div id="lista"></div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">Fontes</div>
+      <div id="fontes" class="sub"></div>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/fiscalidade.js"></script>
+<script>
+const u = AY.initPage("fiscalidade.html", null);
+if (u) {
+  const E = AY.escapeHtml, F = AY.fisc;
+  const cats = [...new Set(F.IMPOSTOS.map(i => i.categoria))];
+  document.getElementById("fCat").innerHTML = `<option value="">Todas as categorias</option>` + cats.map(c => `<option value="${E(c)}">${E(c)}</option>`).join("");
+  document.getElementById("fontes").innerHTML = F.FONTES.map(f => `<a href="${E(f.url)}" target="_blank" rel="noopener" class="brand-text">${E(f.nome)}</a>`).join(" · ");
+
+  function card(i) {
+    return `<div class="card imposto-card">
+      <div class="imp-head"><span class="imp-sigla">${E(i.sigla)}</span><div><b>${E(i.nome)}</b><div class="sub">${E(i.categoria)}</div></div></div>
+      <div class="imp-body">
+        <div class="imp-row"><span class="imp-k">Incidência</span><span>${E(i.incidencia)}</span></div>
+        <div class="imp-row"><span class="imp-k">Taxa</span><span><b>${E(i.taxa)}</b></span></div>
+        <div class="imp-row"><span class="imp-k">Cálculo</span><span>${E(i.calculo)}</span></div>
+        <div class="imp-row"><span class="imp-k">Modelos</span><span>${i.modelos.map(m => `<span class="tag">${E(m)}</span>`).join(" ")}</span></div>
+        <div class="imp-row"><span class="imp-k">Prazo</span><span>${E(i.prazo)}</span></div>
+        ${i.retencao && i.retencao !== "—" ? `<div class="imp-row"><span class="imp-k">Retenção</span><span>${E(i.retencao)}</span></div>` : ""}
+      </div>
+    </div>`;
+  }
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim(), cat = document.getElementById("fCat").value;
+    let list = F.IMPOSTOS.filter(i => (!cat || i.categoria === cat) && (!q || (i.nome + " " + i.sigla + " " + i.incidencia).toLowerCase().includes(q)));
+    const grupos = {};
+    list.forEach(i => (grupos[i.categoria] = grupos[i.categoria] || []).push(i));
+    document.getElementById("lista").innerHTML = Object.keys(grupos).length ? Object.entries(grupos).map(([cat, is]) => `
+      <div class="ribbon-glabel" style="margin:18px 0 8px">${E(cat)}</div>
+      <div class="imposto-grid">${is.map(card).join("")}</div>`).join("") : `<div class="empty">Sem impostos para o filtro.</div>`;
+  }
+  document.getElementById("busca").oninput = render;
+  document.getElementById("fCat").onchange = render;
+  render();
+}
+</script>
+</body>
+</html>

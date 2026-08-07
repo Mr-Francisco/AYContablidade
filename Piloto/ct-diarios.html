@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diários — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Diários</h1><p class="sub">Tabela de diários da contabilidade. Cada documento é afeto a um diário.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="busca" placeholder="Pesquisar diário…" class="grow">
+        <label style="margin:0">Exercício (fechos) <select id="fExercicio"></select></label>
+        <button class="btn btn-amber" id="novo">+ Novo diário</button>
+      </div>
+      <p class="sub" style="margin-bottom:10px">Podes fechar um diário num mês/período concreto (do exercício acima) — deixa de aceitar novos lançamentos nesse diário+período até seres reaberto.</p>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+<div class="modal-backdrop hidden" id="modal"><div class="modal">
+  <div class="modal-head"><b id="mTitulo">Novo diário</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form"><div class="grid-2">
+    <label>Código<input id="fCod" required placeholder="Ex.: 45"></label>
+    <label>Nome<input id="fNome" required placeholder="Ex.: Caixa"></label>
+    <label style="grid-column:1/-1">Categoria (módulo a que está afeto)<select id="fCategoria"></select></label>
+  </div>
+  <div id="erro" class="alert alert-error hidden"></div>
+  <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div></form>
+</div></div>
+<div class="modal-backdrop hidden" id="modalFechos"><div class="modal" style="max-width:640px">
+  <div class="modal-head"><b id="mfTitulo">Fechos mensais</b><button class="icon-btn" id="mfFechar">✕</button></div>
+  <p class="sub" style="margin-bottom:10px" id="mfSub"></p>
+  <div class="table-wrap"><table><thead><tr><th>Período</th><th>Estado</th><th></th></tr></thead><tbody id="mfTabela"></tbody></table></div>
+</div></div>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("ct-diarios.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab; let editId = null;
+  const podeGerir = AY.can("contab.plano");
+  const CATEGORIA_LABEL = {}; C.CATEGORIAS_DIARIO.forEach(([cod, nome]) => CATEGORIA_LABEL[cod] = nome);
+  document.getElementById("fCategoria").innerHTML = C.CATEGORIAS_DIARIO.map(([cod, nome]) => `<option value="${cod}">${E(nome)}</option>`).join("");
+  document.getElementById("fExercicio").innerHTML = AY.exercicioOptions().html;
+  function exSelecionado() { return AY.exercicioOptions(document.getElementById("fExercicio").value).selecionado; }
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim();
+    const rows = C.diarios().filter(d => !q || d.codigo.includes(q) || d.nome.toLowerCase().includes(q));
+    const ex = exSelecionado();
+    document.getElementById("tabela").innerHTML = `<table>
+      <thead><tr><th>Código</th><th>Nome</th><th>Categoria</th><th class="num">Documentos</th><th class="num">Fechos (${ex ? E(ex.nome) : "—"})</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${rows.map(d => {
+        const nFechos = ex ? Object.keys(C.fechosDoDiario(d.codigo, ex.id)).length : 0;
+        return `<tr>
+        <td><b>${E(d.codigo)}</b></td><td>${E(d.nome)}</td><td><small>${E(CATEGORIA_LABEL[d.categoria] || CATEGORIA_LABEL.outros)}</small></td>
+        <td class="num">${C.documentosDoDiario(d.codigo).length}</td>
+        <td class="num">${nFechos ? AY.badge(nFechos + " período(s) fechado(s)", "#8a8a8a") : AY.badge("Tudo aberto", "#16a085")} <button class="btn btn-sm btn-outline" data-fechos="${d.id}" ${ex ? "" : "disabled title=\"Escolhe um exercício\""}>Gerir fechos</button></td>
+        ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${d.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${d.id}">✕</button></td>` : ""}
+      </tr>`; }).join("")}</tbody></table>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const d = C.diarios().find(x => x.id === b.dataset.del); if (confirm("Eliminar diário " + d.codigo + "?")) { C.removeDiario(b.dataset.del); render(); } });
+    document.querySelectorAll("[data-fechos]").forEach(b => b.onclick = () => abrirFechos(b.dataset.fechos));
+  }
+  const modal = document.getElementById("modal");
+  function abrir(id) { editId = id || null; const d = id ? C.diarios().find(x => x.id === id) : null; document.getElementById("mTitulo").textContent = d ? "Editar diário " + d.codigo : "Novo diário"; document.getElementById("fCod").value = d ? d.codigo : ""; document.getElementById("fNome").value = d ? d.nome : ""; document.getElementById("fCategoria").value = d ? (d.categoria || "outros") : "outros"; document.getElementById("erro").classList.add("hidden"); modal.classList.remove("hidden"); }
+  document.getElementById("novo").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("cancelar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("novo").style.display = podeGerir ? "" : "none";
+  document.getElementById("busca").oninput = render;
+  document.getElementById("fExercicio").onchange = render;
+  document.getElementById("form").onsubmit = e => {
+    e.preventDefault();
+    const cod = document.getElementById("fCod").value.trim(), nome = document.getElementById("fNome").value.trim(), err = document.getElementById("erro");
+    const dup = C.diario(cod); if (dup && dup.id !== editId) { err.textContent = "Já existe um diário com esse código."; err.classList.remove("hidden"); return; }
+    C.saveDiario({ id: editId, codigo: cod, nome, categoria: document.getElementById("fCategoria").value }); modal.classList.add("hidden"); render(); AY.toast("Diário guardado.", "success");
+  };
+
+  // ---------- Fechos mensais (por diário, por exercício, por período 00-15) ----------
+  const modalFechos = document.getElementById("modalFechos");
+  let fechosDiarioCod = null;
+  function abrirFechos(diarioId) {
+    const d = C.diarios().find(x => x.id === diarioId); const ex = exSelecionado();
+    if (!d || !ex) return;
+    fechosDiarioCod = d.codigo;
+    document.getElementById("mfTitulo").textContent = "Fechos mensais — Diário " + d.codigo + " · " + d.nome;
+    document.getElementById("mfSub").textContent = "Exercício " + ex.nome + ". Fecha um período para bloquear novos lançamentos neste diário nesse mês — reabre a qualquer momento.";
+    renderFechos();
+    modalFechos.classList.remove("hidden");
+  }
+  function renderFechos() {
+    const ex = exSelecionado(); if (!ex) return;
+    const fechos = C.fechosDoDiario(fechosDiarioCod, ex.id);
+    document.getElementById("mfTabela").innerHTML = C.PERIODOS.map(([cod, nome]) => {
+      const f = fechos[cod];
+      return `<tr>
+        <td>${cod} · ${E(nome)}</td>
+        <td>${f ? AY.badge("Fechado", "#8a8a8a") : AY.badge("Aberto", "#16a085")}</td>
+        <td class="num"><button class="btn btn-sm btn-outline" data-toggle-periodo="${cod}">${f ? "Reabrir" : "Fechar"}</button></td>
+      </tr>`;
+    }).join("");
+    document.querySelectorAll("[data-toggle-periodo]").forEach(b => b.onclick = () => {
+      const cod = b.dataset.togglePeriodo, ex = exSelecionado();
+      if (C.diarioFechado(fechosDiarioCod, ex.id, cod)) C.reabrirDiarioMes(fechosDiarioCod, ex.id, cod);
+      else C.fecharDiarioMes(fechosDiarioCod, ex.id, cod);
+      renderFechos(); render();
+    });
+  }
+  document.getElementById("mfFechar").onclick = () => modalFechos.classList.add("hidden");
+  modalFechos.addEventListener("click", e => { if (e.target === modalFechos) modalFechos.classList.add("hidden"); });
+
+  render();
+}
+</script>
+</body>
+</html>

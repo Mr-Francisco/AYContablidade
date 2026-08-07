@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurações — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Configurações</h1><p class="sub">Dados da empresa, faturação e comunicação (SAF-T / Faturação Eletrónica), exercícios e módulos.</p></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="panels"></div>
+    <datalist id="contasTesList"></datalist>
+    <datalist id="contasParamList"></datalist>
+    <datalist id="diariosParamList"></datalist>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/comercial.js"></script>
+<script src="assets/js/logistica.js"></script>
+<script src="assets/js/nif.js"></script>
+<script src="assets/js/conta-picker.js"></script>
+<script>
+const u = AY.initPage("empresa.html", ["admin"]);
+if (u) {
+  const E = AY.escapeHtml;
+  const cfg = () => AY.getConfig();
+
+  const TABS = [
+    { id: "empresa", label: "Empresa" },
+    { id: "faturacao", label: "Faturação e Comunicação" },
+    { id: "agt", label: "Integração AGT" },
+    { id: "tesouraria", label: "Tesouraria" },
+    { id: "parametrizacoes", label: "Parametrizações" },
+    { id: "series", label: "Séries de Documentos" },
+    { id: "exercicios", label: "Exercícios Económicos" },
+    { id: "modulos", label: "Módulos" },
+    { id: "permissoes", label: "Permissões" },
+  ];
+  let aba = "empresa";
+  function render() {
+    document.getElementById("tabs").innerHTML = TABS.map(t => `<button class="tab ${t.id === aba ? "active" : ""}" data-tab="${t.id}">${E(t.label)}</button>`).join("");
+    document.querySelectorAll("#tabs .tab").forEach(b => b.onclick = () => { aba = b.dataset.tab; render(); });
+    document.getElementById("panels").innerHTML = PANELS[aba]();
+    WIRES[aba]();
+  }
+
+  // ---------- Dados da Empresa ----------
+  function panelEmpresa() {
+    return `<div class="card">
+      <div class="card-title">Dados da Empresa</div>
+      <form id="formEmp">
+        <div class="grid-2">
+          <label>Nome / Designação<input id="eNome"></label>
+          <label>NIF<input id="eNif"></label>
+          <label>Telefone<input id="eTel"></label>
+          <label>E-mail<input id="eEmail"></label>
+          <label>Morada<input id="eMorada"></label>
+          <label>Localização<input id="eLoc"></label>
+          <label>Moeda<input id="eMoeda" maxlength="6"></label>
+          <label>Regime de tributação<select id="eRegime"></select></label>
+          <label style="grid-column:1/-1">Dados bancários (aparecem nas faturas)<input id="eBancos" placeholder="Ex.: BAI AO06 0040 … · BFA AO06 0006 …"></label>
+        </div>
+        <div class="modal-actions"><button class="btn btn-primary" type="submit">Guardar dados</button></div>
+      </form>
+    </div>`;
+  }
+  function wireEmpresa() {
+    const selR = document.getElementById("eRegime");
+    Object.keys(AY.REGIMES).forEach(k => selR.appendChild(new Option(AY.REGIMES[k].label + " (IVA " + AY.REGIMES[k].iva + "%)", k)));
+    const e = AY.getEmpresa();
+    document.getElementById("eNome").value = e.nome || "";
+    document.getElementById("eNif").value = e.nif || "";
+    document.getElementById("eTel").value = e.telefone || "";
+    document.getElementById("eEmail").value = e.email || "";
+    document.getElementById("eMorada").value = e.morada || "";
+    document.getElementById("eLoc").value = e.localizacao || "";
+    document.getElementById("eMoeda").value = e.moeda || "Kz";
+    document.getElementById("eRegime").value = e.regime || "geral";
+    document.getElementById("eBancos").value = e.bancos || "";
+    document.getElementById("formEmp").onsubmit = (ev) => {
+      ev.preventDefault();
+      const e = AY.getEmpresa();
+      e.nome = document.getElementById("eNome").value.trim();
+      e.nif = document.getElementById("eNif").value.trim();
+      e.telefone = document.getElementById("eTel").value.trim();
+      e.email = document.getElementById("eEmail").value.trim();
+      e.morada = document.getElementById("eMorada").value.trim();
+      e.localizacao = document.getElementById("eLoc").value.trim();
+      e.moeda = document.getElementById("eMoeda").value.trim() || "Kz";
+      e.regime = document.getElementById("eRegime").value;
+      e.bancos = document.getElementById("eBancos").value.trim();
+      AY.saveEmpresa(e);
+      AY.toast("Dados da empresa guardados.", "success");
+      AY.renderHeader("empresa.html");
+    };
+  }
+
+  // ---------- Faturação e Comunicação ----------
+  function panelFaturacao() {
+    return `<div class="card">
+      <div class="card-title">Faturação e Comunicação</div>
+      <p class="sub" style="margin-bottom:10px">Modo de cumprimento das obrigações de faturação junto da AGT (Decreto Presidencial n.º 71/25).</p>
+      <form id="formFat">
+        <div class="grid-2">
+          <label style="grid-column:1/-1">Modo de comunicação<select id="fModo">
+            <option value="eletronica">Faturação Eletrónica — comunicação em tempo real (QR Code)</option>
+            <option value="saft">SAF-T (AO) — ficheiro de auditoria periódico</option>
+            <option value="ambos">Faturação Eletrónica + SAF-T</option>
+          </select></label>
+          <label>Software de faturação<input id="fSoftware" placeholder="SGD"></label>
+          <label>Versão do software<input id="fVersao" placeholder="v4.18"></label>
+          <label>Nº de validação / certificação AGT<input id="fCert" placeholder="Ex.: FE/141/AGT/2026"></label>
+          <label>Ambiente<select id="fAmbiente"><option value="producao">Produção</option><option value="testes">Testes</option></select></label>
+          <label>Série de documentos<input id="fSerie" placeholder="Ex.: 2026"></label>
+          <label>Periodicidade SAF-T<select id="fPeriodo"><option value="mensal">Mensal</option><option value="anual">Anual</option><option value="pedido">A pedido</option></select></label>
+        </div>
+        <div id="fInfo" class="alert alert-info" style="margin-top:8px"></div>
+        <div class="modal-actions"><button type="button" class="btn btn-outline" id="fExportSaft">⬇ Exportar SAF-T (demo)</button><button class="btn btn-primary" type="submit">Guardar faturação</button></div>
+      </form>
+    </div>`;
+  }
+  function fatDefault() { return { modo: "eletronica", software: "SGD", versao: "v4.18", certificado: "FE/141/AGT/2026", ambiente: "producao", serie: String(new Date().getFullYear()), periodo: "mensal" }; }
+  function getFat() { const c = AY.getConfig(); return Object.assign(fatDefault(), c.faturacao || {}); }
+  function infoFat() {
+    const modo = document.getElementById("fModo").value, amb = document.getElementById("fAmbiente").value;
+    const txt = modo === "saft" ? "As faturas geram um <b>ficheiro SAF-T (AO)</b> entregue à AGT (" + document.getElementById("fPeriodo").value + ")."
+      : modo === "ambos" ? "Comunicação em <b>tempo real com QR Code</b> e também <b>SAF-T</b> periódico."
+      : "Cada fatura é <b>comunicada em tempo real</b> à AGT e inclui <b>QR Code</b> e código de validação.";
+    document.getElementById("fInfo").innerHTML = txt + (amb === "testes" ? " <b>· Ambiente de TESTES</b>" : "") + " Obrigatória para grandes contribuintes desde 01-01-2026.";
+  }
+  function wireFaturacao() {
+    const f = getFat();
+    document.getElementById("fModo").value = f.modo; document.getElementById("fSoftware").value = f.software; document.getElementById("fVersao").value = f.versao;
+    document.getElementById("fCert").value = f.certificado; document.getElementById("fAmbiente").value = f.ambiente; document.getElementById("fSerie").value = f.serie; document.getElementById("fPeriodo").value = f.periodo;
+    infoFat();
+    ["fModo", "fAmbiente", "fPeriodo"].forEach(id => document.getElementById(id).onchange = infoFat);
+    document.getElementById("formFat").onsubmit = (ev) => {
+      ev.preventDefault(); const c = AY.getConfig();
+      c.faturacao = { modo: document.getElementById("fModo").value, software: document.getElementById("fSoftware").value.trim(), versao: document.getElementById("fVersao").value.trim(),
+        certificado: document.getElementById("fCert").value.trim(), ambiente: document.getElementById("fAmbiente").value, serie: document.getElementById("fSerie").value.trim(), periodo: document.getElementById("fPeriodo").value };
+      AY.saveConfig(c); AY.toast("Configuração de faturação guardada.", "success");
+    };
+    document.getElementById("fExportSaft").onclick = () => {
+      const e = AY.getEmpresa(), f = getFat(), vendas = (AY.com ? AY.com.vendas().filter(v => AY.com.emitida(v)) : []);
+      const rows = [["SAF-T (AO) — SGD (demonstração)"], ["Empresa", e.nome, "NIF", e.nif], ["Software", f.software, "Certificado", f.certificado], ["Série", f.serie, "Ambiente", f.ambiente], [],
+        ["Documento", "Data", "Cliente", "NIF", "Incidência", "IVA", "Total", "Cód. Validação"]]
+        .concat(vendas.map(v => { const cl = (AY.com.cliente(v.clienteId) || {}); return [v.numero, v.data, v.clienteNome, cl.nif || "", v.subtotal, v.iva, v.total, v.codigoValidacao || ""]; }));
+      const s = rows.map(r => r.map(x => { x = String(x == null ? "" : x); return /[";\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; }).join(";")).join("\r\n");
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + s], { type: "text/csv;charset=utf-8" })); a.download = "SAFT_AO_" + f.serie + ".csv"; a.click();
+      AY.toast("SAF-T (demonstração) exportado.", "success");
+    };
+  }
+
+  // ---------- Integração AGT — Consulta de Contribuinte (NIF) ----------
+  function panelAgt() {
+    return `<div class="card">
+      <div class="card-title">Integração AGT — Consulta de Contribuinte (NIF)</div>
+      <p class="sub" style="margin-bottom:10px">Serviço oficial <b>DS-120 «Consultar Dados de Contribuinte» v5</b> (AGT/SIGT). Ativa para consultar o nome/regime de qualquer NIF ao criar clientes, fornecedores ou faturas.</p>
+      <form id="formAgt">
+        <div class="grid-2">
+          <label class="chk"><input type="checkbox" id="aAtivo"> Ativar consulta online à AGT</label>
+          <label>Ambiente<select id="aAmbiente"><option value="homologacao">Homologação (testes)</option><option value="producao">Produção</option></select></label>
+          <label style="grid-column:1/-1">Endpoint (Obter)<input id="aEndpoint"></label>
+          <label style="grid-column:1/-1">Proxy (backend que injeta autenticação e resolve CORS)<input id="aProxy" placeholder="Ex.: https://o-meu-backend/agt/nif — opcional mas necessário se chamado do browser"></label>
+          <label>Username (AGT)<input id="aUser" autocomplete="off"></label>
+          <label>Password / Token (AGT)<input id="aPass" type="password" autocomplete="off"></label>
+        </div>
+        <div class="alert alert-info" style="margin-top:8px">A app é estática: a chamada direta ao host da AGT é bloqueada por <b>CORS</b> e exige credenciais. Em produção, aponta o <b>Proxy</b> para um pequeno backend que guarda o Username/Password e reencaminha para o serviço da AGT. Sem isso, a consulta usa os registos locais.</div>
+        <div class="modal-actions"><button type="button" class="btn btn-outline" id="aTestar">🔍 Testar consulta</button><button class="btn btn-primary" type="submit">Guardar integração</button></div>
+      </form>
+    </div>`;
+  }
+  function wireAgt() {
+    const a = Object.assign({ ativo: false, ambiente: "homologacao", endpoint: (AY.nif && AY.nif.ENDPOINT_HML) || "", proxy: "", username: "", password: "" }, AY.getConfig().agt || {});
+    document.getElementById("aAtivo").checked = !!a.ativo; document.getElementById("aAmbiente").value = a.ambiente;
+    document.getElementById("aEndpoint").value = a.endpoint; document.getElementById("aProxy").value = a.proxy;
+    document.getElementById("aUser").value = a.username; document.getElementById("aPass").value = a.password;
+    document.getElementById("formAgt").onsubmit = (ev) => {
+      ev.preventDefault(); const c = AY.getConfig();
+      c.agt = { ativo: document.getElementById("aAtivo").checked, ambiente: document.getElementById("aAmbiente").value, endpoint: document.getElementById("aEndpoint").value.trim(),
+        proxy: document.getElementById("aProxy").value.trim(), username: document.getElementById("aUser").value.trim(), password: document.getElementById("aPass").value };
+      AY.saveConfig(c); AY.toast("Integração AGT guardada.", "success");
+    };
+    document.getElementById("aTestar").onclick = async () => {
+      const nif = prompt("NIF a consultar na AGT:", AY.getEmpresa().nif || ""); if (!nif) return;
+      const c = AY.getConfig(); c.agt = { ativo: true, ambiente: document.getElementById("aAmbiente").value, endpoint: document.getElementById("aEndpoint").value.trim(), proxy: document.getElementById("aProxy").value.trim(), username: document.getElementById("aUser").value.trim(), password: document.getElementById("aPass").value };
+      AY.saveConfig(c);
+      const b = document.getElementById("aTestar"), t0 = b.textContent; b.textContent = "A consultar…"; b.disabled = true;
+      try {
+        const r = await AY.nif.consultarAGT(nif);
+        AY.toast("AGT: " + (r.nome || "—") + " · " + r.estadoLabel + (r.regimeLabel ? " · " + r.regimeLabel : "") + (r.restrito ? " ⚠ com restrições" : ""), "success");
+      } catch (e) { AY.toast("Falha na consulta AGT: " + e.message + " (verifica proxy/credenciais/CORS)", "info"); }
+      finally { b.textContent = t0; b.disabled = false; }
+    };
+  }
+
+  // ---------- Tesouraria (bancos e caixa) ----------
+  let tesEdit = null;
+  function tesouraria() { return AY.getConfig().tesouraria || []; }
+  function saveTesouraria(l) { const c = AY.getConfig(); c.tesouraria = l; AY.saveConfig(c); }
+  function panelTesouraria() {
+    return `<div class="card">
+      <div class="card-title">Tesouraria — Bancos e Caixa</div>
+      <p class="sub" style="margin-bottom:10px">Contas de banco e caixa da empresa. Cada uma tem a sua conta na contabilidade (indica uma existente 43/45 ou cria automaticamente). Os bancos aparecem nas faturas.</p>
+      <div class="table-wrap" id="tesTabela"></div>
+      <form id="formTes" class="grid-4" style="margin-top:10px;align-items:end">
+        <label>Tipo<select id="tTipo"><option value="banco">Banco</option><option value="caixa">Caixa</option></select></label>
+        <label>Nome<input id="tNome" placeholder="Ex.: BAI / Caixa Central"></label>
+        <label>IBAN / Nº conta<input id="tIban" placeholder="AO06 …"></label>
+        <label>Conta contabilística<input id="tConta" list="contasTesList" placeholder="43101 / 4511 (ou nova)" title="F4 ou duplo clique: procurar no plano de contas"></label>
+        <div class="modal-actions" style="grid-column:1/-1;margin-top:0"><button class="btn btn-primary btn-sm" type="submit">+ Adicionar / Guardar</button></div>
+      </form>
+    </div>`;
+  }
+  function renderTes() {
+    const l = tesouraria();
+    document.getElementById("tesTabela").innerHTML = l.length ? `<table>
+      <thead><tr><th>Tipo</th><th>Nome</th><th>IBAN / Nº</th><th>Conta</th><th></th></tr></thead>
+      <tbody>${l.map(t => `<tr>
+        <td>${t.tipo === "caixa" ? AY.badge("Caixa", "#8e44ad") : AY.badge("Banco", "#1e5fcc")}</td>
+        <td><b>${E(t.nome)}</b></td><td><small>${E(t.iban || "—")}</small></td>
+        <td>${t.conta ? `<a href="extrato.html?conta=${E(t.conta)}" class="brand-text">${E(t.conta)}</a>` : "—"}</td>
+        <td class="num"><button class="btn btn-sm btn-outline" data-tedit="${t.id}">Editar</button> <button class="btn btn-sm btn-outline" data-tdel="${t.id}">✕</button></td>
+      </tr>`).join("")}</tbody></table>` : `<div class="empty">Sem contas de tesouraria.</div>`;
+    document.querySelectorAll("[data-tedit]").forEach(b => b.onclick = () => { const t = tesouraria().find(x => x.id === b.dataset.tedit); tesEdit = t.id; document.getElementById("tTipo").value = t.tipo; document.getElementById("tNome").value = t.nome; document.getElementById("tIban").value = t.iban || ""; document.getElementById("tConta").value = t.conta || ""; });
+    document.querySelectorAll("[data-tdel]").forEach(b => b.onclick = () => { saveTesouraria(tesouraria().filter(x => x.id !== b.dataset.tdel)); renderTes(); });
+  }
+  function wireTesouraria() {
+    document.getElementById("contasTesList").innerHTML = AY.contab.contasMovimento().filter(c => /^4[35]/.test(c.codigo)).map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join("");
+    AY.contaPicker.attach(document.getElementById("tConta"), { soMovimento: true, titulo: "Plano de Contas — escolher conta de tesouraria" });
+    document.getElementById("formTes").onsubmit = (ev) => {
+      ev.preventDefault();
+      const nome = document.getElementById("tNome").value.trim(); if (!nome) { AY.toast("Indica o nome.", "info"); return; }
+      let conta = document.getElementById("tConta").value.trim();
+      if (conta && !AY.contab.contaPorCodigo(conta)) { try { AY.contab.criarConta(conta, nome, "D"); AY.toast("Conta " + conta + " criada no plano.", "success"); } catch (e) { AY.toast("Conta: " + e.message, "info"); } }
+      const l = tesouraria(); const reg = { id: tesEdit || AY.uid("tes"), tipo: document.getElementById("tTipo").value, nome, iban: document.getElementById("tIban").value.trim(), conta };
+      const i = l.findIndex(x => x.id === reg.id); if (i >= 0) l[i] = reg; else l.push(reg);
+      saveTesouraria(l); tesEdit = null; document.getElementById("formTes").reset();
+      renderTes(); AY.toast("Tesouraria guardada.", "success");
+    };
+    renderTes();
+  }
+
+  // ---------- Parametrizações — Logística e Vendas (CMVMC) ----------
+  function panelParametrizacoes() {
+    return `<div class="card">
+      <div class="card-title">Parametrizações — Logística e Vendas (CMVMC)</div>
+      <p class="sub" style="margin-bottom:10px">Contas e documentos usados na <b>baixa automática de stock</b> ao emitir vendas de mercadorias. O custo sai a <b>custo médio</b>: débito <b>Custo das Mercadorias Vendidas (CMVMC)</b> / crédito <b>Existências</b> (mercadoria).</p>
+      <form id="formParam">
+        <div class="grid-2">
+          <label class="chk" style="grid-column:1/-1"><input type="checkbox" id="pAuto"> Gerar automaticamente a saída de stock e o lançamento do CMVMC ao emitir vendas de mercadorias</label>
+          <label>Conta de mercadoria / existências (crédito)<input id="pExist" list="contasParamList" placeholder="2611" title="F4 ou duplo clique: procurar no plano de contas"></label>
+          <label>Conta de custo — CMVMC (débito)<input id="pCusto" list="contasParamList" placeholder="7111" title="F4 ou duplo clique: procurar no plano de contas"></label>
+          <label>Armazém de saída<select id="pArmazem"></select></label>
+          <label>Conta de regularização (ajustes — omissão)<input id="pRegular" list="contasParamList" placeholder="7111" title="F4 ou duplo clique: procurar no plano de contas"></label>
+          <label>Diário da saída de stock<input id="pDiario" list="diariosParamList" placeholder="90"></label>
+          <label>Documento da saída de stock<input id="pDoc" placeholder="901"></label>
+          <div class="sec-label" style="grid-column:1/-1">Acertos de Stock — documentos 903 (positivo) / 904 (negativo)</div>
+          <label>Conta de ganho em existências (acerto positivo)<input id="pGanho" list="contasParamList" placeholder="6804" title="F4 ou duplo clique: procurar no plano de contas"></label>
+          <label>Conta de quebras/perdas (acerto negativo)<input id="pQuebra" list="contasParamList" placeholder="78041" title="F4 ou duplo clique: procurar no plano de contas"></label>
+        </div>
+        <div class="modal-actions"><button class="btn btn-primary" type="submit">Guardar parametrizações</button></div>
+      </form>
+    </div>`;
+  }
+  function wireParametrizacoes() {
+    if (!AY.log) { document.getElementById("formParam").style.display = "none"; return; }
+    const c = AY.log.cfg();
+    document.getElementById("contasParamList").innerHTML = AY.contab.contasMovimento().filter(x => /^[267]/.test(x.codigo)).map(x => `<option value="${E(x.codigo)}">${E(x.codigo)} · ${E(x.nome)}</option>`).join("");
+    document.getElementById("diariosParamList").innerHTML = AY.contab.diarios().map(d => `<option value="${E(d.codigo)}">${E(d.codigo)} · ${E(d.nome)}</option>`).join("");
+    ["pExist", "pCusto", "pRegular", "pGanho", "pQuebra"].forEach(id => AY.contaPicker.attach(document.getElementById(id), { soMovimento: true }));
+    document.getElementById("pArmazem").innerHTML = AY.log.armazens().map(w => `<option value="${w.id}">${E(w.codigo)} · ${E(w.nome)}</option>`).join("") || `<option value="">(sem armazéns)</option>`;
+    document.getElementById("pAuto").checked = c.autoBaixaVenda !== false;
+    document.getElementById("pExist").value = c.contaExistencia || "";
+    document.getElementById("pCusto").value = c.contaCusto || "";
+    document.getElementById("pRegular").value = c.contaRegulariza || "";
+    document.getElementById("pDiario").value = c.diarioSaida || "";
+    document.getElementById("pDoc").value = c.docSaida || "";
+    document.getElementById("pArmazem").value = AY.log.armazemVenda() || "";
+    document.getElementById("pGanho").value = c.contaGanhoExistencias || "";
+    document.getElementById("pQuebra").value = c.contaQuebraExistencias || "";
+    document.getElementById("formParam").onsubmit = (ev) => {
+      ev.preventDefault(); const c = AY.log.cfg();
+      c.autoBaixaVenda = document.getElementById("pAuto").checked;
+      c.contaExistencia = document.getElementById("pExist").value.trim() || c.contaExistencia;
+      c.contaCusto = document.getElementById("pCusto").value.trim() || c.contaCusto;
+      c.contaRegulariza = document.getElementById("pRegular").value.trim() || c.contaRegulariza;
+      c.diarioSaida = document.getElementById("pDiario").value.trim() || c.diarioSaida;
+      c.docSaida = document.getElementById("pDoc").value.trim() || c.docSaida;
+      c.armazemVendaId = document.getElementById("pArmazem").value || "";
+      c.contaGanhoExistencias = document.getElementById("pGanho").value.trim() || c.contaGanhoExistencias;
+      c.contaQuebraExistencias = document.getElementById("pQuebra").value.trim() || c.contaQuebraExistencias;
+      AY.log.saveCfg(c); AY.toast("Parametrizações guardadas.", "success");
+    };
+  }
+
+  // ---------- Gestão de Séries de Documentos ----------
+  let serieEdit = null;
+  function series() { return AY.getConfig().series || []; }
+  function saveSeries(l) { const c = AY.getConfig(); c.series = l; AY.saveConfig(c); }
+  function panelSeries() {
+    return `<div class="card">
+      <div class="card-title">Gestão de Séries de Documentos</div>
+      <p class="sub" style="margin-bottom:10px">Séries de numeração dos documentos comunicados à AGT. Cada série tem um código, aplica-se a um tipo de documento e mantém a sua própria sequência (nº atual).</p>
+      <div class="table-wrap" id="serieTabela"></div>
+      <form id="formSerie" class="grid-4" style="margin-top:10px;align-items:end">
+        <label>Código<input id="sCodigo" placeholder="Ex.: 2026 / A"></label>
+        <label>Nome / Descrição<input id="sNome" placeholder="Ex.: Série principal"></label>
+        <label>Tipo de documento<select id="sTipo"></select></label>
+        <label>Ambiente<select id="sAmbiente"><option value="producao">Produção</option><option value="testes">Testes</option></select></label>
+        <label>Nº atual<input type="number" id="sAtual" min="0" value="0"></label>
+        <label class="chk"><input type="checkbox" id="sAtiva" checked> Ativa</label>
+        <div class="modal-actions" style="grid-column:1/-1;margin-top:0"><button class="btn btn-primary btn-sm" type="submit">+ Adicionar / Guardar</button></div>
+      </form>
+    </div>`;
+  }
+  function renderSeries() {
+    const l = series();
+    document.getElementById("serieTabela").innerHTML = l.length ? `<table>
+      <thead><tr><th>Código</th><th>Nome</th><th>Tipo doc.</th><th>Ambiente</th><th class="num">Nº atual</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${l.map(s => `<tr>
+        <td><b>${E(s.codigo)}</b></td><td>${E(s.nome || "—")}</td><td>${E(s.tipoDoc || "Todos")}</td>
+        <td>${s.ambiente === "testes" ? AY.badge("Testes", "#d68910") : AY.badge("Produção", "#16a085")}</td>
+        <td class="num">${Number(s.atual) || 0}</td>
+        <td>${s.ativa === false ? AY.badge("Inativa", "#8a8a8a") : AY.badge("Ativa", "#2980b9")}</td>
+        <td class="num"><button class="btn btn-sm btn-outline" data-sedit="${s.id}">Editar</button> <button class="btn btn-sm btn-outline" data-sdel="${s.id}">✕</button></td>
+      </tr>`).join("")}</tbody></table>` : `<div class="empty">Sem séries definidas.</div>`;
+    document.querySelectorAll("[data-sedit]").forEach(b => b.onclick = () => { const s = series().find(x => x.id === b.dataset.sedit); serieEdit = s.id;
+      document.getElementById("sCodigo").value = s.codigo || ""; document.getElementById("sNome").value = s.nome || ""; document.getElementById("sTipo").value = s.tipoDoc || "";
+      document.getElementById("sAmbiente").value = s.ambiente || "producao"; document.getElementById("sAtual").value = Number(s.atual) || 0; document.getElementById("sAtiva").checked = s.ativa !== false; });
+    document.querySelectorAll("[data-sdel]").forEach(b => b.onclick = () => { saveSeries(series().filter(x => x.id !== b.dataset.sdel)); renderSeries(); });
+  }
+  function wireSeries() {
+    document.getElementById("sTipo").innerHTML = `<option value="">Todos</option>` + (AY.com ? AY.com.TIPOS_DOC.map(t => `<option value="${t.cod}">${t.cod} · ${E(t.nome)}</option>`).join("") : "");
+    document.getElementById("formSerie").onsubmit = (ev) => {
+      ev.preventDefault();
+      const codigo = document.getElementById("sCodigo").value.trim(); if (!codigo) { AY.toast("Indica o código da série.", "info"); return; }
+      const l = series(); const reg = { id: serieEdit || AY.uid("ser"), codigo, nome: document.getElementById("sNome").value.trim(),
+        tipoDoc: document.getElementById("sTipo").value, ambiente: document.getElementById("sAmbiente").value, atual: Number(document.getElementById("sAtual").value) || 0, ativa: document.getElementById("sAtiva").checked };
+      const i = l.findIndex(x => x.id === reg.id); if (i >= 0) l[i] = reg; else l.push(reg);
+      saveSeries(l); serieEdit = null; document.getElementById("formSerie").reset(); document.getElementById("sAtiva").checked = true;
+      renderSeries(); AY.toast("Série guardada.", "success");
+    };
+    renderSeries();
+  }
+
+  // ---------- Exercícios Económicos ----------
+  function panelExercicios() {
+    return `<div class="card">
+      <div class="card-title">Exercícios Económicos <button class="btn btn-amber btn-sm" id="novoEx" style="margin-left:auto">+ Novo exercício</button></div>
+      <p class="sub" style="margin-bottom:10px">Vários exercícios podem estar <b>ativos em simultâneo</b> (ex.: na transição de ano) — "Ativo" é um interruptor por exercício, não uma escolha única. Um exercício <b>fechado</b> deixa de aceitar novos lançamentos até seres reaberto — podes fechar/reabrir qualquer um a qualquer momento.</p>
+      <div class="table-wrap" id="tabelaEx"></div>
+    </div>`;
+  }
+  function renderEx() {
+    const lista = AY.exercicios();
+    document.getElementById("tabelaEx").innerHTML = lista.length ? `<table>
+      <thead><tr><th>Nome</th><th>Início</th><th>Fim</th><th>Ativo</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${lista.map(x => `<tr>
+        <td><b>${E(x.nome)}</b></td><td>${AY.formatDate(x.inicio)}</td><td>${AY.formatDate(x.fim)}</td>
+        <td><label class="chk" style="margin:0"><input type="checkbox" data-ativo="${x.id}" ${x.ativo ? "checked" : ""}> Ativo</label></td>
+        <td>${AY.badge(x.estado === "fechado" ? "Fechado" : "Aberto", x.estado === "fechado" ? "#8a8a8a" : "#16a085")}</td>
+        <td class="num"><button class="btn btn-sm btn-outline" data-estado="${x.id}">${x.estado === "fechado" ? "Reabrir" : "Fechar"}</button> <button class="btn btn-sm btn-outline" data-del="${x.id}">✕</button></td>
+      </tr>`).join("")}</tbody></table>` : `<div class="empty">Sem exercícios.</div>`;
+    document.querySelectorAll("[data-ativo]").forEach(c => c.onchange = () => { const x = AY.exercicios().find(e => e.id === c.dataset.ativo); x.ativo = c.checked; AY.saveExercicio(x); renderEx(); AY.renderHeader("empresa.html"); AY.toast(x.ativo ? "Exercício ativado." : "Exercício desativado.", "info"); });
+    document.querySelectorAll("[data-estado]").forEach(b => b.onclick = () => {
+      const x = AY.exercicios().find(e => e.id === b.dataset.estado);
+      const fechar = x.estado !== "fechado";
+      if (fechar && !confirm("Fechar o exercício " + x.nome + "? Deixa de aceitar novos lançamentos até seres reaberto.")) return;
+      x.estado = fechar ? "fechado" : "aberto"; AY.saveExercicio(x); renderEx();
+      AY.toast("Exercício " + (fechar ? "fechado" : "reaberto") + ".", fechar ? "info" : "success");
+    });
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (confirm("Eliminar exercício?")) { AY.removeExercicio(b.dataset.del); renderEx(); } });
+  }
+  function wireExercicios() {
+    document.getElementById("novoEx").onclick = () => {
+      const ano = prompt("Ano do exercício:", new Date().getFullYear());
+      if (!ano) return;
+      AY.saveExercicio({ id: AY.uid("ex"), nome: "Exercício " + ano, inicio: ano + "-01-01", fim: ano + "-12-31", estado: "aberto", ativo: AY.exercicios().length === 0, criadoEm: AY.hoje() });
+      renderEx();
+    };
+    renderEx();
+  }
+
+  // ---------- Módulos (lista canónica partilhada com Utilizadores — AY.MODULOS) ----------
+  function panelModulos() {
+    return `<div class="card">
+      <div class="card-title">Módulos</div>
+      <p class="sub" style="margin-bottom:10px">Ativa ou desativa módulos — os desativados desaparecem do menu.</p>
+      <div class="modules-grid" id="modulos"></div>
+    </div>`;
+  }
+  function renderMods() {
+    const MODS = AY.MODULOS;
+    const m = cfg().modulos || {};
+    document.getElementById("modulos").innerHTML = MODS.map(([k, lbl]) => `<label class="module-card" style="cursor:pointer">
+      <span class="mc-body"><b>${E(lbl)}</b><small>${m[k] !== false ? "ativo" : "desativado"}</small></span>
+      <input type="checkbox" data-mod="${k}" ${m[k] !== false ? "checked" : ""} style="width:auto;margin:0">
+    </label>`).join("");
+    document.querySelectorAll("[data-mod]").forEach(c => c.onchange = () => {
+      const conf = cfg(); conf.modulos = conf.modulos || {}; conf.modulos[c.dataset.mod] = c.checked; AY.saveConfig(conf);
+      renderMods(); AY.renderHeader("empresa.html"); AY.toast("Módulos atualizados.", "info");
+    });
+  }
+  function wireModulos() { renderMods(); }
+
+  // ---------- Permissões e Políticas ----------
+  function panelPermissoes() {
+    return `<div class="card">
+      <div class="card-title">Permissões e Políticas</div>
+      <form id="formPerm"><label class="chk"><input type="checkbox" id="pComissao"> Restringir a alteração das <b>condições de comissão</b> dos vendedores a perfis autorizados (comercial.gerir / administrador)</label>
+      <div class="modal-actions"><button class="btn btn-primary btn-sm" type="submit">Guardar políticas</button></div></form>
+    </div>`;
+  }
+  function wirePermissoes() {
+    document.getElementById("pComissao").checked = !!((AY.getConfig().comissoes || {}).restrita);
+    document.getElementById("formPerm").onsubmit = (ev) => { ev.preventDefault(); const c = AY.getConfig(); c.comissoes = { restrita: document.getElementById("pComissao").checked }; AY.saveConfig(c); AY.toast("Políticas guardadas.", "success"); };
+  }
+
+  const PANELS = { empresa: panelEmpresa, faturacao: panelFaturacao, agt: panelAgt, tesouraria: panelTesouraria, parametrizacoes: panelParametrizacoes, series: panelSeries, exercicios: panelExercicios, modulos: panelModulos, permissoes: panelPermissoes };
+  const WIRES = { empresa: wireEmpresa, faturacao: wireFaturacao, agt: wireAgt, tesouraria: wireTesouraria, parametrizacoes: wireParametrizacoes, series: wireSeries, exercicios: wireExercicios, modulos: wireModulos, permissoes: wirePermissoes };
+
+  render();
+}
+</script>
+</body>
+</html>

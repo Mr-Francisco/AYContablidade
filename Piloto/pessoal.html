@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH — Gestão de Pessoal — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Gestão de Pessoal</h1><p class="sub">Ficha do funcionário — identificação, dados fiscais, contrato, processamento e pagamento.</p></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card">
+      <div class="toolbar"><input type="search" id="busca" placeholder="Pesquisar colaborador…" class="grow"><button class="btn btn-amber" id="novo">+ Novo colaborador</button></div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:780px">
+  <div class="modal-head"><b id="mTitulo">Ficha do Funcionário</b><button class="icon-btn" id="fechar">✕</button></div>
+  <div class="ficha-tabs" id="fichaTabs">
+    <button type="button" class="ficha-tab active" data-tab="ident">Identificação</button>
+    <button type="button" class="ficha-tab" data-tab="doc">Documentos</button>
+    <button type="button" class="ficha-tab" data-tab="fiscais">Dados Fiscais</button>
+    <button type="button" class="ficha-tab" data-tab="contrato">Contrato</button>
+    <button type="button" class="ficha-tab" data-tab="proc">Processamento</button>
+    <button type="button" class="ficha-tab" data-tab="pag">Pagamento</button>
+    <button type="button" class="ficha-tab" data-tab="ferias">Subsídios e Férias</button>
+    <button type="button" class="ficha-tab" data-tab="habil">Habilitações</button>
+  </div>
+  <form id="form">
+    <div class="ficha-pane grid-2" data-pane="ident">
+      <label>Nome<input id="fNome" required></label>
+      <label>Nome abreviado<input id="fNomeAbrev"></label>
+      <label>Género<select id="fGenero"><option>Masculino</option><option>Feminino</option></select></label>
+      <label>Data de nascimento<input type="date" id="fNasc"></label>
+      <label>Nacionalidade<input id="fNacion"></label>
+      <label>Naturalidade<input id="fNatural"></label>
+      <label style="grid-column:1/-1">Morada<input id="fMorada"></label>
+      <label>Localidade<input id="fLocalidade"></label>
+      <label>Código postal<input id="fCP"></label>
+      <label>País<input id="fPais"></label>
+      <label>Província<select id="fProvincia"></select></label>
+      <label>Município<input id="fMunicipio"></label>
+      <label>Comuna<input id="fComuna"></label>
+      <label>Email<input type="email" id="fEmail"></label>
+      <label>Telefone<input id="fTel"></label>
+      <label>Telemóvel<input id="fTelemovel"></label>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="doc">
+      <label>Tipo de documento<select id="fTipoDoc"><option>Bilhete de Identidade</option><option>Passaporte</option><option>Cartão de Residente</option></select></label>
+      <label>Nº do documento<input id="fNumDoc"></label>
+      <label>Validade<input type="date" id="fValDoc"></label>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="fiscais">
+      <label>NIF<div class="f4-group"><input id="fNif"><button type="button" class="f4-btn" id="btnNifFunc" title="Consultar NIF">🔍</button></div></label>
+      <label>Nº Segurança Social<input id="fNumSS"></label>
+      <label>Estado civil<select id="fEstCivil"><option>Solteiro(a)</option><option>Casado(a)</option><option>Divorciado(a)</option><option>Viúvo(a)</option><option>União de facto</option></select></label>
+      <label>Nº de dependentes<input type="number" id="fDepend" min="0" step="1" value="0"></label>
+      <label>Regime de IRT<select id="fRegimeIRT"><option>Grupo A — Trabalho por conta de outrem</option><option>Grupo B — Trabalho independente</option><option>Grupo C — Atividade industrial/comercial</option></select></label>
+      <div class="sec-label">Estes campos alimentam o Mapa de Remunerações (Modelo IRT A2.1).</div>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="contrato">
+      <label>Nº de funcionário<input id="fNum" placeholder="(automático)"></label>
+      <label>Categoria / Carreira<input id="fCat" placeholder="Ex.: Técnico"></label>
+      <label>Tipo de contrato<select id="fTipoContr"><option>Sem termo</option><option>A termo certo</option><option>A termo incerto</option><option>Estágio</option><option>Prestação de serviços</option></select></label>
+      <label>Data de admissão<input type="date" id="fData"></label>
+      <label>Data de fim (se aplicável)<input type="date" id="fDataFim"></label>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="proc">
+      <label>Salário base<input type="number" id="fBase" step="0.01" min="0" required></label>
+      <label>Subsídios sujeitos a IRT<input type="number" id="fSubs" step="0.01" min="0" value="0"></label>
+      <label>Subsídios não sujeitos a IRT<input type="number" id="fSubsNaoSuj" step="0.01" min="0" value="0"></label>
+      <label>Estado<select id="fEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></label>
+      <div class="sec-label">Subsídios sujeitos entram na base tributável do IRT; os não sujeitos (alimentação, transporte…) são isentos.</div>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="pag">
+      <label>Forma de pagamento<select id="fFormaPag"><option>Transferência bancária</option><option>Cheque</option><option>Numerário</option></select></label>
+      <label>Banco<input id="fBanco"></label>
+      <label style="grid-column:1/-1">IBAN<input id="fIban" placeholder="AO06 ..."></label>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="ferias">
+      <label>Dias de férias / ano<input type="number" id="fDiasFerias" min="0" step="1" value="22"></label>
+      <label>Subsídio de férias<input type="number" id="fSubFerias" step="0.01" min="0" value="0"></label>
+      <label>Subsídio de Natal<input type="number" id="fSubNatal" step="0.01" min="0" value="0"></label>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="habil">
+      <label style="grid-column:1/-1">Habilitações literárias<input id="fHabil" placeholder="Ex.: Licenciatura em Gestão"></label>
+      <label style="grid-column:1/-1">Notas<input id="fNotas"></label>
+    </div>
+    <div id="erro" class="alert alert-error hidden"></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div>
+  </form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/rh.js"></script>
+<script src="assets/js/comercial.js"></script>
+<script src="assets/js/compras.js"></script>
+<script src="assets/js/nif.js"></script>
+<script>
+const u = AY.initPage("pessoal.html", null);
+if (u) {
+  const E = AY.escapeHtml, R = AY.rh, m2 = AY.formatMoeda2; let editId = null;
+  const podeGerir = AY.can("rh.gerir");
+  const PROVINCIAS = ["", "Bengo", "Benguela", "Bié", "Cabinda", "Cuando Cubango", "Cuanza Norte", "Cuanza Sul", "Cunene", "Huambo", "Huíla", "Luanda", "Lunda Norte", "Lunda Sul", "Malanje", "Moxico", "Namibe", "Uíge", "Zaire"];
+  document.getElementById("fProvincia").innerHTML = PROVINCIAS.map(p => `<option value="${E(p)}">${E(p || "—")}</option>`).join("");
+
+  // [id do campo, chave no colaborador, tipo] — 'num' converte para número
+  const FIELDS = [
+    ["fNome", "nome", "t"], ["fNomeAbrev", "nomeAbreviado", "t"], ["fGenero", "genero", "t"], ["fNasc", "dataNascimento", "d"],
+    ["fNacion", "nacionalidade", "t"], ["fNatural", "naturalidade", "t"], ["fMorada", "morada", "t"], ["fLocalidade", "localidade", "t"],
+    ["fCP", "codigoPostal", "t"], ["fPais", "pais", "t"], ["fProvincia", "provincia", "t"], ["fMunicipio", "municipio", "t"], ["fComuna", "comuna", "t"],
+    ["fEmail", "email", "t"], ["fTel", "telefone", "t"], ["fTelemovel", "telemovel", "t"],
+    ["fTipoDoc", "tipoDocumento", "t"], ["fNumDoc", "numeroDocumento", "t"], ["fValDoc", "validadeDocumento", "d"],
+    ["fNif", "nif", "t"], ["fNumSS", "numSS", "t"], ["fEstCivil", "estadoCivil", "t"], ["fDepend", "dependentes", "num"], ["fRegimeIRT", "regimeIRT", "t"],
+    ["fNum", "numero", "t"], ["fCat", "categoria", "t"], ["fTipoContr", "tipoContrato", "t"], ["fData", "dataAdmissao", "d"], ["fDataFim", "dataFim", "d"],
+    ["fBase", "salarioBase", "num"], ["fSubs", "subsidios", "num"], ["fSubsNaoSuj", "subsNaoSujeitos", "num"], ["fEstado", "estado", "t"],
+    ["fFormaPag", "formaPagamento", "t"], ["fBanco", "banco", "t"], ["fIban", "iban", "t"],
+    ["fDiasFerias", "diasFerias", "num"], ["fSubFerias", "subsidioFerias", "num"], ["fSubNatal", "subsidioNatal", "num"],
+    ["fHabil", "habilitacoes", "t"], ["fNotas", "notas", "t"],
+  ];
+  const DEFAULTS = { genero: "Masculino", nacionalidade: "Angolana", pais: "Angola", provincia: "Luanda", tipoDocumento: "Bilhete de Identidade",
+    estadoCivil: "Solteiro(a)", regimeIRT: "Grupo A — Trabalho por conta de outrem", tipoContrato: "Sem termo", formaPagamento: "Transferência bancária",
+    dataAdmissao: AY.hojeData(), estado: "activo", diasFerias: 22, subsidios: 0, subsNaoSujeitos: 0, subsidioFerias: 0, subsidioNatal: 0, dependentes: 0 };
+
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim();
+    let rows = R.colaboradores();
+    if (q) rows = rows.filter(c => (c.nome || "").toLowerCase().includes(q) || (c.numero || "").includes(q) || (c.categoria || "").toLowerCase().includes(q) || (c.nif || "").includes(q));
+    const f = R.folha({ soAtivos: true });
+    document.getElementById("kpis").innerHTML = [
+      AY.kpi("Colaboradores", R.colaboradores().length, R.colaboradores().filter(c => c.estado === "activo").length + " activos", "var(--chart-blue)"),
+      AY.kpi("Massa salarial (bruto)", AY.formatKz(f.totais.bruto), "mensal", "#8e44ad"),
+      AY.kpi("Líquido a pagar", AY.formatKz(f.totais.liquido), "mensal", "#16a085"),
+      AY.kpi("Encargos (IRT+INSS)", AY.formatKz(AY.round2(f.totais.irt + f.totais.inss + f.totais.inssEmpresa)), "", "var(--chart-amber)"),
+    ].join("");
+    document.getElementById("tabela").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Nº</th><th>Nome</th><th>Categoria</th><th>NIF</th><th class="num">Salário Base</th><th class="num">Subsídios</th><th>Estado</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${rows.map(c => `<tr>
+        <td><b>${E(c.numero)}</b></td><td>${E(c.nome)}</td><td>${E(c.categoria || "—")}</td><td>${E(c.nif || "—")}</td>
+        <td class="num">${m2(c.salarioBase)}</td><td class="num">${m2(AY.round2((c.subsidios || 0) + (c.subsNaoSujeitos || 0)))}</td>
+        <td>${c.estado === "inactivo" ? AY.badge("Inactivo", "#8a8a8a") : AY.badge("Activo", "#16a085")}</td>
+        ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${c.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${c.id}">✕</button></td>` : ""}
+      </tr>`).join("")}</tbody></table>` : `<div class="empty">Sem colaboradores.</div>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const c = R.colaborador(b.dataset.del); if (confirm("Eliminar " + c.nome + "?")) { R.removeColaborador(b.dataset.del); render(); } });
+  }
+
+  const modal = document.getElementById("modal");
+  function activarTab(tab) {
+    document.querySelectorAll(".ficha-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    document.querySelectorAll(".ficha-pane").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== tab));
+  }
+  document.querySelectorAll(".ficha-tab").forEach(b => b.onclick = () => activarTab(b.dataset.tab));
+  document.getElementById("btnNifFunc").onclick = async () => {
+    if (!AY.nif) return; const b = document.getElementById("btnNifFunc"), t0 = b.textContent; b.textContent = "…"; b.disabled = true;
+    try {
+      const r = await AY.nif.consultar(g("fNif").value);
+      if (!r.valido) { AY.toast(r.msg, "info"); return; }
+      if (r.encontrado) {
+        if (!g("fNome").value && r.nome) g("fNome").value = r.nome;
+        if (r.morada) g("fMorada").value = r.morada;
+        if (r.localidade) g("fLocalidade").value = r.localidade;
+        if (r.provincia) g("fProvincia").value = r.provincia;
+        AY.toast((r.fonte === "AGT" ? "AGT · " : "") + (r.restrito ? r.msg : "NIF encontrado — " + r.nome), r.restrito ? "info" : "success");
+      } else AY.toast(r.msg + (r.avisoAGT ? " · " + r.avisoAGT : ""), "info");
+    } catch (e) { AY.toast("Erro na consulta: " + e.message, "info"); }
+    finally { b.textContent = t0; b.disabled = false; }
+  };
+
+  function abrir(id) {
+    editId = id || null; const c = id ? R.colaborador(id) : null;
+    document.getElementById("mTitulo").textContent = c ? "Ficha — " + c.nome : "Novo colaborador";
+    FIELDS.forEach(([fid, key]) => {
+      const el = document.getElementById(fid); if (!el) return;
+      let v = c ? c[key] : undefined;
+      if (v == null || v === "") v = c ? (v || "") : (DEFAULTS[key] != null ? DEFAULTS[key] : "");
+      el.value = v;
+    });
+    document.getElementById("erro").classList.add("hidden"); activarTab("ident"); modal.classList.remove("hidden");
+  }
+  document.getElementById("novo").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("cancelar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("novo").style.display = podeGerir ? "" : "none";
+  document.getElementById("busca").oninput = render;
+  document.getElementById("form").onsubmit = e => {
+    e.preventDefault(); const err = document.getElementById("erro");
+    const obj = { id: editId };
+    FIELDS.forEach(([fid, key, t]) => { const el = document.getElementById(fid); if (!el) return; obj[key] = t === "num" ? (Number(el.value) || 0) : (typeof el.value === "string" ? el.value.trim() : el.value); });
+    if (!obj.nome) { err.textContent = "Indica o nome."; err.classList.remove("hidden"); activarTab("ident"); return; }
+    if (!(obj.salarioBase > 0)) { err.textContent = "Indica o salário base (separador Processamento)."; err.classList.remove("hidden"); activarTab("proc"); return; }
+    R.saveColaborador(obj);
+    modal.classList.add("hidden"); render(); AY.toast("Colaborador guardado.", "success");
+  };
+  render();
+}
+</script>
+</body>
+</html>

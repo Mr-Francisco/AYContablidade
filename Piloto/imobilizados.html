@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imobilizados — Ficha de Ativos — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Ficha de Ativos</h1><p class="sub">Registo de imobilizado — valor bruto, amortizações acumuladas e valor líquido.</p></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="busca" placeholder="Pesquisar ativo…" class="grow">
+        <button class="btn btn-amber" id="novo">+ Novo ativo</button>
+      </div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:640px">
+  <div class="modal-head"><b id="mTitulo">Novo ativo</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form">
+    <div class="grid-2">
+      <label>Designação<input id="fDesig" required placeholder="Ex.: Viatura ligeira"></label>
+      <label>Fornecedor<input id="fForn" placeholder="(opcional)"></label>
+      <label>Conta de imobilizado<input id="fConta" list="contasList" placeholder="Ex.: 1141"></label>
+      <label>Data de aquisição<input type="date" id="fData"></label>
+      <label>Valor de aquisição<input type="number" id="fValor" step="0.01" min="0" required></label>
+      <label>Taxa de amortização (%)<input type="number" id="fTaxa" step="0.01" min="0" max="100" required></label>
+      <label>Método de amortização<select id="fMetodo"></select></label>
+      <label>Conta custo amortização<input id="fCusto" list="contasList" placeholder="Ex.: 73"></label>
+      <label>Conta amort. acumulada<input id="fAcum" list="contasList" placeholder="Ex.: 181"></label>
+      <label>Amort. acumulada inicial<input type="number" id="fAcumVal" step="0.01" min="0" value="0"></label>
+      <label>Estado<select id="fEstado"><option value="activo">Activo</option><option value="abatido">Abatido</option></select></label>
+    </div>
+    <div id="erro" class="alert alert-error hidden"></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div>
+  </form>
+</div></div>
+<datalist id="contasList"></datalist>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/imobilizados.js"></script>
+<script>
+const u = AY.initPage("imobilizados.html", null);
+if (u) {
+  const E = AY.escapeHtml, I = AY.imob, m2 = AY.formatMoeda2; let editId = null;
+  const podeGerir = AY.can("imob.gerir") || AY.can("contab.lancar");
+  document.getElementById("contasList").innerHTML = AY.contab.contasMovimento().map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join("");
+  document.getElementById("fMetodo").innerHTML = I.METODOS.map(([cod, nome]) => `<option value="${cod}">${E(nome)}</option>`).join("");
+  const METODO_LABEL = {}; I.METODOS.forEach(([cod, nome]) => METODO_LABEL[cod] = nome);
+
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim();
+    let rows = I.ativos();
+    if (q) rows = rows.filter(a => (a.codigo || "").toLowerCase().includes(q) || (a.designacao || "").toLowerCase().includes(q));
+    const map = I.mapa();
+    document.getElementById("kpis").innerHTML = [
+      AY.kpi("Valor bruto", AY.formatKz(map.totais.valorBruto), I.ativos().length + " ativos", "var(--chart-blue)"),
+      AY.kpi("Amort. acumulada", AY.formatKz(map.totais.amortAcumuladaAnt), "", "var(--chart-amber)"),
+      AY.kpi("Valor líquido", AY.formatKz(AY.round2(map.totais.valorBruto - map.totais.amortAcumuladaAnt)), "", "#16a085"),
+      AY.kpi("Amort. do exercício", AY.formatKz(map.totais.amortExercicio), "a processar", "#8e44ad"),
+    ].join("");
+    document.getElementById("tabela").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Código</th><th>Designação</th><th>Conta</th><th>Método</th><th class="num">Valor Bruto</th><th class="num">Taxa</th><th class="num">Amort. Acum.</th><th class="num">Valor Líquido</th><th>Estado</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${rows.map(a => `<tr>
+        <td><b>${E(a.codigo)}</b>${a.lancamentoOrigemId ? ` <a href="movimentos.html?id=${E(a.lancamentoOrigemId)}" class="brand-text" title="Ver lançamento de origem">🧾</a>` : ""}</td><td>${E(a.designacao)}</td><td><small>${E(a.contaImob || "—")}</small></td>
+        <td><small>${E(METODO_LABEL[a.metodo] || METODO_LABEL.quotas)}</small></td>
+        <td class="num">${m2(a.valorAquisicao)}</td><td class="num">${a.taxa}%</td>
+        <td class="num">${m2(a.amortAcumulada)}</td><td class="num"><b>${m2(I.valorLiquido(a))}</b></td>
+        <td>${a.estado === "abatido" ? AY.badge("Abatido", "#8a8a8a") : AY.badge("Activo", "#16a085")}</td>
+        ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${a.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${a.id}">✕</button></td>` : ""}
+      </tr>`).join("")}</tbody></table>` : `<div class="empty">Sem ativos registados. <a href="#" id="add1" class="brand-text">Adicionar o primeiro →</a></div>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const a = I.ativo(b.dataset.del); if (confirm("Eliminar o ativo " + a.codigo + "?")) { I.removeAtivo(b.dataset.del); render(); } });
+    const a1 = document.getElementById("add1"); if (a1) a1.onclick = e => { e.preventDefault(); abrir(null); };
+  }
+  const modal = document.getElementById("modal");
+  let lancamentoOrigemId = null;
+  function abrir(id, prefill) {
+    editId = id || null; const a = id ? I.ativo(id) : null;
+    lancamentoOrigemId = (prefill && prefill.lancamentoOrigemId) || (a && a.lancamentoOrigemId) || null;
+    document.getElementById("mTitulo").textContent = a ? "Editar " + a.codigo : (prefill ? "Novo ativo — a partir do lançamento" : "Novo ativo");
+    document.getElementById("fDesig").value = a ? a.designacao : (prefill && prefill.designacao) || "";
+    document.getElementById("fForn").value = a ? (a.fornecedor || "") : (prefill && prefill.fornecedor) || "";
+    document.getElementById("fConta").value = a ? (a.contaImob || "") : (prefill && prefill.conta) || "";
+    document.getElementById("fData").value = a ? a.dataAquisicao : (prefill && prefill.data) || AY.hojeData();
+    document.getElementById("fValor").value = a ? a.valorAquisicao : (prefill && prefill.valor) || "";
+    document.getElementById("fTaxa").value = a ? a.taxa : "";
+    document.getElementById("fMetodo").value = a ? (a.metodo || "quotas") : "quotas";
+    document.getElementById("fCusto").value = a ? (a.contaCustoAmort || "") : "";
+    document.getElementById("fAcum").value = a ? (a.contaAmortAcum || "") : "";
+    document.getElementById("fAcumVal").value = a ? a.amortAcumulada : 0;
+    document.getElementById("fEstado").value = a ? a.estado : "activo";
+    document.getElementById("erro").classList.add("hidden"); modal.classList.remove("hidden");
+  }
+  document.getElementById("novo").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("cancelar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("novo").style.display = podeGerir ? "" : "none";
+  document.getElementById("busca").oninput = render;
+  document.getElementById("form").onsubmit = e => {
+    e.preventDefault();
+    I.saveAtivo({ id: editId, designacao: document.getElementById("fDesig").value.trim(), fornecedor: document.getElementById("fForn").value.trim(),
+      contaImob: document.getElementById("fConta").value.trim(), dataAquisicao: document.getElementById("fData").value,
+      valorAquisicao: Number(document.getElementById("fValor").value) || 0, taxa: Number(document.getElementById("fTaxa").value) || 0,
+      metodo: document.getElementById("fMetodo").value,
+      contaCustoAmort: document.getElementById("fCusto").value.trim(), contaAmortAcum: document.getElementById("fAcum").value.trim(),
+      amortAcumulada: Number(document.getElementById("fAcumVal").value) || 0, estado: document.getElementById("fEstado").value,
+      lancamentoOrigemId: lancamentoOrigemId || undefined });
+    modal.classList.add("hidden"); render(); AY.toast("Ativo guardado.", "success");
+  };
+
+  // Chegou de um lançamento de contabilidade (conta de imobilizado) — abre já preenchido.
+  if (AY.qs("novo")) {
+    abrir(null, {
+      designacao: AY.qs("designacao") || "", fornecedor: AY.qs("fornecedor") || "", conta: AY.qs("conta") || "",
+      data: AY.qs("data") || "", valor: AY.qs("valor") || "", lancamentoOrigemId: AY.qs("lancamento") || null,
+    });
+  }
+  render();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiscalidade — Calendário Fiscal — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="dash-hero">
+      <div class="dh-eyebrow">Fiscalidade · Calendário</div>
+      <h1>Calendário Fiscal</h1>
+      <div class="dh-sub">Principais obrigações declarativas e de pagamento ao longo do ano. Confirma as datas no Calendário Fiscal oficial da AGT.</div>
+    </div>
+    <div class="cal-grid" id="cal"></div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">Fontes</div>
+      <div id="fontes" class="sub"></div>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/fiscalidade.js"></script>
+<script>
+const u = AY.initPage("fiscalidade-calendario.html", null);
+if (u) {
+  const E = AY.escapeHtml, F = AY.fisc;
+  document.getElementById("cal").innerHTML = F.CALENDARIO.map(c => `<div class="card cal-card">
+    <div class="cal-mes">${E(c.mes)}</div>
+    <ul>${c.itens.map(i => `<li>${E(i)}</li>`).join("")}</ul>
+  </div>`).join("");
+  document.getElementById("fontes").innerHTML = F.FONTES.map(f => `<a href="${E(f.url)}" target="_blank" rel="noopener" class="brand-text">${E(f.nome)}</a>`).join(" · ");
+}
+</script>
+</body>
+</html>

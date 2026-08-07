@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Custos — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="print-landscape">
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Mapa de Custos por Centro</h1><p class="sub">Contabilidade Analítica — custos e proveitos (classes 6/7) imputados por centro de responsabilidade. Duplo clique num centro mostra o detalhe.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">De <input type="date" id="fDe"></label>
+        <label style="margin:0">Até <input type="date" id="fAte"></label>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" id="btnAtualizar">🔄 Atualizar</button>
+        <button class="btn btn-outline btn-sm" id="btnCsv">⬇ Exportar CSV</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div class="card report-print" id="cardTabela"></div>
+    <div class="card hidden" id="cardDetalhe"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("analitica-mapa.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2;
+  const emp = AY.getEmpresa();
+  let ultimo = null, centroAberto = null;
+
+  function opts() {
+    const ex = AY.exercicioAtivo();
+    return { de: document.getElementById("fDe").value || null, ate: document.getElementById("fAte").value || null, exercicioId: ex ? ex.id : null };
+  }
+  function saldoDC(v) { return m2(Math.abs(v)) + " " + (v < 0 ? "C" : "D"); }
+
+  function render() {
+    const ex = AY.exercicioAtivo();
+    const mp = C.analiticaMapa(opts());
+    ultimo = mp;
+    const equilibrado = true; // mapa não é um balanço; sem noção de equilíbrio
+    document.getElementById("cardTabela").innerHTML = `
+      <div class="bal-cabecalho">
+        <div><b>${E(emp.nome)}</b><br><span class="sub">Mapa de Custos por Centro${ex ? " — " + E(ex.nome) : ""}</span></div>
+        <div class="sub">Valores em ${E(AY.moeda())}</div>
+      </div>
+      <div class="table-wrap"><table class="bal-table">
+        <thead><tr><th>Centro</th><th>Designação</th><th class="num">Débito</th><th class="num">Crédito</th><th class="num">Saldo</th><th class="num">Lanç.</th></tr></thead>
+        <tbody>${mp.linhas.length ? mp.linhas.map(l => `<tr class="bal-conta ${l.codigo === "—" ? "" : "cc-row"}" data-centro="${E(l.codigo)}" ${l.codigo === "—" ? "" : 'title="Duplo clique: ver detalhe"'}>
+          <td>${l.codigo === "—" ? "<i>—</i>" : `<b>${E(l.codigo)}</b>`}</td>
+          <td>${l.codigo === "—" ? `<i>${E(l.nome)}</i>` : E(l.nome)}</td>
+          <td class="num">${m2(l.debito)}</td><td class="num">${m2(l.credito)}</td>
+          <td class="num"><b>${saldoDC(l.saldo)}</b></td><td class="num">${l.n}</td>
+        </tr>`).join("") : `<tr><td colspan="6" class="empty">Sem movimentos de custo/proveito no período.</td></tr>`}</tbody>
+        <tfoot><tr class="bal-total"><td colspan="2"><b>TOTAL</b></td><td class="num">${m2(mp.totais.debito)}</td><td class="num">${m2(mp.totais.credito)}</td><td class="num">${saldoDC(mp.totais.saldo)}</td><td></td></tr></tfoot>
+      </table></div>`;
+    document.querySelectorAll(".cc-row").forEach(tr => tr.ondblclick = () => abrirDetalhe(tr.dataset.centro));
+    if (centroAberto) abrirDetalhe(centroAberto);
+  }
+
+  function abrirDetalhe(codigo) {
+    centroAberto = codigo;
+    const cInfo = C.centroPorCodigo(codigo);
+    const det = C.analiticaDetalhe(codigo, opts());
+    const host = document.getElementById("cardDetalhe");
+    host.classList.remove("hidden");
+    host.innerHTML = `
+      <div class="toolbar" style="margin-bottom:0">
+        <b class="grow">Detalhe — ${E(codigo)} · ${E(cInfo ? cInfo.nome : codigo)}</b>
+        <button class="btn btn-outline btn-sm" id="btnFecharDet">Fechar</button>
+      </div>
+      <div class="table-wrap" style="margin-top:10px"><table class="ext-table">
+        <thead><tr><th>Data</th><th>Diário</th><th>Conta</th><th>Descrição</th><th class="num">Débito</th><th class="num">Crédito</th><th>Doc.</th><th>Lanç.</th></tr></thead>
+        <tbody>${det.linhas.length ? det.linhas.map(x => `<tr onclick="location.href='movimentos.html?id=${x.lancId}'" style="cursor:pointer">
+          <td>${AY.formatDate(x.data)}</td><td><small>${E(x.diario)} · ${E(C.diarioNome(x.diario))}</small></td>
+          <td><b>${E(x.conta)}</b> <small class="sub">${E(x.contaNome)}</small></td>
+          <td>${E(x.descricao || "—")}</td>
+          <td class="num">${x.debito ? m2(x.debito) : ""}</td><td class="num">${x.credito ? m2(x.credito) : ""}</td>
+          <td>${E(x.documento || "")}</td><td>${E(x.numeroOp || "")}</td>
+        </tr>`).join("") : `<tr><td colspan="8" class="empty">Sem lançamentos.</td></tr>`}</tbody>
+        <tfoot><tr class="bal-total"><td colspan="4"><b>TOTAIS / SALDO</b></td><td class="num">${m2(det.totalDebito)}</td><td class="num">${m2(det.totalCredito)}</td><td colspan="2" class="num"><b>${saldoDC(det.saldo)}</b></td></tr></tfoot>
+      </table></div>`;
+    document.getElementById("btnFecharDet").onclick = () => { centroAberto = null; host.classList.add("hidden"); host.innerHTML = ""; };
+  }
+
+  function exportarCsv() {
+    if (!ultimo) return;
+    const head = ["Centro", "Designação", "Débito", "Crédito", "Saldo", "Lançamentos"];
+    const linhas = [head].concat(ultimo.linhas.map(l => [l.codigo === "—" ? "" : l.codigo, l.nome, l.debito, l.credito, l.saldo, l.n]));
+    linhas.push(["", "Total", ultimo.totais.debito, ultimo.totais.credito, ultimo.totais.saldo, ""]);
+    const csv = linhas.map(r => r.map(v => { v = String(v == null ? "" : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(";")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "MapaCustos.csv"; a.click();
+    AY.toast("Mapa de custos exportado (CSV).", "success");
+  }
+
+  ["fDe", "fAte"].forEach(id => document.getElementById(id).onchange = render);
+  document.getElementById("btnAtualizar").onclick = () => { render(); AY.toast("Mapa atualizado.", "success"); };
+  document.getElementById("btnCsv").onclick = exportarCsv;
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  const cq = AY.qs("centro"); if (cq) centroAberto = cq;
+  render();
+}
+</script>
+</body>
+</html>

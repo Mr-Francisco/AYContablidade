@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notas às Contas — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Notas às Contas</h1><p class="sub">Composição de cada rubrica do Balanço e da Demonstração de Resultados — apurada das contas do exercício.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Exercício <select id="fExercicio"></select></label>
+        <select id="fGrupo"><option value="">Todas as notas</option><option value="BL">Notas do Balanço</option><option value="DR">Notas da Demonstração de Resultados</option></select>
+        <span id="indice" class="sub" style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" id="btnAtualizar">🔄 Atualizar</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div id="notas"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("notas.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2, emp = AY.getEmpresa();
+  const podeEditar = AY.can("contab.lancar");
+  let editando = null; // nº da nota em edição
+  document.getElementById("fExercicio").innerHTML = AY.exercicioOptions().html;
+
+  function blocoTexto(n) {
+    const texto = n.narrativa ? (n.texto || "") : (n.analise || "");
+    if (editando === n.n) {
+      return `<div class="nota-edit">
+        <textarea id="ta-${n.n}" rows="4" placeholder="Escreve a ${n.narrativa ? "nota" : "análise"}…">${E(texto)}</textarea>
+        <div class="list-actions" style="margin-top:6px">
+          <button class="btn btn-primary btn-sm" data-guardar="${n.n}">Guardar</button>
+          <button class="btn btn-outline btn-sm" data-repor="${n.n}">↺ Repor automático</button>
+          <button class="btn btn-outline btn-sm" data-cancelar="${n.n}">Cancelar</button>
+        </div></div>`;
+    }
+    if (n.narrativa) return `<p class="nota-texto" style="margin:0;line-height:1.6">${E(texto)}</p>`;
+    return texto ? `<div class="nota-analise"><b>Análise:</b> ${E(texto)}</div>` : (podeEditar ? `<p class="sub" style="margin:6px 0 0">Sem análise — usa «Editar» para acrescentar.</p>` : "");
+  }
+  function render() {
+    const ex = AY.exercicioOptions(document.getElementById("fExercicio").value).selecionado;
+    const exAnt = AY.exercicioAnterior(ex);
+    const anoAtual = ex ? (ex.inicio || "").slice(0, 4) : new Date().getFullYear();
+    const anoAnt = exAnt ? (exAnt.inicio || "").slice(0, 4) : (anoAtual ? (Number(anoAtual) - 1) : "");
+    const grupo = document.getElementById("fGrupo").value;
+    let todas = C.notas({ exercicioId: ex ? ex.id : null, ano: anoAtual });
+    // Nº da nota é uma chave estável (mesma definição, não depende dos dados) — junta-se cada
+    // rubrica (por código de conta) à sua correspondente do exercício anterior, para a coluna comparativa.
+    const todasAnt = exAnt ? C.notas({ exercicioId: exAnt.id }) : null;
+    const notaAntPorN = {}; (todasAnt || []).forEach(n => notaAntPorN[n.n] = n);
+    if (grupo) todas = todas.filter(n => n.grupo === grupo);
+    document.getElementById("indice").innerHTML = "Ir para: " + todas.map(n => `<a href="#nota-${n.n}" class="brand-text">${n.n}</a>`).join(" · ");
+    document.getElementById("notas").innerHTML = todas.map(n => {
+      const nAnt = notaAntPorN[n.n] || null;
+      const rubAntPorCodigo = {}; (nAnt ? nAnt.rubricas : []).forEach(r => rubAntPorCodigo[r.codigo] = r.valor);
+      const valAnt = v => v ? m2(v) : "—";
+      return `
+      <div class="card report-print nota-card" id="nota-${n.n}">
+        <div class="card-title">${n.n}. ${E(n.titulo)} <span class="tag">${n.grupo === "BL" ? "Balanço" : "Result."}</span>${n.editada ? `<span class="tag" style="color:var(--warning);border-color:var(--warning)">✎ editado</span>` : ""}${podeEditar && editando !== n.n ? `<button class="btn btn-sm btn-outline no-print" data-edit="${n.n}">✏️ Editar</button>` : ""}</div>
+        ${n.narrativa ? "" : `<div class="table-wrap"><table class="dr-table">
+          <thead><tr><th>Conta</th><th>Rubrica</th><th class="num" style="width:150px">${anoAtual}</th><th class="num" style="width:120px">${anoAnt}</th></tr></thead>
+          <tbody>${n.rubricas.length ? n.rubricas.map(r => `<tr${r.amort ? ' style="color:var(--text-muted)"' : ""}>
+            <td>${E(r.codigo || "")}</td><td>${E(r.nome)}</td><td class="num">${m2(r.valor)}</td><td class="num">${nAnt ? valAnt(rubAntPorCodigo[r.codigo]) : "—"}</td></tr>`).join("") : `<tr><td colspan="4" class="empty">Sem movimento nesta rubrica.</td></tr>`}</tbody>
+          <tfoot><tr class="dr-total"><td colspan="2"><b>Total</b></td><td class="num">${m2(n.total)}</td><td class="num">${nAnt ? valAnt(nAnt.total) : "—"}</td></tr></tfoot>
+        </table></div>`}
+        ${blocoTexto(n)}
+      </div>`;
+    }).join("");
+    const exId = ex ? ex.id : null;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { editando = Number(b.dataset.edit); render(); const ta = document.getElementById("ta-" + editando); if (ta) ta.focus(); });
+    document.querySelectorAll("[data-cancelar]").forEach(b => b.onclick = () => { editando = null; render(); });
+    document.querySelectorAll("[data-guardar]").forEach(b => b.onclick = () => { const nn = Number(b.dataset.guardar); C.saveNotaTexto(nn, exId, document.getElementById("ta-" + nn).value); editando = null; render(); AY.toast("Nota guardada.", "success"); });
+    document.querySelectorAll("[data-repor]").forEach(b => b.onclick = () => { const nn = Number(b.dataset.repor); C.limparNotaTexto(nn, exId); editando = null; render(); AY.toast("Reposto o texto automático.", "info"); });
+  }
+  ["fExercicio", "fGrupo"].forEach(id => document.getElementById(id).onchange = render);
+  document.getElementById("btnAtualizar").onclick = () => { render(); AY.toast("Notas atualizadas.", "success"); };
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  render();
+  // saltar para a nota indicada por ?nota=N ou #nota-N
+  const nq = AY.qs("nota"); if (nq) { const el = document.getElementById("nota-" + nq); if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 60); }
+}
+</script>
+</body>
+</html>

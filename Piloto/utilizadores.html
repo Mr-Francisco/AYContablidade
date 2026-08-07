@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utilizadores — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Utilizadores</h1><p class="sub">Contas do sistema, perfis e aprovações.</p></div>
+    <div class="card">
+      <div class="card-title">Contas <button class="btn btn-amber btn-sm" id="novo" style="margin-left:auto">+ Novo utilizador</button></div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:640px">
+  <div class="modal-head"><b id="mTitulo">Novo utilizador</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form">
+    <div class="grid-2">
+      <label>Nome<input id="fNome" required></label>
+      <label>E-mail<input id="fEmail" type="email" required></label>
+      <label>Perfil<select id="fPerfil"></select></label>
+      <label>Palavra-passe<input id="fSenha" placeholder="(deixa vazio p/ manter)"></label>
+    </div>
+    <div class="sec-label" style="display:flex;align-items:center;gap:10px">Módulos disponíveis para este utilizador
+      <button type="button" class="btn btn-sm btn-outline" id="fModTodos" style="margin-left:auto">Marcar todos</button>
+      <button type="button" class="btn btn-sm btn-outline" id="fModNenhum">Desmarcar todos</button>
+    </div>
+    <p class="sub" style="margin:-4px 0 8px">Além do perfil, restringe aqui a que módulos este utilizador tem acesso. Com tudo marcado, aplica-se apenas a regra normal do perfil e da ativação global em Configurações.</p>
+    <div class="grid-2" id="fModulos"></div>
+    <div id="erro" class="alert alert-error hidden" style="margin-top:10px"></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div>
+  </form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script>
+const u = AY.initPage("utilizadores.html", ["admin"]);
+if (u) {
+  const E = AY.escapeHtml; let editId = null;
+  const selP = document.getElementById("fPerfil");
+  Object.keys(AY.PERFIS).forEach(k => selP.appendChild(new Option(AY.PERFIS[k].label, k)));
+
+  function render() {
+    const users = AY.Store.users();
+    document.getElementById("tabela").innerHTML = `<table>
+      <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Módulos</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${users.map(x => `<tr>
+        <td><b>${E(x.nome)}</b></td><td>${E(x.email)}</td>
+        <td>${AY.badge(AY.perfilLabel(x.perfil), (AY.PERFIS[x.perfil] || {}).cor)}</td>
+        <td>${Array.isArray(x.modulosPermitidos) ? AY.badge(x.modulosPermitidos.length + " / " + AY.MODULOS.length, "#d68910") : `<small class="sub">Todos</small>`}</td>
+        <td>${x.aprovado === false ? AY.badge("Pendente", "#d68910") : x.ativo === false ? AY.badge("Inativo", "#8a8a8a") : AY.badge("Ativo", "#16a085")}</td>
+        <td class="num">
+          ${x.aprovado === false ? `<button class="btn btn-sm btn-primary" data-aprovar="${x.id}">Aprovar</button> ` : ""}
+          <button class="btn btn-sm btn-outline" data-edit="${x.id}">Editar</button>
+          ${x.id !== u.id ? ` <button class="btn btn-sm btn-outline" data-del="${x.id}">✕</button>` : ""}
+        </td></tr>`).join("")}</tbody></table>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-aprovar]").forEach(b => b.onclick = () => { AY.Store.aprovarUser(b.dataset.aprovar); render(); AY.toast("Conta aprovada.", "success"); });
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (confirm("Eliminar utilizador?")) { AY.Store.removeUser(b.dataset.del); render(); } });
+  }
+
+  const modal = document.getElementById("modal");
+  // Sem lista pessoal (undefined) = sem restrição extra → mostra tudo marcado.
+  function renderModulos(permitidos) {
+    const marcado = k => !Array.isArray(permitidos) || permitidos.includes(k);
+    document.getElementById("fModulos").innerHTML = AY.MODULOS.map(([k, lbl]) => `<label class="chk" style="font-weight:400">
+      <input type="checkbox" class="f-mod" value="${k}" ${marcado(k) ? "checked" : ""}> ${E(lbl)}
+    </label>`).join("");
+  }
+  document.getElementById("fModTodos").onclick = () => document.querySelectorAll(".f-mod").forEach(c => c.checked = true);
+  document.getElementById("fModNenhum").onclick = () => document.querySelectorAll(".f-mod").forEach(c => c.checked = false);
+  function abrir(id) {
+    editId = id || null; const x = id ? AY.Store.users().find(y => y.id === id) : null;
+    document.getElementById("mTitulo").textContent = x ? "Editar " + x.nome : "Novo utilizador";
+    document.getElementById("fNome").value = x ? x.nome : "";
+    document.getElementById("fEmail").value = x ? x.email : "";
+    document.getElementById("fPerfil").value = x ? x.perfil : "consulta";
+    document.getElementById("fSenha").value = "";
+    renderModulos(x ? x.modulosPermitidos : null);
+    document.getElementById("erro").classList.add("hidden");
+    modal.classList.remove("hidden");
+  }
+  function fechar() { modal.classList.add("hidden"); }
+  document.getElementById("novo").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = fechar;
+  document.getElementById("cancelar").onclick = fechar;
+
+  document.getElementById("form").onsubmit = (e) => {
+    e.preventDefault();
+    const err = document.getElementById("erro");
+    const nome = document.getElementById("fNome").value.trim(), email = document.getElementById("fEmail").value.trim().toLowerCase();
+    const dup = AY.Store.users().find(y => (y.email || "").toLowerCase() === email && y.id !== editId);
+    if (dup) { err.textContent = "Já existe uma conta com esse e-mail."; err.classList.remove("hidden"); return; }
+    const x = editId ? AY.Store.users().find(y => y.id === editId) : { id: AY.uid("u"), ativo: true, aprovado: true, criadoEm: AY.hoje() };
+    x.nome = nome; x.email = email; x.perfil = document.getElementById("fPerfil").value;
+    const senha = document.getElementById("fSenha").value; if (senha) x.senha = senha;
+    if (!editId && !x.senha) x.senha = "demo123";
+    // Todos marcados = sem restrição pessoal (undefined); senão grava só os módulos escolhidos.
+    const marcados = Array.from(document.querySelectorAll(".f-mod")).filter(c => c.checked).map(c => c.value);
+    if (marcados.length === AY.MODULOS.length) delete x.modulosPermitidos; else x.modulosPermitidos = marcados;
+    AY.Store.saveUser(x); fechar(); render(); AY.toast("Utilizador guardado.", "success");
+  };
+
+  render();
+}
+</script>
+</body>
+</html>

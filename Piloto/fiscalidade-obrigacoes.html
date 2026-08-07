@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiscalidade — Obrigações — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="dash-hero">
+      <div class="dh-eyebrow">Fiscalidade · Obrigações</div>
+      <h1>Obrigações Fiscais por Empresa</h1>
+      <div class="dh-sub">Indica a forma jurídica e o enquadramento — o sistema lista todas as obrigações declarativas e de pagamento a que a empresa está sujeita.</div>
+    </div>
+
+    <div class="card no-print">
+      <div class="grid-4">
+        <label>Forma jurídica<select id="fForma"></select></label>
+        <label>Regime de IVA<select id="fIVA"></select></label>
+        <label>Regime de Imposto Industrial<select id="fII">
+          <option value="geral">Regime Geral (contab. organizada)</option>
+          <option value="simplificado">Regime Simplificado</option>
+        </select></label>
+        <div></div>
+      </div>
+      <div class="toolbar" style="margin-top:6px">
+        <label class="chk"><input type="checkbox" id="cEmp" checked> Tem empregados</label>
+        <label class="chk"><input type="checkbox" id="cCap"> Paga rendimentos de capitais (dividendos/juros)</label>
+        <label class="chk"><input type="checkbox" id="cImo"> Arrenda imóveis</label>
+        <span style="flex:1"></span>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+      <div id="notaForma" class="alert alert-info" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card report-print" id="card"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/fiscalidade.js"></script>
+<script>
+const u = AY.initPage("fiscalidade-obrigacoes.html", null);
+if (u) {
+  const E = AY.escapeHtml, F = AY.fisc, emp = AY.getEmpresa();
+  document.getElementById("fForma").innerHTML = F.FORMAS.map(f => `<option value="${f.id}">${E(f.nome)}</option>`).join("");
+  document.getElementById("fIVA").innerHTML = F.REGIMES_IVA.map(r => `<option value="${r.id}">${E(r.nome)}</option>`).join("");
+  document.getElementById("fIVA").value = "geral";
+
+  function render() {
+    const forma = document.getElementById("fForma").value, regimeIVA = document.getElementById("fIVA").value, regimeII = document.getElementById("fII").value;
+    const petro = forma === "petrolifero";
+    document.getElementById("fII").disabled = petro;
+    const cfg = { forma, regimeIVA, regimeII,
+      temEmpregados: document.getElementById("cEmp").checked, pagaCapitais: document.getElementById("cCap").checked, temImoveisArrend: document.getElementById("cImo").checked };
+    const fj = F.forma(forma), ri = F.regimeIVA(regimeIVA);
+    document.getElementById("notaForma").innerHTML = `<b>${E(fj.nome)}</b> — ${E(fj.nota)}`;
+    const obr = F.obrigacoes(cfg);
+    const grupos = {}; obr.forEach(o => (grupos[o.imposto] = grupos[o.imposto] || []).push(o));
+    document.getElementById("card").innerHTML = `
+      <div class="bal-cabecalho"><div><b>${E(emp.nome)}</b><br><span class="sub">Obrigações Fiscais — ${E(fj.nome)}</span></div>
+        <div class="sub" style="text-align:right">IVA: <b>${E(ri.nome)}</b><br>${petro ? "Regime petrolífero especial" : "Imposto Industrial: <b>" + E(regimeII === "geral" ? "Regime Geral" : "Regime Simplificado") + "</b>"}</div></div>
+      <div class="table-wrap" style="margin-top:10px"><table>
+        <thead><tr><th>Imposto</th><th>Obrigação</th><th>Periodicidade</th><th>Prazo</th></tr></thead>
+        <tbody>${obr.map(o => `<tr>
+          <td>${AY.badge(o.imposto, o.cor)}</td><td>${E(o.obrigacao)}</td><td>${E(o.periodicidade)}</td><td><b>${E(o.prazo)}</b></td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+      <p class="sub" style="margin-top:10px">${obr.length} obrigação(ões) identificada(s). Enquadramento em sede de IVA: <b>${E(ri.limite)}</b>. Confirma sempre os prazos com o Calendário Fiscal da AGT.</p>`;
+  }
+  ["fForma", "fIVA", "fII"].forEach(id => document.getElementById(id).onchange = render);
+  ["cEmp", "cCap", "cImo"].forEach(id => document.getElementById(id).onchange = render);
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  render();
+}
+</script>
+</body>
+</html>

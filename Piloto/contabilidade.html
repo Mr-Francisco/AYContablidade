@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contabilidade — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div id="pageCover"></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:18px"></div>
+    <div id="secoes"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("contabilidade.html", null);
+if (u) {
+  const E = AY.escapeHtml, fmt = AY.formatKz, C = AY.contab;
+  const ex = AY.exercicioAtivo();
+  const opts = { exercicioId: ex ? ex.id : null };
+  const rr = C.resumoResultado(opts);
+  const bal = C.balancete(opts);
+  const equilibrado = bal.totais.debito === bal.totais.credito;
+
+  document.getElementById("pageCover").innerHTML = AY.coverHTML("Contabilidade", "Framework de contabilidade geral — PGC Angola · " + (ex ? ex.nome : "sem exercício"), [
+    { k: "Movimentos", v: C.lancamentosDoExercicio().length }, { k: "Resultado", v: fmt(rr.resultado) },
+  ]);
+  document.getElementById("kpis").innerHTML = [
+    AY.kpi("Proveitos", fmt(rr.proveitos), "classe 6", "var(--chart-teal)"),
+    AY.kpi("Custos", fmt(rr.custos), "classe 7", "var(--chart-amber)"),
+    AY.kpi("Resultado", fmt(rr.resultado), rr.resultado >= 0 ? "lucro" : "prejuízo", rr.resultado >= 0 ? "#16a085" : "#c0392b"),
+    AY.kpi("Balancete", equilibrado ? "✓ Equilibrado" : "✗ Desequilíbrio", "D = C", equilibrado ? "#16a085" : "#c0392b"),
+  ].join("");
+
+  const secoes = [
+    { titulo: "Movimentos (Edição)", itens: [
+      { ico: "✍️", nome: "Movimentos", sub: "Registo em partidas dobradas", href: "movimentos.html" },
+    ]},
+    { titulo: "Consultas", itens: [
+      { ico: "📄", nome: "Extratos de Conta", sub: "Conta corrente por conta", href: "extrato.html" },
+      { ico: "📗", nome: "Razão", sub: "Movimentos por conta", href: "razao.html" },
+    ]},
+    { titulo: "Mapas", itens: [
+      { ico: "⚖️", nome: "Balancete Geral", sub: "Verificação · duplo clique → extrato", href: "balancete.html" },
+      { ico: "📘", nome: "Balancete do Razão", sub: "Por classe (contas do razão)", href: "balancete-razao.html" },
+      { ico: "🏛️", nome: "Balanço", sub: "Activo · Capital Próprio · Passivo", href: "balanco.html" },
+      { ico: "📈", nome: "Demonstração de Resultados", sub: "Por naturezas", href: "demonstracao-resultados.html" },
+      { ico: "📝", nome: "Notas às Contas", sub: "Composição das rubricas", href: "notas.html" },
+      { ico: "💧", nome: "Fluxos de Caixa", sub: "Demonstração de fluxos", href: "fluxos-caixa.html" },
+    ]},
+    { titulo: "Tabelas", itens: [
+      { ico: "🧾", nome: "Plano de Contas", sub: "PGC Angola", href: "plano-contas.html" },
+      { ico: "📚", nome: "Diários", sub: "Tabela de diários", href: "ct-diarios.html" },
+      { ico: "🗂️", nome: "Documentos", sub: "Documentos afetos a diários", href: "ct-documentos.html" },
+    ]},
+  ];
+  document.getElementById("secoes").innerHTML = secoes.map(s => `<div class="card">
+    <div class="card-title">${E(s.titulo)}</div>
+    <div class="modules-grid">${s.itens.map(x => `<a class="module-card" href="${x.href}">
+      <span class="mc-ico">${x.ico}</span><span class="mc-body"><b>${E(x.nome)}</b><small>${E(x.sub)}</small></span><span class="mc-go">→</span>
+    </a>`).join("")}</div></div>`).join("");
+}
+</script>
+</body>
+</html>

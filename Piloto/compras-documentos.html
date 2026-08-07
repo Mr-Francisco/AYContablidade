@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logística — Compras — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Compras</h1><p class="sub">Facturas de fornecedores. Ao emitir, cada linha entra em armazém (movimenta o stock e atualiza o custo médio) e lança automaticamente na contabilidade — débito Existências/IVA Dedutível, crédito Fornecedor.</p></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+
+    <div class="tabs" id="comprasTabs">
+      <button class="tab active" data-tab="lanc">Lançamento</button>
+      <button class="tab" data-tab="consultas">Consultas</button>
+    </div>
+
+    <div id="tabLanc" class="card">
+      <div class="toolbar">
+        <input type="search" id="busca" placeholder="Pesquisar (nº ou fornecedor)…" class="grow">
+        <button class="btn btn-outline" id="btnConfig">⚙️ Configurações</button>
+        <button class="btn btn-amber" id="novo">+ Nova compra</button>
+      </div>
+      <p class="sub" style="margin-bottom:10px">Documentos por confirmar (rascunho) — os já emitidos ficam disponíveis em Consultas.</p>
+      <div class="table-wrap" id="tabelaLanc"></div>
+    </div>
+
+    <div id="tabConsultas" class="card hidden">
+      <div class="toolbar" style="flex-wrap:wrap;row-gap:8px">
+        <input type="search" id="cBusca" placeholder="Pesquisar (nº ou fornecedor)…" class="grow">
+        <label style="margin:0">De <input type="date" id="cDataDe"></label>
+        <label style="margin:0">Até <input type="date" id="cDataAte"></label>
+        <label style="margin:0">Fornecedor <select id="cFornecedor"><option value="">Todos</option></select></label>
+        <label style="margin:0">Estado <select id="cEstado"><option value="">Todos</option><option value="rascunho">Rascunho</option><option value="emitida">Emitida</option></select></label>
+        <label style="margin:0">Valor mín. <input type="number" id="cValorMin" style="width:110px" min="0"></label>
+        <label style="margin:0">Valor máx. <input type="number" id="cValorMax" style="width:110px" min="0"></label>
+        <button class="btn btn-outline btn-sm" id="cLimpar">Limpar filtros</button>
+      </div>
+      <p class="sub" style="margin-bottom:10px">Pesquisa sobre todo o histórico de compras (rascunho e emitidas).</p>
+      <div class="table-wrap" id="tabelaConsultas"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modalConfig"><div class="modal" style="max-width:640px">
+  <div class="modal-head"><b>Configurações de Compras</b><button class="icon-btn" id="fecharConfig">✕</button></div>
+  <p class="sub" style="margin-bottom:10px">Diário, documento e contas usados ao emitir uma compra — a entrada em armazém e o lançamento na contabilidade usam sempre esta configuração.</p>
+  <form id="formConfig">
+    <div class="grid-2">
+      <div><label style="margin:0">Diário de Compras</label>
+        <div style="display:flex;gap:6px"><select id="cfgDiario" style="flex:1"></select><button type="button" class="btn btn-sm btn-outline" id="novoDiario">+ Novo</button></div></div>
+      <div><label style="margin:0">Documento de Compras</label>
+        <div style="display:flex;gap:6px"><select id="cfgDocumento" style="flex:1"></select><button type="button" class="btn btn-sm btn-outline" id="novoDocumento">+ Novo</button></div></div>
+      <label>Conta de Existências (débito)<input id="cfgExist" list="contasCfgList" placeholder="2611"></label>
+      <label>Conta de IVA Dedutível (débito)<input id="cfgIva" list="contasCfgList" placeholder="34521111"></label>
+      <label>Conta de Fornecedores — base (crédito)<input id="cfgForn" list="contasCfgList" placeholder="32121"></label>
+    </div>
+    <datalist id="contasCfgList"></datalist>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelarConfig">Fechar</button><button class="btn btn-primary" type="submit">Guardar configurações</button></div>
+  </form>
+</div></div>
+
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:820px">
+  <div class="modal-head"><b id="mTitulo">Nova compra</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form">
+    <div class="grid-4">
+      <div><label style="margin:0">Tipo de documento</label>
+        <div style="display:flex;gap:6px"><select id="fTipoDoc" required style="flex:1"></select><button type="button" class="btn btn-sm btn-outline" id="fNovoTipoDoc">+ Novo</button></div></div>
+      <div><label style="margin:0">Fornecedor <span style="color:var(--danger)">*</span></label>
+        <div style="display:flex;gap:6px"><select id="fFornecedor" required style="flex:1"></select><button type="button" class="btn btn-sm btn-outline" id="fNovoFornecedor">+ Novo</button></div></div>
+      <label>Armazém de entrada <span style="color:var(--danger)">*</span><select id="fArmazem" required></select></label>
+      <label>Data <span style="color:var(--danger)">*</span><input type="date" id="fData" required></label>
+    </div>
+    <div class="grid-4" style="margin-top:2px">
+      <label>Nº Documento (fornecedor)<input id="fDocRef" placeholder="Ex.: FT 2026/1"></label>
+      <label>IVA %<input type="number" id="fIva" step="0.1" min="0" style="width:100%"></label>
+    </div>
+    <div class="table-wrap" style="margin-top:8px"><table class="lanc-table">
+      <thead><tr><th style="width:30%">Artigo</th><th class="num" style="width:14%">Qtd</th><th class="num" style="width:16%">Custo Unit.</th><th class="num" style="width:16%">Total</th><th style="width:60px"></th></tr></thead>
+      <tbody id="linhas"></tbody>
+    </table></div>
+    <div class="list-actions" style="margin-top:8px"><button type="button" class="btn btn-outline btn-sm" id="addLinha">+ Linha</button></div>
+    <div class="cc-resumo" style="justify-content:flex-end;margin-top:8px">
+      <span>Incidência <b id="rSub">0,00</b></span><span>IVA <b id="rIva">0,00</b></span><span>Total <b id="rTot">0,00</b></span>
+    </div>
+    <div id="erro" class="alert alert-error hidden" style="margin-top:8px"></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div>
+  </form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/logistica.js"></script>
+<script src="assets/js/compras.js"></script>
+<script>
+const u = AY.initPage("compras-documentos.html", null);
+if (u) {
+  const E = AY.escapeHtml, M = AY.compras, L = AY.log, C = AY.contab, m2 = AY.formatMoeda2; let editId = null;
+  const podeGerir = AY.can("logistica.gerir");
+  // Tipo de documento = documento contabilístico do Diário de Compras (Configurações) — mostra
+  // sempre todos os já criados e permite criar um novo sem sair do lançamento.
+  function encherTipoDocumento(selecionar) {
+    const sel = document.getElementById("fTipoDoc");
+    sel.innerHTML = M.documentosCompra().map(d => `<option value="${E(d.codigo)}">${E(d.codigo)} · ${E(d.descricao)}</option>`).join("");
+    if (selecionar) sel.value = selecionar;
+  }
+
+  function linhaHtml(c) {
+    const emit = M.compraEmitida(c);
+    return `<tr>
+      <td><b>${E(c.numero || (c.documentoCod || "") + " (rascunho)")}</b><br><small class="sub">${E(c.documentoNome || "")}</small></td>
+      <td>${AY.formatDate(c.data)}</td><td>${E(c.fornecedorNome || "—")}</td>
+      <td class="num">${m2(c.subtotal)}</td><td class="num">${m2(c.iva)}</td><td class="num"><b>${m2(c.total)}</b></td>
+      <td>${emit ? AY.badge("Emitida", "#16a085") : AY.badge("Rascunho", "#d68910")}</td>
+      <td class="num">${emit
+        ? (c.lancamentoIds && c.lancamentoIds.length ? c.lancamentoIds.map(lid => `<a class="btn btn-sm btn-outline" href="movimentos.html?id=${E(lid)}">Ver lanç.</a>`).join(" ") : "—")
+        : (podeGerir ? `<button class="btn btn-sm btn-primary" data-emitir="${c.id}">Emitir</button> <button class="btn btn-sm btn-outline" data-edit="${c.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${c.id}">✕</button>` : "")}</td>
+    </tr>`;
+  }
+  function wireLinhas(containerId, onChange) {
+    const root = document.getElementById(containerId);
+    root.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    root.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const c = M.compraDoc(b.dataset.del); if (confirm("Eliminar " + (c.numero || "o rascunho") + "?")) { M.removeCompraDoc(b.dataset.del); onChange(); } });
+    root.querySelectorAll("[data-emitir]").forEach(b => b.onclick = () => emitir(b.dataset.emitir, onChange));
+  }
+  function renderKpis() {
+    const r = M.resumoCompras();
+    document.getElementById("kpis").innerHTML = [
+      AY.kpi("Recebido (emitido)", AY.formatKz(r.totalRececionado), r.nEmitidas + " documentos", "#16a085"),
+      AY.kpi("Por confirmar", AY.formatKz(r.porEmitir), (r.nCompras - r.nEmitidas) + " rascunhos", "var(--chart-amber)"),
+      AY.kpi("Total", AY.formatKz(r.totalCompras), r.nCompras + " documentos", "#8e44ad"),
+      AY.kpi("Fornecedores", M.fornecedores().length, "", "var(--chart-blue)"),
+    ].join("");
+  }
+  // ---------- Lançamento: só os documentos por confirmar (rascunho) ----------
+  function renderLanc() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim();
+    let rows = M.comprasDocs().filter(c => !M.compraEmitida(c)).sort((a, b) => (b.data || "").localeCompare(a.data || "") || (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+    if (q) rows = rows.filter(c => ((c.numero || "") + " " + (c.fornecedorNome || "")).toLowerCase().includes(q));
+    document.getElementById("tabelaLanc").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Documento</th><th>Data</th><th>Fornecedor</th><th class="num">Incidência</th><th class="num">IVA</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${rows.map(linhaHtml).join("")}</tbody></table>` : `<div class="empty">Sem compras por confirmar.</div>`;
+    wireLinhas("tabelaLanc", render);
+  }
+  // ---------- Consultas: pesquisa avançada sobre todo o histórico (rascunho + emitidas) ----------
+  function encherFornecedorConsulta() {
+    const cur = document.getElementById("cFornecedor").value;
+    document.getElementById("cFornecedor").innerHTML = `<option value="">Todos</option>` + M.fornecedores().map(f => `<option value="${E(f.nome)}">${E(f.nome)}</option>`).join("");
+    document.getElementById("cFornecedor").value = cur;
+  }
+  function renderConsultas() {
+    const q = (document.getElementById("cBusca").value || "").toLowerCase().trim();
+    const dataDe = document.getElementById("cDataDe").value, dataAte = document.getElementById("cDataAte").value;
+    const fornecedor = document.getElementById("cFornecedor").value, estado = document.getElementById("cEstado").value;
+    const valorMin = Number(document.getElementById("cValorMin").value) || 0, valorMax = Number(document.getElementById("cValorMax").value) || 0;
+    let rows = M.comprasDocs().slice().sort((a, b) => (b.data || "").localeCompare(a.data || "") || (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+    if (q) rows = rows.filter(c => ((c.numero || "") + " " + (c.fornecedorNome || "")).toLowerCase().includes(q));
+    if (dataDe) rows = rows.filter(c => (c.data || "") >= dataDe);
+    if (dataAte) rows = rows.filter(c => (c.data || "") <= dataAte);
+    if (fornecedor) rows = rows.filter(c => c.fornecedorNome === fornecedor);
+    if (estado) rows = rows.filter(c => (M.compraEmitida(c) ? "emitida" : "rascunho") === estado);
+    if (valorMin > 0) rows = rows.filter(c => c.total >= valorMin);
+    if (valorMax > 0) rows = rows.filter(c => c.total <= valorMax);
+    document.getElementById("tabelaConsultas").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Documento</th><th>Data</th><th>Fornecedor</th><th class="num">Incidência</th><th class="num">IVA</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${rows.map(linhaHtml).join("")}</tbody></table>` : `<div class="empty">Sem resultados para os filtros escolhidos.</div>`;
+    wireLinhas("tabelaConsultas", () => { render(); });
+  }
+  function render() { renderKpis(); renderLanc(); encherFornecedorConsulta(); renderConsultas(); }
+  function emitir(id, onChange) {
+    const c = M.compraDoc(id);
+    if (!confirm("Emitir a compra no valor de " + AY.formatKz(c.total) + "? Vai entrar em armazém e lançar na contabilidade.")) return;
+    try {
+      const r = M.emitirCompra(id); render(); if (onChange) onChange();
+      AY.toast("Compra emitida · stock movimentado (" + r.stockMovs.length + " linha(s))" + (r.lancamentoIds.length ? " · " + r.lancamentoIds.length + " lançamento(s)" : "") + ".", "success");
+      if (r.erros && r.erros.length) AY.toast("Avisos: " + r.erros.join(" · "), "info");
+    } catch (e) { AY.toast("Erro ao emitir: " + e.message, "info"); }
+  }
+
+  // ---------- Modal de edição ----------
+  const modal = document.getElementById("modal"), selForn = document.getElementById("fFornecedor"), selArm = document.getElementById("fArmazem");
+  function encherSelects() {
+    const curForn = selForn.value, curArm = selArm.value;
+    selForn.innerHTML = `<option value="">— Escolhe —</option>` + M.fornecedores().filter(f => f.estado !== "inactivo").map(f => `<option value="${f.id}">${E(f.nome)}</option>`).join("");
+    selArm.innerHTML = L.armazens().map(w => `<option value="${w.id}">${E(w.codigo)} · ${E(w.nome)}</option>`).join("");
+    selForn.value = curForn; selArm.value = curArm;
+  }
+  function opcoesArtigo() { return L.artigos().filter(a => a.estado !== "inactivo").map(a => `<option value="${a.id}">${E(a.codigo)} · ${E(a.descricao)}</option>`).join(""); }
+  function refreshArtigoSelects() {
+    document.querySelectorAll("#linhas .l-art").forEach(sel => { const cur = sel.value; sel.innerHTML = `<option value="">— Artigo —</option>${opcoesArtigo()}`; sel.value = cur; });
+  }
+  function novaLinha(d) {
+    const tb = document.getElementById("linhas"); const tr = document.createElement("tr");
+    tr.innerHTML = `<td><div style="display:flex;gap:4px"><select class="l-art" required style="flex:1"><option value="">— Artigo —</option>${opcoesArtigo()}</select><button type="button" class="icon-btn l-novo-art" title="Novo artigo">+</button></div></td><td><input class="l-qtd num-input" type="number" step="0.001" min="0" value="1"></td><td><input class="l-preco num-input" type="number" step="0.01" min="0"></td><td class="num l-tot">0,00</td><td><button type="button" class="icon-btn l-del">✕</button></td>`;
+    tb.appendChild(tr);
+    if (d) { tr.querySelector(".l-art").value = d.artigoId || ""; tr.querySelector(".l-qtd").value = d.qtd || 1; tr.querySelector(".l-preco").value = d.preco || ""; }
+    tr.querySelector(".l-art").addEventListener("change", () => {
+      const a = L.artigo(tr.querySelector(".l-art").value);
+      if (a && !(Number(tr.querySelector(".l-preco").value) > 0)) tr.querySelector(".l-preco").value = a.precoCompra || "";
+      recalc();
+    });
+    tr.querySelectorAll("input").forEach(i => i.addEventListener("input", recalc));
+    tr.querySelector(".l-del").onclick = () => { tr.remove(); recalc(); };
+    // Criar um artigo novo sem sair do lançamento — a compra exige sempre um artigo por linha.
+    tr.querySelector(".l-novo-art").onclick = () => {
+      const desc = (prompt("Descrição do novo artigo:") || "").trim(); if (!desc) return;
+      const precoCompra = Number((prompt("Preço de compra (opcional):", "") || "").replace(",", ".")) || 0;
+      const a = L.saveArtigo({ descricao: desc, unidade: "Un", tipoArtigo: "Mercadoria", precoCompra, precoVenda: 0, taxaIVA: AY.taxaIVA ? AY.taxaIVA() : 14, estado: "activo" });
+      refreshArtigoSelects();
+      tr.querySelector(".l-art").value = a.id;
+      tr.querySelector(".l-art").dispatchEvent(new Event("change"));
+      AY.toast("Artigo criado.", "success");
+    };
+    recalc();
+  }
+  function lerLinhas() { return Array.from(document.querySelectorAll("#linhas tr")).map(tr => ({ artigoId: tr.querySelector(".l-art").value, descricao: (L.artigo(tr.querySelector(".l-art").value) || {}).descricao || "", qtd: Number(tr.querySelector(".l-qtd").value) || 0, preco: Number(tr.querySelector(".l-preco").value) || 0 })).filter(l => l.artigoId && l.qtd); }
+  function recalc() {
+    document.querySelectorAll("#linhas tr").forEach(tr => { const t = (Number(tr.querySelector(".l-qtd").value) || 0) * (Number(tr.querySelector(".l-preco").value) || 0); tr.querySelector(".l-tot").textContent = m2(t); });
+    const t = M.calcTotaisCompra(lerLinhas(), document.getElementById("fIva").value);
+    document.getElementById("rSub").textContent = m2(t.subtotal); document.getElementById("rIva").textContent = m2(t.iva); document.getElementById("rTot").textContent = m2(t.total);
+  }
+  function abrir(id) {
+    editId = id || null; encherSelects(); const c = id ? M.compraDoc(id) : null;
+    document.getElementById("mTitulo").textContent = c ? "Editar " + (c.numero || "compra") : "Nova compra";
+    encherTipoDocumento(c ? c.documentoCod : "");
+    selForn.value = c ? (c.fornecedorId || "") : "";
+    selArm.value = c ? (c.armazemId || "") : (L.armazemVenda() || "");
+    document.getElementById("fData").value = c ? c.data : AY.hojeData();
+    document.getElementById("fDocRef").value = c ? (c.docRef || "") : "";
+    document.getElementById("fIva").value = c ? c.ivaPerc : AY.taxaIVA();
+    document.getElementById("linhas").innerHTML = ""; (c && c.linhas.length ? c.linhas : [null]).forEach(l => novaLinha(l));
+    document.getElementById("erro").classList.add("hidden"); modal.classList.remove("hidden"); recalc();
+  }
+  document.getElementById("novo").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("cancelar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("addLinha").onclick = () => novaLinha();
+  document.getElementById("fIva").oninput = recalc;
+  document.getElementById("novo").style.display = podeGerir ? "" : "none";
+  document.getElementById("busca").oninput = renderLanc;
+  // ---------- Abas: Lançamento / Consultas ----------
+  document.querySelectorAll("#comprasTabs .tab").forEach(b => b.onclick = () => {
+    document.querySelectorAll("#comprasTabs .tab").forEach(x => x.classList.toggle("active", x === b));
+    document.getElementById("tabLanc").classList.toggle("hidden", b.dataset.tab !== "lanc");
+    document.getElementById("tabConsultas").classList.toggle("hidden", b.dataset.tab !== "consultas");
+  });
+  ["cBusca", "cDataDe", "cDataAte", "cValorMin", "cValorMax"].forEach(id => document.getElementById(id).addEventListener("input", renderConsultas));
+  ["cFornecedor", "cEstado"].forEach(id => document.getElementById(id).addEventListener("change", renderConsultas));
+  document.getElementById("cLimpar").onclick = () => {
+    ["cBusca", "cDataDe", "cDataAte", "cFornecedor", "cEstado", "cValorMin", "cValorMax"].forEach(id => document.getElementById(id).value = "");
+    renderConsultas();
+  };
+  document.getElementById("form").onsubmit = e => {
+    e.preventDefault(); const err = document.getElementById("erro");
+    const dataDoc = document.getElementById("fData").value;
+    if (!dataDoc) { err.textContent = "Indica a data do documento."; err.classList.remove("hidden"); document.getElementById("fData").focus(); return; }
+    if (!selForn.value) { err.textContent = "Indica o fornecedor."; err.classList.remove("hidden"); return; }
+    if (!selArm.value) { err.textContent = "Indica o armazém de entrada."; err.classList.remove("hidden"); return; }
+    const linhas = lerLinhas(); if (!linhas.length) { err.textContent = "Adiciona pelo menos uma linha com artigo e quantidade."; err.classList.remove("hidden"); return; }
+    if (!document.getElementById("fTipoDoc").value) { err.textContent = "Indica o tipo de documento."; err.classList.remove("hidden"); return; }
+    try {
+      M.saveCompraDoc({ id: editId, documentoCod: document.getElementById("fTipoDoc").value, fornecedorId: selForn.value, armazemId: selArm.value,
+        data: dataDoc, docRef: document.getElementById("fDocRef").value.trim(), ivaPerc: Number(document.getElementById("fIva").value) || 0, linhas });
+    } catch (ex) { err.textContent = ex.message; err.classList.remove("hidden"); return; }
+    modal.classList.add("hidden"); render(); AY.toast("Compra guardada.", "success");
+  };
+  // Criar um novo fornecedor sem sair do lançamento.
+  document.getElementById("fNovoFornecedor").onclick = () => {
+    const nome = (prompt("Nome do novo fornecedor:") || "").trim(); if (!nome) return;
+    const nif = (prompt("NIF (opcional):", "") || "").trim();
+    const f = M.saveFornecedor({ nome, nif, tipoTerceiro: "Fornecedor", estado: "activo" });
+    encherSelects(); selForn.value = f.id;
+    AY.toast("Fornecedor criado.", "success");
+  };
+  // Criar um novo documento sem sair do lançamento — usa sempre o Diário de Compras configurado.
+  document.getElementById("fNovoTipoDoc").onclick = () => {
+    const diario = (L.cfg().diarioEntrada) || "21";
+    const cod = (prompt("Código do novo documento:") || "").trim(); if (!cod) return;
+    if (C.documentos().find(d => d.codigo === cod)) { AY.toast("Já existe um documento com esse código.", "info"); return; }
+    const desc = (prompt("Descrição do documento:", "Compras") || "").trim(); if (!desc) return;
+    C.saveDocumento({ codigo: cod, descricao: desc, diario, contaDebito: "", contaCredito: "", retencao: false, ativo: true });
+    encherTipoDocumento(cod);
+    AY.toast("Documento criado.", "success");
+  };
+  // ---------- Configurações (diário/documento/contas usados na entrada) ----------
+  // Só mostra diários afetos a Compras ou a Tesouraria/Caixa e Bancos — os relevantes para uma
+  // entrada de mercadorias (a crédito de um fornecedor ou a pronto, via caixa/banco).
+  const CATEGORIAS_DIARIO_COMPRAS = ["compras", "caixa_bancos"];
+  const modalConfig = document.getElementById("modalConfig");
+  function opcoesDiarioCompras() { return C.diarios().filter(d => CATEGORIAS_DIARIO_COMPRAS.includes(d.categoria)).map(d => `<option value="${E(d.codigo)}">${E(d.codigo)} · ${E(d.nome)}</option>`).join(""); }
+  function encherDocumentosCfg() {
+    const diario = document.getElementById("cfgDiario").value;
+    document.getElementById("cfgDocumento").innerHTML = C.documentosDoDiario(diario).map(d => `<option value="${E(d.codigo)}">${E(d.codigo)} · ${E(d.descricao)}</option>`).join("");
+  }
+  function abrirConfig() {
+    const c = L.cfg();
+    document.getElementById("cfgDiario").innerHTML = opcoesDiarioCompras();
+    document.getElementById("cfgDiario").value = c.diarioEntrada || "";
+    encherDocumentosCfg();
+    document.getElementById("cfgDocumento").value = c.docEntrada || "";
+    document.getElementById("cfgExist").value = c.contaExistencia || "";
+    document.getElementById("cfgIva").value = c.contaIVADedutivel || "";
+    document.getElementById("cfgForn").value = c.contaContrapartida || "";
+    document.getElementById("contasCfgList").innerHTML = C.contasMovimento().map(x => `<option value="${E(x.codigo)}">${E(x.codigo)} · ${E(x.nome)}</option>`).join("");
+    modalConfig.classList.remove("hidden");
+  }
+  document.getElementById("btnConfig").onclick = abrirConfig;
+  document.getElementById("fecharConfig").onclick = () => modalConfig.classList.add("hidden");
+  document.getElementById("cancelarConfig").onclick = () => modalConfig.classList.add("hidden");
+  document.getElementById("cfgDiario").onchange = encherDocumentosCfg;
+  document.getElementById("novoDiario").onclick = () => {
+    const cod = (prompt("Código do novo diário:") || "").trim(); if (!cod) return;
+    if (C.diario(cod)) { AY.toast("Já existe um diário com esse código.", "info"); return; }
+    const nome = (prompt("Nome do diário:", "Compras") || "").trim(); if (!nome) return;
+    C.saveDiario({ codigo: cod, nome, categoria: "compras" });
+    document.getElementById("cfgDiario").innerHTML = opcoesDiarioCompras();
+    document.getElementById("cfgDiario").value = cod; encherDocumentosCfg();
+    AY.toast("Diário criado.", "success");
+  };
+  document.getElementById("novoDocumento").onclick = () => {
+    const diario = document.getElementById("cfgDiario").value; if (!diario) { AY.toast("Escolhe primeiro o diário.", "info"); return; }
+    const cod = (prompt("Código do novo documento:") || "").trim(); if (!cod) return;
+    if (C.documentos().find(d => d.codigo === cod)) { AY.toast("Já existe um documento com esse código.", "info"); return; }
+    const desc = (prompt("Descrição do documento:", "Compras") || "").trim(); if (!desc) return;
+    C.saveDocumento({ codigo: cod, descricao: desc, diario, contaDebito: "", contaCredito: "", retencao: false, ativo: true });
+    encherDocumentosCfg(); document.getElementById("cfgDocumento").value = cod;
+    AY.toast("Documento criado.", "success");
+  };
+  document.getElementById("formConfig").onsubmit = ev => {
+    ev.preventDefault();
+    if (!document.getElementById("cfgDiario").value || !document.getElementById("cfgDocumento").value) { AY.toast("Escolhe o diário e o documento de compras.", "info"); return; }
+    const c = L.cfg();
+    c.diarioEntrada = document.getElementById("cfgDiario").value;
+    c.docEntrada = document.getElementById("cfgDocumento").value;
+    c.contaExistencia = document.getElementById("cfgExist").value.trim() || c.contaExistencia;
+    c.contaIVADedutivel = document.getElementById("cfgIva").value.trim() || c.contaIVADedutivel;
+    c.contaContrapartida = document.getElementById("cfgForn").value.trim() || c.contaContrapartida;
+    L.saveCfg(c);
+    modalConfig.classList.add("hidden");
+    AY.toast("Configurações de compras guardadas.", "success");
+  };
+
+  render();
+}
+</script>
+</body>
+</html>

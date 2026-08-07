@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<main class="auth">
+  <section class="auth-hero">
+    <div class="ah-logo"><span class="ah-mark">SGD</span><span class="ah-sub"><b>SGD</b><span>SOFTWARE DE GESTÃO DIRIGIDA</span></span></div>
+    <div class="ah-body">
+      <h2>Toda a empresa,<br>num só sistema.</h2>
+      <p>Contabilidade, contas correntes, logística, imobilizados, comercial e RH — módulos ligados entre si.</p>
+      <ul class="auth-features">
+        <li><span class="fi">📒</span> Contabilidade geral (PGC Angola) e analítica</li>
+        <li><span class="fi">💳</span> Contas correntes, tesouraria e imobilizados</li>
+        <li><span class="fi">👥</span> Comercial, logística e recursos humanos</li>
+      </ul>
+    </div>
+    <div class="ah-foot">© <span id="ano"></span> SGD · Software de Gestão Dirigida</div>
+  </section>
+
+  <section class="auth-panel">
+    <button class="icon-btn auth-theme" id="themeBtn" title="Alternar tema">🌙</button>
+    <div class="auth-card">
+      <h1>Entrar</h1>
+      <p class="sub">Acede com a tua conta para continuar.</p>
+      <div id="alertHost"></div>
+      <form id="loginForm">
+        <label>E-mail</label>
+        <input type="email" id="email" required placeholder="nome@sgd.ao" autocomplete="username">
+        <label>Palavra-passe</label>
+        <div class="input-wrap">
+          <input type="password" id="senha" required placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="toggle-eye" id="toggleSenha" title="Mostrar/ocultar" aria-label="Mostrar palavra-passe">👁</button>
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:18px;" type="submit">Entrar</button>
+      </form>
+      <p style="text-align:center;margin-top:14px;">Não tens conta? <a href="registar.html" class="brand-text" style="font-weight:700;">Criar conta</a></p>
+      <details class="demo-accounts">
+        <summary>🔑 Contas de demonstração</summary>
+        <div class="demo-grid" id="demoGrid"></div>
+        <div class="demo-hint">Clica numa conta para preencher · palavra-passe <code>demo123</code></div>
+      </details>
+    </div>
+  </section>
+</main>
+<script src="assets/js/app.js"></script>
+<script>
+  AY.initTheme(); AY.seed();
+  if (AY.currentUser()) { location.href = "index.html"; }
+  document.getElementById("ano").textContent = new Date().getFullYear();
+
+  const tb = document.getElementById("themeBtn");
+  function syncTheme(){ tb.textContent = document.documentElement.getAttribute("data-theme") === "dark" ? "☀️" : "🌙"; }
+  syncTheme(); tb.onclick = () => { AY.toggleTheme(); syncTheme(); };
+
+  document.getElementById("toggleSenha").onclick = function(){ const i = document.getElementById("senha"); const show = i.type === "password"; i.type = show ? "text" : "password"; this.textContent = show ? "🙈" : "👁"; };
+
+  const contas = [
+    ["Super Administrador","super@sgd.ao"], ["Gerente","admin@sgd.ao"], ["Contabilista","contab@sgd.ao"],
+    ["Tesouraria","tesouraria@sgd.ao"], ["Comercial","comercial@sgd.ao"], ["Logística","logistica@sgd.ao"],
+    ["Recursos Humanos","rh@sgd.ao"]
+  ];
+  document.getElementById("demoGrid").innerHTML = contas.map(([l,e]) => `<button type="button" class="demo-pill" data-email="${e}">${l}</button>`).join("");
+  document.querySelectorAll(".demo-pill").forEach(b => b.onclick = () => { document.getElementById("email").value = b.dataset.email; document.getElementById("senha").value = "demo123"; document.getElementById("email").focus(); });
+
+  document.getElementById("loginForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const host = document.getElementById("alertHost");
+    try {
+      AY.login(document.getElementById("email").value, document.getElementById("senha").value);
+      location.href = AY.qs("next") || "index.html";
+    } catch(err){
+      host.innerHTML = '<div class="alert alert-error">' + AY.escapeHtml(err.message) + '</div>';
+    }
+  });
+</script>
+</body>
+</html>

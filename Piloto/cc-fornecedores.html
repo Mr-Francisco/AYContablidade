@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contas Correntes — Fornecedores — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Contas Correntes — Fornecedores</h1><p class="sub">Saldos por conta de fornecedor. Duplo clique abre o extrato / conta corrente.</p></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="busca" placeholder="Pesquisar conta ou entidade…" class="grow">
+        <label style="margin:0;display:flex;align-items:center;gap:6px"><input type="checkbox" id="fComSaldo" style="width:auto;margin:0"> Só com saldo</label>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" id="btnAtualizar">🔄 Atualizar</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+      <div class="table-wrap report-print" id="tabela"></div>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/cc.js"></script>
+<script>renderContasCorrentes({ pagina: "cc-fornecedores.html", prefixo: "32", natureza: "C", titulo: "fornecedores", saldoLabel: "Total a pagar" });</script>
+</body>
+</html>

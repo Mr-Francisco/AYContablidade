@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perfil — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>O Meu Perfil</h1></div>
+    <div class="card" style="max-width:520px">
+      <div id="info"></div>
+      <form id="form" style="margin-top:12px">
+        <label>Nome<input id="fNome"></label>
+        <label>Nova palavra-passe<input id="fSenha" type="password" placeholder="(deixa vazio p/ manter)"></label>
+        <div class="modal-actions"><button class="btn btn-primary" type="submit">Guardar</button></div>
+      </form>
+      <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
+      <button class="btn btn-outline btn-block" id="sair">Terminar sessão</button>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script>
+const u = AY.initPage("perfil.html", null);
+if (u) {
+  const E = AY.escapeHtml;
+  document.getElementById("info").innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="avatar" style="width:52px;height:52px;font-size:20px;background:${(AY.PERFIS[u.perfil] || {}).cor}">${u.nome.split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase()}</span>
+      <div><b style="font-size:18px">${E(u.nome)}</b><br><span class="sub">${E(u.email)} · ${AY.perfilLabel(u.perfil)}</span></div>
+    </div>`;
+  document.getElementById("fNome").value = u.nome;
+  document.getElementById("form").onsubmit = (e) => {
+    e.preventDefault();
+    const x = AY.currentUser();
+    x.nome = document.getElementById("fNome").value.trim() || x.nome;
+    const s = document.getElementById("fSenha").value; if (s) x.senha = s;
+    AY.Store.saveUser(x); AY.toast("Perfil guardado.", "success"); AY.renderHeader("perfil.html");
+    document.getElementById("info").querySelector("b").textContent = x.nome;
+  };
+  document.getElementById("sair").onclick = () => AY.logout();
+}
+</script>
+</body>
+</html>

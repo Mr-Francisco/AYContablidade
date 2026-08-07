@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movimentos — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="mov-toolbar">
+      <button class="btn btn-primary btn-sm" id="btnGravar">💾 Gravar</button>
+      <button class="btn btn-outline btn-sm" id="btnNovo">📄 Novo</button>
+      <button class="btn btn-outline btn-sm" id="btnEliminar">🗑 Eliminar</button>
+      <button class="btn btn-outline btn-sm hidden" id="btnIntegrar" title="Integra o movimento: passa a contar no balancete, razão e apuramentos">✅ Integrar</button>
+      <span id="estado" class="tag" style="margin-left:auto"></span>
+    </div>
+
+    <div class="mov-layout">
+      <!-- Lista de lançamentos (Diário) -->
+      <aside class="mov-list card">
+        <div class="mov-list-head">
+          <b>Diário</b>
+          <select id="filtroDiario" class="sel-mini"><option value="">Todos</option></select>
+        </div>
+        <input type="search" id="busca" placeholder="Pesquisar…" class="sel-mini" style="width:100%;margin-bottom:6px">
+        <label class="chk" style="margin-bottom:8px;font-size:12px"><input type="checkbox" id="soDiferidos"> Só diferidos (pendentes de integração)</label>
+        <div class="mov-list-body" id="lista"></div>
+      </aside>
+
+      <!-- Editor -->
+      <section class="mov-editor card">
+        <div class="mov-head">
+          <div class="mov-field"><label>Data</label>
+            <div class="mov-date"><input type="number" id="fAno" min="2000" max="2100" style="width:70px"><button type="button" id="fDataBtn" class="btn btn-outline btn-sm" style="min-width:190px;justify-content:flex-start"></button></div>
+          </div>
+          <div class="mov-field"><label>Lançamento</label><input id="fNum" disabled placeholder="Actual"></div>
+          <div class="mov-field grow"><label>Diário</label>
+            <div class="mov-inline"><input id="fDiarioCod" list="diariosList" placeholder="Cód." style="width:64px"><span id="fDiarioNome" class="mov-name">—</span></div>
+          </div>
+          <div class="mov-field grow"><label>Documento</label>
+            <div class="mov-inline"><select id="fDocumento" class="sel-mini" style="width:100%"></select></div>
+          </div>
+        </div>
+        <div class="mov-head" style="border-top:none;padding-top:0">
+          <div class="mov-field grow"><label>Descrição</label><input id="fDesc" placeholder="Descrição do movimento"></div>
+          <div class="mov-field"><label>Nº Documento</label><input id="fDocRef" placeholder="Ex.: FT 2026/1"></div>
+          <div class="mov-field"><label>&nbsp;</label><label class="chk mov-diferido" title="Fica pendente de integração — não entra no balancete, razão, extrato nem apuramentos até ser integrado"><input type="checkbox" id="fDiferido"> Diferido</label></div>
+        </div>
+
+        <div class="tabs" id="movTabs">
+          <button class="tab active" data-tab="geral">Geral</button>
+          <button class="tab" data-tab="cc">Centros de Custo</button>
+          <button class="tab" data-tab="fluxos">Fluxos Caixa</button>
+        </div>
+
+        <div id="tabGeral">
+          <div class="table-wrap">
+            <table class="lanc-table mov-grid">
+              <thead><tr>
+                <th>Conta</th><th class="num">Débito</th><th class="num">Crédito</th>
+                <th class="num">IVA %</th><th class="num">% n/Ded.</th><th class="num">IVA Autoliq.</th>
+                <th>T. Entidade</th><th>Entidade</th><th>Moeda</th><th class="num">Câmbio</th>
+                <th>Descrição</th><th style="width:34px"></th>
+              </tr></thead>
+              <tbody id="gridGeral"></tbody>
+              <tfoot>
+                <tr><td style="text-align:right"><b>Totais</b></td><td class="num"><b id="totDeb">0,00</b></td><td class="num"><b id="totCred">0,00</b></td><td colspan="9"></td></tr>
+                <tr><td style="text-align:right">Diferença</td><td class="num" colspan="2"><b id="dif">0,00</b></td><td colspan="9"></td></tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="list-actions" style="margin-top:8px"><button type="button" class="btn btn-outline btn-sm" id="addLinha">+ Linha</button></div>
+        </div>
+
+        <div id="tabCC" class="hidden">
+          <p class="sub" style="margin-bottom:8px">Imputação a centros de custo / analítica (por linha).</p>
+          <div class="table-wrap"><table><thead><tr><th>Conta</th><th>Descrição</th><th class="num">Valor</th><th style="width:32%">Centro de custo</th></tr></thead><tbody id="gridCC"></tbody></table></div>
+        </div>
+
+        <div id="tabFluxos" class="hidden">
+          <p class="sub" style="margin-bottom:8px">Classificação de fluxos de caixa (linhas de contas monetárias — caixa/bancos). <b>Obrigatório</b> em qualquer linha das contas 43 (Depósitos à Ordem) ou 45 (Caixa) e respetivas subcontas.</p>
+          <div class="table-wrap"><table><thead><tr><th>Conta</th><th>Descrição</th><th class="num">Valor</th><th style="width:38%">Rúbrica de fluxo</th></tr></thead><tbody id="gridFluxos"></tbody></table></div>
+        </div>
+
+        <div id="formErro" class="alert alert-error hidden" style="margin-top:10px"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<datalist id="contasList"></datalist>
+<datalist id="diariosList"></datalist>
+
+<!-- Criação rápida de conta (quando a conta não existe ao gravar) -->
+<div class="modal-backdrop hidden" id="modalNovaConta"><div class="modal" style="max-width:520px">
+  <div class="modal-head"><b id="ncTitulo">Criar conta</b><button class="icon-btn" id="ncFechar">✕</button></div>
+  <p class="sub" id="ncAviso">A conta ainda não existe no plano. Preenche os dados para a criar e continuar.</p>
+  <form id="ncForm">
+    <div class="grid-2">
+      <label>Código<input id="ncCodigo" required></label>
+      <label>Natureza<select id="ncNatureza"><option value="D">Devedora</option><option value="C">Credora</option><option value="M">Mista</option></select></label>
+    </div>
+    <label>Designação<input id="ncNome" required placeholder="Nome da conta"></label>
+    <div id="ncErro" class="alert alert-error hidden"></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="ncCancelar">Cancelar</button><button type="submit" class="btn btn-primary">Criar e continuar</button></div>
+  </form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/imobilizados.js"></script>
+<script src="assets/js/conta-picker.js"></script>
+<script>
+const u = AY.initPage("movimentos.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2;
+  const podeLancar = AY.can("contab.lancar");
+
+  let state = null;
+
+  function novoState() {
+    const ano = (AY.exercicioAtivo() || {}).nome ? Number((AY.exercicioAtivo().inicio || "").slice(0, 4)) : new Date().getFullYear();
+    const hoje = new Date();
+    return { editId: null, ano, dia: String(hoje.getDate()).padStart(2, "0"), mes: String(hoje.getMonth() + 1).padStart(2, "0"), diario: "", documento: "", documentoRef: "", descricao: "", diferido: false, linhas: [linhaVazia(), linhaVazia()] };
+  }
+  function linhaVazia() { return { conta: "", debito: 0, credito: 0, ivaPerc: 0, percNaoDed: 0, ivaAutoliq: 0, tipoEntidade: "", entidade: "", moeda: "AKZ", cambio: 1, descricao: "", centro: "", fluxo: "" }; }
+  // Mês 00/13/14/15 não são meses de calendário reais — mapeiam para o mês de calendário
+  // guardado na data (Abertura → Janeiro, Regularizações/Apuramentos → Dezembro), sem afetar
+  // o período contabilístico gravado em l.mes (usado nos balancetes/apuramentos).
+  const MES_CALENDARIO = { "00": "01", "13": "12", "14": "12", "15": "12" };
+  function mesCalendario(mes) { return MES_CALENDARIO[mes] || mes || "01"; }
+  function dataISO() { const dia = (state.dia || "01").padStart(2, "0"); return state.ano + "-" + mesCalendario(state.mes) + "-" + dia; }
+
+  // Datalists
+  document.getElementById("contasList").innerHTML = C.contasMovimento().map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join("");
+  document.getElementById("diariosList").innerHTML = C.diarios().map(d => `<option value="${E(d.codigo)}">${E(d.codigo)} · ${E(d.nome)}</option>`).join("");
+  const selFD = document.getElementById("filtroDiario");
+  C.diarios().forEach(d => selFD.appendChild(new Option(d.codigo + " · " + d.nome, d.codigo)));
+
+  // ---------- Cabeçalho ----------
+  function bindHead() {
+    document.getElementById("fAno").value = state.ano;
+    atualizarBotaoData();
+    document.getElementById("fDiarioCod").value = state.diario;
+    document.getElementById("fDesc").value = state.descricao;
+    document.getElementById("fDocRef").value = state.documentoRef;
+    document.getElementById("fNum").value = state.editId ? ((C.lancamento(state.editId) || {}).numeroOp || (C.lancamento(state.editId) || {}).numero || "") : "(automático)";
+    document.getElementById("fDiarioNome").textContent = state.diario ? C.diarioNome(state.diario) : "—";
+    document.getElementById("fDiferido").checked = !!state.diferido;
+    atualizarBotaoIntegrar();
+    renderDocumentos();
+  }
+  // O botão Integrar só aparece para um movimento já gravado que ainda esteja diferido (pendente).
+  function atualizarBotaoIntegrar() {
+    const btn = document.getElementById("btnIntegrar");
+    const l = state.editId ? C.lancamento(state.editId) : null;
+    btn.classList.toggle("hidden", !(l && l.diferido && podeLancar));
+  }
+  document.getElementById("fDiferido").addEventListener("change", e => { state.diferido = e.target.checked; });
+  document.getElementById("fAno").oninput = e => state.ano = Number(e.target.value) || state.ano;
+
+  // ---------- Seletor de Mês/Dia (grelha: mês 00-15, dia 01-31) ----------
+  function atualizarBotaoData() {
+    const mes = state.mes || "01";
+    document.getElementById("fDataBtn").textContent = (state.dia || "01") + " / " + mes + " · " + C.periodoLabel(mes);
+  }
+  function dpOutside(e) { const p = document.getElementById("dpPicker"); if (p && !p.contains(e.target) && e.target.id !== "fDataBtn") fecharDataPicker(); }
+  function dpEsc(e) { if (e.key === "Escape") fecharDataPicker(); }
+  function fecharDataPicker() {
+    const p = document.getElementById("dpPicker"); if (p) p.remove();
+    document.removeEventListener("mousedown", dpOutside, true);
+    document.removeEventListener("keydown", dpEsc, true);
+  }
+  function renderDataPicker(pop) {
+    const mesAtual = state.mes || "01", diaAtual = state.dia || "01";
+    pop.querySelectorAll("[data-mes]").forEach(b => b.classList.toggle("sel", b.dataset.mes === mesAtual));
+    pop.querySelectorAll("[data-dia]").forEach(b => b.classList.toggle("sel", b.dataset.dia === diaAtual));
+  }
+  function abrirDataPicker() {
+    fecharDataPicker();
+    const btn = document.getElementById("fDataBtn");
+    const rect = btn.getBoundingClientRect();
+    const pop = document.createElement("div");
+    pop.id = "dpPicker"; pop.className = "dp-pop";
+    pop.style.top = (rect.bottom + 6) + "px";
+    pop.style.left = rect.left + "px";
+    const dias = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+    pop.innerHTML = `
+      <div class="dp-secao"><b>Mês</b><div class="dp-grid dp-grid-mes">${C.PERIODOS.map(([cod, nome]) => `<button type="button" class="dp-cell" data-mes="${cod}" title="${cod} · ${E(nome)}">${Number(cod)}</button>`).join("")}</div></div>
+      <div class="dp-secao"><b>Dia</b><div class="dp-grid dp-grid-dia">${dias.map(d => `<button type="button" class="dp-cell" data-dia="${d}">${Number(d)}</button>`).join("")}</div></div>`;
+    document.body.appendChild(pop);
+    renderDataPicker(pop);
+    pop.querySelectorAll("[data-mes]").forEach(b => b.onclick = () => { state.mes = b.dataset.mes; atualizarBotaoData(); renderDataPicker(pop); });
+    pop.querySelectorAll("[data-dia]").forEach(b => b.onclick = () => { state.dia = b.dataset.dia; atualizarBotaoData(); renderDataPicker(pop); });
+    setTimeout(() => { document.addEventListener("mousedown", dpOutside, true); document.addEventListener("keydown", dpEsc, true); }, 0);
+  }
+  document.getElementById("fDataBtn").onclick = abrirDataPicker;
+
+  document.getElementById("fDesc").oninput = e => state.descricao = e.target.value;
+  document.getElementById("fDocRef").oninput = e => state.documentoRef = e.target.value;
+  document.getElementById("fDiarioCod").addEventListener("change", e => {
+    state.diario = e.target.value.trim();
+    document.getElementById("fDiarioNome").textContent = state.diario ? C.diarioNome(state.diario) : "—";
+    state.documento = "";
+    renderDocumentos();
+    recalc();
+  });
+
+  function renderDocumentos() {
+    const sel = document.getElementById("fDocumento");
+    const docs = state.diario ? C.documentosDoDiario(state.diario) : [];
+    sel.innerHTML = `<option value="">— Documento —</option>` + docs.map(d => `<option value="${d.id}">${E(d.codigo)} · ${E(d.descricao)}</option>`).join("");
+    sel.value = state.documento || "";
+  }
+  document.getElementById("fDocumento").onchange = e => {
+    state.documento = e.target.value;
+    recalc();
+    const doc = state.documento ? C.documento(state.documento) : null;
+    if (doc) {
+      if (!state.descricao) { state.descricao = doc.descricao; document.getElementById("fDesc").value = doc.descricao; }
+      state.documentoRef = state.documentoRef || "";
+      // Pré-preenche contas débito/crédito por omissão do documento
+      const temConteudo = state.linhas.some(l => l.conta || l.debito || l.credito);
+      if (!temConteudo) {
+        state.linhas = [];
+        if (doc.contaDebito) state.linhas.push(Object.assign(linhaVazia(), { conta: doc.contaDebito, descricao: doc.descricao }));
+        if (doc.contaCredito) state.linhas.push(Object.assign(linhaVazia(), { conta: doc.contaCredito, descricao: doc.descricao }));
+        while (state.linhas.length < 2) state.linhas.push(linhaVazia());
+        renderGeral();
+      }
+    }
+  };
+
+  // Mostra por baixo do campo Conta o nome da conta indicada (confirmação visual da seleção).
+  function pintarConta(tr) {
+    const inp = tr.querySelector(".g-conta"), lbl = tr.querySelector(".g-conta-nome");
+    if (!lbl) return;
+    const cod = inp.value.trim();
+    if (!cod) { lbl.textContent = ""; lbl.className = "g-conta-nome"; inp.title = "F4 ou duplo clique: procurar no plano de contas"; return; }
+    const c = C.contaPorCodigo(cod);
+    if (!c) { lbl.textContent = "✗ conta inexistente"; lbl.className = "g-conta-nome nf"; inp.title = "Conta não encontrada (cria-a ao gravar)"; return; }
+    if (!C.ehMovimento(c)) { lbl.textContent = "▸ " + c.nome + " · integradora (não recebe lançamentos)"; lbl.className = "g-conta-nome warn"; inp.title = c.nome + " — integradora"; return; }
+    lbl.textContent = "✓ " + c.nome; lbl.className = "g-conta-nome ok"; inp.title = c.nome;
+  }
+
+  // ---------- Aba Geral (grelha) ----------
+  function renderGeral() {
+    const tb = document.getElementById("gridGeral");
+    const optTE = ["", "Cliente", "Fornecedor", "Estado", "Outro"], optMo = ["AKZ", "USD", "EUR"];
+    tb.innerHTML = state.linhas.map((l, i) => `<tr data-i="${i}">
+      <td><input class="g-conta" list="contasList" value="${E(l.conta)}" placeholder="Conta (F4)" title="F4 ou duplo clique: procurar no plano de contas"><div class="g-conta-nome"></div></td>
+      <td><input class="g-deb num-input" type="number" step="0.01" min="0" value="${l.debito || ""}"></td>
+      <td><input class="g-cred num-input" type="number" step="0.01" min="0" value="${l.credito || ""}"></td>
+      <td><input class="g-iva num-input" type="number" step="1" min="0" value="${l.ivaPerc || ""}"></td>
+      <td><input class="g-nded num-input" type="number" step="1" min="0" max="100" value="${l.percNaoDed || ""}" title="% não dedutível"></td>
+      <td><input class="g-autoliq num-input" type="number" step="0.01" min="0" value="${l.ivaAutoliq || ""}" title="IVA autoliquidação"></td>
+      <td><select class="g-tent">${optTE.map(o => `<option value="${o}"${(l.tipoEntidade || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></td>
+      <td><input class="g-ent" value="${E(l.entidade)}" placeholder="Entidade"></td>
+      <td><select class="g-moeda">${optMo.map(o => `<option${(l.moeda || "AKZ") === o ? " selected" : ""}>${o}</option>`).join("")}</select></td>
+      <td><input class="g-cambio num-input" type="number" step="0.0001" min="0" value="${l.cambio != null ? l.cambio : 1}" title="Câmbio p/ AKZ"></td>
+      <td><input class="g-desc" value="${E(l.descricao)}" placeholder="Descrição"></td>
+      <td><button type="button" class="icon-btn g-del" title="Remover">✕</button></td>
+    </tr>`).join("");
+    tb.querySelectorAll("tr").forEach(tr => {
+      const i = Number(tr.dataset.i);
+      const upd = () => {
+        const l = state.linhas[i];
+        l.conta = tr.querySelector(".g-conta").value.trim();
+        l.debito = Number(tr.querySelector(".g-deb").value) || 0;
+        l.credito = Number(tr.querySelector(".g-cred").value) || 0;
+        l.ivaPerc = Number(tr.querySelector(".g-iva").value) || 0;
+        l.percNaoDed = Number(tr.querySelector(".g-nded").value) || 0;
+        l.ivaAutoliq = Number(tr.querySelector(".g-autoliq").value) || 0;
+        l.tipoEntidade = tr.querySelector(".g-tent").value;
+        l.entidade = tr.querySelector(".g-ent").value;
+        l.moeda = tr.querySelector(".g-moeda").value;
+        l.cambio = Number(tr.querySelector(".g-cambio").value) || 1;
+        l.descricao = tr.querySelector(".g-desc").value;
+      };
+      tr.querySelectorAll("input, select").forEach(inp => inp.addEventListener("input", () => { upd(); recalc(); }));
+      tr.querySelectorAll("select").forEach(sel => sel.addEventListener("change", () => { upd(); recalc(); }));
+      // débito e crédito mutuamente exclusivos
+      tr.querySelector(".g-deb").addEventListener("input", e => { if (e.target.value) { tr.querySelector(".g-cred").value = ""; state.linhas[i].credito = 0; } });
+      tr.querySelector(".g-cred").addEventListener("input", e => { if (e.target.value) { tr.querySelector(".g-deb").value = ""; state.linhas[i].debito = 0; } });
+      const contaInp = tr.querySelector(".g-conta");
+      contaInp.addEventListener("input", () => pintarConta(tr));
+      contaInp.addEventListener("change", () => pintarConta(tr));
+      pintarConta(tr); // estado inicial (linhas já preenchidas)
+      // F4 / duplo clique → abrir plano de contas para escolher
+      tr.querySelector(".g-conta").addEventListener("keydown", e => { if (e.key === "F4") { e.preventDefault(); abrirPlano(tr.querySelector(".g-conta")); } });
+      tr.querySelector(".g-conta").addEventListener("dblclick", () => abrirPlano(tr.querySelector(".g-conta")));
+      tr.querySelector(".g-del").onclick = () => { state.linhas.splice(i, 1); if (state.linhas.length < 2) state.linhas.push(linhaVazia()); renderGeral(); };
+    });
+    recalc();
+  }
+  document.getElementById("addLinha").onclick = () => { state.linhas.push(linhaVazia()); renderGeral(); };
+
+  // Enter na grelha → avança para a célula seguinte (nova linha ao chegar ao fim)
+  document.getElementById("gridGeral").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const inp = e.target;
+    if (!inp.matches || !inp.matches("input")) return;
+    e.preventDefault();
+    if (inp.classList.contains("g-conta")) inp.dispatchEvent(new Event("change", { bubbles: true }));
+    const inputs = Array.from(document.querySelectorAll("#gridGeral input"));
+    const idx = inputs.indexOf(inp);
+    if (idx >= 0 && idx < inputs.length - 1) {
+      const prox = inputs[idx + 1];
+      autoBalancear(prox);   // se for célula de valor vazia que equilibra, preenche automaticamente
+      prox.focus(); if (prox.select) try { prox.select(); } catch (_) {}
+    } else {
+      state.linhas.push(linhaVazia()); renderGeral();
+      const rows = document.querySelectorAll("#gridGeral tr");
+      const last = rows[rows.length - 1]; if (last) last.querySelector(".g-conta").focus();
+    }
+  });
+
+  // Balanceamento automático: ao chegar (Enter) a uma célula de valor vazia com conta,
+  // preenche-a com o valor que falta para equilibrar (débito=crédito).
+  function autoBalancear(cell) {
+    if (!cell || cell.value) return;
+    const isDeb = cell.classList.contains("g-deb"), isCred = cell.classList.contains("g-cred");
+    if (!isDeb && !isCred) return;
+    const tr = cell.closest("tr"); const i = Number(tr.dataset.i);
+    if (!state.linhas[i] || !state.linhas[i].conta) return; // só se a linha já tem conta
+    const s = C.somaLinhas(state.linhas.map(l => ({ debito: l.debito, credito: l.credito })));
+    const dif = AY.round2(s.debito - s.credito);
+    if (isCred && dif > 0) {
+      cell.value = dif; state.linhas[i].credito = dif; state.linhas[i].debito = 0;
+      tr.querySelector(".g-deb").value = ""; recalc();
+    } else if (isDeb && dif < 0) {
+      cell.value = -dif; state.linhas[i].debito = -dif; state.linhas[i].credito = 0;
+      tr.querySelector(".g-cred").value = ""; recalc();
+    }
+  }
+
+  // ---------- Seletor de conta (Plano de Contas / F4) — árvore igual à página Plano de Contas ----------
+  function abrirPlano(input) { AY.contaPicker.abrir(input, { soMovimento: true, titulo: "Plano de Contas — escolher conta (só contas de movimento)" }); }
+
+  // ---------- Criação rápida de conta (quando não existe ao gravar) ----------
+  const modalNC = document.getElementById("modalNovaConta");
+  let contaEmFaltaPendente = false;
+  function atualizarContasDatalist() { document.getElementById("contasList").innerHTML = C.contasMovimento().map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join(""); }
+  function abrirNovaConta(codigo) {
+    document.getElementById("ncTitulo").textContent = "Criar conta " + (codigo || "");
+    document.getElementById("ncCodigo").value = codigo || "";
+    document.getElementById("ncNome").value = "";
+    document.getElementById("ncNatureza").value = C.naturezaConta(codigo || "");
+    // aviso: se estende uma conta de movimento, vira subconta (a mãe passa a integradora)
+    const todas = C.contas();
+    const parent = todas.filter(c => codigo.startsWith(c.codigo) && c.codigo.length < codigo.length && C.ehMovimento(c, todas)).sort((a, b) => b.codigo.length - a.codigo.length)[0];
+    document.getElementById("ncAviso").textContent = parent
+      ? "A conta " + codigo + " não existe. Será criada como subconta de " + parent.codigo + " (que passa a integradora)."
+      : "A conta " + codigo + " não existe no plano. Preenche os dados para a criar e continuar.";
+    document.getElementById("ncErro").classList.add("hidden");
+    modalNC.classList.remove("hidden");
+    setTimeout(() => document.getElementById("ncNome").focus(), 30);
+  }
+  document.getElementById("ncCodigo").oninput = function () { document.getElementById("ncNatureza").value = C.naturezaConta(this.value.trim()); };
+  document.getElementById("ncFechar").onclick = () => { contaEmFaltaPendente = false; modalNC.classList.add("hidden"); };
+  document.getElementById("ncCancelar").onclick = () => { contaEmFaltaPendente = false; modalNC.classList.add("hidden"); };
+  document.getElementById("ncForm").onsubmit = (e) => {
+    e.preventDefault();
+    const cod = document.getElementById("ncCodigo").value.trim();
+    const nome = document.getElementById("ncNome").value.trim();
+    const err = document.getElementById("ncErro"); err.classList.add("hidden");
+    if (!/^\d{1,12}$/.test(cod)) { err.textContent = "Código deve ser numérico (ex.: 632)."; err.classList.remove("hidden"); return; }
+    if (C.contaPorCodigo(cod)) { err.textContent = "Já existe a conta " + cod + "."; err.classList.remove("hidden"); return; }
+    // Regra geral: se estende uma conta de movimento, vira subconta (mãe → integradora, migra movimentos)
+    try {
+      C.criarConta(cod, nome, document.getElementById("ncNatureza").value);
+    } catch (ex) { err.textContent = ex.message; err.classList.remove("hidden"); return; }
+    atualizarContasDatalist();
+    modalNC.classList.add("hidden");
+    AY.toast("Conta " + cod + " criada.", "success");
+    // Retoma a gravação (trata a próxima conta em falta ou conclui)
+    if (contaEmFaltaPendente) { contaEmFaltaPendente = false; document.getElementById("btnGravar").click(); }
+  };
+
+  function recalc() {
+    const s = C.somaLinhas(state.linhas.map(l => ({ debito: l.debito, credito: l.credito })));
+    document.getElementById("totDeb").textContent = m2(s.debito);
+    document.getElementById("totCred").textContent = m2(s.credito);
+    const dif = AY.round2(s.debito - s.credito);
+    const dEl = document.getElementById("dif"); dEl.textContent = m2(dif); dEl.style.color = dif === 0 ? "var(--success)" : "var(--danger)";
+    const est = document.getElementById("estado");
+    const equilibrado = dif === 0 && s.debito > 0;
+    // Diário e documento são obrigatórios; depois o fluxo de caixa nas contas monetárias (43/45); depois o equilíbrio
+    let motivo = "";
+    const semFluxo = state.linhas.find(l => l.conta && /^4[35]/.test(l.conta) && (l.debito || l.credito) && !l.fluxo);
+    if (!state.diario) motivo = "Indica o diário";
+    else if (!state.documento) motivo = "Indica o documento";
+    else if (semFluxo) motivo = "Indica o fluxo de caixa da conta " + semFluxo.conta + " (aba Fluxos Caixa) — obrigatório em contas 43/45";
+    if (motivo) { est.textContent = "⚠ " + motivo; est.style.color = "var(--warning)"; }
+    else if (s.debito === 0 && s.credito === 0) { est.textContent = "vazio"; est.style.color = ""; }
+    else if (equilibrado) { est.textContent = "✓ equilibrado"; est.style.color = "var(--success)"; }
+    else { est.textContent = "✗ diferença " + m2(Math.abs(dif)) + " — débito ≠ crédito"; est.style.color = "var(--danger)"; }
+    // Só grava com diário + documento + fluxo de caixa (contas 43/45) + equilíbrio
+    const completo = !!state.diario && !!state.documento && !semFluxo && equilibrado;
+    const btn = document.getElementById("btnGravar");
+    if (btn && podeLancar) {
+      btn.disabled = !completo;
+      btn.title = completo ? "" : (motivo || "O total do débito tem de ser igual ao total do crédito.");
+      btn.style.opacity = completo ? "" : ".5";
+      btn.style.cursor = completo ? "" : "not-allowed";
+    }
+  }
+
+  // ---------- Aba Centros de Custo ----------
+  function renderCC() {
+    const tb = document.getElementById("gridCC");
+    const linhas = state.linhas.filter(l => l.conta && (l.debito || l.credito));
+    const centros = C.centrosAtivos();
+    tb.innerHTML = linhas.length ? linhas.map(l => {
+      const i = state.linhas.indexOf(l);
+      return `<tr><td><b>${E(l.conta)}</b></td><td>${E(l.descricao || "")}</td><td class="num">${m2(l.debito || l.credito)}</td>
+        <td><select class="cc-sel sel-mini" data-i="${i}" style="width:100%"><option value="">— Sem centro —</option>${centros.map(c => `<option value="${E(c.codigo)}"${l.centro === c.codigo ? " selected" : ""}>${E(c.codigo)} · ${E(c.nome)}</option>`).join("")}</select></td></tr>`;
+    }).join("") : `<tr><td colspan="4" class="empty">Sem linhas com conta.</td></tr>`;
+    tb.querySelectorAll(".cc-sel").forEach(sel => sel.onchange = () => state.linhas[Number(sel.dataset.i)].centro = sel.value);
+  }
+  // ---------- Aba Fluxos ----------
+  function renderFluxos() {
+    const tb = document.getElementById("gridFluxos");
+    const opts = C.fluxosMovimento();
+    const linhas = state.linhas.filter(l => l.conta && (l.debito || l.credito));
+    tb.innerHTML = linhas.length ? linhas.map(l => {
+      const i = state.linhas.indexOf(l);
+      const monetaria = /^4[35]/.test(l.conta);
+      const obrigatorioEmFalta = monetaria && !l.fluxo;
+      return `<tr${monetaria ? "" : ' style="opacity:.6"'}><td><b>${E(l.conta)}</b>${monetaria ? ' <span style="color:var(--danger)" title="Obrigatório para contas 43/45">*</span>' : ""}</td><td>${E(l.descricao || "")}</td><td class="num">${m2(l.debito || l.credito)}</td>
+        <td><select class="fx-in sel-mini" data-i="${i}" style="width:100%${obrigatorioEmFalta ? ";border-color:var(--danger)" : ""}"><option value="">—</option>${opts.map(f => `<option value="${f.codigo}" ${l.fluxo === f.codigo ? "selected" : ""}>${E(f.codigo)} · ${E(f.descricao)}</option>`).join("")}</select></td></tr>`;
+    }).join("") : `<tr><td colspan="4" class="empty">Sem linhas com conta.</td></tr>`;
+    tb.querySelectorAll(".fx-in").forEach(sel => sel.onchange = () => { state.linhas[Number(sel.dataset.i)].fluxo = sel.value; recalc(); renderFluxos(); });
+  }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll("#movTabs .tab").forEach(b => b.onclick = () => {
+    document.querySelectorAll("#movTabs .tab").forEach(x => x.classList.toggle("active", x === b));
+    const t = b.dataset.tab;
+    document.getElementById("tabGeral").classList.toggle("hidden", t !== "geral");
+    document.getElementById("tabCC").classList.toggle("hidden", t !== "cc");
+    document.getElementById("tabFluxos").classList.toggle("hidden", t !== "fluxos");
+    if (t === "cc") renderCC(); else if (t === "fluxos") renderFluxos();
+  });
+
+  // ---------- Ações ----------
+  // Diário e Documento mantêm-se selecionados de um lançamento para o seguinte (não é produtivo
+  // voltar a escolhê-los sempre) — só mudam quando o utilizador os muda explicitamente.
+  function novo() {
+    const diarioAnterior = state ? state.diario : "", documentoAnterior = state ? state.documento : "";
+    state = novoState();
+    state.diario = diarioAnterior; state.documento = documentoAnterior;
+    bindHead(); renderGeral(); document.getElementById("formErro").classList.add("hidden");
+  }
+  function carregar(l) {
+    state = { editId: l.id, ano: Number((l.data || "").slice(0, 4)) || new Date().getFullYear(), dia: (l.data || "").slice(8, 10) || "01", mes: l.mes || (l.data || "").slice(5, 7) || "01", diario: l.diario || "", documento: "", documentoRef: l.documentoRef || "", descricao: l.descricao || "", diferido: !!l.diferido, linhas: (l.linhas || []).map(x => ({ conta: x.codigo, debito: x.debito || 0, credito: x.credito || 0, ivaPerc: x.ivaPerc || 0, percNaoDed: x.percNaoDed || 0, ivaAutoliq: x.ivaAutoliq || 0, tipoEntidade: x.tipoEntidade || "", entidade: x.entidade || "", moeda: x.moeda || "AKZ", cambio: x.cambio != null ? x.cambio : 1, descricao: x.descricao || "", centro: x.centro || "", fluxo: x.fluxo || "" })) };
+    // resolve documento pelo id OU pelo código; se não houver documento registado, usa o próprio código guardado
+    if (l.documento) { const d = C.documentos().find(x => x.id === l.documento || x.codigo === String(l.documento)); state.documento = d ? d.id : l.documento; }
+    if (state.linhas.length < 2) state.linhas.push(linhaVazia());
+    bindHead(); renderGeral();
+  }
+  document.getElementById("btnNovo").onclick = novo;
+  document.getElementById("btnGravar").onclick = () => {
+    const err = document.getElementById("formErro"); err.classList.add("hidden");
+    if (!podeLancar) { err.textContent = "Sem permissão para lançar."; err.classList.remove("hidden"); return; }
+    // Diário e documento obrigatórios
+    if (!state.diario) { err.textContent = "Indica o diário antes de gravar."; err.classList.remove("hidden"); document.getElementById("fDiarioCod").focus(); return; }
+    if (!state.documento) { err.textContent = "Indica o documento antes de gravar."; err.classList.remove("hidden"); document.getElementById("fDocumento").focus(); return; }
+    // Conta inexistente → abre a janela de criação de conta (em vez de erro)
+    const faltante = state.linhas.find(l => l.conta && !C.contaPorCodigo(l.conta));
+    if (faltante) { contaEmFaltaPendente = true; abrirNovaConta(faltante.conta); return; }
+    try {
+      const doc = state.documento ? C.documento(state.documento) : null;
+      const saved = C.saveLancamento({
+        id: state.editId, data: dataISO(), diario: state.diario, documento: state.documento, mes: state.mes,
+        documentoRef: state.documentoRef, descricao: state.descricao, diferido: state.diferido,
+        linhas: state.linhas.map(l => ({ codigo: l.conta, debito: l.debito, credito: l.credito, ivaPerc: l.ivaPerc, percNaoDed: l.percNaoDed, ivaAutoliq: l.ivaAutoliq, tipoEntidade: l.tipoEntidade, entidade: l.entidade, moeda: l.moeda, cambio: l.cambio, descricao: l.descricao, centro: l.centro, fluxo: l.fluxo })),
+      });
+      AY.toast(state.editId ? "Movimento atualizado." : "Movimento nº " + saved.numero + (saved.diferido ? " gravado — diferido, pendente de integração." : " gravado."), "success");
+      // Conta de imobilizado (11x/12x) a débito, ainda sem ativo registado — oferece abrir a Ficha de Ativos.
+      const linhaImob = AY.imob ? saved.linhas.find(l => l.debito > 0 && /^1[12]/.test(l.codigo)) : null;
+      const jaRegistado = linhaImob && AY.imob.ativos().some(a => a.lancamentoOrigemId === saved.id);
+      if (linhaImob && !jaRegistado && confirm("Este lançamento debita a conta de imobilizado " + linhaImob.codigo + " (" + linhaImob.nome + "). Abrir a Ficha de Ativos para registar o ativo?")) {
+        const linhaForn = saved.linhas.find(l => l.tipoEntidade === "Fornecedor" && l.entidade);
+        const params = new URLSearchParams({ novo: "1", conta: linhaImob.codigo, valor: linhaImob.debito, data: saved.data,
+          designacao: linhaImob.descricao || linhaImob.nome, lancamento: saved.id });
+        if (linhaForn) params.set("fornecedor", linhaForn.entidade);
+        location.href = "imobilizados.html?" + params.toString();
+        return;
+      }
+      novo(); renderLista();
+    } catch (ex) { err.textContent = ex.message; err.classList.remove("hidden"); }
+  };
+  document.getElementById("btnEliminar").onclick = () => {
+    if (!state.editId) { AY.toast("Nada para eliminar (movimento novo).", "info"); return; }
+    const l = C.lancamento(state.editId); if (!l) return;
+    if (!confirm("Eliminar o movimento nº " + l.numero + "?")) return;
+    C.removeLancamento(l.id); novo(); renderLista(); AY.toast("Movimento eliminado.", "info");
+  };
+  document.getElementById("btnIntegrar").onclick = () => {
+    if (!state.editId) return;
+    try {
+      C.integrarLancamento(state.editId);
+      state.diferido = false;
+      AY.toast("Movimento integrado — passa a contar no balancete, razão e apuramentos.", "success");
+      bindHead(); renderLista();
+    } catch (ex) { AY.toast("Erro ao integrar: " + ex.message, "info"); }
+  };
+
+  // ---------- Lista / Diário ----------
+  function renderLista() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim();
+    const fd = selFD.value;
+    const soDif = document.getElementById("soDiferidos").checked;
+    const ex = AY.exercicioAtivo();
+    // Inclui diferidos na listagem (pendentes de integração) para poderem ser encontrados e integrados
+    let lancs = C.lancamentos({ incluirDiferidos: true }).filter(l => !ex || l.exercicioId === ex.id);
+    if (fd) lancs = lancs.filter(l => l.diario === fd);
+    if (soDif) lancs = lancs.filter(l => l.diferido);
+    if (q) lancs = lancs.filter(l => (l.descricao || "").toLowerCase().includes(q) || (l.documentoRef || "").toLowerCase().includes(q) || (l.linhas || []).some(x => (x.codigo || "").includes(q)));
+    lancs.sort((a, b) => (b.data || "").localeCompare(a.data || "") || (b.numero - a.numero));
+    document.getElementById("lista").innerHTML = lancs.length ? lancs.map(l => { const s = C.somaLinhas(l.linhas); return `<button class="mov-item ${state && state.editId === l.id ? "sel" : ""} ${l.diferido ? "diferido" : ""}" data-id="${l.id}">
+      <span class="mi-top"><b>${E(l.numeroOp || ("#" + l.numero))}</b><span>${AY.formatDate(l.data)}</span></span>
+      <span class="mi-mid">${l.diario} · ${E(C.diarioNome(l.diario))}${l.diferido ? " " + AY.badge("⏳ Diferido", "#d68910") : ""}</span>
+      <span class="mi-bot">${E(l.descricao || "—")}<b>${m2(s.debito)}</b></span>
+    </button>`; }).join("") : `<div class="empty">Sem movimentos.</div>`;
+    document.querySelectorAll(".mov-item").forEach(b => b.onclick = () => { carregar(C.lancamento(b.dataset.id)); renderLista(); });
+  }
+  document.getElementById("busca").oninput = renderLista;
+  selFD.onchange = renderLista;
+  document.getElementById("soDiferidos").onchange = renderLista;
+
+  if (!podeLancar) { document.getElementById("btnGravar").style.display = "none"; document.getElementById("btnEliminar").style.display = "none"; document.getElementById("addLinha").style.display = "none"; document.getElementById("fDiferido").disabled = true; }
+
+  // Arranque
+  novo(); renderLista();
+  const idq = AY.qs("id"); if (idq) { const l = C.lancamento(idq); if (l) { carregar(l); renderLista(); } }
+}
+</script>
+</body>
+</html>

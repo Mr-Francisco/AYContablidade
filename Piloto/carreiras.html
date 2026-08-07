@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH — Carreiras e Configuração — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Carreiras e Configuração</h1><p class="sub">Categorias/carreiras, taxas de segurança social e tabela do IRT (Angola).</p></div>
+
+    <div class="card">
+      <div class="card-title">Resumo por Categoria</div>
+      <div class="table-wrap" id="categorias"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Segurança Social (INSS)</div>
+      <form id="formInss" class="grid-2">
+        <label>Taxa trabalhador (%)<input type="number" id="fTrab" step="0.1" min="0" max="100"></label>
+        <label>Taxa empresa (%)<input type="number" id="fEmpr" step="0.1" min="0" max="100"></label>
+        <div class="modal-actions" style="grid-column:1/-1"><button class="btn btn-primary btn-sm" type="submit">Guardar taxas</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Tabela do IRT — Grupo A (matéria coletável mensal) <span class="tag" id="irtVer"></span></div>
+      <div class="table-wrap" id="irt"></div>
+      <p class="sub" style="margin-top:8px">Atualizada pela <b>Lei n.º 14/25, de 30 de Dezembro (OGE 2026)</b> — isenção até <b>150.000 Kz</b>. IRT = parcela fixa + taxa × (matéria coletável − limite anterior).</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Novo IRPS — Imposto sobre o Rendimento das Pessoas Singulares <span class="tag" id="irpsVigor"></span></div>
+      <div class="alert alert-info" style="margin-bottom:10px">Substitui o IRT a partir de <b>1 de Janeiro de 2027</b>. Tabela oficial: isenção até 150.000 Kz, 6 escalões (taxa marginal até <b>30%</b>) e deduções à coleta (educação, saúde, renda).</div>
+      <div class="grid-2" style="align-items:start">
+        <div class="table-wrap" id="irps"></div>
+        <div>
+          <div class="card-title" style="font-size:14px">Retenções na fonte</div>
+          <div class="table-wrap" id="irpsRet"></div>
+          <div class="card-title" style="font-size:14px;margin-top:10px">Deduções à coleta</div>
+          <ul id="irpsDed" class="sub" style="margin:6px 0 0;padding-left:18px"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/rh.js"></script>
+<script>
+const u = AY.initPage("carreiras.html", null);
+if (u) {
+  const E = AY.escapeHtml, R = AY.rh, m2 = AY.formatMoeda2;
+  const podeGerir = AY.can("rh.gerir");
+
+  function renderCategorias() {
+    const map = {};
+    R.colaboradores().forEach(c => { const k = c.categoria || "(sem categoria)"; const g = map[k] = map[k] || { categoria: k, n: 0, massa: 0 }; g.n++; g.massa = AY.round2(g.massa + (Number(c.salarioBase) || 0) + (Number(c.subsidios) || 0)); });
+    const rows = Object.values(map).sort((a, b) => b.massa - a.massa);
+    document.getElementById("categorias").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Categoria / Carreira</th><th class="num">Colaboradores</th><th class="num">Massa Salarial</th><th class="num">Média</th></tr></thead>
+      <tbody>${rows.map(g => `<tr><td><b>${E(g.categoria)}</b></td><td class="num">${g.n}</td><td class="num">${m2(g.massa)}</td><td class="num">${m2(AY.round2(g.massa / g.n))}</td></tr>`).join("")}</tbody>
+    </table>` : `<div class="empty">Sem colaboradores.</div>`;
+  }
+  function renderIrt() {
+    const tab = R.cfg().irt || [];
+    document.getElementById("irtVer").textContent = "Lei 14/25 · OGE 2026";
+    document.getElementById("irt").innerHTML = `<table>
+      <thead><tr><th class="num">Até</th><th class="num">Parcela Fixa</th><th class="num">Taxa s/ Excesso</th><th class="num">Excesso de</th></tr></thead>
+      <tbody>${tab.map(b => `<tr${(b.taxa === 0) ? ' style="color:#16a085"' : ""}><td class="num">${b.ate == null ? "acima" : m2(b.ate)}</td><td class="num">${b.taxa === 0 ? "—" : m2(b.fixa)}</td><td class="num">${b.taxa === 0 ? "Isento" : b.taxa + "%"}</td><td class="num">${m2(b.de)}</td></tr>`).join("")}</tbody>
+    </table>`;
+  }
+  function renderIrps() {
+    const ip = R.irps();
+    document.getElementById("irpsVigor").textContent = "Vigor " + ip.vigor;
+    document.getElementById("irps").innerHTML = `<table>
+      <thead><tr><th class="num">De</th><th class="num">Até</th><th class="num">Parcela Fixa</th><th class="num">Taxa</th><th class="num">Excesso de</th></tr></thead>
+      <tbody>${ip.escaloes.map(e => `<tr${e.taxa === 0 ? ' style="color:#16a085"' : ""}><td class="num">${m2(e.de)}</td><td class="num">${e.ate == null ? "acima" : m2(e.ate)}</td><td class="num">${e.taxa === 0 ? "—" : m2(e.fixa)}</td><td class="num">${e.taxa === 0 ? "Isento" : e.taxa + "%"}</td><td class="num">${e.taxa === 0 ? "—" : m2(e.de)}</td></tr>`).join("")}</tbody>
+    </table><p class="sub" style="margin-top:6px">6 escalões · taxa marginal até 30%.${ip.indicativo ? " <b>Escalões intermédios indicativos.</b>" : ""}</p>`;
+    document.getElementById("irpsRet").innerHTML = `<table>
+      <thead><tr><th>Rendimento</th><th class="num">Taxa</th></tr></thead>
+      <tbody>${ip.retencoes.map(r => `<tr><td><small>${E(r.tipo)}</small></td><td class="num">${E(r.taxa)}</td></tr>`).join("")}</tbody>
+    </table>`;
+    document.getElementById("irpsDed").innerHTML = ip.deducoes.map(d => `<li>${E(d)}</li>`).join("");
+  }
+  function renderInss() { const c = R.cfg(); document.getElementById("fTrab").value = c.inssTrab; document.getElementById("fEmpr").value = c.inssEmpr; }
+  document.getElementById("formInss").onsubmit = e => {
+    e.preventDefault();
+    if (!podeGerir) { AY.toast("Sem permissão.", "info"); return; }
+    const c = R.cfg(); c.inssTrab = Number(document.getElementById("fTrab").value) || 0; c.inssEmpr = Number(document.getElementById("fEmpr").value) || 0;
+    R.saveCfg(c); AY.toast("Taxas de INSS guardadas.", "success");
+  };
+  if (!podeGerir) document.querySelector("#formInss .btn").style.display = "none";
+  renderCategorias(); renderInss(); renderIrt(); renderIrps();
+}
+</script>
+</body>
+</html>

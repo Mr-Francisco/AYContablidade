@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analítica — Centros de Custo — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Centros de Custo</h1><p class="sub">Tabela de centros de responsabilidade (custo, proveito ou misto) usados na imputação analítica dos lançamentos.</p></div>
+    <div class="card">
+      <div class="toolbar"><input type="search" id="busca" placeholder="Pesquisar centro (código ou nome)…" class="grow"><button class="btn btn-amber" id="novo">+ Novo centro</button></div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+<div class="modal-backdrop hidden" id="modal"><div class="modal">
+  <div class="modal-head"><b id="mTitulo">Novo centro</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form">
+    <div class="grid-2">
+      <label>Código<input id="fCod" required placeholder="Ex.: ADM"></label>
+      <label>Tipo<select id="fTipo"><option value="custo">Custo</option><option value="proveito">Proveito</option><option value="misto">Misto</option></select></label>
+    </div>
+    <label>Nome<input id="fNome" required placeholder="Ex.: Administração e Gestão"></label>
+    <div class="grid-2">
+      <label>Responsável<input id="fResp" placeholder="(opcional)"></label>
+      <label>Estado<select id="fEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></label>
+    </div>
+    <div id="erro" class="alert alert-error hidden"></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div>
+  </form>
+</div></div>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("analitica-centros.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2; let editId = null;
+  const podeGerir = AY.can("analitica.gerir");
+  const TIPO_LABEL = { custo: "Custo", proveito: "Proveito", misto: "Misto" };
+  const TIPO_COR = { custo: "#c0392b", proveito: "#16a085", misto: "#8a8a8a" };
+
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim();
+    const rows = C.centros().filter(c => !q || c.codigo.toLowerCase().includes(q) || c.nome.toLowerCase().includes(q));
+    const mapa = C.analiticaMapa({});
+    const saldoDe = cod => { const l = mapa.linhas.find(x => x.codigo === cod); return l ? l.saldo : 0; };
+    document.getElementById("tabela").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Código</th><th>Nome</th><th>Tipo</th><th>Responsável</th><th class="num">Saldo (custo líquido)</th><th>Estado</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${rows.map(c => `<tr>
+        <td><b>${E(c.codigo)}</b></td><td>${E(c.nome)}</td>
+        <td>${AY.badge(TIPO_LABEL[c.tipo] || "Custo", TIPO_COR[c.tipo] || "#c0392b")}</td>
+        <td><small>${E(c.responsavel || "—")}</small></td>
+        <td class="num"><a href="analitica-mapa.html?centro=${encodeURIComponent(c.codigo)}" class="brand-text">${m2(saldoDe(c.codigo))}</a></td>
+        <td>${c.estado === "inactivo" ? AY.badge("Inactivo", "#8a8a8a") : AY.badge("Activo", "#16a085")}</td>
+        ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${c.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${c.id}">✕</button></td>` : ""}
+      </tr>`).join("")}</tbody></table>` : `<div class="empty">Sem centros de custo.</div>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const c = C.centro(b.dataset.del); if (confirm("Eliminar o centro " + c.codigo + " · " + c.nome + "?")) { C.removeCentro(b.dataset.del); render(); } });
+  }
+  const modal = document.getElementById("modal");
+  function abrir(id) {
+    editId = id || null; const c = id ? C.centro(id) : null;
+    document.getElementById("mTitulo").textContent = c ? "Editar centro " + c.codigo : "Novo centro";
+    document.getElementById("fCod").value = c ? c.codigo : "";
+    document.getElementById("fNome").value = c ? c.nome : "";
+    document.getElementById("fTipo").value = c ? (c.tipo || "custo") : "custo";
+    document.getElementById("fResp").value = c ? (c.responsavel || "") : "";
+    document.getElementById("fEstado").value = c ? c.estado : "activo";
+    document.getElementById("erro").classList.add("hidden"); modal.classList.remove("hidden");
+  }
+  document.getElementById("novo").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("cancelar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("novo").style.display = podeGerir ? "" : "none";
+  document.getElementById("busca").oninput = render;
+  document.getElementById("form").onsubmit = e => {
+    e.preventDefault();
+    const err = document.getElementById("erro"); err.classList.add("hidden");
+    try {
+      C.saveCentro({ id: editId, codigo: document.getElementById("fCod").value.trim(), nome: document.getElementById("fNome").value.trim(),
+        tipo: document.getElementById("fTipo").value, responsavel: document.getElementById("fResp").value.trim(), estado: document.getElementById("fEstado").value });
+    } catch (ex) { err.textContent = ex.message; err.classList.remove("hidden"); return; }
+    modal.classList.add("hidden"); render(); AY.toast("Centro de custo guardado.", "success");
+  };
+  render();
+}
+</script>
+</body>
+</html>

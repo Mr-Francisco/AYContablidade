@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comercial — Clientes — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Clientes</h1><p class="sub">Ficha de cliente — moradas, dados fiscais, bancos, condições comerciais, crédito e conta corrente.</p></div>
+    <div id="terc"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/comercial.js"></script>
+<script src="assets/js/compras.js"></script>
+<script src="assets/js/rh.js"></script>
+<script src="assets/js/nif.js"></script>
+<script src="assets/js/terceiros.js"></script>
+<script>
+const u = AY.initPage("clientes.html", null);
+if (u) {
+  const M = AY.com;
+  AY.terceiros.renderFicha({
+    tipo: "cliente", contaPrefixo: "31", gerirCap: "comercial.gerir",
+    store: { list: M.clientes, get: M.cliente, save: M.saveCliente, remove: M.removeCliente },
+  });
+}
+</script>
+</body>
+</html>

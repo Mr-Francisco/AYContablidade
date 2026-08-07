@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balanço — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Balanço</h1><p class="sub">PGC Angola — apurado do balancete do exercício.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Exercício <select id="fExercicio"></select></label>
+        <span id="verif" class="tag"></span>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" id="btnAtualizar">🔄 Atualizar</button>
+        <button class="btn btn-outline btn-sm" id="btnCsv">⬇ CSV</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div class="card report-print" id="card"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("balanco.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2, emp = AY.getEmpresa();
+  let ultimo = null;
+  document.getElementById("fExercicio").innerHTML = AY.exercicioOptions().html;
+  // Junta cada linha à sua correspondente do exercício anterior (mesma posição — a estrutura do
+  // balanço é sempre fixa, não depende dos dados), para a coluna comparativa "ano anterior".
+  function zipar(linhas, linhasAnt) { return linhas.map((l, i) => Object.assign({}, l, { valorAnt: linhasAnt ? linhasAnt[i].valor : null })); }
+  function linhaTr(l) {
+    if (l.tipo === "cabecalho") return `<tr class="bl-cabecalho"><td colspan="4"><b>${E(l.designacao)}</b></td></tr>`;
+    if (l.tipo === "grupo") return `<tr class="bl-grupo"><td colspan="4">${E(l.designacao)}</td></tr>`;
+    const cls = l.tipo === "total" ? "dr-total" : l.tipo === "subtotal" ? "dr-sub" : "";
+    const strong = l.tipo !== "linha";
+    return `<tr class="${cls}"><td>${strong ? "<b>" : ""}${E(l.designacao)}${strong ? "</b>" : ""}</td>
+      <td class="num">${l.nota ? `<a href="notas.html?nota=${l.nota}" class="brand-text">${l.nota}</a>` : ""}</td><td class="num">${l.valor != null ? m2(l.valor) : ""}</td><td class="num">${l.valorAnt != null ? m2(l.valorAnt) : (l.valor != null ? "—" : "")}</td></tr>`;
+  }
+  function render() {
+    const ex = AY.exercicioOptions(document.getElementById("fExercicio").value).selecionado;
+    const exAnt = AY.exercicioAnterior(ex);
+    const b = C.balanco({ exercicioId: ex ? ex.id : null });
+    const bAnt = exAnt ? C.balanco({ exercicioId: exAnt.id }) : null;
+    ultimo = b;
+    const anoAtual = ex ? (ex.inicio || "").slice(0, 4) : new Date().getFullYear();
+    const anoAnt = exAnt ? (exAnt.inicio || "").slice(0, 4) : (anoAtual ? (Number(anoAtual) - 1) : "");
+    document.getElementById("verif").textContent = b.equilibrado ? "✓ Activo = CP + Passivo" : "✗ Desequilíbrio";
+    document.getElementById("verif").style.color = b.equilibrado ? "var(--success)" : "var(--danger)";
+    const bloco = (linhas, linhasAnt) => `<div class="table-wrap"><table class="dr-table">
+      <thead><tr><th>Designação</th><th class="num" style="width:56px">Notas</th><th class="num" style="width:130px">${anoAtual}</th><th class="num" style="width:110px">${anoAnt}</th></tr></thead>
+      <tbody>${zipar(linhas, linhasAnt).map(linhaTr).join("")}</tbody></table></div>`;
+    document.getElementById("card").innerHTML = `
+      <div class="bal-cabecalho"><div><b>${E(emp.nome)}</b><br><span class="sub">Balanço em 31 de Dezembro de ${anoAtual}${ex ? " — " + E(ex.nome) : ""}</span></div><div class="sub">Valores em ${E(AY.moeda())}</div></div>
+      <div class="grid-2 bl-grid">${bloco(b.activo, bAnt && bAnt.activo)}${bloco(b.passivo, bAnt && bAnt.passivo)}</div>`;
+  }
+  function csv() {
+    if (!ultimo) return;
+    const rows = [["Secção", "Designação", "Notas", "Valor"]];
+    ultimo.activo.forEach(l => rows.push(["ACTIVO", l.designacao, l.nota, l.valor == null ? "" : l.valor]));
+    ultimo.passivo.forEach(l => rows.push(["CP+PASSIVO", l.designacao, l.nota, l.valor == null ? "" : l.valor]));
+    const s = rows.map(r => r.map(v => { v = String(v == null ? "" : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(";")).join("\r\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + s], { type: "text/csv;charset=utf-8" })); a.download = "Balanco.csv"; a.click();
+  }
+  document.getElementById("fExercicio").onchange = render;
+  document.getElementById("btnAtualizar").onclick = () => { render(); AY.toast("Balanço atualizado.", "success"); };
+  document.getElementById("btnCsv").onclick = csv;
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  render();
+}
+</script>
+</body>
+</html>

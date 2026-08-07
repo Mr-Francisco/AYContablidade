@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comercial — Consulta de Faturas — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Consulta de Faturas</h1><p class="sub">Pesquisa e visualização de todos os documentos emitidos (faturas, recibos, notas de crédito/débito…).</p></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="busca" placeholder="Pesquisar (nº, cliente ou NIF)…" class="grow">
+        <select id="fTipo"><option value="">Todos os tipos</option></select>
+        <select id="fCliente"><option value="">Todos os clientes</option></select>
+        <label style="margin:0">De <input type="date" id="fDe"></label>
+        <label style="margin:0">Até <input type="date" id="fAte"></label>
+      </div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="docModal"><div class="modal" style="max-width:720px">
+  <div class="modal-head"><b>Documento</b><button class="icon-btn" id="docFechar">✕</button></div>
+  <div id="docPrint"></div>
+  <div class="modal-actions">
+    <label style="margin:0 auto 0 0;display:flex;align-items:center;gap:6px">Formato <select id="docFormato"><option value="a4">A4 (fatura)</option><option value="pos">POS — talão 80mm</option></select></label>
+    <button type="button" class="btn btn-outline" id="docImprimir">🖨 Imprimir</button><button type="button" class="btn btn-primary" id="docOk">Fechar</button>
+  </div>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/comercial.js"></script>
+<script src="assets/js/fatura-doc.js"></script>
+<script>
+const u = AY.initPage("consulta-faturas.html", null);
+if (u) {
+  const E = AY.escapeHtml, M = AY.com, m2 = AY.formatMoeda2;
+  document.getElementById("fTipo").innerHTML = `<option value="">Todos os tipos</option>` + M.TIPOS_DOC.map(t => `<option value="${t.cod}">${t.cod} · ${E(t.nome)}</option>`).join("");
+  document.getElementById("fCliente").innerHTML = `<option value="">Todos os clientes</option>` + M.clientes().map(c => `<option value="${c.id}">${E(c.nome)}</option>`).join("");
+
+  function filtrar() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim();
+    const tp = document.getElementById("fTipo").value, cli = document.getElementById("fCliente").value;
+    const de = document.getElementById("fDe").value, ate = document.getElementById("fAte").value;
+    return M.vendas().filter(v => M.emitida(v))
+      .filter(v => !tp || (v.tipoDoc || "FT") === tp)
+      .filter(v => !cli || v.clienteId === cli)
+      .filter(v => !de || (v.data || "") >= de).filter(v => !ate || (v.data || "") <= ate)
+      .filter(v => { if (!q) return true; const cl = M.cliente(v.clienteId) || {}; return ((v.numero || "") + " " + (v.clienteNome || "") + " " + (cl.nif || "")).toLowerCase().includes(q); })
+      .sort((a, b) => (b.data || "").localeCompare(a.data || "") || (b.numero || "").localeCompare(a.numero || ""));
+  }
+  function render() {
+    const rows = filtrar();
+    const totFat = rows.reduce((s, v) => AY.round2(s + v.total), 0), totIva = rows.reduce((s, v) => AY.round2(s + v.iva), 0);
+    document.getElementById("kpis").innerHTML = [
+      AY.kpi("Documentos", rows.length, "emitidos (filtro)", "var(--chart-blue)"),
+      AY.kpi("Total faturado", AY.formatKz(totFat), "", "#16a085"),
+      AY.kpi("Total IVA", AY.formatKz(totIva), "liquidado", "#8e44ad"),
+      AY.kpi("Clientes", new Set(rows.map(v => v.clienteId).filter(Boolean)).size, "distintos", "var(--chart-amber)"),
+    ].join("");
+    document.getElementById("tabela").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Documento</th><th>Data</th><th>Cliente</th><th>NIF</th><th class="num">Incidência</th><th class="num">IVA</th><th class="num">Total</th><th>Lançamento</th><th></th></tr></thead>
+      <tbody>${rows.map(v => { const td = M.tipoDoc(v.tipoDoc || "FT"), cl = M.cliente(v.clienteId) || {}; return `<tr>
+        <td><b>${E(v.numero)}</b><br><small class="sub">${E(td.nome)}</small></td>
+        <td>${AY.formatDate(v.data)}</td><td>${E(v.clienteNome || "Consumidor final")}</td><td>${E(cl.nif || "—")}</td>
+        <td class="num">${m2(v.subtotal)}</td><td class="num">${m2(v.iva)}</td><td class="num"><b>${m2(v.total)}</b></td>
+        <td>${v.numeroOp ? `<a href="movimentos.html?id=${E(v.lancamentoId)}" class="brand-text">${E(v.numeroOp)}</a>` : "—"}</td>
+        <td class="num"><button class="btn btn-sm btn-primary" data-doc="${v.id}">Ver documento</button></td>
+      </tr>`; }).join("")}</tbody></table>` : `<div class="empty">Sem documentos emitidos para o filtro.</div>`;
+    document.querySelectorAll("[data-doc]").forEach(b => b.onclick = () => verDoc(b.dataset.doc));
+  }
+  const docModal = document.getElementById("docModal");
+  function verDoc(id) { const v = M.venda(id); if (!v) return; document.getElementById("docPrint").innerHTML = AY.faturaDoc.render(v); docModal.classList.remove("hidden"); }
+  document.getElementById("docFechar").onclick = () => docModal.classList.add("hidden");
+  document.getElementById("docOk").onclick = () => docModal.classList.add("hidden");
+  document.getElementById("docImprimir").onclick = () => AY.faturaDoc.imprimir(document.getElementById("docFormato").value);
+  ["busca", "fTipo", "fCliente", "fDe", "fAte"].forEach(id => { const el = document.getElementById(id); el.oninput = render; el.onchange = render; });
+  render();
+}
+</script>
+</body>
+</html>

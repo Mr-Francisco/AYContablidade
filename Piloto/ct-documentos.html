@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentos — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Documentos</h1><p class="sub">Documentos de contabilidade afetos a diários, com contas de débito/crédito por omissão.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="busca" placeholder="Pesquisar documento…" class="grow">
+        <select id="filtroDiario"><option value="">Todos os diários</option></select>
+        <button class="btn btn-amber" id="novo">+ Novo documento</button>
+      </div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+<div class="modal-backdrop hidden" id="modal"><div class="modal">
+  <div class="modal-head"><b id="mTitulo">Novo documento</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form">
+    <div class="grid-2">
+      <label>Código<input id="fCod" required placeholder="Ex.: 211"></label>
+      <label>Diário<select id="fDiario"></select></label>
+      <label>Conta débito (por omissão)<input id="fDeb" list="contasList" placeholder="(opcional)" title="F4 ou duplo clique: procurar no plano de contas"></label>
+      <label>Conta crédito (por omissão)<input id="fCred" list="contasList" placeholder="(opcional)" title="F4 ou duplo clique: procurar no plano de contas"></label>
+    </div>
+    <label>Descrição<input id="fDesc" required placeholder="Descrição do documento"></label>
+    <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="fRet" style="width:auto;margin:0"> Sujeito a retenção na fonte</label>
+    <div id="erro" class="alert alert-error hidden"></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div>
+  </form>
+</div></div>
+<datalist id="contasList"></datalist>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/conta-picker.js"></script>
+<script>
+const u = AY.initPage("ct-documentos.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab; let editId = null;
+  const podeGerir = AY.can("contab.plano");
+  document.getElementById("contasList").innerHTML = C.contasMovimento().map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join("");
+  ["fDeb", "fCred"].forEach(id => AY.contaPicker.attach(document.getElementById(id), { soMovimento: true }));
+  const selFiltro = document.getElementById("filtroDiario"), selForm = document.getElementById("fDiario");
+  C.diarios().forEach(d => { selFiltro.appendChild(new Option(d.codigo + " · " + d.nome, d.codigo)); selForm.appendChild(new Option(d.codigo + " · " + d.nome, d.codigo)); });
+
+  function contaCel(cod) { if (!cod) return "—"; const c = C.contaPorCodigo(cod); return `<span title="${c ? E(c.nome) : ""}">${E(cod)}</span>`; }
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim(), fd = selFiltro.value;
+    let rows = C.documentos();
+    if (fd) rows = rows.filter(d => d.diario === fd);
+    if (q) rows = rows.filter(d => d.codigo.includes(q) || d.descricao.toLowerCase().includes(q));
+    rows.sort((a, b) => String(a.diario).localeCompare(String(b.diario), undefined, { numeric: true }) || String(a.codigo).localeCompare(String(b.codigo), undefined, { numeric: true }));
+    document.getElementById("tabela").innerHTML = `<table>
+      <thead><tr><th>Doc.</th><th>Descrição</th><th>Diário</th><th>Débito</th><th>Crédito</th><th>Ret.</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${rows.map(d => `<tr>
+        <td><b>${E(d.codigo)}</b></td><td>${E(d.descricao)}</td>
+        <td><small>${E(d.diario)} · ${E(C.diarioNome(d.diario))}</small></td>
+        <td>${contaCel(d.contaDebito)}</td><td>${contaCel(d.contaCredito)}</td>
+        <td>${d.retencao ? AY.badge("Sim", "#d68910") : "—"}</td>
+        ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${d.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${d.id}">✕</button></td>` : ""}
+      </tr>`).join("")}</tbody></table>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const d = C.documento(b.dataset.del); if (confirm("Eliminar documento " + d.codigo + "?")) { C.removeDocumento(b.dataset.del); render(); } });
+  }
+  const modal = document.getElementById("modal");
+  function abrir(id) {
+    editId = id || null; const d = id ? C.documento(id) : null;
+    document.getElementById("mTitulo").textContent = d ? "Editar documento " + d.codigo : "Novo documento";
+    document.getElementById("fCod").value = d ? d.codigo : ""; document.getElementById("fDesc").value = d ? d.descricao : "";
+    document.getElementById("fDiario").value = d ? d.diario : (C.diarios()[0] || {}).codigo || "";
+    document.getElementById("fDeb").value = d ? d.contaDebito : ""; document.getElementById("fCred").value = d ? d.contaCredito : "";
+    document.getElementById("fRet").checked = d ? !!d.retencao : false;
+    document.getElementById("erro").classList.add("hidden"); modal.classList.remove("hidden");
+  }
+  document.getElementById("novo").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("cancelar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("novo").style.display = podeGerir ? "" : "none";
+  document.getElementById("busca").oninput = render; selFiltro.onchange = render;
+  document.getElementById("form").onsubmit = e => {
+    e.preventDefault();
+    const err = document.getElementById("erro");
+    const deb = document.getElementById("fDeb").value.trim(), cred = document.getElementById("fCred").value.trim();
+    if (deb && !C.contaPorCodigo(deb)) { err.textContent = "Conta débito inexistente: " + deb; err.classList.remove("hidden"); return; }
+    if (cred && !C.contaPorCodigo(cred)) { err.textContent = "Conta crédito inexistente: " + cred; err.classList.remove("hidden"); return; }
+    C.saveDocumento({ id: editId, codigo: document.getElementById("fCod").value.trim(), descricao: document.getElementById("fDesc").value.trim(), diario: document.getElementById("fDiario").value, contaDebito: deb, contaCredito: cred, retencao: document.getElementById("fRet").checked, ativo: true });
+    modal.classList.add("hidden"); render(); AY.toast("Documento guardado.", "success");
+  };
+  render();
+}
+</script>
+</body>
+</html>

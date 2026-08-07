@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH — Simulação Salarial — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Simulação Salarial</h1><p class="sub">Simula o líquido a partir do bruto, com INSS (3%) e IRT (Angola). Não grava nem lança.</p></div>
+    <div class="grid-2" style="align-items:start">
+      <div class="card">
+        <div class="card-title">Dados</div>
+        <form id="form" class="grid-2">
+          <label>Colaborador (opcional)<select id="fColab"><option value="">— Manual —</option></select></label>
+          <label>Categoria<input id="fCat" placeholder="—"></label>
+          <label>Salário base<input type="number" id="fBase" step="1000" min="0" value="250000"></label>
+          <label>Subsídios<input type="number" id="fSubs" step="1000" min="0" value="70000"></label>
+        </form>
+        <p class="sub" style="margin-top:8px">O INSS do trabalhador (3%) incide sobre o salário base. A matéria coletável do IRT = bruto − INSS.</p>
+      </div>
+      <div class="card report-print" id="recibo"></div>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/rh.js"></script>
+<script>
+const u = AY.initPage("rh-simulacao.html", null);
+if (u) {
+  const E = AY.escapeHtml, R = AY.rh, m2 = AY.formatMoeda2;
+  const selColab = document.getElementById("fColab");
+  selColab.innerHTML = `<option value="">— Manual —</option>` + R.colaboradores().map(c => `<option value="${c.id}">${E(c.numero)} · ${E(c.nome)}</option>`).join("");
+
+  function calc() {
+    const base = Number(document.getElementById("fBase").value) || 0, subs = Number(document.getElementById("fSubs").value) || 0;
+    const r = R.recibo({ salarioBase: base, subsidios: subs });
+    const linha = (l, v, neg) => `<tr><td>${E(l)}</td><td class="num">${neg ? "(" + m2(Math.abs(v)) + ")" : m2(v)}</td></tr>`;
+    document.getElementById("recibo").innerHTML = `
+      <div class="card-title">Simulação</div>
+      <div class="table-wrap"><table><tbody>
+        ${linha("Salário base", r.base)}${linha("Subsídios", r.subs)}
+        <tr style="font-weight:700;border-top:2px solid var(--border)"><td>Remuneração bruta</td><td class="num">${m2(r.bruto)}</td></tr>
+        ${linha("INSS (3%)", -r.inss, true)}
+        <tr><td>Matéria coletável IRT</td><td class="num">${m2(r.materia)}</td></tr>
+        ${linha("IRT", -r.irt, true)}
+        <tr class="dr-total"><td><b>Líquido a receber</b></td><td class="num"><b>${m2(r.liquido)}</b></td></tr>
+      </tbody></table></div>
+      <p class="sub" style="margin-top:8px">Taxa efetiva de retenção: <b>${r.bruto ? (100 * (r.inss + r.irt) / r.bruto).toFixed(1) : "0"}%</b> · INSS a cargo da empresa (8%): <b>${m2(r.inssEmpresa)}</b> · Custo total empresa: <b>${m2(AY.round2(r.bruto + r.inssEmpresa))}</b>.</p>`;
+  }
+  selColab.onchange = () => {
+    const c = R.colaborador(selColab.value);
+    if (c) { document.getElementById("fBase").value = c.salarioBase; document.getElementById("fSubs").value = c.subsidios || 0; document.getElementById("fCat").value = c.categoria || ""; }
+    calc();
+  };
+  ["fBase", "fSubs"].forEach(id => document.getElementById(id).oninput = calc);
+  calc();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plano de Contas — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head">
+      <h1>Plano de Contas</h1>
+      <p class="sub">PGC Angola — contas de razão e de movimento. Pesquisa por código ou nome.</p>
+    </div>
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="busca" placeholder="Pesquisar conta (código ou nome)…" class="grow">
+        <select id="filtroClasse"><option value="">Todas as classes</option></select>
+        <select id="filtroNatureza"><option value="">Toda a natureza</option><option value="D">Devedora</option><option value="C">Credora</option><option value="M">Mista</option></select>
+        <select id="filtroTipo"><option value="">Todos os tipos</option><option value="M">Movimento</option><option value="I">Integração</option></select>
+        <button class="btn btn-outline btn-sm" id="expandir" title="Expandir tudo">⊞</button>
+        <button class="btn btn-outline btn-sm" id="colapsar" title="Colapsar tudo">⊟</button>
+        <button class="btn btn-outline" id="importar">📥 Importar (Primavera)</button>
+        <button class="btn btn-amber" id="novaConta">+ Nova conta</button>
+      </div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modal">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-head"><b id="modalTitulo">Nova conta</b><button class="icon-btn" id="fechar">✕</button></div>
+    <form id="form">
+      <div class="ficha-topo" style="grid-template-columns:1fr 1fr auto;align-items:end">
+        <label>Exercício<input id="fExercicio" readonly></label>
+        <label>Classe (agrupamento)<input id="fClassePrim" placeholder="Ex.: DEFA"></label>
+        <label class="chk" style="padding-bottom:10px"><input type="checkbox" id="fInativo"> Inativo</label>
+      </div>
+      <div class="grid-2">
+        <label>Conta (código)<div class="f4-group"><input id="fCodigo" list="planoContasList" required placeholder="Ex.: 632 · F4 procura"><button type="button" class="f4-btn" id="f4Codigo" title="F4 — procurar conta no plano">F4</button></div></label>
+        <label>Natureza<select id="fNatureza"><option value="D">Devedora</option><option value="C">Credora</option><option value="M">Mista</option></select></label>
+      </div>
+      <label>Designação<input id="fNome" required placeholder="Nome da conta"></label>
+      <div class="grid-2">
+        <label>Conta Alternativa (código)<div class="f4-group"><input id="fContaAlt" list="planoContasList" placeholder="(opcional) · F4"><button type="button" class="f4-btn" id="f4ContaAlt" title="F4 — escolher conta alternativa">F4</button></div></label>
+        <label>Conta Alternativa (designação)<input id="fContaAltNome"></label>
+      </div>
+      <datalist id="planoContasList"></datalist>
+
+      <div class="ficha-tabs">
+        <button type="button" class="ficha-tab active" data-tab="geral">Geral</button>
+        <button type="button" class="ficha-tab" data-tab="integr">Integração</button>
+        <button type="button" class="ficha-tab" data-tab="tes">Tesouraria</button>
+      </div>
+
+      <div class="ficha-pane grid-2" data-pane="geral">
+        <div class="sec-label">Fiscalidade</div>
+        <label>Classe IVA<input id="fClasseIVA" list="classeIvaList" placeholder="Código ou classe">
+          <datalist id="classeIvaList"><option value="Taxa Normal (14%)"><option value="Taxa Reduzida (7%)"><option value="Taxa Reduzida (5%)"><option value="Isento"><option value="Não sujeito"><option value="IVA Cativo"></datalist></label>
+        <label>Retenção na Fonte<select id="fRetencao">
+          <option>Nenhuma</option><option>Imposto Industrial (6,5%)</option><option>IRT</option><option>IAC</option><option>Imposto de Selo</option>
+        </select></label>
+        <label class="full">Motivo de Tributação / Isenção<input id="fMotivoTrib" placeholder="Ex.: Isenção artigo… / bem isento"></label>
+      </div>
+      <div class="ficha-pane grid-2 hidden" data-pane="integr">
+        <label class="chk full"><input type="checkbox" id="fTratPend"> Tratamento de pendentes (conta corrente)</label>
+        <label class="chk"><input type="checkbox" id="fIntEquip"> Integração com Equipamentos</label>
+        <label class="chk"><input type="checkbox" id="fIntAtivos"> Integração com Ativos</label>
+        <label>Investimento<input id="fInvestimento" placeholder="(código de investimento)"></label>
+        <label>Custo fixo (%)<input type="number" id="fCustoFixo" step="0.01" min="0" value="0"></label>
+      </div>
+      <div class="ficha-pane grid-2 hidden" data-pane="tes">
+        <div class="sec-label">Classificação de Tesouraria</div>
+        <label class="full">Item de Tesouraria<select id="fItemTes">
+          <option value="">—</option><option>Recebimentos</option><option>Pagamentos</option><option>Disponibilidades</option><option>Financiamentos</option><option>Não aplicável</option>
+        </select></label>
+      </div>
+
+      <div id="formErro" class="alert alert-error hidden"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" id="cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Gravar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Seletor de conta (Plano de Contas) — F4 no campo Conta / Conta Alternativa -->
+<div class="modal-backdrop hidden" id="modalPlano"><div class="modal" style="max-width:680px">
+  <div class="modal-head"><b id="planoTitulo">Plano de Contas — escolher conta</b><button class="icon-btn" id="planoFechar">✕</button></div>
+  <input type="search" id="planoBusca" placeholder="Pesquisar por código ou nome… (Enter escolhe a 1.ª · Esc fecha)" style="width:100%;margin-bottom:8px">
+  <div class="table-wrap" style="max-height:52vh;overflow:auto">
+    <table><thead><tr><th style="width:20%">Código</th><th>Designação</th><th style="width:18%">Classe</th><th style="width:16%">Tipo</th></tr></thead>
+    <tbody id="planoLista"></tbody></table>
+  </div>
+</div></div>
+
+<div class="modal-backdrop hidden" id="modalImp"><div class="modal" style="max-width:760px">
+  <div class="modal-head"><b>Importar Plano de Contas do Primavera</b><button class="icon-btn" id="impFechar">✕</button></div>
+  <p class="sub">No Primavera: <b>Contabilidade → Tabelas → Plano de Contas → Exportar</b> (Excel ou CSV). Escolhe aqui o ficheiro.</p>
+  <label class="file-drop" id="fileDrop">
+    <input type="file" id="fileInput" accept=".xlsx,.csv,.txt" hidden>
+    <span id="fileLabel">📄 Clica para escolher o ficheiro (.xlsx ou .csv)…</span>
+  </label>
+  <div id="impErro" class="alert alert-error hidden" style="margin-top:10px"></div>
+  <div id="impMapa" class="hidden">
+    <div class="grid-3" style="margin-top:12px">
+      <label>Coluna do Código<select id="colCod"></select></label>
+      <label>Coluna da Descrição<select id="colNome"></select></label>
+      <label>1ª linha é cabeçalho?<select id="temHeader"><option value="1">Sim</option><option value="0">Não</option></select></label>
+    </div>
+    <div style="margin-top:8px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="substituir" style="width:auto;margin:0"> Substituir todo o plano atual (senão, funde/atualiza)</label></div>
+    <div class="card" style="margin-top:10px;box-shadow:none">
+      <div class="card-title">Pré-visualização <span class="tag" id="impCount"></span></div>
+      <div class="table-wrap" id="impPreview" style="max-height:240px;overflow:auto"></div>
+    </div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="impCancelar">Cancelar</button><button type="button" class="btn btn-primary" id="impConfirmar">Importar</button></div>
+  </div>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/xlsx-lite.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("plano-contas.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab;
+  const podeGerir = AY.can("contab.plano");
+  let editId = null;
+
+  const selClasse = document.getElementById("filtroClasse");
+  Object.keys(C.CLASSES).forEach(k => { const o = document.createElement("option"); o.value = k; o.textContent = k + " · " + C.CLASSES[k].nome; selClasse.appendChild(o); });
+
+  function natLabel(n) { return n === "C" ? AY.badge("Credora", "#c0392b") : n === "M" ? AY.badge("Mista", "#8a8a8a") : AY.badge("Devedora", "#16a085"); }
+
+  // ---------- Árvore hierárquica (estrutura do plano por classe, como o Primavera) ----------
+  const expandido = new Set();            // "cls-N" (classes) + códigos de contas expandidas
+  let arvore = null, todasRef = [], jaIniciado = false;
+  function construirArvore(todas) {
+    const byCode = new Map(); todas.forEach(c => byCode.set(c.codigo, c));
+    const sorted = todas.slice().sort((a, b) => a.codigo.localeCompare(b.codigo)); // string: hierarquia (3431 sob 343)
+    const children = new Map(), rootsByClass = {};
+    sorted.forEach(c => {
+      let parent = null;
+      for (let len = c.codigo.length - 1; len >= 1; len--) { const p = c.codigo.slice(0, len); if (byCode.has(p)) { parent = byCode.get(p); break; } }
+      if (parent) { if (!children.has(parent.codigo)) children.set(parent.codigo, []); children.get(parent.codigo).push(c); }
+      else (rootsByClass[c.codigo[0]] = rootsByClass[c.codigo[0]] || []).push(c);
+    });
+    return { byCode, children, rootsByClass, sorted };
+  }
+  function classeHeaderRow(cl, aberta, n) {
+    const nome = (C.CLASSES[cl] || {}).nome || "";
+    return `<tr class="pc-classe" data-cls="${cl}"><td colspan="${podeGerir ? 6 : 5}"><span class="pc-caret">${aberta ? "▾" : "▸"}</span> <b>${cl} · ${E(nome)}</b> <small class="sub">— ${n} conta(s)</small></td></tr>`;
+  }
+  function rowHTML(c, depth) {
+    const filhos = arvore.children.get(c.codigo); const temF = !!(filhos && filhos.length);
+    const aberto = expandido.has(c.codigo), mov = C.ehMovimento(c, todasRef);
+    const caret = temF ? `<span class="pc-caret" data-toggle="${E(c.codigo)}">${aberto ? "▾" : "▸"}</span>` : `<span class="pc-caret pc-leaf">·</span>`;
+    const cod = temF ? `<b>${E(c.codigo)}</b>` : E(c.codigo), nome = temF ? `<b>${E(c.nome)}</b>` : E(c.nome);
+    return `<tr data-row="${c.id}" class="pc-node${temF ? " pc-parent" : ""}"${c.ativa === false ? ' style="opacity:.5"' : ""}${podeGerir ? ' title="Duplo clique: editar"' : ""}>
+      <td><span class="pc-code">${caret} ${cod}</span></td>
+      <td>${nome}</td>
+      <td>${c.classeIVA ? `<span class="tag">${E(c.classeIVA)}</span>` : ""}</td>
+      <td>${natLabel(c.natureza)}</td>
+      <td>${mov ? AY.badge("Movimento", "#2980b9") : AY.badge("Integração", "#8a8a8a")}</td>
+      ${podeGerir ? `<td class="num">${mov ? `<button class="btn btn-sm btn-outline" data-sub="${E(c.codigo)}" title="Criar subconta">＋ Sub</button> ` : ""}<button class="btn btn-sm btn-outline" data-edit="${c.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${c.id}">✕</button></td>` : ""}
+    </tr>`;
+  }
+  function walk(c, depth, out, visibleSet, expandAll) {
+    if (visibleSet && !visibleSet.has(c.codigo)) return;
+    const filhos = arvore.children.get(c.codigo) || [];
+    out.push(rowHTML(c, depth));
+    if (filhos.length && (expandAll || expandido.has(c.codigo))) filhos.forEach(f => walk(f, depth + 1, out, visibleSet, expandAll));
+  }
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim(), clF = selClasse.value;
+    const fNat = document.getElementById("filtroNatureza").value, fTip = document.getElementById("filtroTipo").value;
+    const todas = C.contas(); todasRef = todas; arvore = construirArvore(todas);
+    // Por defeito mostra TODAS as contas expandidas (classes + subcontas)
+    if (!jaIniciado) { jaIniciado = true; Object.keys(arvore.rootsByClass).forEach(cl => expandido.add("cls-" + cl)); arvore.children.forEach((_, cod) => expandido.add(cod)); }
+    let visibleSet = null, expandAll = false;
+    const filtrar = !!(q || fNat || fTip);
+    if (filtrar) {
+      visibleSet = new Set(); expandAll = true;
+      todas.forEach(c => {
+        if (q && !(c.codigo.toLowerCase().includes(q) || c.nome.toLowerCase().includes(q))) return;
+        if (fNat && (c.natureza || "D") !== fNat) return;
+        if (fTip) { const mov = C.ehMovimento(c, todas); if (fTip === "M" && !mov) return; if (fTip === "I" && mov) return; }
+        let cur = c; while (cur) { visibleSet.add(cur.codigo); let p = null; for (let len = cur.codigo.length - 1; len >= 1; len--) { const pp = cur.codigo.slice(0, len); if (arvore.byCode.has(pp)) { p = arvore.byCode.get(pp); break; } } cur = p; }
+      });
+    }
+    const out = [];
+    Object.keys(C.CLASSES).filter(cl => arvore.rootsByClass[cl] && (!clF || cl === clF)).forEach(cl => {
+      const roots = (arvore.rootsByClass[cl] || []).filter(c => !visibleSet || visibleSet.has(c.codigo));
+      if (!roots.length) return;
+      const nClasse = todas.filter(c => c.codigo[0] === cl).length;
+      const aberta = filtrar ? true : (expandido.has("cls-" + cl) || (!!clF));
+      out.push(classeHeaderRow(cl, aberta, nClasse));
+      if (aberta) roots.forEach(r => walk(r, 0, out, visibleSet, expandAll));
+    });
+    document.getElementById("tabela").innerHTML = out.length ? `<table class="pc-tree">
+      <thead><tr><th style="width:30%">Código</th><th>Designação</th><th style="width:90px">Cl. IVA</th><th style="width:100px">Natureza</th><th style="width:110px">Tipo</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${out.join("")}</tbody></table>` : `<div class="empty">Sem contas para o filtro.</div>`;
+    document.querySelectorAll(".pc-classe").forEach(tr => tr.onclick = () => { const cl = tr.dataset.cls; if (expandido.has("cls-" + cl)) expandido.delete("cls-" + cl); else expandido.add("cls-" + cl); render(); });
+    document.querySelectorAll("[data-toggle]").forEach(s => s.onclick = (e) => { e.stopPropagation(); const cod = s.dataset.toggle; if (expandido.has(cod)) expandido.delete(cod); else expandido.add(cod); render(); });
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => eliminar(b.dataset.del));
+    document.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => abrirSubconta(b.dataset.sub));
+    if (podeGerir) document.querySelectorAll(".pc-node").forEach(tr => tr.ondblclick = (e) => { if (e.target.closest("button")) return; abrir(tr.dataset.row); });
+    if (document.getElementById("planoContasList")) atualizarDatalist();
+  }
+  function expandirTudo() { expandido.clear(); Object.keys(arvore ? arvore.rootsByClass : C.CLASSES).forEach(cl => expandido.add("cls-" + cl)); (arvore ? [...arvore.children.keys()] : []).forEach(cod => expandido.add(cod)); render(); }
+  function colapsarTudo() { expandido.clear(); render(); }
+
+  document.getElementById("busca").oninput = render;
+  selClasse.onchange = render;
+  document.getElementById("filtroNatureza").onchange = render;
+  document.getElementById("filtroTipo").onchange = render;
+  document.getElementById("expandir").onclick = expandirTudo;
+  document.getElementById("colapsar").onclick = colapsarTudo;
+
+  // Modal
+  const modal = document.getElementById("modal");
+  let subcontaParent = null; // código da conta-mãe quando estamos a criar subconta
+  const $ = id => document.getElementById(id);
+  const exId = AY.exercicioAtivo();
+  // Campos adicionais (Ficha de Conta Primavera) — [id, chave, tipo]
+  const EXTRAS = [["fClassePrim", "classePrimavera", "t"], ["fContaAlt", "contaAlternativa", "t"], ["fContaAltNome", "contaAlternativaNome", "t"],
+    ["fClasseIVA", "classeIVA", "t"], ["fRetencao", "retencaoFonte", "t"], ["fMotivoTrib", "motivoTributacao", "t"],
+    ["fInvestimento", "investimento", "t"], ["fCustoFixo", "custoFixo", "num"], ["fItemTes", "itemTesouraria", "t"],
+    ["fInativo", "inativo", "bool"], ["fTratPend", "tratamentoPendentes", "bool"], ["fIntEquip", "integracaoEquipamentos", "bool"], ["fIntAtivos", "integracaoAtivos", "bool"]];
+  const EXTRA_DEF = { classePrimavera: "DEFA", retencaoFonte: "Nenhuma", custoFixo: 0 };
+  function activarTab(t) { modal.querySelectorAll(".ficha-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === t)); modal.querySelectorAll(".ficha-pane").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== t)); }
+  modal.querySelectorAll(".ficha-tab").forEach(b => b.onclick = () => activarTab(b.dataset.tab));
+  function setExtras(c) {
+    $("fExercicio").value = exId ? exId.nome : new Date().getFullYear();
+    EXTRAS.forEach(([fid, key, t]) => { const el = $(fid); if (!el) return;
+      if (t === "bool") el.checked = key === "inativo" ? (c ? c.ativa === false : false) : (c ? !!c[key] : false);
+      else { let v = c ? c[key] : undefined; if (v == null || v === "") v = c ? "" : (EXTRA_DEF[key] != null ? EXTRA_DEF[key] : ""); el.value = v; } });
+  }
+  function colherExtras() {
+    const o = {};
+    EXTRAS.forEach(([fid, key, t]) => { const el = $(fid); if (!el) return;
+      if (t === "bool") { if (key === "inativo") o.ativa = !el.checked; else o[key] = el.checked; }
+      else o[key] = t === "num" ? (Number(el.value) || 0) : el.value.trim(); });
+    return o;
+  }
+  function abrir(id) {
+    editId = id || null; subcontaParent = null;
+    const c = id ? C.conta(id) : null;
+    document.getElementById("modalTitulo").textContent = c ? "Editar conta " + c.codigo : "Nova conta";
+    document.getElementById("fCodigo").value = c ? c.codigo : "";
+    document.getElementById("fNome").value = c ? c.nome : "";
+    document.getElementById("fNatureza").value = c ? c.natureza : "D";
+    setExtras(c); activarTab("geral");
+    document.getElementById("formErro").classList.add("hidden");
+    modal.classList.remove("hidden");
+  }
+  // Abertura de conta em modo SUBCONTA (a conta-mãe passará a integradora)
+  function abrirSubconta(parentCodigo) {
+    editId = null; subcontaParent = parentCodigo;
+    const parent = C.contaPorCodigo(parentCodigo) || {};
+    const jaTemFilhos = C.contas().some(c => c.codigo !== parentCodigo && c.codigo.startsWith(parentCodigo));
+    document.getElementById("modalTitulo").textContent = "Nova subconta de " + parentCodigo + (jaTemFilhos ? "" : " — a mãe passa a integradora");
+    document.getElementById("fCodigo").value = C.proximaSubconta(parentCodigo);
+    document.getElementById("fNome").value = "";
+    document.getElementById("fNatureza").value = parent.natureza || C.naturezaConta(parentCodigo);
+    setExtras(null); activarTab("geral");
+    document.getElementById("formErro").classList.remove("hidden");
+    document.getElementById("formErro").className = "alert alert-info";
+    document.getElementById("formErro").textContent = jaTemFilhos
+      ? "Nova conta de movimento sob " + parentCodigo + "."
+      : "Ao gravar: " + parentCodigo + " passa a integradora e os seus movimentos migram para " + C.proximaSubconta(parentCodigo) + ".";
+    modal.classList.remove("hidden");
+    setTimeout(() => document.getElementById("fNome").focus(), 30);
+  }
+  function fechar() { modal.classList.add("hidden"); }
+  document.getElementById("novaConta").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = fechar;
+  document.getElementById("cancelar").onclick = fechar;
+  document.getElementById("novaConta").style.display = podeGerir ? "" : "none";
+
+  document.getElementById("fCodigo").oninput = function () {
+    if (!editId) document.getElementById("fNatureza").value = C.naturezaConta(this.value);
+  };
+
+  // ---------- Datalist embutido + Seletor de conta (F4) ----------
+  function atualizarDatalist() {
+    document.getElementById("planoContasList").innerHTML = C.contas().map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join("");
+  }
+  const modalPlano = document.getElementById("modalPlano");
+  let pickerMode = "load"; // 'load' = carrega a conta na ficha · 'fill' = preenche a conta alternativa
+  function abrirPlano(mode) {
+    pickerMode = mode;
+    document.getElementById("planoTitulo").textContent = mode === "fill" ? "Plano de Contas — escolher conta alternativa" : "Plano de Contas — escolher conta";
+    document.getElementById("planoBusca").value = ""; desenhaPlano("");
+    modalPlano.classList.remove("hidden"); setTimeout(() => document.getElementById("planoBusca").focus(), 30);
+  }
+  function desenhaPlano(q) {
+    q = (q || "").toLowerCase().trim(); const todas = C.contas();
+    const rows = todas.filter(c => !q || c.codigo.toLowerCase().includes(q) || c.nome.toLowerCase().includes(q)).slice(0, 500);
+    document.getElementById("planoLista").innerHTML = rows.length ? rows.map(c => { const mov = C.ehMovimento(c, todas);
+      return `<tr class="plano-row" data-cod="${E(c.codigo)}"><td><b>${E(c.codigo)}</b></td><td>${E(c.nome)}</td><td><small>${E(C.classeNome(c.codigo))}</small></td><td>${mov ? AY.badge("Movimento", "#2980b9") : AY.badge("Integração", "#8a8a8a")}</td></tr>`; }).join("")
+      : `<tr><td colspan="4" class="empty">Sem contas para "${E(q)}".</td></tr>`;
+    document.querySelectorAll("#planoLista .plano-row").forEach(r => r.onclick = () => escolherConta(r.dataset.cod));
+  }
+  function escolherConta(cod) {
+    modalPlano.classList.add("hidden"); const c = C.contaPorCodigo(cod);
+    if (pickerMode === "fill") { document.getElementById("fContaAlt").value = cod; document.getElementById("fContaAltNome").value = c ? c.nome : ""; document.getElementById("fContaAlt").focus(); }
+    else if (c) { abrir(c.id); } // chama e carrega a conta selecionada na ficha
+  }
+  document.getElementById("planoBusca").oninput = e => desenhaPlano(e.target.value);
+  document.getElementById("planoBusca").addEventListener("keydown", e => {
+    if (e.key === "Escape") modalPlano.classList.add("hidden");
+    else if (e.key === "Enter") { e.preventDefault(); const first = document.querySelector("#planoLista .plano-row"); if (first) escolherConta(first.dataset.cod); }
+  });
+  document.getElementById("planoFechar").onclick = () => modalPlano.classList.add("hidden");
+  modalPlano.addEventListener("click", e => { if (e.target === modalPlano) modalPlano.classList.add("hidden"); });
+  document.getElementById("f4Codigo").onclick = () => abrirPlano("load");
+  document.getElementById("f4ContaAlt").onclick = () => abrirPlano("fill");
+  document.getElementById("fCodigo").addEventListener("keydown", e => { if (e.key === "F4") { e.preventDefault(); abrirPlano("load"); } });
+  document.getElementById("fContaAlt").addEventListener("keydown", e => { if (e.key === "F4") { e.preventDefault(); abrirPlano("fill"); } });
+  atualizarDatalist();
+
+  document.getElementById("form").onsubmit = (e) => {
+    e.preventDefault();
+    const codigo = document.getElementById("fCodigo").value.trim();
+    const nome = document.getElementById("fNome").value.trim();
+    const err = document.getElementById("formErro");
+    err.className = "alert alert-error";
+    if (!/^\d{1,12}$/.test(codigo)) { err.textContent = "Código deve ser numérico (ex.: 632)."; err.classList.remove("hidden"); return; }
+
+    const extras = colherExtras();
+    // Modo subconta: transforma a mãe em integradora e migra os movimentos para a 1.ª subconta
+    if (subcontaParent) {
+      try {
+        const r = C.criarSubconta(subcontaParent, { codigo, nome });
+        const nova = C.contaPorCodigo(codigo); if (nova) C.saveConta(Object.assign({ id: nova.id, codigo: nova.codigo, natureza: nova.natureza }, extras));
+        fechar(); render();
+        AY.toast(r.tornouIntegradora
+          ? subcontaParent + " passou a integradora · " + (r.movidos ? r.movidos + " movimento(s) migraram para " : "conta ") + r.criada
+          : "Subconta " + r.criada + " criada.", "success");
+      } catch (ex) { err.textContent = ex.message; err.classList.remove("hidden"); }
+      return;
+    }
+
+    const dup = C.contaPorCodigo(codigo);
+    if (dup && dup.id !== editId) { err.textContent = "Já existe uma conta com esse código."; err.classList.remove("hidden"); return; }
+    if (editId) {
+      C.saveConta(Object.assign({ id: editId, codigo, nome, natureza: document.getElementById("fNatureza").value }, extras));
+      fechar(); render(); AY.toast("Conta guardada.", "success");
+    } else {
+      // Criação nova — aplica a regra geral (subconta se estende conta de movimento)
+      try {
+        const r = C.criarConta(codigo, nome, document.getElementById("fNatureza").value);
+        const nova = C.contaPorCodigo(codigo); if (nova) C.saveConta(Object.assign({ id: nova.id, codigo: nova.codigo, natureza: nova.natureza }, extras));
+        fechar(); render();
+        AY.toast(r.tornouIntegradora ? ("A conta-mãe passou a integradora · " + (r.movidos ? r.movidos + " movimento(s) migraram para " : "") + r.criada) : "Conta criada.", "success");
+      } catch (ex) { err.textContent = ex.message; err.classList.remove("hidden"); }
+    }
+  };
+
+  function eliminar(id) {
+    const c = C.conta(id); if (!c) return;
+    if (!confirm("Eliminar/desativar a conta " + c.codigo + " · " + c.nome + "?")) return;
+    const r = C.removeConta(id);
+    render();
+    AY.toast(r && r.desativada ? "Conta tem movimentos: foi desativada." : "Conta eliminada.", "info");
+  }
+
+  // ---------- Importação (Primavera) ----------
+  const modalImp = document.getElementById("modalImp");
+  let impRows = null;
+  const norm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  document.getElementById("importar").onclick = () => { impReset(); modalImp.classList.remove("hidden"); };
+  document.getElementById("impFechar").onclick = () => modalImp.classList.add("hidden");
+  document.getElementById("impCancelar").onclick = () => modalImp.classList.add("hidden");
+  document.getElementById("importar").style.display = podeGerir ? "" : "none";
+  function impReset() {
+    impRows = null;
+    document.getElementById("fileInput").value = "";
+    document.getElementById("fileLabel").textContent = "📄 Clica para escolher o ficheiro (.xlsx ou .csv)…";
+    document.getElementById("impMapa").classList.add("hidden");
+    document.getElementById("impErro").classList.add("hidden");
+  }
+  document.getElementById("fileInput").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const err = document.getElementById("impErro"); err.classList.add("hidden");
+    document.getElementById("fileLabel").textContent = "📄 " + f.name;
+    try {
+      const res = await AY.readSpreadsheet(f);
+      impRows = res.rows;
+      if (!impRows.length) throw new Error("Ficheiro sem linhas.");
+      prepararMapa();
+    } catch (ex) { err.textContent = ex.message; err.classList.remove("hidden"); document.getElementById("impMapa").classList.add("hidden"); }
+  };
+  function prepararMapa() {
+    const header = impRows[0] || [];
+    const nCols = Math.max(...impRows.slice(0, 20).map(r => r.length));
+    const selCod = document.getElementById("colCod"), selNome = document.getElementById("colNome");
+    const opts = [];
+    for (let i = 0; i < nCols; i++) opts.push(`<option value="${i}">Coluna ${i + 1}${header[i] ? " — " + AY.escapeHtml(String(header[i]).slice(0, 30)) : ""}</option>`);
+    selCod.innerHTML = opts.join(""); selNome.innerHTML = opts.join("");
+    // adivinhar colunas por cabeçalho
+    let gCod = 0, gNome = 1;
+    header.forEach((h, i) => { const n = norm(h); if (/(conta|codigo|cod|nº|numero|n\.º)/.test(n) && gCod === 0) gCod = i; if (/(descri|nome|designa|titulo)/.test(n)) gNome = i; });
+    // se não há cabeçalho óbvio, tenta: coluna com mais dígitos = código
+    selCod.value = gCod; selNome.value = gNome;
+    document.getElementById("impMapa").classList.remove("hidden");
+    previsualizar();
+  }
+  ["colCod", "colNome", "temHeader"].forEach(id => document.getElementById(id).onchange = previsualizar);
+  function linhasImport() {
+    const cCod = +document.getElementById("colCod").value, cNome = +document.getElementById("colNome").value;
+    const skip = document.getElementById("temHeader").value === "1" ? 1 : 0;
+    return impRows.slice(skip).map(r => ({ codigo: (r[cCod] || "").trim(), nome: (r[cNome] || "").trim() })).filter(l => l.codigo && /\d/.test(l.codigo));
+  }
+  function previsualizar() {
+    const linhas = linhasImport();
+    document.getElementById("impCount").textContent = linhas.length + " contas";
+    document.getElementById("impPreview").innerHTML = `<table><thead><tr><th>Código</th><th>Descrição</th></tr></thead><tbody>${linhas.slice(0, 60).map(l => `<tr><td><b>${AY.escapeHtml(l.codigo)}</b></td><td>${AY.escapeHtml(l.nome)}</td></tr>`).join("")}</tbody></table>${linhas.length > 60 ? `<p class="sub" style="padding:6px">… e mais ${linhas.length - 60}.</p>` : ""}`;
+  }
+  document.getElementById("impConfirmar").onclick = () => {
+    const linhas = linhasImport();
+    if (!linhas.length) { const err = document.getElementById("impErro"); err.textContent = "Nenhuma conta detetada — verifica o mapeamento de colunas."; err.classList.remove("hidden"); return; }
+    const substituir = document.getElementById("substituir").checked;
+    if (substituir && !confirm("Substituir TODO o plano de contas atual por " + linhas.length + " contas?")) return;
+    const r = C.importarPlano(linhas, { substituir });
+    modalImp.classList.add("hidden"); render();
+    AY.toast(`Importado: ${r.novas} novas, ${r.atualizadas} atualizadas.`, "success");
+  };
+
+  render();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Razão — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head">
+      <h1>Razão</h1>
+      <p class="sub">Extrato de movimentos por conta, com saldo acumulado.</p>
+    </div>
+    <div class="card">
+      <div class="grid-4">
+        <label>Conta<select id="fConta"></select></label>
+        <label>De<input type="date" id="fDe"></label>
+        <label>Até<input type="date" id="fAte"></label>
+        <label style="display:flex;align-items:flex-end;gap:8px"><input type="checkbox" id="fSub" style="width:auto;margin:0"> Incluir subcontas</label>
+      </div>
+    </div>
+    <div id="resultado"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("razao.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2;
+  const sel = document.getElementById("fConta");
+  // Todas as contas (movimento e integração); integração só faz sentido com subcontas
+  C.contas().filter(c => c.ativa !== false).forEach(c => sel.appendChild(new Option(c.codigo + " · " + c.nome, c.codigo)));
+
+  function render() {
+    const codigo = sel.value;
+    if (!codigo) { document.getElementById("resultado").innerHTML = `<div class="card"><div class="empty">Escolhe uma conta.</div></div>`; return; }
+    const conta = C.contaPorCodigo(codigo);
+    const ex = AY.exercicioAtivo();
+    const r = C.razao(codigo, { de: document.getElementById("fDe").value || null, ate: document.getElementById("fAte").value || null, exercicioId: ex ? ex.id : null, incluirSub: document.getElementById("fSub").checked });
+    const html = `
+      <div class="grid-4" style="margin-bottom:16px">
+        ${AY.kpi("Total débito", m2(r.totalDebito), "", "var(--chart-teal)")}
+        ${AY.kpi("Total crédito", m2(r.totalCredito), "", "var(--chart-amber)")}
+        ${AY.kpi("Saldo", m2(Math.abs(r.saldoFinal)) + (r.saldoFinal < 0 ? " C" : " D"), "natureza " + (r.natureza === "C" ? "credora" : "devedora"), r.saldoFinal >= 0 ? "#16a085" : "#c0392b")}
+        ${AY.kpi("Movimentos", r.linhas.length, "", "var(--chart-blue)")}
+      </div>
+      <div class="card">
+        <div class="card-title">${E(codigo)} · ${E(conta ? conta.nome : "")} <span class="tag">${document.getElementById("fSub").checked ? "com subcontas" : "conta simples"}</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Data</th><th>Nº</th><th>Diário</th><th>Descrição</th><th>Contrap.</th><th class="num">Débito</th><th class="num">Crédito</th><th class="num">Saldo</th></tr></thead>
+          <tbody>${r.linhas.length ? r.linhas.map(x => `<tr onclick="location.href='lancamentos.html?id=${x.lancId}'">
+            <td>${AY.formatDate(x.data)}</td><td>${x.numero}</td><td><small>${E((C.DIARIOS[x.diario] || {}).label || x.diario)}</small></td>
+            <td>${E(x.descricao || "—")}</td><td><small>${E(x.contraparte || "")}</small></td>
+            <td class="num">${x.debito ? m2(x.debito) : ""}</td><td class="num">${x.credito ? m2(x.credito) : ""}</td>
+            <td class="num"><b>${m2(Math.abs(x.saldo))} ${x.saldo < 0 ? "C" : "D"}</b></td></tr>`).join("") : `<tr><td colspan="8" class="empty">Sem movimentos no período.</td></tr>`}</tbody>
+          <tfoot><tr style="font-weight:800;background:var(--surface-2)"><td colspan="5">TOTAIS</td><td class="num">${m2(r.totalDebito)}</td><td class="num">${m2(r.totalCredito)}</td><td class="num">${m2(Math.abs(r.saldoFinal))} ${r.saldoFinal < 0 ? "C" : "D"}</td></tr></tfoot>
+          </table>
+        </div>
+      </div>`;
+    document.getElementById("resultado").innerHTML = html;
+  }
+  [sel, document.getElementById("fDe"), document.getElementById("fAte"), document.getElementById("fSub")].forEach(el => el.onchange = render);
+  // Pré-seleciona por ?conta=
+  const cq = AY.qs("conta"); if (cq) sel.value = cq;
+  render();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comercial — Vendedores — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Vendedores</h1><p class="sub">Equipa comercial e apuramento de comissões sobre as vendas.</p></div>
+
+    <div class="card">
+      <div class="toolbar"><b class="grow">Equipa comercial</b><button class="btn btn-amber" id="novo">+ Novo vendedor</button></div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Comissões (sobre vendas faturadas)</div>
+      <div class="table-wrap" id="comissoes"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:460px">
+  <div class="modal-head"><b id="mTitulo">Novo vendedor</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form"><div class="grid-2">
+    <label style="grid-column:1/-1">Nome<input id="fNome" required></label>
+    <div class="sec-label" style="grid-column:1/-1">Condições de comissão</div>
+    <label>Tipo de comissão<select id="fTipoCom"><option value="percentagem">Percentagem (%)</option><option value="fixo">Valor fixo por venda</option></select></label>
+    <label id="lblComis">Comissão (%)<input type="number" id="fComis" step="0.01" min="0" value="3"></label>
+    <label>Base de cálculo<select id="fBaseCom"><option value="faturado">Sobre o valor faturado</option><option value="recebido">Sobre o valor recebido</option><option value="margem">Sobre a margem</option></select></label>
+    <label>Estado<select id="fEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></label>
+    <label style="grid-column:1/-1">Observações / condições<input id="fCondicoes" placeholder="Ex.: só sobre vendas acima de 100.000 Kz"></label>
+  </div>
+  <div id="avisoPerm" class="alert alert-info hidden" style="margin-top:6px">As condições de comissão só podem ser alteradas por perfis autorizados (definido em Configurações).</div>
+  <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div></form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/comercial.js"></script>
+<script>
+const u = AY.initPage("vendedores.html", null);
+if (u) {
+  const E = AY.escapeHtml, M = AY.com, m2 = AY.formatMoeda2; let editId = null;
+  const podeGerir = AY.can("comercial.gerir");
+  // Restrição de alteração de comissões (config)
+  const comRestrita = !!((AY.getConfig().comissoes || {}).restrita);
+  const podeComissao = !comRestrita || AY.can("comercial.gerir") || AY.ehAdminLike(u);
+  const g = id => document.getElementById(id);
+
+  function render() {
+    const rows = M.vendedores();
+    document.getElementById("tabela").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Nome</th><th class="num">Comissão %</th><th>Estado</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${rows.map(v => `<tr>
+        <td><b>${E(v.nome)}</b></td><td class="num">${v.comissaoPerc}%</td>
+        <td>${v.estado === "inactivo" ? AY.badge("Inactivo", "#8a8a8a") : AY.badge("Activo", "#16a085")}</td>
+        ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${v.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${v.id}">✕</button></td>` : ""}
+      </tr>`).join("")}</tbody></table>` : `<div class="empty">Sem vendedores.</div>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const v = M.vendedor(b.dataset.del); if (confirm("Eliminar " + v.nome + "?")) { M.removeVendedor(b.dataset.del); render(); } });
+
+    const com = M.comissoes({ soFaturadas: true });
+    const tot = com.reduce((s, g) => AY.round2(s + g.comissao), 0);
+    document.getElementById("comissoes").innerHTML = com.length ? `<table>
+      <thead><tr><th>Vendedor</th><th class="num">Vendas</th><th class="num">Base (subtotal)</th><th class="num">% </th><th class="num">Comissão</th></tr></thead>
+      <tbody>${com.map(g => `<tr><td><b>${E(g.vendedor)}</b></td><td class="num">${g.vendas}</td><td class="num">${m2(g.base)}</td><td class="num">${g.perc}%</td><td class="num"><b>${m2(g.comissao)}</b></td></tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="4" class="num"><b>Total comissões</b></td><td class="num"><b>${m2(tot)}</b></td></tr></tfoot>
+    </table>` : `<div class="empty">Sem comissões apuradas (sem vendas faturadas com vendedor).</div>`;
+  }
+  const modal = document.getElementById("modal");
+  function abrir(id) {
+    editId = id || null; const v = id ? M.vendedor(id) : null;
+    document.getElementById("mTitulo").textContent = v ? "Editar " + v.nome : "Novo vendedor";
+    g("fNome").value = v ? v.nome : "";
+    g("fTipoCom").value = v ? (v.tipoComissao || "percentagem") : "percentagem";
+    g("fComis").value = v ? v.comissaoPerc : 3;
+    g("fBaseCom").value = v ? (v.baseComissao || "faturado") : "faturado";
+    g("fCondicoes").value = v ? (v.condicoesComissao || "") : "";
+    g("fEstado").value = v ? v.estado : "activo";
+    aplicarTipo();
+    // Se as comissões são restritas e o utilizador não tem permissão, bloqueia os campos de comissão
+    ["fTipoCom", "fComis", "fBaseCom", "fCondicoes"].forEach(id => g(id).disabled = !podeComissao);
+    g("avisoPerm").classList.toggle("hidden", podeComissao);
+    modal.classList.remove("hidden");
+  }
+  function aplicarTipo() { g("lblComis").childNodes[0].nodeValue = g("fTipoCom").value === "fixo" ? "Valor fixo por venda" : "Comissão (%)"; }
+  g("fTipoCom").onchange = aplicarTipo;
+  document.getElementById("novo").onclick = () => abrir(null);
+  document.getElementById("fechar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("cancelar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("novo").style.display = podeGerir ? "" : "none";
+  document.getElementById("form").onsubmit = e => {
+    e.preventDefault();
+    const dados = { id: editId, nome: g("fNome").value.trim(), estado: g("fEstado").value };
+    if (podeComissao) { dados.tipoComissao = g("fTipoCom").value; dados.comissaoPerc = Number(g("fComis").value) || 0; dados.baseComissao = g("fBaseCom").value; dados.condicoesComissao = g("fCondicoes").value.trim(); }
+    M.saveVendedor(dados);
+    modal.classList.add("hidden"); render(); AY.toast("Vendedor guardado.", "success");
+  };
+  render();
+}
+</script>
+</body>
+</html>

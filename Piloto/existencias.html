@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventário — Existências — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head no-print"><h1>Existências</h1><p class="sub">Stock atual por artigo e por armazém, valorizado ao custo médio.</p></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card no-print"><div class="toolbar">
+      <input type="search" id="busca" placeholder="Pesquisar artigo…" class="grow">
+      <label style="margin:0">Armazém <select id="fArmazem"><option value="">Todos</option></select></label>
+      <label class="chk"><input type="checkbox" id="soRutura"> Só em rutura</label>
+      <button class="btn btn-outline btn-sm" id="btnCsv">⬇ CSV</button>
+      <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+    </div></div>
+    <div class="card report-print" id="card"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/logistica.js"></script>
+<script>
+const u = AY.initPage("existencias.html", null);
+if (u) {
+  const E = AY.escapeHtml, L = AY.log, m2 = AY.formatMoeda2, emp = AY.getEmpresa();
+  const selW = document.getElementById("fArmazem");
+  selW.innerHTML = `<option value="">Todos os armazéns</option>` + L.armazens().map(w => `<option value="${w.id}">${E(w.codigo)} · ${E(w.nome)}</option>`).join("");
+
+  function linhas() {
+    const wid = selW.value || null;
+    return L.artigos().filter(a => a.estado !== "inactivo").map(a => {
+      const st = wid ? L.stock(a.id, wid) : L.stockTotal(a.id), cm = L.custoMedio(a.id, wid);
+      return { a, stock: st, custoMedio: cm, valor: AY.round2(st * cm), rutura: st <= (Number(a.stockMin) || 0) };
+    });
+  }
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim(), soRut = document.getElementById("soRutura").checked;
+    let rows = linhas();
+    if (q) rows = rows.filter(r => (r.a.codigo + " " + r.a.descricao).toLowerCase().includes(q));
+    if (soRut) rows = rows.filter(r => r.rutura);
+    const valorTotal = AY.round2(rows.reduce((s, r) => s + r.valor, 0));
+    document.getElementById("kpis").innerHTML = [
+      AY.kpi("Valor de stock", AY.formatKz(valorTotal), "custo médio", "#16a085"),
+      AY.kpi("Artigos", rows.length, "com movimento/ficha", "var(--chart-blue)"),
+      AY.kpi("Em rutura", linhas().filter(r => r.rutura).length, "≤ stock mínimo", "var(--chart-amber)"),
+      AY.kpi("Armazéns", L.armazens().length, "", "#8e44ad"),
+    ].join("");
+    document.getElementById("card").innerHTML = `
+      <div class="bal-cabecalho"><div><b>${E(emp.nome)}</b><br><span class="sub">Mapa de Existências${selW.value ? " — " + E(selW.options[selW.selectedIndex].text) : ""}</span></div><div class="sub">Valores em ${E(AY.moeda())}</div></div>
+      <div class="table-wrap" style="margin-top:10px"><table>
+        <thead><tr><th>Código</th><th>Descrição</th><th>Un.</th><th class="num">Stock</th><th class="num">Stock mín.</th><th class="num">Custo médio</th><th class="num">Valor</th></tr></thead>
+        <tbody>${rows.length ? rows.map(r => `<tr${r.rutura ? ' style="color:var(--chart-amber)"' : ""}>
+          <td><b>${E(r.a.codigo)}</b></td><td>${E(r.a.descricao)}</td><td>${E(r.a.unidade || "")}</td>
+          <td class="num"><b>${r.stock}</b></td><td class="num">${r.a.stockMin || 0}</td><td class="num">${m2(r.custoMedio)}</td><td class="num">${m2(r.valor)}</td>
+        </tr>`).join("") : `<tr><td colspan="7" class="empty">Sem artigos.</td></tr>`}</tbody>
+        <tfoot><tr class="dr-total"><td colspan="6"><b>VALOR TOTAL DE EXISTÊNCIAS</b></td><td class="num"><b>${m2(valorTotal)}</b></td></tr></tfoot>
+      </table></div>`;
+  }
+  function csv() {
+    const rows = linhas();
+    const data = [["Código", "Descrição", "Unidade", "Stock", "Stock mínimo", "Custo médio", "Valor"]].concat(rows.map(r => [r.a.codigo, r.a.descricao, r.a.unidade, r.stock, r.a.stockMin || 0, r.custoMedio, r.valor]));
+    const s = data.map(r => r.map(v => { v = String(v == null ? "" : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(";")).join("\r\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + s], { type: "text/csv;charset=utf-8" })); a.download = "Existencias.csv"; a.click();
+  }
+  document.getElementById("busca").oninput = render; selW.onchange = render; document.getElementById("soRutura").onchange = render;
+  document.getElementById("btnCsv").onclick = csv; document.getElementById("btnImprimir").onclick = () => window.print();
+  render();
+}
+</script>
+</body>
+</html>

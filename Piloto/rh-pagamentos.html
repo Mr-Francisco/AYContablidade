@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH — Pagamentos — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Pagamentos</h1><p class="sub">Liquidação dos salários líquidos processados. Cada pagamento debita a conta a pagar ao pessoal e credita o banco/caixa.</p></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Pagar a partir de <select id="fConta"></select></label>
+        <span style="flex:1"></span>
+      </div>
+      <div class="table-wrap" id="tabela"></div>
+      <p class="sub" style="margin-top:8px">Só é possível pagar meses já processados. Um mês pago fica bloqueado para reprocessamento.</p>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/rh.js"></script>
+<script>
+const u = AY.initPage("rh-pagamentos.html", null);
+if (u) {
+  const E = AY.escapeHtml, R = AY.rh, C = AY.contab, m2 = AY.formatMoeda2;
+  const podeGerir = AY.can("rh.gerir");
+  const selConta = document.getElementById("fConta");
+  // contas de disponibilidades (bancos 43 / caixa 45)
+  selConta.innerHTML = C.contasMovimento().filter(c => /^4[35]/.test(c.codigo)).map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join("");
+  if ([...selConta.options].some(o => o.value === R.cfg().contaBanco)) selConta.value = R.cfg().contaBanco;
+
+  function meses() {
+    // meses processados (01-12) + estado
+    const set = new Set(R.processamentos().map(p => p.mes));
+    return [...set].filter(m => m >= "01" && m <= "12").sort();
+  }
+  function render() {
+    const pagos = R.pagamentos();
+    const totalPago = pagos.reduce((s, p) => AY.round2(s + p.valor), 0);
+    const porPagar = meses().filter(m => !R.mesPago(m)).reduce((s, m) => AY.round2(s + R.folha({ soAtivos: true, mes: m }).totais.liquido), 0);
+    document.getElementById("kpis").innerHTML = [
+      AY.kpi("Total pago", AY.formatKz(totalPago), pagos.length + " pagamentos", "#16a085"),
+      AY.kpi("Por pagar", AY.formatKz(porPagar), meses().filter(m => !R.mesPago(m)).length + " meses processados", "var(--chart-amber)"),
+      AY.kpi("Meses processados", meses().length, "", "var(--chart-blue)"),
+      AY.kpi("Saldo a pagar ao pessoal", AY.formatKz(saldoPessoal()), "conta " + R.cfg().contaPagar, "#8e44ad"),
+    ].join("");
+    const ms = meses();
+    document.getElementById("tabela").innerHTML = ms.length ? `<table>
+      <thead><tr><th>Mês</th><th class="num">Líquido</th><th>Estado</th><th>Lançamento</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${ms.map(m => { const pago = R.pagamentos().find(p => p.mes === m); const liq = R.folha({ soAtivos: true, mes: m }).totais.liquido;
+        return `<tr>
+          <td><b>${E(m)} · ${E(periodo(m))}</b></td>
+          <td class="num">${m2(pago ? pago.valor : liq)}</td>
+          <td>${pago ? AY.badge("Pago", "#16a085") : AY.badge("Processado", "#2980b9")}</td>
+          <td>${pago && pago.numeroOp ? `<a href="movimentos.html?id=${pago.lancId}" class="brand-text">${E(pago.numeroOp)}</a>` : "—"}</td>
+          ${podeGerir ? `<td class="num">${pago ? "" : `<button class="btn btn-sm btn-primary" data-pagar="${m}">Pagar</button>`}</td>` : ""}
+        </tr>`; }).join("")}</tbody>
+    </table>` : `<div class="empty">Nenhum mês processado. Processa a folha em <a href="salarios.html" class="brand-text">Processamento</a>.</div>`;
+    document.querySelectorAll("[data-pagar]").forEach(b => b.onclick = () => pagar(b.dataset.pagar));
+  }
+  function periodo(m) { return (C.periodoLabel ? C.periodoLabel(m) : m); }
+  function saldoPessoal() { try { const r = C.razao(R.cfg().contaPagar, { incluirSub: true }); return r.natureza === "C" ? r.saldoFinal : -r.saldoFinal; } catch (e) { return 0; } }
+  function pagar(mes) {
+    const liq = R.folha({ soAtivos: true, mes }).totais.liquido;
+    if (!confirm("Pagar salários de " + mes + " · " + periodo(mes) + " (" + AY.formatKz(liq) + ") a partir de " + selConta.value + "?")) return;
+    const r = R.pagarMes(mes, { conta: selConta.value });
+    if (r.erro) { AY.toast("Erro: " + r.erro, "info"); return; }
+    render(); AY.toast("Pago " + AY.formatKz(r.valor) + (r.numeroOp ? " · lançamento " + r.numeroOp : ""), "success");
+  }
+  render();
+}
+</script>
+</body>
+</html>

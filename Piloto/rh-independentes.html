@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH — Honorários / Independentes — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Honorários — Trabalhadores Independentes</h1><p class="sub">Prestadores de serviços independentes com retenção de IRT na fonte. Processar lança o custo, o líquido a pagar e o IRT retido.</p></div>
+
+    <div class="card">
+      <div class="toolbar"><b class="grow">Independentes</b><button class="btn btn-outline btn-sm" id="novoInd">+ Novo independente</button><button class="btn btn-amber" id="processar">＋ Processar honorário</button></div>
+      <div class="table-wrap" id="tabInd"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Honorários processados</div>
+      <div class="table-wrap" id="tabHon"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modalInd"><div class="modal" style="max-width:520px">
+  <div class="modal-head"><b id="miTitulo">Novo independente</b><button class="icon-btn" id="miFechar">✕</button></div>
+  <form id="formInd"><div class="grid-2">
+    <label style="grid-column:1/-1">Nome<input id="iNome" required></label>
+    <label>NIF<input id="iNif"></label>
+    <label>Retenção IRT (%)<input type="number" id="iTaxa" step="0.5" min="0" value="6.5"></label>
+    <label style="grid-column:1/-1">Atividade<input id="iAtiv"></label>
+    <label>Estado<select id="iEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></label>
+  </div>
+  <div class="modal-actions"><button type="button" class="btn btn-outline" id="miCancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div></form>
+</div></div>
+
+<div class="modal-backdrop hidden" id="modalHon"><div class="modal" style="max-width:520px">
+  <div class="modal-head"><b>Processar honorário</b><button class="icon-btn" id="mhFechar">✕</button></div>
+  <form id="formHon"><div class="grid-2">
+    <label style="grid-column:1/-1">Independente<select id="hInd" required></select></label>
+    <label>Valor bruto<input type="number" id="hValor" step="1000" min="0" required></label>
+    <label>Data<input type="date" id="hData"></label>
+    <label style="grid-column:1/-1">Descrição<input id="hDesc" placeholder="Ex.: Serviços de consultoria — Julho"></label>
+  </div>
+  <div class="cc-resumo" style="justify-content:flex-end;margin-top:8px"><span>Retenção <b id="hRet">0,00</b></span><span>Líquido <b id="hLiq">0,00</b></span></div>
+  <div id="hErro" class="alert alert-error hidden" style="margin-top:8px"></div>
+  <div class="modal-actions"><button type="button" class="btn btn-outline" id="mhCancelar">Cancelar</button><button class="btn btn-primary" type="submit">Processar e lançar</button></div></form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/rh.js"></script>
+<script>
+const u = AY.initPage("rh-independentes.html", null);
+if (u) {
+  const E = AY.escapeHtml, R = AY.rh, m2 = AY.formatMoeda2; let editInd = null;
+  const podeGerir = AY.can("rh.gerir");
+
+  function render() {
+    const inds = R.independentes();
+    document.getElementById("tabInd").innerHTML = inds.length ? `<table>
+      <thead><tr><th>Nome</th><th>NIF</th><th>Atividade</th><th class="num">Retenção</th><th>Estado</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${inds.map(i => `<tr>
+        <td><b>${E(i.nome)}</b></td><td>${E(i.nif || "—")}</td><td>${E(i.atividade || "—")}</td><td class="num">${i.taxaRet}%</td>
+        <td>${i.estado === "inactivo" ? AY.badge("Inactivo", "#8a8a8a") : AY.badge("Activo", "#16a085")}</td>
+        ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${i.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${i.id}">✕</button></td>` : ""}
+      </tr>`).join("")}</tbody></table>` : `<div class="empty">Sem independentes.</div>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrirInd(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const i = R.independente(b.dataset.del); if (confirm("Eliminar " + i.nome + "?")) { R.removeIndependente(b.dataset.del); render(); } });
+
+    const hon = R.honorarios().slice().sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+    const tot = hon.reduce((s, h) => ({ bruto: AY.round2(s.bruto + h.bruto), ret: AY.round2(s.ret + h.retencao), liq: AY.round2(s.liq + h.liquido) }), { bruto: 0, ret: 0, liq: 0 });
+    document.getElementById("tabHon").innerHTML = hon.length ? `<table>
+      <thead><tr><th>Data</th><th>Independente</th><th>Descrição</th><th class="num">Bruto</th><th class="num">Retenção</th><th class="num">Líquido</th><th>Lançamento</th></tr></thead>
+      <tbody>${hon.map(h => `<tr>
+        <td>${AY.formatDate(h.data)}</td><td><b>${E(h.nome)}</b></td><td><small>${E(h.descricao || "—")}</small></td>
+        <td class="num">${m2(h.bruto)}</td><td class="num">${m2(h.retencao)}</td><td class="num"><b>${m2(h.liquido)}</b></td>
+        <td>${h.numeroOp ? `<a href="movimentos.html?id=${h.lancId}" class="brand-text">${E(h.numeroOp)}</a>` : "—"}</td>
+      </tr>`).join("")}</tbody>
+      <tfoot><tr class="dr-total"><td colspan="3"><b>TOTAIS</b></td><td class="num">${m2(tot.bruto)}</td><td class="num">${m2(tot.ret)}</td><td class="num">${m2(tot.liq)}</td><td></td></tr></tfoot>
+    </table>` : `<div class="empty">Sem honorários processados.</div>`;
+  }
+
+  // ---- Independente CRUD ----
+  const modalInd = document.getElementById("modalInd");
+  function abrirInd(id) {
+    editInd = id || null; const i = id ? R.independente(id) : null;
+    document.getElementById("miTitulo").textContent = i ? "Editar " + i.nome : "Novo independente";
+    document.getElementById("iNome").value = i ? i.nome : ""; document.getElementById("iNif").value = i ? (i.nif || "") : "";
+    document.getElementById("iTaxa").value = i ? i.taxaRet : R.cfg().taxaRetHon; document.getElementById("iAtiv").value = i ? (i.atividade || "") : "";
+    document.getElementById("iEstado").value = i ? i.estado : "activo"; modalInd.classList.remove("hidden");
+  }
+  document.getElementById("novoInd").onclick = () => abrirInd(null);
+  document.getElementById("miFechar").onclick = () => modalInd.classList.add("hidden");
+  document.getElementById("miCancelar").onclick = () => modalInd.classList.add("hidden");
+  document.getElementById("formInd").onsubmit = e => {
+    e.preventDefault();
+    R.saveIndependente({ id: editInd, nome: document.getElementById("iNome").value.trim(), nif: document.getElementById("iNif").value.trim(),
+      taxaRet: Number(document.getElementById("iTaxa").value), atividade: document.getElementById("iAtiv").value.trim(), estado: document.getElementById("iEstado").value });
+    modalInd.classList.add("hidden"); render(); AY.toast("Independente guardado.", "success");
+  };
+
+  // ---- Processar honorário ----
+  const modalHon = document.getElementById("modalHon"), selInd = document.getElementById("hInd");
+  function abrirHon() {
+    selInd.innerHTML = R.independentes().filter(i => i.estado !== "inactivo").map(i => `<option value="${i.id}">${E(i.nome)} (${i.taxaRet}%)</option>`).join("");
+    document.getElementById("hValor").value = ""; document.getElementById("hData").value = AY.hojeData(); document.getElementById("hDesc").value = "";
+    document.getElementById("hErro").classList.add("hidden"); previewHon(); modalHon.classList.remove("hidden");
+  }
+  function previewHon() {
+    const ind = R.independente(selInd.value); const r = R.reciboIndependente(ind, document.getElementById("hValor").value);
+    document.getElementById("hRet").textContent = m2(r.retencao); document.getElementById("hLiq").textContent = m2(r.liquido);
+  }
+  document.getElementById("processar").onclick = () => { if (!R.independentes().length) { AY.toast("Regista um independente primeiro.", "info"); return; } abrirHon(); };
+  document.getElementById("mhFechar").onclick = () => modalHon.classList.add("hidden");
+  document.getElementById("mhCancelar").onclick = () => modalHon.classList.add("hidden");
+  selInd.onchange = previewHon; document.getElementById("hValor").oninput = previewHon;
+  document.getElementById("formHon").onsubmit = e => {
+    e.preventDefault(); const err = document.getElementById("hErro");
+    const valor = Number(document.getElementById("hValor").value) || 0;
+    if (valor <= 0) { err.textContent = "Indica um valor válido."; err.classList.remove("hidden"); return; }
+    const r = R.processarHonorario({ indepId: selInd.value, valor, data: document.getElementById("hData").value, descricao: document.getElementById("hDesc").value.trim() });
+    if (r.erro && !r.lancado) { err.textContent = "Processado, mas o lançamento falhou: " + r.erro; err.classList.remove("hidden"); return; }
+    modalHon.classList.add("hidden"); render(); AY.toast("Honorário processado" + (r.numeroOp ? " · lançamento " + r.numeroOp : "") + ".", "success");
+  };
+
+  if (!podeGerir) { document.getElementById("novoInd").style.display = "none"; document.getElementById("processar").style.display = "none"; }
+  render();
+}
+</script>
+</body>
+</html>

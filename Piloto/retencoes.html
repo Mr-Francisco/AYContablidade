@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contabilidade — Retenções na Fonte — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Retenções na Fonte</h1><p class="sub">Mapa das retenções efetuadas (IRT, Imposto Industrial, IAC, Imposto de Selo), alimentadas pela Retenção na Fonte definida nas contas.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Período <select id="fMes"></select></label>
+        <span id="info" class="sub"></span>
+        <span style="flex:1"></span>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card report-print" id="card"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("retencoes.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2, emp = AY.getEmpresa();
+  const selMes = document.getElementById("fMes");
+  selMes.innerHTML = `<option value="">Todos os períodos</option>` + (C.PERIODOS || []).map(p => `<option value="${p[0]}">${p[0]} · ${p[1]}</option>`).join("");
+
+  function render() {
+    const mes = selMes.value || null;
+    const r = C.mapaRetencoes({ mes });
+    document.getElementById("info").textContent = r.linhas.length + " retenção(ões) · valores em " + AY.moeda();
+    const tipos = Object.entries(r.porTipo);
+    const cores = ["var(--pink)", "var(--indigo)", "var(--purple)", "var(--magenta)"];
+    document.getElementById("kpis").innerHTML = [AY.kpi("Total retido", AY.formatKz(r.total), "a entregar ao Estado", "#c0392b")]
+      .concat(tipos.slice(0, 3).map((t, i) => AY.kpi(t[0], AY.formatKz(t[1]), "", cores[i % cores.length]))).join("");
+    document.getElementById("card").innerHTML = `
+      <div class="bal-cabecalho"><div><b>${E(emp.nome)}</b><br><span class="sub">Mapa de Retenções na Fonte${mes ? " — " + E(selMes.options[selMes.selectedIndex].text) : ""}</span></div><div class="sub">NIF: ${E(emp.nif || "—")}</div></div>
+      <div class="table-wrap" style="margin-top:10px"><table>
+        <thead><tr><th>Data</th><th>Nº Op.</th><th>Imposto</th><th>Entidade</th><th>Descrição</th><th class="num">Retido</th></tr></thead>
+        <tbody>${r.linhas.length ? r.linhas.map(l => `<tr>
+          <td>${AY.formatDate(l.data)}</td><td>${l.numeroOp ? `<a href="movimentos.html?id=${E(l.lancId)}" class="brand-text">${E(l.numeroOp)}</a>` : "—"}</td>
+          <td>${AY.badge(l.tipo, "#8e44ad")}</td><td>${E(l.entidade || "—")}</td><td><small>${E(l.descricao || "—")}</small></td>
+          <td class="num"><b>${m2(l.valor)}</b></td></tr>`).join("") : `<tr><td colspan="6" class="empty">Sem retenções no período.</td></tr>`}</tbody>
+        <tfoot><tr class="dr-total"><td colspan="5"><b>TOTAL RETIDO</b></td><td class="num"><b>${m2(r.total)}</b></td></tr></tfoot>
+      </table></div>
+      <p class="sub" style="margin-top:8px">As retenções resultam dos movimentos que creditam contas de retenção (3413 II/IAC · 3431/3432 IRT · 3471 Imposto de Selo). Define a <b>Retenção na Fonte</b> na ficha de cada conta para automatizar.</p>`;
+  }
+  selMes.onchange = render;
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  render();
+}
+</script>
+</body>
+</html>

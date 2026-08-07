@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registar — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<main class="auth">
+  <section class="auth-hero">
+    <div class="ah-logo"><span class="ah-mark">SGD</span><span class="ah-sub"><b>SGD</b><span>SOFTWARE DE GESTÃO DIRIGIDA</span></span></div>
+    <div class="ah-body"><h2>Criar conta</h2><p>A tua conta fica pendente até um Administrador a aprovar.</p></div>
+    <div class="ah-foot">© <span id="ano"></span> SGD</div>
+  </section>
+  <section class="auth-panel">
+    <div class="auth-card">
+      <h1>Registar</h1>
+      <p class="sub">Preenche os teus dados.</p>
+      <div id="alertHost"></div>
+      <form id="form">
+        <label>Nome completo</label><input id="nome" required>
+        <label>E-mail</label><input id="email" type="email" required>
+        <label>Perfil pretendido</label><select id="perfil"></select>
+        <label>Palavra-passe</label><input id="senha" type="password" required>
+        <button class="btn btn-primary btn-block" style="margin-top:16px" type="submit">Criar conta</button>
+      </form>
+      <p style="text-align:center;margin-top:14px">Já tens conta? <a href="login.html" class="brand-text" style="font-weight:700">Entrar</a></p>
+    </div>
+  </section>
+</main>
+<script src="assets/js/app.js"></script>
+<script>
+  AY.initTheme(); AY.seed();
+  document.getElementById("ano").textContent = new Date().getFullYear();
+  const perfis = ["contabilista", "financeiro", "comercial", "logistica", "rh", "consulta"];
+  const selP = document.getElementById("perfil");
+  perfis.forEach(k => selP.appendChild(new Option(AY.perfilLabel(k), k)));
+  document.getElementById("form").onsubmit = (e) => {
+    e.preventDefault();
+    const host = document.getElementById("alertHost");
+    try {
+      AY.registar({ nome: document.getElementById("nome").value, email: document.getElementById("email").value, senha: document.getElementById("senha").value, perfil: document.getElementById("perfil").value });
+      host.innerHTML = '<div class="alert alert-success">Conta criada! Aguarda aprovação de um Administrador. <a href="login.html">Ir para o login</a></div>';
+      document.getElementById("form").reset();
+    } catch (err) { host.innerHTML = '<div class="alert alert-error">' + AY.escapeHtml(err.message) + '</div>'; }
+  };
+</script>
+</body>
+</html>

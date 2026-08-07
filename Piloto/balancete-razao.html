@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balancete do Razão — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="print-landscape">
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Balancete do Razão</h1><p class="sub">Modelo Primavera — contas do razão (2 díg.) agrupadas por classe, com saldos por período.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Exercício <select id="fExercicio"></select></label>
+        <label style="margin:0">Análise
+          <select id="fModo">
+            <option value="completo">Anterior, Período e Acumulado</option>
+            <option value="periodo_acum">Período e Acumulado</option>
+            <option value="periodo">Período</option>
+            <option value="anterior_periodo">Anterior e Período</option>
+          </select>
+        </label>
+        <label style="margin:0">Detalhe
+          <select id="fGrau">
+            <option value="razao">Contas do razão</option>
+            <option value="classe">Total da classe</option>
+          </select>
+        </label>
+        <label style="margin:0">De <input type="date" id="fDe"></label>
+        <label style="margin:0">Até <input type="date" id="fAte"></label>
+        <label style="margin:0">Até ao mês <select id="fMes"><option value="">Todos (15 · Resultado Líquido)</option></select></label>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" id="btnAtualizar">🔄 Atualizar</button>
+        <button class="btn btn-outline btn-sm" id="btnCsv">⬇ Exportar CSV</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div class="card report-print" id="cardTabela"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("balancete-razao.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2;
+  const emp = AY.getEmpresa();
+  let ultimo = null;
+  // Mês/período contabilístico: 00 Abertura · 01-12 meses normais · 13 Regularizações ·
+  // 14 Apuramento de Resultados · 15 Apuramento de Imposto e Resultado Líquido.
+  (C.PERIODOS || []).forEach(([cod, nome]) => document.getElementById("fMes").appendChild(new Option(cod + " · " + nome, cod)));
+  document.getElementById("fExercicio").innerHTML = AY.exercicioOptions().html;
+
+  const GRUPOS = { ant: "Anterior", per: "Período", acu: "Acumulado" };
+  const MODOS = { completo: ["ant", "per", "acu"], periodo_acum: ["per", "acu"], periodo: ["per"], anterior_periodo: ["ant", "per"] };
+  function gruposAtivos() { return MODOS[document.getElementById("fModo").value] || MODOS.completo; }
+  function n(v) { return v ? m2(v) : ""; }
+
+  function render() {
+    const ex = AY.exercicioOptions(document.getElementById("fExercicio").value).selecionado;
+    const de = document.getElementById("fDe").value || null, ate = document.getElementById("fAte").value || null;
+    const mes = document.getElementById("fMes").value || null;
+    const gs = gruposAtivos();
+    const grau = document.getElementById("fGrau").value; // razao | classe
+    const dados = C.balanceteRazao({ de, ate, mes, exercicioId: ex ? ex.id : null });
+    ultimo = dados;
+
+    const cells = (o) => gs.map(g => `<td class="num">${n(o[g].d)}</td><td class="num">${n(o[g].c)}</td>`).join("");
+    let corpo = "";
+    dados.classes.forEach(cl => {
+      if (grau === "razao") {
+        cl.contas.forEach(c => { corpo += `<tr class="bal-conta" data-conta="${E(c.codigo)}" title="Duplo clique: extrato"><td>${E(c.codigo)}</td><td>${E(c.nome)}</td>${cells(c)}</tr>`; });
+      }
+      corpo += `<tr class="bal-sub"><td>${E(cl.classe)}</td><td><b>Soma da Classe ${E(cl.classe)} · ${E(cl.nome)}</b></td>${cells(cl.soma)}</tr>`;
+      if (grau === "razao") corpo += `<tr class="bal-gap"><td colspan="${2 + gs.length * 2}"></td></tr>`;
+    });
+
+    const t = dados.total;
+    const equilibrado = t.acu.d === t.acu.c;
+
+    document.getElementById("cardTabela").innerHTML = `
+      <div class="bal-cabecalho">
+        <div><b>${E(emp.nome)}</b><br><span class="sub">Balancete do Razão (${gs.map(g => GRUPOS[g]).join(", ")})${ex ? " — " + E(ex.nome) : ""}</span></div>
+        <div class="sub">Valores em ${E(AY.moeda())}${de || ate ? " · Período " + (de ? AY.formatDate(de) : "início") + " a " + (ate ? AY.formatDate(ate) : "fim") : ""}${mes ? " · Até ao mês " + mes + " · " + E(C.periodoLabel(mes)) : ""}</div>
+      </div>
+      <div class="table-wrap"><table class="bal-table">
+        <thead>
+          <tr><th rowspan="2">Conta</th><th rowspan="2">Descrição</th>${gs.map(g => `<th colspan="2" class="grp">${GRUPOS[g]}</th>`).join("")}</tr>
+          <tr>${gs.map(() => `<th class="num">Saldo Débito</th><th class="num">Saldo Crédito</th>`).join("")}</tr>
+        </thead>
+        <tbody>${dados.classes.length ? corpo : `<tr><td colspan="${2 + gs.length * 2}" class="empty">Sem movimentos.</td></tr>`}</tbody>
+        <tfoot><tr class="bal-total"><td colspan="2"><b>TOTAL ${equilibrado ? "✓" : "✗ desequilíbrio"}</b></td>${cells(t)}</tr></tfoot>
+      </table></div>`;
+
+    document.querySelectorAll(".bal-conta").forEach(tr => { tr.ondblclick = () => location.href = "extrato.html?conta=" + tr.dataset.conta; });
+  }
+
+  function exportarCsv() {
+    if (!ultimo) return;
+    const gs = gruposAtivos(), grau = document.getElementById("fGrau").value;
+    const head = ["Conta", "Descrição"];
+    gs.forEach(g => head.push("Saldo Débito (" + GRUPOS[g] + ")", "Saldo Crédito (" + GRUPOS[g] + ")"));
+    const vals = o => gs.reduce((a, g) => a.concat([o[g].d, o[g].c]), []);
+    const linhas = [head];
+    ultimo.classes.forEach(cl => {
+      if (grau === "razao") cl.contas.forEach(c => linhas.push([c.codigo, c.nome].concat(vals(c))));
+      linhas.push([cl.classe, "Soma da Classe " + cl.classe + " · " + cl.nome].concat(vals(cl.soma)));
+    });
+    linhas.push(["", "Total"].concat(vals(ultimo.total)));
+    const csv = linhas.map(r => r.map(v => { v = String(v == null ? "" : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(";")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "Balancete_Razao.csv"; a.click();
+    AY.toast("Balancete do razão exportado (CSV).", "success");
+  }
+
+  ["fExercicio", "fModo", "fGrau", "fDe", "fAte", "fMes"].forEach(id => document.getElementById(id).onchange = render);
+  document.getElementById("btnAtualizar").onclick = () => { render(); AY.toast("Balancete do razão atualizado.", "success"); };
+  document.getElementById("btnCsv").onclick = exportarCsv;
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  render();
+}
+</script>
+</body>
+</html>

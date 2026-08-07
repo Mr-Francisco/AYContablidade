@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiscalidade — Mapa de Remunerações — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head no-print"><h1>Mapa de Remunerações</h1><p class="sub">Modelo IRT A2.1 (AGT) — gera o ficheiro .xlsx exatamente no modelo oficial, pronto a anexar.</p></div>
+    <div class="card no-print">
+      <div class="toolbar">
+        <label style="margin:0">NIF do Contribuinte <input id="fNif" style="width:150px"></label>
+        <label style="margin:0">Período <select id="fMes"></select> <input id="fAno" type="number" style="width:90px"></label>
+        <span id="info" class="sub"></span>
+        <span style="flex:1"></span>
+        <button class="btn btn-outline btn-sm" id="btnCsv">⬇ CSV (interno)</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+        <button class="btn btn-primary btn-sm" id="btnXlsx">📄 Gerar .xlsx (modelo AGT)</button>
+      </div>
+    </div>
+    <div class="card report-print" id="card"></div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:760px">
+  <div class="modal-head"><b id="mTitulo">Rubricas — Mapa IRT</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form">
+    <div class="sec-label">Subsídios Não Sujeitos a IRT (Art. 2º do CIRT)</div>
+    <div class="grid-3">
+      <label>Subsídio Alimentação<input type="number" id="fSubAlimentacao" step="1000" min="0" value="0"></label>
+      <label>Subsídio Transporte<input type="number" id="fSubTransporte" step="1000" min="0" value="0"></label>
+      <label>Abono Família<input type="number" id="fAbonoFamilia" step="1000" min="0" value="0"></label>
+      <label>Reembolso de Despesas<input type="number" id="fReembolsoDespesas" step="1000" min="0" value="0"></label>
+      <label>Outros<input type="number" id="fOutrosNaoSujeitos" step="1000" min="0" value="0"></label>
+      <label>Excesso Subsídios Não Sujeitos<input type="number" id="fExcesso" step="1000" min="0" value="0"></label>
+    </div>
+    <div class="sec-label">Subsídios Sujeitos a IRT</div>
+    <div class="grid-3">
+      <label>Abono de Falhas<input type="number" id="fAbonoFalhas" step="1000" min="0" value="0"></label>
+      <label>Subsídio Renda de Casa<input type="number" id="fSubRendaCasa" step="1000" min="0" value="0"></label>
+      <label>Compensação Por Rescisão<input type="number" id="fCompensacaoRescisao" step="1000" min="0" value="0"></label>
+      <label>Subsídio de Férias<input type="number" id="fSubFerias" step="1000" min="0" value="0"></label>
+      <label>Horas Extras<input type="number" id="fHorasExtras" step="1000" min="0" value="0"></label>
+      <label>Subsídio de Atávio<input type="number" id="fSubAtavio" step="1000" min="0" value="0"></label>
+      <label>Subsídio de Representação<input type="number" id="fSubRepresentacao" step="1000" min="0" value="0"></label>
+      <label>Prémios<input type="number" id="fPremios" step="1000" min="0" value="0"></label>
+      <label>Subsídio de Natal<input type="number" id="fSubNatal" step="1000" min="0" value="0"></label>
+      <label>Outros Subsídios Sujeitos<input type="number" id="fOutrosSujeitos" step="1000" min="0" value="0"></label>
+    </div>
+    <div class="sec-label">Segurança Social e IRT</div>
+    <div class="grid-3">
+      <label>Isento IRT?<select id="fIsentoIRT"><option value="N">Não</option><option value="S">Sim</option></select></label>
+      <label>Não Sujeito a Segurança Social?<select id="fNaoSujeitoSS"><option value="N">Não</option><option value="S">Sim</option></select></label>
+      <label>Registo manual da Base Tributável SS?<select id="fRegistoManualSS"><option value="N">Não</option><option value="S">Sim</option></select></label>
+      <label id="wBaseSSManual" style="display:none">Base Tributável SS (manual)<input type="number" id="fBaseTributavelSSManual" step="1000" min="0" value="0"></label>
+    </div>
+    <div class="cc-resumo" style="justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
+      <span>Salário Ilíquido <b id="rIliquido">0,00</b></span>
+      <span>Base SS <b id="rBaseSS">0,00</b></span>
+      <span>Contribuição SS <b id="rContribSS">0,00</b></span>
+      <span>Base IRT <b id="rBaseIRT">0,00</b></span>
+      <span>IRT Apurado <b id="rIrt">0,00</b></span>
+    </div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
+  </form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/rh.js"></script>
+<script src="assets/js/xlsx-writer.js"></script>
+<script>
+const u = AY.initPage("mapa-remuneracoes.html", null);
+if (u) {
+  const E = AY.escapeHtml, R = AY.rh, C = AY.contab, m2 = AY.formatMoeda2, emp = AY.getEmpresa();
+  const podeGerir = AY.can("rh.gerir");
+  const selMes = document.getElementById("fMes");
+  (C.PERIODOS || []).filter(p => p[0] >= "01" && p[0] <= "12").forEach(p => selMes.appendChild(new Option(p[0] + " · " + p[1], p[0])));
+  selMes.value = String(new Date().getMonth() + 1).padStart(2, "0");
+  const ex = AY.exercicioAtivo();
+  document.getElementById("fAno").value = (ex && ex.inicio ? ex.inicio.slice(0, 4) : new Date().getFullYear());
+  document.getElementById("fNif").value = emp.nif || "";
+
+  // Código de província de 2 letras exigido pelo modelo oficial (folha "Auxiliar" do template AGT).
+  const PROVINCIA_COD = { "Bengo": "BO", "Benguela": "BA", "Bié": "BE", "Cabinda": "CA", "Cuando Cubango": "CC",
+    "Cuanza Norte": "CN", "Cuanza Sul": "CS", "Cunene": "CE", "Huambo": "HO", "Huíla": "HA", "Luanda": "LA",
+    "Lunda Norte": "LN", "Lunda Sul": "LS", "Malanje": "ME", "Moxico": "MO", "Namibe": "NE", "Uíge": "UE", "Zaire": "ZE" };
+
+  function linhasMapa(mes) { return R.mapaIrt(mes, { soAtivos: true }); }
+  function totais(ls) {
+    return ls.reduce((t, l) => { ["salarioBase", "descontosFalta", "subNaoSuj", "subSuj", "salarioIliquido", "baseSS", "contribSS", "baseIRT", "irt"].forEach(k => t[k] = AY.round2((t[k] || 0) + l[k])); return t; }, {});
+  }
+
+  function render() {
+    const mes = selMes.value, ano = document.getElementById("fAno").value;
+    const ls = linhasMapa(mes), t = totais(ls);
+    document.getElementById("info").textContent = ls.length + " trabalhador(es) · valores em " + AY.moeda();
+    const nc = v => `<td class="num">${v ? m2(v) : "—"}</td>`;
+    document.getElementById("card").innerHTML = `
+      <div class="bal-cabecalho">
+        <div><b>${E(emp.nome)}</b><br><span class="sub">Mapa de Remunerações — Modelo IRT A2.1</span></div>
+        <div class="sub" style="text-align:right">NIF do Contribuinte: <b>${E(document.getElementById("fNif").value || "—")}</b><br>Período: <b>${E(ano)}-${E(mes)}</b></div>
+      </div>
+      <div class="table-wrap" style="margin-top:10px"><table class="mapa-remun">
+        <thead>
+          <tr class="grp">
+            <th colspan="5" class="g-id">Identificação do Trabalhador</th>
+            <th colspan="2"></th>
+            <th class="g-nao">Não Sujeito a IRT</th>
+            <th class="g-sim">Sujeito a IRT</th>
+            <th></th>
+            <th colspan="2" class="g-ss">Segurança Social</th>
+            <th colspan="2" class="g-irt">IRT</th>
+            ${podeGerir ? "<th></th>" : ""}
+          </tr>
+          <tr>
+            <th>NIF</th><th>Nome</th><th>Nº Seg. Social</th><th>Província</th><th>Município</th>
+            <th class="num">Salário Base</th><th class="num">Descontos p/ Falta</th>
+            <th class="num">Subsídios Não Sujeitos</th>
+            <th class="num">Subsídios Sujeitos</th>
+            <th class="num">Salário Ilíquido</th>
+            <th class="num">Base Tributável</th><th class="num">Contribuição (3%)</th>
+            <th class="num">Base Tributável</th><th class="num">IRT Apurado</th>
+            ${podeGerir ? "<th></th>" : ""}
+          </tr>
+        </thead>
+        <tbody>${ls.length ? ls.map(l => `<tr>
+          <td>${E(l.nif || "—")}</td><td><b>${E(l.nome)}</b></td><td>${E(l.numSS || "—")}</td><td>${E(l.provincia || "—")}</td><td>${E(l.municipio || "—")}</td>
+          ${nc(l.salarioBase)}${nc(l.descontosFalta)}${nc(l.subNaoSuj)}${nc(l.subSuj)}<td class="num"><b>${m2(l.salarioIliquido)}</b></td>
+          ${nc(l.baseSS)}${nc(l.contribSS)}${nc(l.baseIRT)}<td class="num"><b>${m2(l.irt)}</b></td>
+          ${podeGerir ? `<td class="num no-print"><button class="btn btn-sm btn-outline" data-edit="${l.colaborador.id}">✎ Rubricas</button></td>` : ""}
+        </tr>`).join("") : `<tr><td colspan="15" class="empty">Sem colaboradores activos. Regista em RH → Funcionários.</td></tr>`}</tbody>
+        <tfoot><tr class="dr-total">
+          <td colspan="5"><b>TOTAIS</b></td>
+          <td class="num">${m2(t.salarioBase)}</td><td class="num">${m2(t.descontosFalta)}</td>
+          <td class="num">${m2(t.subNaoSuj)}</td><td class="num">${m2(t.subSuj)}</td><td class="num">${m2(t.salarioIliquido)}</td>
+          <td class="num">${m2(t.baseSS)}</td><td class="num">${m2(t.contribSS)}</td>
+          <td class="num">${m2(t.baseIRT)}</td><td class="num">${m2(t.irt)}</td>${podeGerir ? "<td></td>" : ""}
+        </tr></tfoot>
+      </table></div>
+      <p class="sub" style="margin-top:10px">Total de IRT a entregar: <b>${AY.formatKz(t.irt)}</b> · Contribuição para a Segurança Social (trabalhador): <b>${AY.formatKz(t.contribSS)}</b>. Usa <b>✎ Rubricas</b> por trabalhador para classificar os subsídios nas categorias exatas do modelo da AGT.</p>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrirModal(b.dataset.edit));
+  }
+
+  // ---------- Modal de rubricas (itemizado, por trabalhador × mês) ----------
+  const modal = document.getElementById("modal"); const g = id => document.getElementById(id);
+  let editColabId = null;
+  const CAMPOS_NAO_SUJ = [["fSubAlimentacao", "subAlimentacao"], ["fSubTransporte", "subTransporte"], ["fAbonoFamilia", "abonoFamilia"], ["fReembolsoDespesas", "reembolsoDespesas"], ["fOutrosNaoSujeitos", "outrosNaoSujeitos"]];
+  const CAMPOS_SUJ = [["fAbonoFalhas", "abonoFalhas"], ["fSubRendaCasa", "subRendaCasa"], ["fCompensacaoRescisao", "compensacaoRescisao"], ["fSubFerias", "subFerias"], ["fHorasExtras", "horasExtras"], ["fSubAtavio", "subAtavio"], ["fSubRepresentacao", "subRepresentacao"], ["fPremios", "premios"], ["fSubNatal", "subNatal"], ["fOutrosSujeitos", "outrosSujeitos"]];
+  function lerFormItemizado() {
+    const d = {};
+    CAMPOS_NAO_SUJ.concat(CAMPOS_SUJ).forEach(([id, key]) => d[key] = Number(g(id).value) || 0);
+    d.excessoSubsidiosNaoSujeitos = Number(g("fExcesso").value) || 0;
+    d.calcManualExcesso = d.excessoSubsidiosNaoSujeitos > 0 ? "S" : "N";
+    d.isentoIRT = g("fIsentoIRT").value; d.naoSujeitoSS = g("fNaoSujeitoSS").value; d.registoManualSS = g("fRegistoManualSS").value;
+    d.baseTributavelSSManual = Number(g("fBaseTributavelSSManual").value) || 0;
+    return d;
+  }
+  // Pré-visualização SEM gravar (replica a fórmula de R.mapaIrtCalcular só com o que está no formulário,
+  // para "Cancelar" funcionar mesmo depois de o utilizador ter escrito valores).
+  function preview() {
+    const c = R.colaborador(editColabId); if (!c) return;
+    const it = lerFormItemizado();
+    const r = R.recibo(c, selMes.value); const c2 = R.cfg();
+    const subNaoSuj = AY.round2(R.SUBS_NAO_SUJEITOS.reduce((s, k) => s + (Number(it[k]) || 0), 0));
+    const subSuj = AY.round2(R.SUBS_SUJEITOS.reduce((s, k) => s + (Number(it[k]) || 0), 0));
+    const salarioBase = AY.round2(Number(c.salarioBase) || 0), descontosFalta = r.descFaltas;
+    const excesso = it.calcManualExcesso === "S" ? AY.round2(Number(it.excessoSubsidiosNaoSujeitos) || 0) : 0;
+    const salarioIliquido = AY.round2(salarioBase - descontosFalta + subSuj + subNaoSuj);
+    const baseSS = it.registoManualSS === "S" ? AY.round2(Number(it.baseTributavelSSManual) || 0) : AY.round2(salarioBase - descontosFalta);
+    const contribSS = it.naoSujeitoSS === "S" ? 0 : AY.round2(baseSS * (c2.inssTrab || 0) / 100);
+    const baseIRT = it.isentoIRT === "S" ? 0 : AY.round2(Math.max(0, salarioBase - descontosFalta + subSuj + excesso - contribSS));
+    const irt = it.isentoIRT === "S" ? 0 : R.calcIRT(baseIRT);
+    g("rIliquido").textContent = m2(salarioIliquido); g("rBaseSS").textContent = m2(baseSS);
+    g("rContribSS").textContent = m2(contribSS); g("rBaseIRT").textContent = m2(baseIRT); g("rIrt").textContent = m2(irt);
+  }
+  function abrirModal(colabId) {
+    editColabId = colabId; const c = R.colaborador(colabId); const it = R.mapaIrtLinha(colabId, selMes.value);
+    g("mTitulo").textContent = "Rubricas — " + c.nome + " · " + selMes.options[selMes.selectedIndex].text;
+    CAMPOS_NAO_SUJ.concat(CAMPOS_SUJ).forEach(([id, key]) => g(id).value = it[key] || 0);
+    g("fExcesso").value = it.excessoSubsidiosNaoSujeitos || 0;
+    g("fIsentoIRT").value = it.isentoIRT || "N"; g("fNaoSujeitoSS").value = it.naoSujeitoSS || "N"; g("fRegistoManualSS").value = it.registoManualSS || "N";
+    g("fBaseTributavelSSManual").value = it.baseTributavelSSManual || 0;
+    g("wBaseSSManual").style.display = it.registoManualSS === "S" ? "" : "none";
+    preview(); modal.classList.remove("hidden");
+  }
+  modal.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => { g("wBaseSSManual").style.display = g("fRegistoManualSS").value === "S" ? "" : "none"; preview(); }));
+  g("fechar").onclick = () => modal.classList.add("hidden");
+  g("cancelar").onclick = () => modal.classList.add("hidden");
+  g("form").onsubmit = e => {
+    e.preventDefault();
+    R.saveMapaIrtLinha(Object.assign({ colabId: editColabId, mes: selMes.value }, lerFormItemizado()));
+    modal.classList.add("hidden"); render(); AY.toast("Rubricas guardadas.", "success");
+  };
+
+  // ---------- Exportações ----------
+  function csv() {
+    const mes = selMes.value, ano = document.getElementById("fAno").value, ls = linhasMapa(mes), t = totais(ls);
+    const head = ["NIF Trabalhador", "Nome", "Nº Segurança Social", "Província", "Município", "Salário Base", "Descontos por Falta", "Subsídios Não Sujeitos a IRT", "Subsídios Sujeitos a IRT", "Salário Ilíquido", "Base Tributável Segurança Social", "Contribuição Segurança Social", "Base Tributável IRT", "IRT Apurado"];
+    const body = ls.map(l => [l.nif, l.nome, l.numSS, l.provincia, l.municipio, l.salarioBase, l.descontosFalta, l.subNaoSuj, l.subSuj, l.salarioIliquido, l.baseSS, l.contribSS, l.baseIRT, l.irt]);
+    body.push(["", "TOTAIS", "", "", "", t.salarioBase, t.descontosFalta, t.subNaoSuj, t.subSuj, t.salarioIliquido, t.baseSS, t.contribSS, t.baseIRT, t.irt]);
+    const rows = [["NIF do Contribuinte", document.getElementById("fNif").value], ["Período (AAAA-MM)", ano + "-" + mes], [], head].concat(body);
+    const s = rows.map(r => r.map(v => { v = String(v == null ? "" : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(";")).join("\r\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + s], { type: "text/csv;charset=utf-8" })); a.download = "Mapa_Remuneracoes_" + ano + "-" + mes + "_interno.csv"; a.click();
+  }
+  // Gera o .xlsx REAL a partir do modelo oficial da AGT (mesmo ficheiro, com as células preenchidas) — pronto a anexar.
+  async function gerarXlsx() {
+    const btn = document.getElementById("btnXlsx"); const t0 = btn.textContent;
+    btn.disabled = true; btn.textContent = "A gerar…";
+    try {
+      const mes = selMes.value, ano = document.getElementById("fAno").value, ls = linhasMapa(mes);
+      if (!ls.length) { AY.toast("Sem colaboradores activos para gerar o mapa.", "info"); return; }
+      const cells = { C1: document.getElementById("fNif").value.trim(), C2: ano + "-" + mes };
+      ls.forEach((l, i) => {
+        const r = 5 + i; // as linhas de dados do modelo começam na 5
+        Object.assign(cells, {
+          ["A" + r]: l.nif || "", ["B" + r]: l.nome || "", ["C" + r]: l.numSS || "",
+          ["D" + r]: PROVINCIA_COD[l.provincia] || "", ["E" + r]: l.municipio || "",
+          ["F" + r]: l.salarioBase, ["G" + r]: l.descontosFalta,
+          ["H" + r]: l.subAlimentacao, ["I" + r]: l.subTransporte, ["J" + r]: l.abonoFamilia, ["K" + r]: l.reembolsoDespesas, ["L" + r]: l.outrosNaoSujeitos,
+          ["M" + r]: l.calcManualExcesso, ["N" + r]: l.excessoSubsidiosNaoSujeitos,
+          ["O" + r]: l.abonoFalhas, ["P" + r]: l.subRendaCasa, ["Q" + r]: l.compensacaoRescisao, ["R" + r]: l.subFerias, ["S" + r]: l.horasExtras,
+          ["T" + r]: l.subAtavio, ["U" + r]: l.subRepresentacao, ["V" + r]: l.premios, ["W" + r]: l.subNatal, ["X" + r]: l.outrosSujeitos,
+          ["Y" + r]: l.salarioIliquido,
+          ["Z" + r]: l.registoManualSS, ["AA" + r]: l.baseSS, ["AB" + r]: l.naoSujeitoSS, ["AC" + r]: l.contribSS,
+          ["AD" + r]: l.baseIRT, ["AE" + r]: l.isentoIRT, ["AF" + r]: l.irt,
+        });
+      });
+      if (ls.length > 1001) throw new Error("O modelo suporta até 1001 trabalhadores por período — este mês tem " + ls.length + ".");
+      const blob = await AY.xlsxFill("assets/templates/mapa-irt-a2.1.xlsx", { sheet: "sheet1", cells });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "Mapa_Remuneracoes_IRT_A2.1_" + ano + "-" + mes + ".xlsx"; a.click();
+      AY.toast("Ficheiro gerado no modelo oficial — pronto a anexar.", "success");
+    } catch (ex) { AY.toast("Erro ao gerar o ficheiro: " + ex.message, "info"); }
+    finally { btn.disabled = false; btn.textContent = t0; }
+  }
+
+  selMes.onchange = render; document.getElementById("fAno").oninput = render; document.getElementById("fNif").oninput = render;
+  document.getElementById("btnCsv").onclick = csv;
+  document.getElementById("btnXlsx").onclick = gerarXlsx;
+  document.getElementById("btnImprimir").onclick = () => { document.body.classList.add("print-landscape"); window.print(); setTimeout(() => document.body.classList.remove("print-landscape"), 500); };
+  if (!podeGerir) document.getElementById("btnXlsx").title = "Só perfis com gestão de RH podem gerar rubricas — os valores por omissão ainda assim exportam.";
+  render();
+}
+</script>
+</body>
+</html>

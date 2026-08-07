@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventário — Artigos — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Artigos</h1><p class="sub">Ficha de artigo — dados gerais, preços, existências e integração contabilística.</p></div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card">
+      <div class="toolbar"><input type="search" id="busca" placeholder="Pesquisar artigo (código, descrição, família)…" class="grow"><select id="vista" class="sel-mini"><option value="grupo">Agrupar por família</option><option value="lista">Lista simples</option></select><button class="btn btn-amber" id="novo">+ Novo artigo</button></div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:780px">
+  <div class="modal-head"><b id="mTitulo">Novo artigo</b><button class="icon-btn" id="fechar">✕</button></div>
+  <div class="ficha-topo" style="grid-template-columns:1fr 2fr"><label>Código<input id="fCodigo" placeholder="(automático)"></label><label>Descrição<input id="fDescricao" required></label></div>
+  <div class="ficha-tabs">
+    <button type="button" class="ficha-tab active" data-tab="geral">Geral</button>
+    <button type="button" class="ficha-tab" data-tab="precos">Preços</button>
+    <button type="button" class="ficha-tab" data-tab="stock">Existências</button>
+    <button type="button" class="ficha-tab" data-tab="contab">Contabilidade / Fiscal</button>
+  </div>
+  <form id="form">
+    <div class="ficha-pane grid-2" data-pane="geral">
+      <label>Tipo de artigo<select id="fTipo"><option>Mercadoria</option><option>Produto acabado</option><option>Matéria-prima</option><option>Serviço</option></select></label>
+      <label>Família<input id="fFamilia" list="familiasList" placeholder="Ex.: Consumíveis"></label>
+      <label>Subfamília<input id="fSubfamilia" list="subfamiliasList" placeholder="Ex.: Papel"></label>
+      <label>Unidade<select id="fUnidade"><option>Un</option><option>Cx</option><option>Kg</option><option>L</option><option>M</option><option>M²</option><option>Par</option></select></label>
+      <label>Código de barras<input id="fBarras"></label>
+      <label>Estado<select id="fEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></label>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="precos">
+      <label>Preço de venda<input type="number" id="fPrecoVenda" step="0.01" min="0"></label>
+      <label>Preço de compra<input type="number" id="fPrecoCompra" step="0.01" min="0"></label>
+      <label>Taxa de IVA (%)<input type="number" id="fIVA" step="0.1" min="0" value="14"></label>
+      <label>Margem<input id="fMargem" readonly></label>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="stock">
+      <label>Stock mínimo<input type="number" id="fStockMin" step="1" min="0" value="0"></label>
+      <label>Stock atual<input id="fStockAtual" readonly></label>
+      <div class="sec-label">O stock resulta dos movimentos (Receção/Expedição/Transferência/Inventariação).</div>
+    </div>
+    <div class="ficha-pane grid-2 hidden" data-pane="contab">
+      <label>Conta de existências<input id="fContaExist" list="contasList" placeholder="Ex.: 2611" title="F4 ou duplo clique: procurar no plano de contas"></label>
+      <label>Conta de custo (CEVC)<input id="fContaCusto" list="contasList" placeholder="Ex.: 7111" title="F4 ou duplo clique: procurar no plano de contas"></label>
+      <label>Conta de proveito<input id="fContaProveito" list="contasList" placeholder="Ex.: 6111" title="F4 ou duplo clique: procurar no plano de contas"></label>
+    </div>
+    <div id="erro" class="alert alert-error hidden"></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Gravar</button></div>
+  </form>
+</div></div>
+<datalist id="contasList"></datalist>
+<datalist id="familiasList"></datalist>
+<datalist id="subfamiliasList"></datalist>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/logistica.js"></script>
+<script src="assets/js/conta-picker.js"></script>
+<script>
+const u = AY.initPage("artigos.html", null);
+if (u) {
+  const E = AY.escapeHtml, L = AY.log, m2 = AY.formatMoeda2; let editId = null;
+  const podeGerir = AY.can("logistica.gerir");
+  document.getElementById("contasList").innerHTML = AY.contab.contasMovimento().filter(c => /^[267]/.test(c.codigo)).map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join("");
+  // Seletor em árvore igual ao Plano de Contas (F4 ou duplo clique no campo)
+  ["fContaExist", "fContaCusto", "fContaProveito"].forEach(id => AY.contaPicker.attach(document.getElementById(id), { soMovimento: true }));
+
+  const NCOLS = podeGerir ? 7 : 6;
+  function linhaArtigo(a) {
+    const st = L.stockTotal(a.id), rut = st <= (Number(a.stockMin) || 0);
+    return `<tr>
+      <td><b>${E(a.codigo)}</b></td><td>${E(a.descricao)}</td><td><small>${E(a.familia || "—")}${a.subfamilia ? " · " + E(a.subfamilia) : ""}</small></td>
+      <td class="num">${m2(a.precoVenda)}</td><td class="num" style="${rut ? "color:var(--chart-amber);font-weight:700" : ""}">${st} ${E(a.unidade || "")}</td>
+      <td>${a.estado === "inactivo" ? AY.badge("Inactivo", "#8a8a8a") : AY.badge("Activo", "#16a085")}</td>
+      ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${a.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${a.id}">✕</button></td>` : ""}
+    </tr>`;
+  }
+  function corpoAgrupado(rows) {
+    const ord = rows.slice().sort((a, b) =>
+      (a.familia || "~").localeCompare(b.familia || "~") ||
+      (a.subfamilia || "~").localeCompare(b.subfamilia || "~") ||
+      (a.codigo || "").localeCompare(b.codigo || ""));
+    let out = "", curF = null, curS = null;
+    ord.forEach(a => {
+      const fam = a.familia || "(Sem família)", sub = a.subfamilia || "";
+      if (fam !== curF) { curF = fam; curS = null; const n = ord.filter(x => (x.familia || "(Sem família)") === fam).length; out += `<tr class="grp-fam"><td colspan="${NCOLS}">${E(fam)} <span class="grp-cnt">${n}</span></td></tr>`; }
+      if (sub !== curS) { curS = sub; if (sub) out += `<tr class="grp-sub"><td colspan="${NCOLS}">${E(sub)}</td></tr>`; }
+      out += linhaArtigo(a);
+    });
+    return out;
+  }
+  function popularDatalists() {
+    const arts = L.artigos();
+    const fams = [...new Set(arts.map(a => (a.familia || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const subs = [...new Set(arts.map(a => (a.subfamilia || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    document.getElementById("familiasList").innerHTML = fams.map(f => `<option value="${E(f)}">`).join("");
+    document.getElementById("subfamiliasList").innerHTML = subs.map(s => `<option value="${E(s)}">`).join("");
+  }
+  function render() {
+    const q = (document.getElementById("busca").value || "").toLowerCase().trim();
+    const vista = document.getElementById("vista").value;
+    let rows = L.artigos(); if (q) rows = rows.filter(a => ((a.codigo || "") + " " + (a.descricao || "") + " " + (a.familia || "") + " " + (a.subfamilia || "")).toLowerCase().includes(q));
+    popularDatalists();
+    const ex = L.existencias();
+    document.getElementById("kpis").innerHTML = [
+      AY.kpi("Artigos", L.artigos().length, L.artigos().filter(a => a.estado === "activo").length + " activos", "var(--chart-blue)"),
+      AY.kpi("Valor de stock", AY.formatKz(L.valorStock()), "custo médio", "#16a085"),
+      AY.kpi("Em rutura", ex.filter(e => e.rutura).length, "≤ stock mínimo", "var(--chart-amber)"),
+      AY.kpi("Famílias", new Set(L.artigos().map(a => (a.familia || "(Sem família)"))).size, "", "#8e44ad"),
+    ].join("");
+    const corpo = vista === "grupo" ? corpoAgrupado(rows) : rows.map(linhaArtigo).join("");
+    document.getElementById("tabela").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Código</th><th>Descrição</th><th>Família · Subfamília</th><th class="num">P. Venda</th><th class="num">Stock</th><th>Estado</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${corpo}</tbody></table>` : `<div class="empty">Sem artigos.</div>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const a = L.artigo(b.dataset.del); if (confirm("Eliminar " + a.descricao + "?")) { L.removeArtigo(b.dataset.del); render(); } });
+  }
+  document.getElementById("vista").onchange = render;
+  const modal = document.getElementById("modal");
+  const g = id => document.getElementById(id);
+  function activarTab(t) { modal.querySelectorAll(".ficha-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === t)); modal.querySelectorAll(".ficha-pane").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== t)); }
+  modal.querySelectorAll(".ficha-tab").forEach(b => b.onclick = () => activarTab(b.dataset.tab));
+  function calcMargem() { const pv = Number(g("fPrecoVenda").value) || 0, pc = Number(g("fPrecoCompra").value) || 0; g("fMargem").value = pc > 0 ? Math.round((pv - pc) / pc * 100) + "%" : "—"; }
+  ["fPrecoVenda", "fPrecoCompra"].forEach(id => g(id).oninput = calcMargem);
+  function abrir(id) {
+    editId = id || null; const a = id ? L.artigo(id) : null;
+    g("mTitulo").textContent = a ? "Ficha — " + a.descricao : "Novo artigo";
+    g("fCodigo").value = a ? a.codigo : ""; g("fDescricao").value = a ? a.descricao : "";
+    g("fTipo").value = a ? (a.tipoArtigo || "Mercadoria") : "Mercadoria"; g("fFamilia").value = a ? (a.familia || "") : ""; g("fSubfamilia").value = a ? (a.subfamilia || "") : "";
+    g("fUnidade").value = a ? (a.unidade || "Un") : "Un"; g("fBarras").value = a ? (a.codBarras || "") : ""; g("fEstado").value = a ? a.estado : "activo";
+    g("fPrecoVenda").value = a ? a.precoVenda : ""; g("fPrecoCompra").value = a ? a.precoCompra : ""; g("fIVA").value = a ? a.taxaIVA : 14;
+    g("fStockMin").value = a ? a.stockMin : 0; g("fStockAtual").value = a ? (L.stockTotal(a.id) + " " + (a.unidade || "")) : "0";
+    g("fContaExist").value = a ? (a.contaExistencia || "") : L.cfg().contaExistencia;
+    g("fContaCusto").value = a ? (a.contaCusto || "") : L.cfg().contaCusto;
+    g("fContaProveito").value = a ? (a.contaProveito || "") : "6111";
+    calcMargem(); activarTab("geral"); g("erro").classList.add("hidden"); modal.classList.remove("hidden");
+  }
+  g("novo").onclick = () => abrir(null); g("fechar").onclick = () => modal.classList.add("hidden"); g("cancelar").onclick = () => modal.classList.add("hidden");
+  g("novo").style.display = podeGerir ? "" : "none"; g("busca").oninput = render;
+  g("form").onsubmit = e => {
+    e.preventDefault(); if (!g("fDescricao").value.trim()) { g("erro").textContent = "Indica a descrição."; g("erro").classList.remove("hidden"); activarTab("geral"); return; }
+    L.saveArtigo({ id: editId, codigo: g("fCodigo").value.trim(), descricao: g("fDescricao").value.trim(), tipoArtigo: g("fTipo").value, familia: g("fFamilia").value.trim(), subfamilia: g("fSubfamilia").value.trim(),
+      unidade: g("fUnidade").value, codBarras: g("fBarras").value.trim(), estado: g("fEstado").value,
+      precoVenda: Number(g("fPrecoVenda").value) || 0, precoCompra: Number(g("fPrecoCompra").value) || 0, taxaIVA: Number(g("fIVA").value) || 0, stockMin: Number(g("fStockMin").value) || 0,
+      contaExistencia: g("fContaExist").value.trim(), contaCusto: g("fContaCusto").value.trim(), contaProveito: g("fContaProveito").value.trim() });
+    modal.classList.add("hidden"); render(); AY.toast("Artigo guardado.", "success");
+  };
+  render();
+}
+</script>
+</body>
+</html>

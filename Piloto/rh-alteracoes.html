@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH — Alterações Mensais — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Alterações Mensais</h1><p class="sub">Variáveis do mês por colaborador — faltas, abonos e descontos pontuais. Alimentam o processamento e os recibos.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Mês <select id="fMes"></select></label>
+        <span id="estado" class="sub"></span>
+        <span style="flex:1"></span>
+      </div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:640px">
+  <div class="modal-head"><b id="mTitulo">Alterações</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form">
+    <div class="grid-4">
+      <label>Faltas (dias)<input type="number" id="fFaltas" step="1" min="0" value="0"></label>
+      <div style="grid-column:2/-1;align-self:end" class="sub">Cada dia de falta desconta 1/30 do salário base.</div>
+    </div>
+    <div class="card-title" style="margin-top:10px">Abonos (acrescem ao bruto)</div>
+    <div class="table-wrap"><table class="lanc-table"><thead><tr><th>Descrição</th><th class="num" style="width:30%">Valor</th><th style="width:34px"></th></tr></thead><tbody id="abonos"></tbody></table></div>
+    <button type="button" class="btn btn-outline btn-sm" id="addAbono">+ Abono</button>
+    <div class="card-title" style="margin-top:10px">Descontos (deduzem ao líquido)</div>
+    <div class="table-wrap"><table class="lanc-table"><thead><tr><th>Descrição</th><th class="num" style="width:30%">Valor</th><th style="width:34px"></th></tr></thead><tbody id="descontos"></tbody></table></div>
+    <button type="button" class="btn btn-outline btn-sm" id="addDesc">+ Desconto</button>
+    <div class="cc-resumo" style="justify-content:flex-end;margin-top:10px"><span>Líquido resultante <b id="rLiq">0,00</b></span></div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div>
+  </form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/rh.js"></script>
+<script>
+const u = AY.initPage("rh-alteracoes.html", null);
+if (u) {
+  const E = AY.escapeHtml, R = AY.rh, C = AY.contab, m2 = AY.formatMoeda2;
+  const podeGerir = AY.can("rh.gerir");
+  let editColab = null;
+  const selMes = document.getElementById("fMes");
+  (C.PERIODOS || []).filter(p => p[0] >= "01" && p[0] <= "12").forEach(p => selMes.appendChild(new Option(p[0] + " · " + p[1], p[0])));
+  selMes.value = String(new Date().getMonth() + 1).padStart(2, "0");
+
+  function render() {
+    const mes = selMes.value; const bloqueado = R.mesPago(mes);
+    document.getElementById("estado").innerHTML = bloqueado ? AY.badge("Mês pago — bloqueado", "#16a085") : (R.mesProcessado(mes) ? AY.badge("Processado (reprocessa após alterar)", "#2980b9") : "");
+    const rows = R.colaboradores().filter(c => c.estado === "activo");
+    document.getElementById("tabela").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Nº</th><th>Colaborador</th><th class="num">Faltas</th><th class="num">Abonos</th><th class="num">Descontos</th><th class="num">Bruto</th><th class="num">Líquido</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${rows.map(c => { const a = R.alteracaoDe(c.id, mes); const r = R.recibo(c, mes);
+        const ab = (a.abonos || []).reduce((s, x) => s + x.valor, 0), de = (a.descontos || []).reduce((s, x) => s + x.valor, 0);
+        return `<tr>
+          <td><b>${E(c.numero)}</b></td><td>${E(c.nome)}</td>
+          <td class="num">${a.faltas || 0}</td><td class="num">${ab ? m2(ab) : "—"}</td><td class="num">${de ? m2(de) : "—"}</td>
+          <td class="num">${m2(r.bruto)}</td><td class="num"><b>${m2(r.liquido)}</b></td>
+          ${podeGerir ? `<td class="num"><button class="btn btn-sm ${bloqueado ? "btn-outline" : "btn-primary"}" data-edit="${c.id}" ${bloqueado ? "disabled" : ""}>Editar</button></td>` : ""}
+        </tr>`; }).join("")}</tbody>
+    </table>` : `<div class="empty">Sem colaboradores activos.</div>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+  }
+
+  const modal = document.getElementById("modal");
+  function linhaVar(tbodyId, d) {
+    const tb = document.getElementById(tbodyId); const tr = document.createElement("tr");
+    tr.innerHTML = `<td><input class="v-desc" placeholder="Descrição"></td><td><input class="v-val num-input" type="number" step="1000" min="0"></td><td><button type="button" class="icon-btn v-del">✕</button></td>`;
+    tb.appendChild(tr);
+    if (d) { tr.querySelector(".v-desc").value = d.desc || ""; tr.querySelector(".v-val").value = d.valor || ""; }
+    tr.querySelector(".v-val").addEventListener("input", preview);
+    tr.querySelector(".v-del").onclick = () => { tr.remove(); preview(); };
+  }
+  function lerVars(tbodyId) { return Array.from(document.querySelectorAll("#" + tbodyId + " tr")).map(tr => ({ desc: tr.querySelector(".v-desc").value.trim(), valor: Number(tr.querySelector(".v-val").value) || 0 })).filter(x => x.desc || x.valor); }
+  function preview() {
+    const c = R.colaborador(editColab); if (!c) return;
+    const a = { colabId: c.id, mes: selMes.value, faltas: Number(document.getElementById("fFaltas").value) || 0, abonos: lerVars("abonos"), descontos: lerVars("descontos") };
+    // recibo com estas alterações (sem gravar): grava temporário em memória via cálculo direto
+    const r = reciboComAlt(c, a);
+    document.getElementById("rLiq").textContent = m2(r.liquido);
+  }
+  // replica recibo() aplicando alterações não gravadas
+  function reciboComAlt(c, a) {
+    const cfg = R.cfg(); const base0 = Number(c.salarioBase) || 0, subsBase = Number(c.subsidios) || 0;
+    const descFaltas = AY.round2(base0 / 30 * (a.faltas || 0));
+    const ab = AY.round2((a.abonos || []).reduce((s, x) => s + (x.valor || 0), 0));
+    const de = AY.round2((a.descontos || []).reduce((s, x) => s + (x.valor || 0), 0));
+    const base = AY.round2(base0 - descFaltas), subs = AY.round2(subsBase + ab), bruto = AY.round2(base + subs);
+    const inss = AY.round2(base * (cfg.inssTrab || 0) / 100), materia = AY.round2(bruto - inss), irt = R.calcIRT(materia);
+    return { bruto, liquido: AY.round2(bruto - inss - irt - de) };
+  }
+  function abrir(id) {
+    editColab = id; const c = R.colaborador(id), a = R.alteracaoDe(id, selMes.value);
+    document.getElementById("mTitulo").textContent = "Alterações — " + c.nome + " · " + selMes.options[selMes.selectedIndex].text;
+    document.getElementById("fFaltas").value = a.faltas || 0;
+    document.getElementById("abonos").innerHTML = ""; (a.abonos && a.abonos.length ? a.abonos : []).forEach(x => linhaVar("abonos", x)); if (!a.abonos || !a.abonos.length) linhaVar("abonos");
+    document.getElementById("descontos").innerHTML = ""; (a.descontos && a.descontos.length ? a.descontos : []).forEach(x => linhaVar("descontos", x)); if (!a.descontos || !a.descontos.length) linhaVar("descontos");
+    document.getElementById("fFaltas").oninput = preview;
+    preview(); modal.classList.remove("hidden");
+  }
+  document.getElementById("addAbono").onclick = () => linhaVar("abonos");
+  document.getElementById("addDesc").onclick = () => linhaVar("descontos");
+  document.getElementById("fechar").onclick = () => modal.classList.add("hidden");
+  document.getElementById("cancelar").onclick = () => modal.classList.add("hidden");
+  selMes.onchange = render;
+  document.getElementById("form").onsubmit = e => {
+    e.preventDefault();
+    R.saveAlteracao({ colabId: editColab, mes: selMes.value, faltas: Number(document.getElementById("fFaltas").value) || 0, abonos: lerVars("abonos"), descontos: lerVars("descontos") });
+    modal.classList.add("hidden"); render(); AY.toast("Alterações guardadas.", "success");
+  };
+  render();
+}
+</script>
+</body>
+</html>

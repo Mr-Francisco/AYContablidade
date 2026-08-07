@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiscalidade — Regimes de IVA — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="dash-hero">
+      <div class="dh-eyebrow">Fiscalidade · IVA</div>
+      <h1>Regimes de IVA em Angola</h1>
+      <div class="dh-sub">O enquadramento em sede de IVA depende do volume de negócios anual. Cada regime tem taxa, direito à dedução e obrigações próprias.</div>
+    </div>
+    <div class="regime-grid" id="regimes"></div>
+
+    <div class="dash-grid" style="margin-top:16px">
+      <div class="card">
+        <div class="card-title">Calculadora — Regime Simplificado</div>
+        <div class="grid-2">
+          <label>Recebimentos do mês<input type="number" id="sRec" step="1000" min="0" value="5000000"></label>
+          <label>IVA suportado nas compras<input type="number" id="sIva" step="1000" min="0" value="800000"></label>
+        </div>
+        <div class="cc-resumo" style="justify-content:flex-end;margin-top:10px"><span>IVA a pagar (7% − 10% do suportado) <b id="sOut">0,00</b></span></div>
+        <p class="sub" style="margin-top:6px">7% sobre os recebimentos, deduzindo 10% do IVA suportado.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Calculadora — Regime Geral</div>
+        <div class="grid-2">
+          <label>Base tributável das vendas<input type="number" id="gBase" step="1000" min="0" value="10000000"></label>
+          <label>Taxa (%)<input type="number" id="gTaxa" step="1" min="0" value="14"></label>
+          <label>IVA dedutível (compras)<input type="number" id="gDed" step="1000" min="0" value="900000"></label>
+        </div>
+        <div class="cc-resumo" style="justify-content:flex-end;margin-top:10px"><span>IVA liquidado <b id="gLiq">0,00</b></span><span>IVA a pagar <b id="gOut">0,00</b></span></div>
+        <p class="sub" style="margin-top:6px">IVA liquidado (taxa × base) − IVA dedutível.</p>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/fiscalidade.js"></script>
+<script>
+const u = AY.initPage("fiscalidade-iva.html", null);
+if (u) {
+  const E = AY.escapeHtml, F = AY.fisc, m2 = AY.formatMoeda2;
+  document.getElementById("regimes").innerHTML = F.REGIMES_IVA.map(r => `<div class="card regime-card" style="--rc:${r.cor}">
+    <div class="regime-head"><b>${E(r.nome)}</b></div>
+    <div class="regime-lim">${E(r.limite)}</div>
+    <div class="regime-rows">
+      <div><span class="imp-k">Taxa</span><span><b>${E(r.taxa)}</b></span></div>
+      <div><span class="imp-k">Dedução</span><span>${E(r.deducao)}</span></div>
+      <div><span class="imp-k">Declaração</span><span>${E(r.declaracao)}</span></div>
+      <div><span class="imp-k">Pagamento</span><span>${E(r.pagamento)}</span></div>
+    </div>
+    <div class="regime-obr"><div class="imp-k">Obrigações</div><ul>${r.obrigacoes.map(o => `<li>${E(o)}</li>`).join("")}</ul></div>
+  </div>`).join("");
+
+  const val = id => Number(document.getElementById(id).value) || 0;
+  function calc() {
+    document.getElementById("sOut").textContent = m2(F.calcIVASimplificado(val("sRec"), val("sIva")));
+    const liq = AY.round2(val("gBase") * val("gTaxa") / 100);
+    document.getElementById("gLiq").textContent = m2(liq);
+    document.getElementById("gOut").textContent = m2(F.calcIVAGeral(val("gBase"), val("gTaxa"), val("gDed")));
+  }
+  ["sRec", "sIva", "gBase", "gTaxa", "gDed"].forEach(id => document.getElementById(id).oninput = calc);
+  calc();
+}
+</script>
+</body>
+</html>

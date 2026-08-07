@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comercial — Painel — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main><div class="container-wide"><div id="painel"></div></div></main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/comercial.js"></script>
+<script src="assets/js/dashboards.js"></script>
+<script>
+const u = AY.initPage("painel-comercial.html", null);
+if (u) AY.dash.render("comercial", document.getElementById("painel"));
+</script>
+</body>
+</html>

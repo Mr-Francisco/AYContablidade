@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extrato de Conta — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="print-landscape">
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Extrato de Conta</h1><p class="sub">Modelo Primavera — movimentos da conta com saldo acumulado.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0" class="grow">Conta <div class="f4-group"><input id="fConta" list="fContaList" placeholder="Código da conta · F4 ou duplo clique procura"><button type="button" class="f4-btn" id="f4Conta" title="F4 — procurar no plano de contas">F4</button></div></label>
+        <datalist id="fContaList"></datalist>
+        <label style="margin:0">De <input type="date" id="fDe"></label>
+        <label style="margin:0">Até <input type="date" id="fAte"></label>
+        <label style="margin:0">Entidade <input id="fEnt" placeholder="(filtrar)"></label>
+        <label style="margin:0;display:flex;align-items:center;gap:6px"><input type="checkbox" id="fSub" style="width:auto;margin:0"> Subcontas</label>
+        <button class="btn btn-primary btn-sm" id="btnAtualizar">🔄 Atualizar</button>
+        <button class="btn btn-outline btn-sm" id="btnCsv">⬇ CSV</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div id="resultado"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/conta-picker.js"></script>
+<script>
+const u = AY.initPage("extrato.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2;
+  const emp = AY.getEmpresa();
+  const sel = document.getElementById("fConta");
+  document.getElementById("fContaList").innerHTML = C.contas().filter(c => c.ativa !== false).map(c => `<option value="${E(c.codigo)}">${E(c.codigo)} · ${E(c.nome)}</option>`).join("");
+  // Seletor em árvore igual ao Plano de Contas — aqui qualquer conta é válida (integradora mostra o consolidado das subcontas)
+  AY.contaPicker.attach(sel, { soMovimento: false, titulo: "Plano de Contas — escolher conta para o extrato" });
+  document.getElementById("f4Conta").onclick = () => AY.contaPicker.abrir(sel, { soMovimento: false, titulo: "Plano de Contas — escolher conta para o extrato" });
+  let ultimo = null, ultimaConta = null;
+
+  function opts() {
+    const ex = AY.exercicioAtivo();
+    return { de: document.getElementById("fDe").value || null, ate: document.getElementById("fAte").value || null, entidade: document.getElementById("fEnt").value.trim() || null, exercicioId: ex ? ex.id : null, incluirSub: document.getElementById("fSub").checked };
+  }
+  function render() {
+    const codigo = sel.value.trim();
+    if (!codigo) { document.getElementById("resultado").innerHTML = `<div class="card"><div class="empty">Escolhe uma conta.</div></div>`; return; }
+    const conta = C.contaPorCodigo(codigo);
+    const r = C.razao(codigo, opts());
+    ultimo = r; ultimaConta = conta;
+    const saldoTxt = m2(Math.abs(r.saldoFinal)) + " " + (r.saldoFinal < 0 ? "C" : "D");
+    document.getElementById("resultado").innerHTML = `
+      <div class="card report-print">
+        <div class="bal-cabecalho"><div><b>${E(emp.nome)}</b><br><span class="sub">Extrato de Conta · ${AY.exercicioAtivo() ? E(AY.exercicioAtivo().nome) : ""}</span></div><div class="sub">Valores em ${E(AY.moeda())}</div></div>
+        <div class="ext-conta-head">Conta : <b>${E(codigo)}</b> - ${E(conta ? conta.nome : "")} <span class="tag">${r.linhas.length}</span></div>
+        <div class="table-wrap"><table class="ext-table">
+          <thead><tr>
+            <th>Data</th><th>Diário</th><th class="num">N.º Diário</th><th>Descrição</th>
+            <th class="num">Débito</th><th class="num">Crédito</th><th class="num">Saldo</th>
+            <th>Doc.</th><th>N.º Doc.</th><th>Conta Origem</th><th class="num">IVA</th><th>Ano</th><th>Lanç.</th>
+          </tr></thead>
+          <tbody>${r.linhas.length ? r.linhas.map(x => `<tr onclick="location.href='movimentos.html?id=${x.lancId}'" style="cursor:pointer">
+            <td>${AY.formatDate(x.data)}</td>
+            <td><small>${E(x.diario)} · ${E(C.diarioNome(x.diario))}</small></td>
+            <td class="num">${x.nDiario || ""}</td>
+            <td>${E(x.descricao || "—")}${x.entidade ? ` <small>(${E(x.entidade)})</small>` : ""}</td>
+            <td class="num">${x.debito ? m2(x.debito) : ""}</td>
+            <td class="num">${x.credito ? m2(x.credito) : ""}</td>
+            <td class="num"><b>${m2(Math.abs(x.saldo))} ${x.saldo < 0 ? "C" : "D"}</b></td>
+            <td>${E(x.documento || "")}</td>
+            <td>${E(x.numeroOp || x.documentoRef || "")}</td>
+            <td><small>${E(x.contraparte || "")}</small></td>
+            <td class="num">${x.ivaPerc ? x.ivaPerc + "%" : ""}</td>
+            <td>${(x.data || "").slice(0, 4)}</td>
+            <td>000</td></tr>`).join("") : `<tr><td colspan="13" class="empty">Sem movimentos no período.</td></tr>`}</tbody>
+          <tfoot><tr class="bal-total"><td colspan="4"><b>TOTAIS / SALDO</b></td>
+            <td class="num">${m2(r.totalDebito)}</td><td class="num">${m2(r.totalCredito)}</td>
+            <td class="num">${saldoTxt}</td><td colspan="6"></td></tr></tfoot>
+        </table></div>
+      </div>
+      <div class="ext-resumo">
+        <span><i style="background:var(--chart-teal)"></i>Total débito <b>${m2(r.totalDebito)}</b></span>
+        <span><i style="background:var(--amber)"></i>Total crédito <b>${m2(r.totalCredito)}</b></span>
+        <span><i style="background:${r.saldoFinal >= 0 ? "#16a085" : "var(--danger)"}"></i>Saldo <b>${saldoTxt}</b> <small>(natureza ${r.natureza === "C" ? "credora" : "devedora"})</small></span>
+        <span><i style="background:var(--chart-blue)"></i>Movimentos <b>${r.linhas.length}</b></span>
+      </div>`;
+  }
+
+  function exportarCsv() {
+    if (!ultimo) return;
+    const head = ["Data", "Diário", "N.º Diário", "Descrição", "Débito", "Crédito", "Saldo", "Doc.", "N.º Doc.", "Conta Origem", "IVA", "Ano", "Lançamento"];
+    const rows = [["Conta : " + (ultimaConta ? ultimaConta.codigo + " - " + ultimaConta.nome : sel.value)], head];
+    ultimo.linhas.forEach(x => rows.push([x.data, x.diario, x.nDiario, x.descricao, x.debito, x.credito, x.saldo, x.documento, x.documentoRef, x.contraparte, x.ivaPerc ? x.ivaPerc + "%" : "", (x.data || "").slice(0, 4), "000"]));
+    const csv = rows.map(r => r.map(v => { v = String(v == null ? "" : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(";")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "Extrato_" + sel.value + ".csv"; a.click();
+    AY.toast("Extrato exportado (CSV).", "success");
+  }
+
+  sel.oninput = render; sel.onchange = render;
+  [document.getElementById("fDe"), document.getElementById("fAte"), document.getElementById("fSub")].forEach(el => el.onchange = render);
+  document.getElementById("fEnt").oninput = render;
+  document.getElementById("btnAtualizar").onclick = () => { render(); AY.toast("Extrato atualizado.", "success"); };
+  document.getElementById("btnCsv").onclick = exportarCsv;
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  const cq = AY.qs("conta"); if (cq) sel.value = cq;
+  render();
+}
+</script>
+</body>
+</html>

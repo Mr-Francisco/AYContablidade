@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balancete — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="print-landscape">
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Balancete Geral</h1><p class="sub">Modelo Primavera — período selecionável. Duplo clique numa conta abre o extrato.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Exercício <select id="fExercicio"></select></label>
+        <label style="margin:0">Análise
+          <select id="fModo">
+            <option value="completo">Anterior, Período e Acumulado</option>
+            <option value="periodo_acum">Período e Acumulado</option>
+            <option value="periodo">Período</option>
+            <option value="anterior_periodo">Anterior e Período</option>
+          </select>
+        </label>
+        <label style="margin:0">De <input type="date" id="fDe"></label>
+        <label style="margin:0">Até <input type="date" id="fAte"></label>
+        <label style="margin:0">Até ao mês <select id="fMes"><option value="">Todos (15 · Resultado Líquido)</option></select></label>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" id="btnAtualizar">🔄 Atualizar</button>
+        <button class="btn btn-outline btn-sm" id="btnCsv">⬇ Exportar CSV</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div class="card report-print" id="cardTabela"></div>
+
+    <!-- Filtro de contas a analisar (parte inferior) -->
+    <div class="card" id="filtroInferior">
+      <div class="toolbar" style="margin:0">
+        <b style="font-size:13.5px">Analisar contas:</b>
+        <label style="margin:0">De conta <input id="fContaDe" placeholder="ex.: 31" style="width:120px"></label>
+        <label style="margin:0">Até conta <input id="fContaAte" placeholder="ex.: 32" style="width:120px"></label>
+        <label style="margin:0">Grau de detalhe
+          <select id="fDetalhe">
+            <option value="todas">Todas as contas</option>
+            <option value="razao">Total razão (movimento)</option>
+            <option value="sub">Sub total (integradoras)</option>
+            <option value="classe">Total da classe</option>
+          </select>
+        </label>
+        <button class="btn btn-outline btn-sm" id="btnLimparFiltro">Limpar filtro</button>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("balancete.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2;
+  const emp = AY.getEmpresa();
+  let ultimo = null, ultimoFiltrado = null;
+  // Mês/período contabilístico: 00 Abertura · 01-12 meses normais · 13 Regularizações ·
+  // 14 Apuramento de Resultados · 15 Apuramento de Imposto e Resultado Líquido.
+  (C.PERIODOS || []).forEach(([cod, nome]) => document.getElementById("fMes").appendChild(new Option(cod + " · " + nome, cod)));
+  document.getElementById("fExercicio").innerHTML = AY.exercicioOptions().html;
+
+  const GRUPOS = { ant: { label: "Anterior", d: "antD", c: "antC", s: "antS" }, per: { label: "Período", d: "perD", c: "perC", s: "perS" }, acu: { label: "Acumulado", d: "acuD", c: "acuC", s: "acuS" } };
+  const MODOS = { completo: ["ant", "per", "acu"], periodo_acum: ["per", "acu"], periodo: ["per"], anterior_periodo: ["ant", "per"] };
+  function gruposAtivos() { return MODOS[document.getElementById("fModo").value] || MODOS.completo; }
+  function n(v) { return v ? m2(v) : ""; }
+  // Saldo com sufixo D (devedor / positivo) ou C (credor / negativo), sem sinal
+  function saldoDC(v) { return v ? m2(Math.abs(v)) + " " + (v < 0 ? "C" : "D") : ""; }
+
+  // Filtra por intervalo de contas (De/Até, ordem hierárquica = comparação de strings) e grau de detalhe.
+  function aplicarFiltros(linhas) {
+    const cDe = document.getElementById("fContaDe").value.trim();
+    const cAte = document.getElementById("fContaAte").value.trim();
+    const det = document.getElementById("fDetalhe").value;
+    const inRange = cod => (!cDe || cod >= cDe) && (!cAte || cod <= cAte || cod.startsWith(cAte));
+    // Total da classe: agrega os subtotais (2 díg.) por classe (1 díg.)
+    if (det === "classe") {
+      const porClasse = {};
+      linhas.filter(l => l.tipo === "subtotal" && inRange(l.codigo)).forEach(s => {
+        const cl = s.codigo[0];
+        const g = porClasse[cl] = porClasse[cl] || { tipo: "subtotal", codigo: cl, nome: "Classe " + cl + " · " + ((C.CLASSES[cl] || {}).nome || ""), antD: 0, antC: 0, perD: 0, perC: 0 };
+        g.antD += s.antD; g.antC += s.antC; g.perD += s.perD; g.perC += s.perC;
+      });
+      return Object.values(porClasse).sort((a, b) => a.codigo.localeCompare(b.codigo)).map(g => {
+        ["antD", "antC", "perD", "perC"].forEach(k => g[k] = AY.round2(g[k]));
+        g.antS = AY.round2(g.antD - g.antC); g.perS = AY.round2(g.perD - g.perC);
+        g.acuD = AY.round2(g.antD + g.perD); g.acuC = AY.round2(g.antC + g.perC); g.acuS = AY.round2(g.acuD - g.acuC);
+        return g;
+      });
+    }
+    const res = []; let grupo = [];
+    linhas.forEach(l => {
+      if (l.tipo === "conta") {
+        if (!inRange(l.codigo)) return;
+        if (det === "sub") return;                 // só subtotais
+        if (det === "razao" && !l.ehMov) return;   // só movimento
+        grupo.push(l);
+      } else if (l.tipo === "subtotal") {
+        if (det === "sub") { if (inRange(l.codigo)) res.push(l); }
+        else if (grupo.length) { res.push(...grupo, l); }
+        grupo = [];
+      }
+    });
+    return res;
+  }
+
+  function render() {
+    const ex = AY.exercicioOptions(document.getElementById("fExercicio").value).selecionado;
+    const de = document.getElementById("fDe").value || null, ate = document.getElementById("fAte").value || null;
+    const mes = document.getElementById("fMes").value || null;
+    const gs = gruposAtivos();
+    const mod = C.balanceteModelo({ de, ate, mes, exercicioId: ex ? ex.id : null });
+    ultimo = mod;
+    let linhas = aplicarFiltros(mod.linhas);
+    ultimoFiltrado = linhas;
+
+    const t = mod.total;
+    const equilibrado = t.acuD === t.acuC;
+    const cells = (o) => gs.map(g => { const G = GRUPOS[g]; return `<td class="num">${n(o[G.d])}</td><td class="num">${n(o[G.c])}</td><td class="num">${saldoDC(o[G.s])}</td>`; }).join("");
+
+    const corpo = linhas.map(l => {
+      if (l.tipo === "subtotal") return `<tr class="bal-sub"><td></td><td><b>${E(l.nome)}</b></td>${cells(l)}</tr><tr class="bal-gap"><td colspan="${2 + gs.length * 3}"></td></tr>`;
+      const strong = !l.ehMov;
+      return `<tr class="bal-conta" data-conta="${E(l.codigo)}" title="Duplo clique: extrato">
+        <td>${strong ? "<b>" : ""}${E(l.codigo)}${strong ? "</b>" : ""}</td>
+        <td>${strong ? "<b>" : ""}${E(l.nome)}${strong ? "</b>" : ""}</td>${cells(l)}</tr>`;
+    }).join("");
+
+    document.getElementById("cardTabela").innerHTML = `
+      <div class="bal-cabecalho">
+        <div><b>${E(emp.nome)}</b><br><span class="sub">Balancete Geral (${gs.map(g => GRUPOS[g].label).join(", ")})${ex ? " — " + E(ex.nome) : ""}</span></div>
+        <div class="sub">Valores em ${E(AY.moeda())}${de || ate ? " · Período " + (de ? AY.formatDate(de) : "início") + " a " + (ate ? AY.formatDate(ate) : "fim") : ""}${mes ? " · Até ao mês " + mes + " · " + E(C.periodoLabel(mes)) : ""}</div>
+      </div>
+      <div class="table-wrap"><table class="bal-table">
+        <thead>
+          <tr><th rowspan="2">Conta</th><th rowspan="2">Descrição</th>${gs.map(g => `<th colspan="3" class="grp">${GRUPOS[g].label}</th>`).join("")}</tr>
+          <tr>${gs.map(() => `<th class="num">Débito</th><th class="num">Crédito</th><th class="num">Saldo</th>`).join("")}</tr>
+        </thead>
+        <tbody>${linhas.length ? corpo : `<tr><td colspan="${2 + gs.length * 3}" class="empty">Sem movimentos.</td></tr>`}</tbody>
+        <tfoot><tr class="bal-total"><td colspan="2"><b>TOTAL ${equilibrado ? "✓" : "✗ desequilíbrio"}</b></td>${cells(t)}</tr></tfoot>
+      </table></div>`;
+
+    document.querySelectorAll(".bal-conta").forEach(tr => {
+      tr.ondblclick = () => location.href = "extrato.html?conta=" + tr.dataset.conta;
+    });
+  }
+
+  function exportarCsv() {
+    if (!ultimo) return;
+    const gs = gruposAtivos();
+    const head = ["Conta", "Descrição"];
+    gs.forEach(g => { const L = GRUPOS[g].label; head.push("Débito (" + L + ")", "Crédito (" + L + ")", "Saldo (" + L + ")"); });
+    const vals = o => gs.reduce((a, g) => a.concat([o[GRUPOS[g].d], o[GRUPOS[g].c], o[GRUPOS[g].s]]), []);
+    const linhas = [head];
+    (ultimoFiltrado || ultimo.linhas).forEach(l => linhas.push([(l.tipo === "subtotal" ? "" : l.codigo), l.nome].concat(vals(l))));
+    linhas.push(["", "Total"].concat(vals(ultimo.total)));
+    const csv = linhas.map(r => r.map(v => { v = String(v == null ? "" : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(";")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "Balancete.csv"; a.click();
+    AY.toast("Balancete exportado (CSV).", "success");
+  }
+
+  ["fExercicio", "fModo", "fDe", "fAte", "fMes", "fDetalhe"].forEach(id => document.getElementById(id).onchange = render);
+  ["fContaDe", "fContaAte"].forEach(id => document.getElementById(id).oninput = render);
+  document.getElementById("btnLimparFiltro").onclick = () => { document.getElementById("fContaDe").value = ""; document.getElementById("fContaAte").value = ""; document.getElementById("fDetalhe").value = "todas"; render(); };
+  document.getElementById("btnAtualizar").onclick = () => { render(); AY.toast("Balancete atualizado.", "success"); };
+  document.getElementById("btnCsv").onclick = exportarCsv;
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  render();
+}
+</script>
+</body>
+</html>

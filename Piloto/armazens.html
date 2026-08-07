@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventário — Armazéns — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container">
+    <div class="page-head"><h1>Armazéns</h1><p class="sub">Locais de armazenamento de existências.</p></div>
+    <div class="card">
+      <div class="toolbar"><b class="grow">Armazéns</b><button class="btn btn-amber" id="novo">+ Novo armazém</button></div>
+      <div class="table-wrap" id="tabela"></div>
+    </div>
+  </div>
+</main>
+<div class="modal-backdrop hidden" id="modal"><div class="modal" style="max-width:480px">
+  <div class="modal-head"><b id="mTitulo">Novo armazém</b><button class="icon-btn" id="fechar">✕</button></div>
+  <form id="form"><div class="grid-2">
+    <label>Código<input id="fCodigo" placeholder="Ex.: A1" required></label>
+    <label>Localização<input id="fLoc"></label>
+    <label style="grid-column:1/-1">Nome<input id="fNome" required></label>
+  </div>
+  <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelar">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div></form>
+</div></div>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/logistica.js"></script>
+<script>
+const u = AY.initPage("armazens.html", null);
+if (u) {
+  const E = AY.escapeHtml, L = AY.log; let editId = null;
+  const podeGerir = AY.can("logistica.gerir");
+  const g = id => document.getElementById(id);
+  function render() {
+    const rows = L.armazens();
+    g("tabela").innerHTML = rows.length ? `<table>
+      <thead><tr><th>Código</th><th>Nome</th><th>Localização</th><th class="num">Artigos c/ stock</th>${podeGerir ? "<th></th>" : ""}</tr></thead>
+      <tbody>${rows.map(w => { const nArt = L.artigos().filter(a => L.stock(a.id, w.id) > 0).length;
+        return `<tr>
+        <td><b>${E(w.codigo)}</b></td><td>${E(w.nome)}</td><td>${E(w.localizacao || "—")}</td><td class="num">${nArt}</td>
+        ${podeGerir ? `<td class="num"><button class="btn btn-sm btn-outline" data-edit="${w.id}">Editar</button> <button class="btn btn-sm btn-outline" data-del="${w.id}">✕</button></td>` : ""}
+      </tr>`; }).join("")}</tbody></table>` : `<div class="empty">Sem armazéns.</div>`;
+    g("tabela").querySelectorAll("[data-edit]").forEach(b => b.onclick = () => abrir(b.dataset.edit));
+    g("tabela").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const w = L.armazem(b.dataset.del); if (confirm("Eliminar " + w.nome + "?")) { L.removeArmazem(b.dataset.del); render(); } });
+  }
+  const modal = g("modal");
+  function abrir(id) { editId = id || null; const w = id ? L.armazem(id) : null; g("mTitulo").textContent = w ? "Editar " + w.nome : "Novo armazém"; g("fCodigo").value = w ? w.codigo : ""; g("fNome").value = w ? w.nome : ""; g("fLoc").value = w ? (w.localizacao || "") : ""; modal.classList.remove("hidden"); }
+  g("novo").onclick = () => abrir(null); g("fechar").onclick = () => modal.classList.add("hidden"); g("cancelar").onclick = () => modal.classList.add("hidden");
+  g("novo").style.display = podeGerir ? "" : "none";
+  g("form").onsubmit = e => { e.preventDefault(); L.saveArmazem({ id: editId, codigo: g("fCodigo").value.trim(), nome: g("fNome").value.trim(), localizacao: g("fLoc").value.trim() }); modal.classList.add("hidden"); render(); AY.toast("Armazém guardado.", "success"); };
+  render();
+}
+</script>
+</body>
+</html>

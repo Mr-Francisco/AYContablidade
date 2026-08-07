@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contabilidade — Apuramento do IVA — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Apuramento do IVA</h1><p class="sub">IVA liquidado − IVA dedutível do período. Determina o IVA a pagar ou a recuperar e lança na conta de apuramento (diário 34).</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Período <select id="fMes"></select></label>
+        <label style="margin:0">Data do apuramento <input type="date" id="fDataApur"></label>
+        <span id="info" class="sub"></span>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" id="btnApurar">⚙️ Apurar e lançar</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div class="grid-4" id="kpis" style="margin-bottom:16px"></div>
+    <div class="card report-print" id="card"></div>
+  </div>
+</main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script>
+const u = AY.initPage("apuramento-iva.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, m2 = AY.formatMoeda2, emp = AY.getEmpresa();
+  const podeGerir = AY.can("contab.movimentar") || AY.can("contab.gerir") || AY.ehAdminLike(u);
+  const selMes = document.getElementById("fMes");
+  selMes.innerHTML = `<option value="">Todos os períodos</option>` + (C.PERIODOS || []).map(p => `<option value="${p[0]}">${p[0]} · ${p[1]}</option>`).join("");
+  selMes.value = String(new Date().getMonth() + 1).padStart(2, "0");
+  document.getElementById("fDataApur").value = AY.hojeData(); // por omissão hoje — editável
+
+  function render() {
+    const mes = selMes.value || null;
+    const a = C.apuramentoIVA({ mes });
+    document.getElementById("info").textContent = "Valores em " + AY.moeda();
+    const cor = a.resultado > 0 ? "#c0392b" : "#16a085";
+    document.getElementById("kpis").innerHTML = [
+      AY.kpi("IVA Liquidado", AY.formatKz(a.liquidado), "nas vendas/serviços", "var(--chart-teal)"),
+      AY.kpi("IVA Dedutível", AY.formatKz(a.dedutivel), "nas compras", "var(--indigo)"),
+      AY.kpi("Regularizações", AY.formatKz(a.regulariz), "", "var(--chart-grey)"),
+      AY.kpi(a.resultado >= 0 ? "IVA a Pagar" : "IVA a Recuperar", AY.formatKz(Math.abs(a.resultado)), a.resultado >= 0 ? "a entregar ao Estado" : "crédito de imposto", cor),
+    ].join("");
+    const bloco = (titulo, linhas, natureza) => `<div class="card-title" style="margin-top:8px">${E(titulo)}</div>${linhas.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Conta</th><th>Designação</th><th class="num">Valor</th></tr></thead>
+      <tbody>${linhas.map(l => `<tr><td><b>${E(l.codigo)}</b></td><td>${E(l.nome)}</td><td class="num">${m2(Math.abs(l.valor))}</td></tr>`).join("")}</tbody>
+    </table></div>` : `<div class="empty">Sem movimento no período.</div>`}`;
+    document.getElementById("card").innerHTML = `
+      <div class="bal-cabecalho"><div><b>${E(emp.nome)}</b><br><span class="sub">Apuramento do IVA${mes ? " — " + E(selMes.options[selMes.selectedIndex].text) : ""}</span></div><div class="sub">NIF: ${E(emp.nif || "—")}</div></div>
+      ${bloco("IVA Liquidado (a favor do Estado)", a.liquidadoLinhas)}
+      ${bloco("IVA Dedutível (a favor da empresa)", a.dedutivelLinhas)}
+      ${a.regularizLinhas.length ? bloco("Regularizações", a.regularizLinhas) : ""}
+      <div class="cc-resumo" style="justify-content:flex-end;margin-top:12px;font-size:15px">
+        <span>Liquidado <b>${m2(a.liquidado)}</b></span><span>Dedutível <b>${m2(a.dedutivel)}</b></span>
+        <span>${a.resultado >= 0 ? "IVA a pagar" : "IVA a recuperar"} <b style="color:${cor}">${m2(Math.abs(a.resultado))}</b></span>
+      </div>
+      <p class="sub" style="margin-top:8px">Ao apurar: débito das contas de IVA liquidado (${C.CFG_IVA.prefLiquidado}) · crédito das de IVA dedutível (${C.CFG_IVA.prefDedutivel}) · saldo para ${a.resultado >= 0 ? "IVA a pagar (" + C.CFG_IVA.contaAPagar + ")" : "IVA a recuperar (" + C.CFG_IVA.contaRecuperar + ")"}. As contas herdam a taxa da <b>Classe IVA</b> definida na ficha de conta. Data de apuramento: <b>${document.getElementById("fDataApur").value ? E(AY.formatDate(document.getElementById("fDataApur").value)) : "por indicar"}</b> (editável acima)${mes ? ", período " + E(selMes.options[selMes.selectedIndex].text) : ""}.</p>`;
+  }
+  document.getElementById("btnApurar").style.display = podeGerir ? "" : "none";
+  document.getElementById("btnApurar").onclick = () => {
+    const mes = selMes.value; if (!mes) { AY.toast("Escolhe um período (mês) para apurar.", "info"); return; }
+    const data = document.getElementById("fDataApur").value; if (!data) { AY.toast("Indica a data do apuramento.", "info"); return; }
+    const a = C.apuramentoIVA({ mes });
+    if (a.liquidado === 0 && a.dedutivel === 0) { AY.toast("Sem IVA a apurar no período.", "info"); return; }
+    if (!confirm("Apurar o IVA de " + selMes.options[selMes.selectedIndex].text + " (" + (a.resultado >= 0 ? "a pagar " : "a recuperar ") + AY.formatKz(Math.abs(a.resultado)) + "), com data de apuramento " + AY.formatDate(data) + ", e lançar?")) return;
+    try { const r = C.apurarIVA({ mes, data }); render(); AY.toast("IVA apurado em " + AY.formatDate(data) + " · lançamento " + (r.lancamento.numeroOp || "") + ".", "success"); }
+    catch (e) { AY.toast("Erro: " + e.message, "info"); }
+  };
+  selMes.onchange = render;
+  document.getElementById("fDataApur").onchange = render;
+  document.getElementById("btnImprimir").onclick = () => window.print();
+  render();
+}
+</script>
+</body>
+</html>

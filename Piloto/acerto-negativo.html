@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventário — Acerto de Stock Negativo — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main><div class="container-wide">
+  <div class="page-head"><h1>Acerto de Stock Negativo</h1><p class="sub">Contagem física encontrou menos stock do que o sistema indicava (quebra, furto, deterioração). Regulariza a existência e regista a perda ao custo médio corrente (documento 904 — conta de Quebras/Perdas em Existências).</p></div>
+  <div id="mov"></div>
+</div></main>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/logistica.js"></script>
+<script src="assets/js/stock-ui.js"></script>
+<script>const u = AY.initPage("acerto-negativo.html", null); if (u) AY.stockUI.renderMov({ tipo: "ajuste_neg" });</script>
+</body>
+</html>

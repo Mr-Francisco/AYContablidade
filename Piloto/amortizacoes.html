@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amortizações — SGD</title>
+<script>(function(){var t=localStorage.getItem('sgd_theme')||localStorage.getItem('ay_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="app-header"></div>
+<main>
+  <div class="container-wide">
+    <div class="page-head"><h1>Mapa de Amortizações</h1><p class="sub">Quotas constantes (base) ou decrescentes, conforme o método de cada ativo. Processamento mensal, por exercício e período.</p></div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="margin:0">Exercício <select id="fExercicio"></select></label>
+        <label style="margin:0">Período <select id="fMes"></select></label>
+        <span id="info" class="sub"></span>
+        <span style="flex:1"></span>
+        <button class="btn btn-outline btn-sm" id="btnConfig">⚙️ Configurações</button>
+        <button class="btn btn-primary btn-sm" id="btnProcessar">⚙️ Processar período</button>
+        <button class="btn btn-outline btn-sm" id="btnReabrir">↺ Reabrir período</button>
+        <button class="btn btn-outline btn-sm" id="btnCsv">⬇ CSV</button>
+        <button class="btn btn-outline btn-sm" id="btnImprimir">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div class="card report-print" id="card"></div>
+    <div class="card" id="cardHistorico"></div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="modalConfig"><div class="modal" style="max-width:560px">
+  <div class="modal-head"><b>Configurações de Amortizações</b><button class="icon-btn" id="fecharConfig">✕</button></div>
+  <p class="sub" style="margin-bottom:10px">Diário e documento usados ao processar amortizações — o lançamento (débito custo · crédito amort. acumulada) usa sempre esta configuração.</p>
+  <form id="formConfig">
+    <div class="grid-2">
+      <div><label style="margin:0">Diário de Imobilizado</label>
+        <div style="display:flex;gap:6px"><select id="cfgDiario" style="flex:1"></select><button type="button" class="btn btn-sm btn-outline" id="novoDiario">+ Novo</button></div></div>
+      <div><label style="margin:0">Documento</label>
+        <div style="display:flex;gap:6px"><select id="cfgDocumento" style="flex:1"></select><button type="button" class="btn btn-sm btn-outline" id="novoDocumento">+ Novo</button></div></div>
+    </div>
+    <div class="modal-actions"><button type="button" class="btn btn-outline" id="cancelarConfig">Fechar</button><button class="btn btn-primary" type="submit">Guardar configurações</button></div>
+  </form>
+</div></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/plano-primavera.js"></script>
+<script src="assets/js/contabilidade.js"></script>
+<script src="assets/js/imobilizados.js"></script>
+<script>
+const u = AY.initPage("amortizacoes.html", null);
+if (u) {
+  const E = AY.escapeHtml, C = AY.contab, I = AY.imob, m2 = AY.formatMoeda2, emp = AY.getEmpresa();
+  const podeProcessar = AY.can("imob.gerir") || AY.can("contab.lancar");
+  const METODO_LABEL = {}; I.METODOS.forEach(([cod, nome]) => METODO_LABEL[cod] = nome);
+  let ultimo = null;
+
+  document.getElementById("fExercicio").innerHTML = AY.exercicioOptions().html;
+  document.getElementById("fMes").innerHTML = (C.PERIODOS || []).map(([cod, nome]) => `<option value="${cod}">${cod} · ${E(nome)}</option>`).join("");
+  document.getElementById("fMes").value = String(new Date().getMonth() + 1).padStart(2, "0");
+
+  function exSel() { return AY.exercicioOptions(document.getElementById("fExercicio").value).selecionado; }
+  function mesSel() { return document.getElementById("fMes").value; }
+
+  function render() {
+    const ex = exSel(), mes = mesSel();
+    const map = ex ? I.mapaPeriodo({ exercicioId: ex.id, mes }) : { linhas: [], totalPeriodo: 0, processado: false };
+    ultimo = map;
+    document.getElementById("info").textContent = "Valores em " + AY.moeda() + (ex ? " · " + ex.nome : "") + (mes ? " · " + C.periodoLabel(mes) : "");
+    const estadoBadge = map.processado ? AY.badge("Processado em " + AY.formatDate(map.batch.data), "#16a085") : AY.badge("Por processar", "#d68910");
+    document.getElementById("card").innerHTML = `
+      <div class="bal-cabecalho"><div><b>${E(emp.nome)}</b><br><span class="sub">Mapa de Amortizações${ex ? " — " + E(ex.nome) : ""}${mes ? " · " + E(C.periodoLabel(mes)) : ""}</span></div><div class="sub">${estadoBadge}</div></div>
+      <div class="table-wrap"><table class="dr-table">
+        <thead><tr><th>Código</th><th>Designação</th><th>Conta</th><th>Método</th><th class="num">Taxa</th><th class="num">Amort. Acumulada</th><th class="num">Amort. do Período</th><th class="num">Valor Líquido</th></tr></thead>
+        <tbody>${map.linhas.length ? map.linhas.map(l => `<tr${l.estado === "abatido" ? ' style="opacity:.55"' : ""}>
+          <td><b>${E(l.codigo)}</b></td><td>${E(l.designacao)}</td><td><small>${E(l.conta || "—")}</small></td>
+          <td><small>${E(METODO_LABEL[l.metodo] || METODO_LABEL.quotas)}</small></td>
+          <td class="num">${l.taxa}%</td><td class="num">${m2(l.amortAcumuladaAtual)}</td>
+          <td class="num">${l.valorPeriodo ? m2(l.valorPeriodo) + (l.jaProcessado ? " ✓" : "") : "—"}</td>
+          <td class="num"><b>${m2(l.valorLiquidoAtual)}</b></td></tr>`).join("") : `<tr><td colspan="8" class="empty">Sem ativos registados. Regista na Ficha de Ativos.</td></tr>`}</tbody>
+        <tfoot><tr class="dr-total"><td colspan="6"><b>TOTAL DO PERÍODO</b></td><td class="num"><b>${m2(map.totalPeriodo)}</b></td><td></td></tr></tfoot>
+      </table></div>
+      <p class="sub" style="margin-top:8px">A quota mensal (Quotas Constantes: valor de aquisição × taxa ÷ 12; Quotas Decrescentes: valor líquido × taxa × coeficiente ÷ 12) é lançada na contabilidade ao processar o período (débito custo · crédito amort. acumulada). Processamento idempotente — cada exercício/período só pode ser processado uma vez; reabre para corrigir e processar de novo.</p>`;
+    document.getElementById("btnReabrir").style.display = podeProcessar && map.processado ? "" : "none";
+    document.getElementById("btnProcessar").style.display = podeProcessar && !map.processado ? "" : "none";
+    renderHistorico(ex);
+  }
+
+  function renderHistorico(ex) {
+    const host = document.getElementById("cardHistorico");
+    if (!ex) { host.innerHTML = ""; return; }
+    const lista = I.processosDoExercicio(ex.id);
+    host.innerHTML = `<div class="card-title">Histórico de processamentos — ${E(ex.nome)}</div>
+      ${lista.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>Período</th><th class="num">Total</th><th class="num">Ativos</th><th>Processado em</th><th></th></tr></thead>
+        <tbody>${lista.map(p => `<tr>
+          <td>${p.mes} · ${E(C.periodoLabel(p.mes))}</td><td class="num">${m2(p.totalAmort)}</td><td class="num">${p.itens.length}</td>
+          <td>${AY.formatDate(p.data)}</td>
+          <td class="num">${podeProcessar ? `<button class="btn btn-sm btn-outline" data-reabrir="${p.mes}">Reabrir</button>` : ""}</td>
+        </tr>`).join("")}</tbody></table></div>` : `<div class="empty">Ainda sem períodos processados neste exercício.</div>`}`;
+    host.querySelectorAll("[data-reabrir]").forEach(b => b.onclick = () => {
+      if (!confirm("Reabrir o período " + b.dataset.reabrir + "? A amortização acumulada é reposta e os lançamentos gerados são eliminados.")) return;
+      I.reabrirPeriodo(ex.id, b.dataset.reabrir); render(); AY.toast("Período reaberto.", "info");
+    });
+  }
+
+  function csv() {
+    if (!ultimo) return;
+    const rows = [["Código", "Designação", "Conta", "Método", "Taxa", "Amort. Acumulada", "Amort. do Período", "Valor Líquido"]]
+      .concat(ultimo.linhas.map(l => [l.codigo, l.designacao, l.conta, METODO_LABEL[l.metodo] || l.metodo, l.taxa + "%", l.amortAcumuladaAtual, l.valorPeriodo, l.valorLiquidoAtual]));
+    const s = rows.map(r => r.map(v => { v = String(v == null ? "" : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(";")).join("\r\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + s], { type: "text/csv;charset=utf-8" })); a.download = "Mapa_Amortizacoes.csv"; a.click();
+  }
+
+  document.getElementById("btnProcessar").onclick = () => {
+    const ex = exSel(); if (!ex) { AY.toast("Escolhe o exercício.", "info"); return; }
+    const mes = mesSel();
+    if (ultimo.totalPeriodo <= 0) { AY.toast("Nada a amortizar neste período.", "info"); return; }
+    // Data de lançamento: último dia do mês selecionado (dentro do ano do exercício); para os
+    // períodos especiais (00/13/14/15, sem mês de calendário real) usa o fim do exercício.
+    const mesNum = Number(mes), ano = Number((ex.inicio || "").slice(0, 4)) || new Date().getFullYear();
+    const data = mesNum >= 1 && mesNum <= 12
+      ? ano + "-" + mes + "-" + String(new Date(ano, mesNum, 0).getDate()).padStart(2, "0")
+      : (ex.fim || AY.hojeData());
+    if (!confirm("Processar a amortização de " + C.periodoLabel(mes) + " (" + AY.formatKz(ultimo.totalPeriodo) + "), com data " + AY.formatDate(data) + "? Vai lançar na contabilidade.")) return;
+    try {
+      const r = I.processarPeriodo({ exercicioId: ex.id, mes, data });
+      render();
+      AY.toast(r.processados + " ativo(s) amortizados · " + AY.formatKz(r.totalAmort) + (r.lancados ? " · " + r.lancados + " lançamento(s)" : "") + (r.erros.length ? " · " + r.erros.length + " erro(s)" : ""), r.erros.length ? "info" : "success");
+      if (r.erros.length) console.warn("Amortização — erros de lançamento:", r.erros);
+    } catch (e) { AY.toast("Erro: " + e.message, "info"); }
+  };
+  document.getElementById("btnReabrir").onclick = () => {
+    const ex = exSel(); if (!ex) return;
+    if (!confirm("Reabrir o período " + C.periodoLabel(mesSel()) + "? A amortização acumulada é reposta e os lançamentos gerados são eliminados.")) return;
+    I.reabrirPeriodo(ex.id, mesSel()); render(); AY.toast("Período reaberto.", "info");
+  };
+  document.getElementById("fExercicio").onchange = render;
+  document.getElementById("fMes").onchange = render;
+  document.getElementById("btnCsv").onclick = csv;
+  document.getElementById("btnImprimir").onclick = () => window.print();
+
+  // ---------- Configurações (diário/documento usados a processar amortizações) ----------
+  // Só mostra diários afetos a Imobilizado ou a Tesouraria/Caixa e Bancos.
+  const CATEGORIAS_DIARIO_IMOB = ["imobilizado", "caixa_bancos"];
+  const modalConfig = document.getElementById("modalConfig");
+  function opcoesDiarioImob() { return C.diarios().filter(d => CATEGORIAS_DIARIO_IMOB.includes(d.categoria)).map(d => `<option value="${E(d.codigo)}">${E(d.codigo)} · ${E(d.nome)}</option>`).join(""); }
+  function encherDocumentosCfg() {
+    const diario = document.getElementById("cfgDiario").value;
+    document.getElementById("cfgDocumento").innerHTML = C.documentosDoDiario(diario).map(d => `<option value="${E(d.codigo)}">${E(d.codigo)} · ${E(d.descricao)}</option>`).join("");
+  }
+  function abrirConfig() {
+    const c = I.cfg();
+    document.getElementById("cfgDiario").innerHTML = opcoesDiarioImob();
+    document.getElementById("cfgDiario").value = c.diario || "";
+    encherDocumentosCfg();
+    document.getElementById("cfgDocumento").value = c.documento || "";
+    modalConfig.classList.remove("hidden");
+  }
+  document.getElementById("btnConfig").onclick = abrirConfig;
+  document.getElementById("btnConfig").style.display = podeProcessar ? "" : "none";
+  document.getElementById("fecharConfig").onclick = () => modalConfig.classList.add("hidden");
+  document.getElementById("cancelarConfig").onclick = () => modalConfig.classList.add("hidden");
+  document.getElementById("cfgDiario").onchange = encherDocumentosCfg;
+  document.getElementById("novoDiario").onclick = () => {
+    const cod = (prompt("Código do novo diário:") || "").trim(); if (!cod) return;
+    if (C.diario(cod)) { AY.toast("Já existe um diário com esse código.", "info"); return; }
+    const nome = (prompt("Nome do diário:", "Imobilizado") || "").trim(); if (!nome) return;
+    C.saveDiario({ codigo: cod, nome, categoria: "imobilizado" });
+    document.getElementById("cfgDiario").innerHTML = opcoesDiarioImob();
+    document.getElementById("cfgDiario").value = cod; encherDocumentosCfg();
+    AY.toast("Diário criado.", "success");
+  };
+  document.getElementById("novoDocumento").onclick = () => {
+    const diario = document.getElementById("cfgDiario").value; if (!diario) { AY.toast("Escolhe primeiro o diário.", "info"); return; }
+    const cod = (prompt("Código do novo documento:") || "").trim(); if (!cod) return;
+    if (C.documentos().find(d => d.codigo === cod)) { AY.toast("Já existe um documento com esse código.", "info"); return; }
+    const desc = (prompt("Descrição do documento:", "Amortização") || "").trim(); if (!desc) return;
+    C.saveDocumento({ codigo: cod, descricao: desc, diario, contaDebito: "", contaCredito: "", retencao: false, ativo: true });
+    encherDocumentosCfg(); document.getElementById("cfgDocumento").value = cod;
+    AY.toast("Documento criado.", "success");
+  };
+  document.getElementById("formConfig").onsubmit = ev => {
+    ev.preventDefault();
+    if (!document.getElementById("cfgDiario").value || !document.getElementById("cfgDocumento").value) { AY.toast("Escolhe o diário e o documento.", "info"); return; }
+    I.saveCfg({ diario: document.getElementById("cfgDiario").value, documento: document.getElementById("cfgDocumento").value });
+    modalConfig.classList.add("hidden");
+    AY.toast("Configurações de amortizações guardadas.", "success");
+  };
+
+  render();
+}
+</script>
+</body>
+</html>
