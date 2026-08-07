@@ -3,11 +3,27 @@
 Transposto literalmente de `Piloto/assets/js/contabilidade.js` — PLANO_DEFAULT,
 DIARIOS_DEFAULT, DOCUMENTOS_DEFAULT, FLUXOS_DEFAULT, CENTROS_DEFAULT e PERIODOS.
 
-É o plano de arranque de uma empresa nova. Uma empresa que traga o seu plano do
-Primavera importa-o por cima (`importar_plano`), exactamente como no Piloto.
+ATENÇÃO ao plano de contas: no Piloto, as 55 páginas que carregam
+`contabilidade.js` carregam SEMPRE `plano-primavera.js` antes dele, pelo que o
+plano efectivamente usado é o do Primavera (1619 contas) e o `PLANO_DEFAULT`
+abaixo (93 contas) é um recurso que nunca chega a correr.
+
+Isto não é um detalhe de arrumação. As demonstrações financeiras estão escritas
+para a estrutura do Primavera — a Demonstração de Resultados soma `62` para
+prestações de serviços e `73` para amortizações, o Apuramento de Resultados
+exige `881`–`886` e `8111`, e o Apuramento do IVA exige `3452`/`3453`/`3454`.
+Nenhuma dessas contas existe no PLANO_DEFAULT, onde serviços são `612` e
+amortizações `74`. Com o plano base, a DR daria zeros e o apuramento rebentaria.
+
+Por isso `seed_empresa` usa o plano do Primavera por omissão, como o Piloto.
 """
 
+import json
+from functools import lru_cache
+from pathlib import Path
 from typing import NamedTuple
+
+_DATA = Path(__file__).parent / "data"
 
 # ---------------------------------------------------------------------------
 # Classes do PGC
@@ -158,6 +174,21 @@ PLANO_DEFAULT: tuple[tuple[str, str], ...] = (
     ("85", "Resultado antes de impostos"),
     ("88", "Resultado líquido do exercício"),
 )
+
+
+@lru_cache
+def plano_primavera() -> tuple[dict, ...]:
+    """Plano de contas do Primavera (1619 contas), extraído de
+    `Piloto/assets/js/plano-primavera.js`.
+
+    Cada entrada tem `codigo`, `nome`, `tipo` (R raiz / I integradora /
+    M movimento) e `classe_iva` quando o plano a define.
+
+    É o plano de arranque por omissão — ver a nota no topo do módulo.
+    """
+    ficheiro = _DATA / "plano_primavera.json"
+    return tuple(json.loads(ficheiro.read_text(encoding="utf-8")))
+
 
 # ---------------------------------------------------------------------------
 # Diários

@@ -21,6 +21,7 @@ from src.core.pgc import (
     FLUXOS_DEFAULT,
     PLANO_DEFAULT,
     natureza_conta,
+    plano_primavera,
 )
 from src.db.models.contabilidade import (
     CentroCusto,
@@ -42,10 +43,22 @@ def empresa_ja_iniciada(db: Session, empresa_id: UUID) -> bool:
 
 
 def seed_empresa(
-    db: Session, empresa: Empresa, *, ano: int | None = None
+    db: Session,
+    empresa: Empresa,
+    *,
+    ano: int | None = None,
+    plano: str = "primavera",
 ) -> dict[str, int]:
     """Cria o plano de contas, diários, documentos, fluxos, centros de custo,
     a configuração e o exercício corrente de uma empresa nova.
+
+    `plano`:
+      - "primavera" (omissão) — as 1619 contas do plano do Primavera. É o que o
+        Piloto usa sempre na prática, e o único com que as demonstrações
+        financeiras e os apuramentos funcionam (ver a nota em `src/core/pgc.py`).
+      - "base" — as 93 contas do PGC-AR base. Mais simples de ler, mas a DR, o
+        Apuramento de Resultados e o Apuramento do IVA não encontram as contas
+        de que precisam.
 
     Idempotente: se a empresa já tiver plano, não faz nada.
     """
@@ -54,19 +67,34 @@ def seed_empresa(
 
     ano = ano or date.today().year
 
-    db.add_all(
-        Conta(
-            empresa_id=empresa.id,
-            codigo=codigo,
-            nome=nome,
-            # O PGC base não classifica M/I/R — a natureza de folha é inferida
-            # pelo prefixo, como no Piloto. Um plano do Primavera traz o tipo.
-            tipo=None,
-            natureza=natureza_conta(codigo),
-            ativa=True,
-        )
-        for codigo, nome in PLANO_DEFAULT
-    )
+    if plano == "base":
+        contas = [
+            Conta(
+                empresa_id=empresa.id,
+                codigo=codigo,
+                nome=nome,
+                # O PGC base não classifica M/I/R — a natureza de folha é
+                # inferida pelo prefixo, como no Piloto.
+                tipo=None,
+                natureza=natureza_conta(codigo),
+                ativa=True,
+            )
+            for codigo, nome in PLANO_DEFAULT
+        ]
+    else:
+        contas = [
+            Conta(
+                empresa_id=empresa.id,
+                codigo=c["codigo"],
+                nome=c["nome"],
+                tipo=c.get("tipo"),
+                natureza=natureza_conta(c["codigo"]),
+                classe_iva=c.get("classe_iva"),
+                ativa=True,
+            )
+            for c in plano_primavera()
+        ]
+    db.add_all(contas)
 
     db.add_all(
         Diario(empresa_id=empresa.id, codigo=codigo, nome=nome, categoria=categoria)
@@ -126,7 +154,7 @@ def seed_empresa(
 
     db.flush()
     return {
-        "contas": len(PLANO_DEFAULT),
+        "contas": len(contas),
         "diarios": len(DIARIOS_DEFAULT),
         "documentos": len(DOCUMENTOS_DEFAULT),
         "fluxos": len(FLUXOS_DEFAULT),

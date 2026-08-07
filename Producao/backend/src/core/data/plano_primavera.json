@@ -1,0 +1,9716 @@
+[
+ {
+  "codigo": "11",
+  "nome": "IMOBILIZAÇÕES CORPÓREAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "111",
+  "nome": "Terrenos e Recursos Naturais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1111",
+  "nome": "Terrenos em Bruto",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1112",
+  "nome": "Terrenos com Arranjos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1113",
+  "nome": "Subsolos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1114",
+  "nome": "Terrenos com edificios",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "11141",
+  "nome": "Relativos edificios industriais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "11142",
+  "nome": "Relativos edi. administrativos/come",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "11143",
+  "nome": "Relativos a outros edificios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "112",
+  "nome": "Edificios e outras Construções",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1121",
+  "nome": "Edificios",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "11211",
+  "nome": "Integrados em conjuntos industriais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "11212",
+  "nome": "Integrados em conj.adm.e comerciais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "11213",
+  "nome": "Outros conjuntos industriais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "11214",
+  "nome": "Implantados em propriedade alheia",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1122",
+  "nome": "Outras construções",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1123",
+  "nome": "Instalações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "113",
+  "nome": "Equipamento básico",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1131",
+  "nome": "Material Industrial",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "1132",
+  "nome": "Ferramentas industriais",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "1133",
+  "nome": "Melhoramentos em equip.básicos",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "114",
+  "nome": "Equipamento de carga e transporte",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1141",
+  "nome": "Veiculos pesados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1142",
+  "nome": "Veiculos mistos e ligeiros",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "115",
+  "nome": "Equipamento administrativo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1151",
+  "nome": "Equipamento informatico",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "1152",
+  "nome": "Equipamento social",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "1153",
+  "nome": "Mobiliário",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "116",
+  "nome": "Taras e vasilhame",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1161",
+  "nome": "Embalagens retornáveis",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "1162",
+  "nome": "Outras taras e outras embalagens",
+  "tipo": "M",
+  "classe_iva": "22?11"
+ },
+ {
+  "codigo": "119",
+  "nome": "Outras imobilizações corpóreas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1191",
+  "nome": "Obras em edíficios alheios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "12",
+  "nome": "IMOBILIZAÇÕES INCORPOREAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1201",
+  "nome": "Banco.......",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "121",
+  "nome": "Trespasses",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1211",
+  "nome": "Trespasse ......",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "122",
+  "nome": "Desp.investiga. e desenvolvimento",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1221",
+  "nome": "Desp.investiga. e desenvolvimento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "123",
+  "nome": "Propriedade industrial e outros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1231",
+  "nome": "Propriedade industrial e outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "124",
+  "nome": "Despesas de constituição",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1241",
+  "nome": "Despesas de constituição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "129",
+  "nome": "Outras imobilizações incorporeas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1291",
+  "nome": "Outras imobilizações incorporeas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "13",
+  "nome": "INVESTIMENTOS FINANCEIROS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "131",
+  "nome": "Empresas subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1311",
+  "nome": "Partes de capital",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1312",
+  "nome": "Obrigações e tít.de participação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1313",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "132",
+  "nome": "Empresas associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1321",
+  "nome": "Partes de capital",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1322",
+  "nome": "Obrigações e tít.de participação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1323",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "133",
+  "nome": "Outras empresas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1331",
+  "nome": "Partes de capital",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1332",
+  "nome": "Obrigações e tít.de participação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1333",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "134",
+  "nome": "Investimentos em imoveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1341",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "135",
+  "nome": "Fundos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1351",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "139",
+  "nome": "Outros investimentos financeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1391",
+  "nome": "Diamantes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1392",
+  "nome": "Ouro",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1393",
+  "nome": "Depósitps bancários",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "14",
+  "nome": "IMOBILIZAÇÕES EM CURSO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "141",
+  "nome": "Obra em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "142",
+  "nome": "Obra em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "147",
+  "nome": "Adiantamentos p/conta imob.corporeo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1471",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "148",
+  "nome": "Adiantamentos p/conta imob.incorp.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1481",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "149",
+  "nome": "Adiantamentos p/conta de investim.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "18",
+  "nome": "AMORTIZAÇÕES ACUMULADAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "181",
+  "nome": "Imobilizações corporeas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1811",
+  "nome": "Terrenos e recursos naturais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1812",
+  "nome": "Edificios e outras construções",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1813",
+  "nome": "Equipamento básico",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1814",
+  "nome": "Equipamento de carga e transporte",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1815",
+  "nome": "Equipamento administrativo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1816",
+  "nome": "Taras e vasilhame",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1819",
+  "nome": "Outras imobilizações corpóreas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "182",
+  "nome": "Imobilizações incorporeas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1821",
+  "nome": "Trespasses",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1822",
+  "nome": "Desp.investiga. e desenvolvimento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1823",
+  "nome": "Propriedade industrial e outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1824",
+  "nome": "Despesas de constituição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1829",
+  "nome": "Outras imobilizações incorporeas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "183",
+  "nome": "Investimentos financ.em imoveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1831",
+  "nome": "Terrenos e recursos naturais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1832",
+  "nome": "Edificios e outras construções",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "19",
+  "nome": "PROVISOES P/ INVEST.FINANCEIROS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "191",
+  "nome": "Empresas subsidiarais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1911",
+  "nome": "Partes de capital",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1912",
+  "nome": "Obrigações e tít.de participação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1913",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "192",
+  "nome": "Empresas associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1921",
+  "nome": "Partes de capital",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1922",
+  "nome": "Obrigações e tít.de participação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1923",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "193",
+  "nome": "Outras empresas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1931",
+  "nome": "Partes de capital",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1932",
+  "nome": "Obrigações e tít.de participação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1933",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "194",
+  "nome": "Fundos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1941",
+  "nome": "Partes de capital",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "199",
+  "nome": "Outros investi. financeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1991",
+  "nome": "Diamantes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1992",
+  "nome": "Ouro",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "1993",
+  "nome": "Depósitos bancários",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21",
+  "nome": "COMPRAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211",
+  "nome": "Materias-primas, subs. e de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2111",
+  "nome": "Matérias primas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21111",
+  "nome": "Mp.-Mercado Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211111",
+  "nome": "Mp.MN-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?11"
+ },
+ {
+  "codigo": "211118",
+  "nome": "Mp.MN-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21112",
+  "nome": "Mp.-Mercado Estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211121",
+  "nome": "Mp.-Mercado Africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2111211",
+  "nome": "Mp.MA-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2111218",
+  "nome": "Mp.MA-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211122",
+  "nome": "Mp.-Outros Mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2111221",
+  "nome": "Mp.OM-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2111228",
+  "nome": "Mp.OM-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2111318",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2112",
+  "nome": "Matérias subsídiárias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21121",
+  "nome": "Ms.-Mercado Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211211",
+  "nome": "Ms.MN-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?11"
+ },
+ {
+  "codigo": "211218",
+  "nome": "Ms.MN-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21122",
+  "nome": "Mp.-Mercado Estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211221",
+  "nome": "Ms.-Mercado Africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2112211",
+  "nome": "Ms.MA-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2112218",
+  "nome": "Ms.MA-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211222",
+  "nome": "Ms.-Outros Mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2112221",
+  "nome": "Ms.OM-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2112228",
+  "nome": "Ms.OM-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2113",
+  "nome": "Materiais diversos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21131",
+  "nome": "Md.-Mercado Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211311",
+  "nome": "Md.MN-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?11"
+ },
+ {
+  "codigo": "211318",
+  "nome": "Md.MN-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21132",
+  "nome": "Mp.-Mercado Estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211321",
+  "nome": "Md.-Mercado Africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2113211",
+  "nome": "Md.MA-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2113218",
+  "nome": "Md.MA-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211322",
+  "nome": "Md.-Outros Mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2113221",
+  "nome": "Md.OM-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2113228",
+  "nome": "Md.OM-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2114",
+  "nome": "Embalagens de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21141",
+  "nome": "Ec.-Mercado Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211411",
+  "nome": "Ec.MN-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?11"
+ },
+ {
+  "codigo": "211418",
+  "nome": "Ec.MN-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21142",
+  "nome": "Ec.Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211421",
+  "nome": "Ec.-Mercado Africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2114211",
+  "nome": "Ec.MA-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2114218",
+  "nome": "Ec.MA-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211422",
+  "nome": "Ec.-Outros Mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2114221",
+  "nome": "Ec.OM-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2114228",
+  "nome": "Ec.OM-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2115",
+  "nome": "Outros materiais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21151",
+  "nome": "Om.-Mercado Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211511",
+  "nome": "Om.MN-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?11"
+ },
+ {
+  "codigo": "211518",
+  "nome": "Om.MN-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21152",
+  "nome": "Om.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211521",
+  "nome": "Om.-Mercado Africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2115211",
+  "nome": "Om.MA-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2115218",
+  "nome": "Om.MA-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "211522",
+  "nome": "Om.-Outros Mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2115221",
+  "nome": "Om.OM-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2115228",
+  "nome": "Om.OM-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "212",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2121",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21211",
+  "nome": "Mr.-Mercado Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "212111",
+  "nome": "Mr.MN-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?11"
+ },
+ {
+  "codigo": "212118",
+  "nome": "Mr.MN-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21212",
+  "nome": "Mr.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "212121",
+  "nome": "Mr.-Mercado Africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2121211",
+  "nome": "Mr.MA-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2121218",
+  "nome": "Mr.MA-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "212122",
+  "nome": "Mr.-Outros Mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2121221",
+  "nome": "Mr.OM-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2121228",
+  "nome": "Mr.OM-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "214",
+  "nome": "Embalagens",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21411",
+  "nome": "Em.-Mercado Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "214111",
+  "nome": "Em.MN-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "211?1"
+ },
+ {
+  "codigo": "214118",
+  "nome": "Em.MN-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21412",
+  "nome": "Em.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "214121",
+  "nome": "Em.-Mercado Africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2141211",
+  "nome": "Em.MA-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2141218",
+  "nome": "Em.MA-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "214122",
+  "nome": "Em.-Outros Mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2141221",
+  "nome": "Em.OM-Custo de factura",
+  "tipo": "M",
+  "classe_iva": "21?21"
+ },
+ {
+  "codigo": "2141228",
+  "nome": "Em.OM-imputações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217",
+  "nome": "Devoluções de compras",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171",
+  "nome": "Materias-primas, súbs.e de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21711",
+  "nome": "Matérias primas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217111",
+  "nome": "Mp.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": "421?11"
+ },
+ {
+  "codigo": "217112",
+  "nome": "Mp-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171121",
+  "nome": "Mp.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171122",
+  "nome": "Mp.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21712",
+  "nome": "Matérias subsídiárias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217121",
+  "nome": "Ms.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217122",
+  "nome": "Ms.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171221",
+  "nome": "Ms.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171222",
+  "nome": "Ms.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21713",
+  "nome": "Materiais diversos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217131",
+  "nome": "Md.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217132",
+  "nome": "Md.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171321",
+  "nome": "Md.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171322",
+  "nome": "Md.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21714",
+  "nome": "Embalagens de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217141",
+  "nome": "Ec.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217142",
+  "nome": "Ec.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171421",
+  "nome": "Ec.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171422",
+  "nome": "Ec.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21715",
+  "nome": "Outros materiais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217151",
+  "nome": "Om.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217152",
+  "nome": "Om.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171521",
+  "nome": "Om.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2171522",
+  "nome": "Om.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2172",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21721",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217211",
+  "nome": "Mr.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": "421?11"
+ },
+ {
+  "codigo": "217212",
+  "nome": "Mr.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2172121",
+  "nome": "Mr.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2172122",
+  "nome": "Mr.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21724",
+  "nome": "Embalagens",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "217241",
+  "nome": "Em.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": "421?11"
+ },
+ {
+  "codigo": "217242",
+  "nome": "Em.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2172421",
+  "nome": "Em.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2172422",
+  "nome": "Em.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218",
+  "nome": "Descontos Abatimentos em compras",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181",
+  "nome": "Materias-primas, súbs.e de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21811",
+  "nome": "Matérias primas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218111",
+  "nome": "Mp.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218112",
+  "nome": "Mp.-Mercado Estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181121",
+  "nome": "Mp.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181122",
+  "nome": "Mp.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21812",
+  "nome": "Matérias subsídiárias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218121",
+  "nome": "Ms.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218122",
+  "nome": "Ms.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181221",
+  "nome": "Ms.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181222",
+  "nome": "Ms.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21813",
+  "nome": "Materiais diversos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218131",
+  "nome": "Md.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218132",
+  "nome": "Md.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181321",
+  "nome": "Md.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181322",
+  "nome": "Md.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21814",
+  "nome": "Embalagens de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218141",
+  "nome": "Ec.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218142",
+  "nome": "Ec.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181421",
+  "nome": "Ec.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181422",
+  "nome": "Ec.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21815",
+  "nome": "Outros materiais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218151",
+  "nome": "Om.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218152",
+  "nome": "Om.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181521",
+  "nome": "Om.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2181522",
+  "nome": "Om.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2182",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21821",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218211",
+  "nome": "Mr.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218212",
+  "nome": "Mr.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2182121",
+  "nome": "Mr.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2182122",
+  "nome": "Mr.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "21824",
+  "nome": "Embalagens",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218241",
+  "nome": "Em.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "218242",
+  "nome": "Em.-Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2182421",
+  "nome": "Em.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2182422",
+  "nome": "Em.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "219",
+  "nome": "Adiantamentos de Clientes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "22",
+  "nome": "MATERIAS PRIMAS SUB. DE CONSUMO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "221",
+  "nome": "Materias primas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2211",
+  "nome": "Mp-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2212",
+  "nome": "Mp-Ap.Custo exist.vend.e cons.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "222",
+  "nome": "Materias subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2221",
+  "nome": "Ms-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2222",
+  "nome": "Ms-Ap.Custo exist.vend.e cons.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "223",
+  "nome": "Materiais diversos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2231",
+  "nome": "Md-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2232",
+  "nome": "Md-Ap.Custo exist.vend.e cons.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "224",
+  "nome": "Embalagens de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2241",
+  "nome": "Ec-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2242",
+  "nome": "Ec-Ap.Custo exist.vend.e cons.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "225",
+  "nome": "Outros materiais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2251",
+  "nome": "Om-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2252",
+  "nome": "Om-Ap.Custo exist.vend.e cons.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "229",
+  "nome": "Adiantamentos a Fornecedores",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "23",
+  "nome": "PRODUTOS E TRABALHOS EM CURSO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "231",
+  "nome": "Ptc-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "232",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "24",
+  "nome": "PRODUTOS ACABADOS E INTERMÉDIOS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "241",
+  "nome": "Produtos acabados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2411",
+  "nome": "Pa-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "242",
+  "nome": "Produtos intermedios",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2421",
+  "nome": "Pa-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "249",
+  "nome": "Em poder de terceiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2491",
+  "nome": "Ppt-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "25",
+  "nome": "SUB-PRODUTOS DESP.,RESIDUOS REFUGO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "251",
+  "nome": "Sub-produtos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2511",
+  "nome": "Sp-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "252",
+  "nome": "Desperdicios, residuos e refugos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2521",
+  "nome": "Drr-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "26",
+  "nome": "MERCADORIAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "261",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2611",
+  "nome": "Mp-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2612",
+  "nome": "Mp-Ap.Custo exist.vend.e cons.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "262",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "264",
+  "nome": "Embalagens",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2641",
+  "nome": "Em-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2642",
+  "nome": "Em-Ap.Custo exist.vend.e cons.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "269",
+  "nome": "Em poder de terceiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2691",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "26911",
+  "nome": "Mp-Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "27",
+  "nome": "MATERIAS PRIMAS,MERC,MAT,TRANSITO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "271",
+  "nome": "Materias primas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2711",
+  "nome": "Mp.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2712",
+  "nome": "Mp.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2713",
+  "nome": "Mp.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "272",
+  "nome": "Outros materiais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2721",
+  "nome": "Om.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2722",
+  "nome": "Om.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2723",
+  "nome": "Om.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "273",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2731",
+  "nome": "Mr.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2732",
+  "nome": "Mr.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2733",
+  "nome": "Mr.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "28",
+  "nome": "ADIANT.POR CONTA DE COMPRAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "281",
+  "nome": "Materias-primas e outros materiais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2811",
+  "nome": "Mp.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2812",
+  "nome": "Mp.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2813",
+  "nome": "Mp.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "282",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2821",
+  "nome": "Mr.-Mercado Nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2822",
+  "nome": "Mr.-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2823",
+  "nome": "Mr.-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "29",
+  "nome": "PROVISÃO P/DEPRE. DE EXISTENCIAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "291",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "292",
+  "nome": "Materias-primas subsidi. e consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2921",
+  "nome": "Materias-primas subsidi. e consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "293",
+  "nome": "Produtos e trabalhos em curso",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2931",
+  "nome": "Produtos e trabalhos em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "294",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2941",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "295",
+  "nome": "Sub-prod.,desperdicios,residuos ref",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "2951",
+  "nome": "Sub-prod.,desperdicios,residuos ref",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "296",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31",
+  "nome": "CLIENTES",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "311",
+  "nome": "Clientes correntes",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3111",
+  "nome": "Grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31111",
+  "nome": "Subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "311111",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "311112",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31112",
+  "nome": "Associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "311121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "311122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3112",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "312",
+  "nome": "Clientes-titulos a receber",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3121",
+  "nome": "Grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31211",
+  "nome": "Subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "312111",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "312112",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31212",
+  "nome": "Associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "312121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "312122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3122",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31221",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31222",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "313",
+  "nome": "Clientes-titulos descontados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3131",
+  "nome": "Grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31311",
+  "nome": "Subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "313111",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "313112",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31312",
+  "nome": "Associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "313121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "313122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3132",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31321",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31322",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "314",
+  "nome": "Compras-Embalagens",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "316",
+  "nome": "Compras-Mat. Primas,Subsid.,Consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3162",
+  "nome": "Compras-Matérias Subsidiárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3163",
+  "nome": "Compras-Materiais Diversos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31762",
+  "nome": "Devoluções-Matérias Subsidiárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "318",
+  "nome": "Clientes de cobrança duvidosa",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3181",
+  "nome": "Clientes correntes",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31812",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "318121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "318122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3182",
+  "nome": "Clientes-titulos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31822",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "318221",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "318222",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31862",
+  "nome": "Desc.Abat.Cmp-Matérias Subsidiárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "319",
+  "nome": "Clientes-saldos credores",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3191",
+  "nome": "Adiantamentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31912",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "319121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "319122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3192",
+  "nome": "Embalagens a devolver",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31922",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "319221",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "319222",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3193",
+  "nome": "Material á consignação",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "31932",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "319321",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "319322",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32",
+  "nome": "FORNECEDORES",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "321",
+  "nome": "Fornecedores-correntes",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3211",
+  "nome": "Grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32111",
+  "nome": "Subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "321111",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "321112",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32112",
+  "nome": "Associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "321121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "321122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3212",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "322",
+  "nome": "Fornecedores-titulos a pagar",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3221",
+  "nome": "Grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32211",
+  "nome": "Subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "322111",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "322112",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32212",
+  "nome": "Associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "322121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "322122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3222",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32221",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32222",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3241",
+  "nome": "Embalagens - Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "328",
+  "nome": "Fornecedores-fac.em rec.conferencia",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3281",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3282",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32821",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32822",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "329",
+  "nome": "Fornecedores-saldos devedores",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3291",
+  "nome": "Adiantamentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32912",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "329121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "329122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3292",
+  "nome": "Embalagens a devolver",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32922",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "329221",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "329222",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3293",
+  "nome": "Material á consignação",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "32932",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "329321",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "329322",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33",
+  "nome": "EMPRESTIMOS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "331",
+  "nome": "Emprestimos bancários",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3311",
+  "nome": "Curto prazo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33111",
+  "nome": "Moeda nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3311101",
+  "nome": "Banco.....",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33112",
+  "nome": "Moeda estrangeira",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3311201",
+  "nome": "Banco................",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3312",
+  "nome": "Médio e longo prazo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33121",
+  "nome": "Moeda nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3312101",
+  "nome": "Banco.....",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33122",
+  "nome": "Moeda estrangeira",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3312201",
+  "nome": "Banco................",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "332",
+  "nome": "Emprestimos por obrigaçõs",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3321",
+  "nome": "Convertiveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33211",
+  "nome": "Entidade grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33212",
+  "nome": "Entidade não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3322",
+  "nome": "Não convertiveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33221",
+  "nome": "Entidade grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33222",
+  "nome": "Entidade não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "333",
+  "nome": "Emprestimos p/tittulos de particip",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3331",
+  "nome": "Entidade grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3332",
+  "nome": "Entidade não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "339",
+  "nome": "Outros emprestimos obtidos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3391",
+  "nome": "Curto prazo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33911",
+  "nome": "Entidade grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33912",
+  "nome": "Entidade não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3392",
+  "nome": "Médio e longo prazo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33921",
+  "nome": "Entidade grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "33922",
+  "nome": "Entidade não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34",
+  "nome": "ESTADO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "341",
+  "nome": "Imposto s/ lucros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3411",
+  "nome": "IL- imposto corrente",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3412",
+  "nome": "IL- pagamentos por conta",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3413",
+  "nome": "IL- retenção na fonte",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3415",
+  "nome": "IL - apuramento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3416",
+  "nome": "IL - apagar",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3417",
+  "nome": "IL - a recuperar",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "342",
+  "nome": "Imposto de produção e consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3421",
+  "nome": "Imposto de produção e consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "343",
+  "nome": "Imposto de rendimento de trabalho",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3431",
+  "nome": "Imposto de rendimento de trabalho",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3432",
+  "nome": "Retenção Lei 7/97",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "344",
+  "nome": "Imposto de circulação",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3441",
+  "nome": "Imposto de circulação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345",
+  "nome": "Imposto sobre o valor Acrescentado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3451",
+  "nome": "IVA Suportado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34511",
+  "nome": "Existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34512",
+  "nome": "Meios Fixos e Investimentos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34513",
+  "nome": "Outros Bens e Serviços",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452",
+  "nome": "IVA - Dedutivel",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521",
+  "nome": "IVA Dedutível - Existências",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345211",
+  "nome": "IVA - Ded. - Existências - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452111",
+  "nome": "IVA - Ded. Exist. - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521111",
+  "nome": "IVA - Ded. Exist. - M. Int. - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521112",
+  "nome": "IVA - Ded. Exist. - M. Int. IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452112",
+  "nome": "IVA - Ded. Exist. - M.Externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521121",
+  "nome": "IVA - Ded. Exist. - M.Externo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345212",
+  "nome": "IVA - Dedutível - Existências - 2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452121",
+  "nome": "IVA - Dedutível - Existências- M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521211",
+  "nome": "IVA - Dedutível - Existências- M. interno  - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521212",
+  "nome": "IVA - Dedutível - Existências- M. interno  - IVA Cativo 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452122",
+  "nome": "IVA - Dedutível - Existências - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521221",
+  "nome": "IVA - Dedutível - Existências - M. externo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345213",
+  "nome": "IVA - Dedutível - Existências - 5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452131",
+  "nome": "IVA - Dedutível - Existências- M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521311",
+  "nome": "IVA - Dedutível - Existências- M. interno  - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521312",
+  "nome": "IVA - Dedutível - Existências- M. interno  - IVA Cativo 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452132",
+  "nome": "IVA - Dedutível - Existências - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521321",
+  "nome": "IVA - Dedutível - Existências - M. externo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345214",
+  "nome": "IVA - Dedutível - Existências - 7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452141",
+  "nome": "IVA - Dedutível - Existências- M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521411",
+  "nome": "IVA - Dedutível - Existências- M. interno  - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521412",
+  "nome": "IVA - Dedutível - Existências- M. interno  - IVA Cativo 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452142",
+  "nome": "IVA - Dedutível - Existências - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34521421",
+  "nome": "IVA - Dedutível - Existências - M. externo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522",
+  "nome": "Meios Fixos e Investimentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345221",
+  "nome": "IVA - Ded. - Meios Fixos e Inv. - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452211",
+  "nome": "IVA - Ded. - Meios Fixos e Inv. - M. Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522111",
+  "nome": "IVA - Ded. - Meios Fixos e Inv. - M. Int. - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522112",
+  "nome": "IVA - Ded. - Meios Fixos e Inv. - M. Int. - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452212",
+  "nome": "IVA - Ded. - Meios Fixos e Invest. - M. Externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522121",
+  "nome": "IVA - Ded. - Meios Fixos e Invest. - M. Externo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345222",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - 2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452221",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522211",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. interno  - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522212",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. interno  - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452222",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522221",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. externo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345223",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - 5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452231",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522311",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. interno  - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522312",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. interno  - IVA Cativo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452232",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34522321",
+  "nome": "IVA - Dedutível - Meios Fixos e Invest. - M. externo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523",
+  "nome": "Outros Bens e Serviços",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231",
+  "nome": "IVA - Ded. - Outros Bens",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452311",
+  "nome": "IVA - Ded. - Outros Bens - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523111",
+  "nome": "IVA - Ded. - Out. Bens - M. Int. - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231111",
+  "nome": "IVA - Ded. - Outros Bens - M.interno - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231112",
+  "nome": "IVA - Ded. - Outros Bens - M.interno - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523112",
+  "nome": "IVA - Ded. - Out. Bens - M. Int. - IVA Cativo  - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231121",
+  "nome": "IVA - Ded. - Outros Bens - M.externo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452312",
+  "nome": "IVA - Ded. - Outros Bens - M. Externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523121",
+  "nome": "IVA - Ded. - Outros Bens - M. Externo - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231211",
+  "nome": "IVA - Ded. - Outros Bens - M.interno - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231212",
+  "nome": "IVA - Ded. - Outros Bens - M.interno - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523122",
+  "nome": "IVA - Ded. - Outros Bens - M.externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231221",
+  "nome": "IVA - Ded. - Outros Bens - M.externo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452314",
+  "nome": "IVA - Ded. - Outros Bens - 7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523141",
+  "nome": "IVA - Ded. - Outros Bens - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231411",
+  "nome": "IVA - Ded. - Outros Bens - M.interno - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231412",
+  "nome": "IVA - Ded. - Outros Bens - M.interno - IVA Cativo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523142",
+  "nome": "IVA - Ded. - Out. Bens - M. Externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345231421",
+  "nome": "IVA - Ded. - Outros Bens - M.externo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232",
+  "nome": "IVA - Ded. - Serviços",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452321",
+  "nome": "IVA - Ded. - Serviços - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523211",
+  "nome": "IVA - Ded. - Serviços - M. Interno - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232111",
+  "nome": "IVA Dedutível - Serviços - M. interno  - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232112",
+  "nome": "IVA Dedutível - Serviços - M. interno  - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523212",
+  "nome": "IVA - Ded. - Serviços - M. Interno - IVA Cativo - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232121",
+  "nome": "IVA Dedutível - Serviços - Mercado externo - Autoliquidação - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452322",
+  "nome": "IVA Dedutível - Serviços - 2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523221",
+  "nome": "IVA Dedutível - Serviços - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232211",
+  "nome": "IVA Dedutível - Serviços - M. interno  - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232212",
+  "nome": "IVA Dedutível - Serviços - M. interno  - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523222",
+  "nome": "IVA Dedutível - Serviços - Mercado externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232221",
+  "nome": "IVA Dedutível - Serviços - Mercado externo - Autoliquidação - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452324",
+  "nome": "IVA - Ded. - Serviços - 7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523241",
+  "nome": "IVA - Ded. - Serviços - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232411",
+  "nome": "IVA - Ded. - Serviços - M.interno - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232412",
+  "nome": "IVA - Ded. - Serviços - M.interno - IVA Cativo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523242",
+  "nome": "IVA - Ded. - Serviços - M. Externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345232421",
+  "nome": "IVA - Ded. - Serviços - M.externo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345233",
+  "nome": "IVA - Ded. - Outros Bens - 5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452331",
+  "nome": "IVA - Ded. - Outros Bens - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523311",
+  "nome": "IVA - Ded. - Outros Bens - M.interno - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523312",
+  "nome": "IVA - Ded. - Outros Bens - M.interno - IVA Cativo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452332",
+  "nome": "IVA - Ded. - Out. Bens - M. Externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34523321",
+  "nome": "IVA - Ded. - Outros Bens - M.externo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345239",
+  "nome": "IVA - Ded. - Serviços - Autoliquidação",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3452391",
+  "nome": "IVA - Ded. - Serviços - Autoliquidação - 14% -",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453",
+  "nome": "IVA Liquidado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531",
+  "nome": "Operações Gerais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311",
+  "nome": "IVA Liq. - Op. gerais - Vendas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453111",
+  "nome": "IVA Liq. - Op. gerais - Vendas - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531111",
+  "nome": "IVA Liq. - Op. gerais - Vendas - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311111",
+  "nome": "IVA Liq. - Op. gerais - M. Int. - Vendas - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311112",
+  "nome": "IVA Liq. - Op. gerais - M. Int. - Vendas - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453112",
+  "nome": "IVA Liq. - Op. gerais - Vendas-2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531121",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311211",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311212",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453113",
+  "nome": "IVA Liq. - Op. gerais - Vendas-5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531131",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311311",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311312",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno - IVA Cativo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453114",
+  "nome": "IVA Liq. - Op. gerais - Vendas-7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531141",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311411",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345311412",
+  "nome": "IVA Liq. - Op. gerais - Vendas - M.interno - IVA Cativo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345312",
+  "nome": "IVA Liq. - Op. gerais - Prest. Serviços",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453121",
+  "nome": "IVA Liq. - Op. gerais - Prest. Serviços - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531211",
+  "nome": "IVA Liq. - Op. gerais - Mercado Interno - Prest. Serviços",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345312111",
+  "nome": "IVA Liq. - Op. gerais - M.Int. - Prest. Serv. - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345312112",
+  "nome": "IVA Liq. - Op. gerais - M. Int. - Prest. Serv. - 14% - IVA Cativo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453122",
+  "nome": "IVA Liq. - Op. gerais - Prest. Serv.-2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531221",
+  "nome": "IVA Liq. - Op. gerais - Prest. Serv. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345312211",
+  "nome": "IVA Liq. - Op. gerais - Prest. Serv. - M.interno - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345312212",
+  "nome": "IVA Liq. - Op. gerais - Prest. Serv. - M.interno - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313",
+  "nome": "IVA Liq. - Op. Gerais  - Adiantamentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453131",
+  "nome": "IVA Liq. - Op. Gerais  - Adiant. - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531311",
+  "nome": "IVA Liq. - Op. Gerais  - Adiant. - 14% - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313111",
+  "nome": "IVA Liq. - Op. gerais - Adiant.  - 14% - M. Int.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313112",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - 14% - M. Int. IVA Cativo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453132",
+  "nome": "IVA Liq. - Op. gerais - Adiant.-2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531321",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313211",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313212",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453133",
+  "nome": "IVA Liq. - Op. gerais - Adiant.- 5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531331",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313311",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313312",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno - IVA Cativo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453134",
+  "nome": "IVA Liq. - Op. gerais - Adiant.- 7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531341",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313411",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345313412",
+  "nome": "IVA Liq. - Op. gerais - Adiant. - M.interno - IVA Cativo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345319",
+  "nome": "IVA Liq. - Op. gerais - Autoliq.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453191",
+  "nome": "IVA Liq. - Op. gerais - Autoliq.- Serv.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531911",
+  "nome": "IVA Liq. - Op. gerais - Autoliq.- Serv.-14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531912",
+  "nome": "IVA Liq. - Op. gerais - Autoliq.- Serv.-2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531913",
+  "nome": "IVA Liq. - Op. gerais - Autoliq.- Serv.-5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34531914",
+  "nome": "IVA Liq. - Op. gerais - Autoliq.- Serv.-7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34532",
+  "nome": "Operações abrangidas pelo regime de IVA de caixa",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345321",
+  "nome": "IVA Liq. - Regime de IVA de Caixa - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453211",
+  "nome": "IVA Liq. - Regime de IVA de Caixa - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34532111",
+  "nome": "IVA Liq. - Regime de IVA de Caixa - M. Interno 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34533",
+  "nome": "Autoconsumo e operações gratuitas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345331",
+  "nome": "IVA Liq. - AutoCon. Op. Grat. 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453311",
+  "nome": "IVA Liq. - AutoCon. Op. Grat. - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34533111",
+  "nome": "IVA Liq. - AutoCon. Op. Grat. - M. Interno - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34534",
+  "nome": "Operações especiais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345341",
+  "nome": "IVA Liq. - Op. Esp. 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3453411",
+  "nome": "IVA Liq. - Op. Esp. - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34534111",
+  "nome": "IVA Liq. - Op. Esp. - M.Interno - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454",
+  "nome": "IVA Regularizações",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541",
+  "nome": "IVA Reg. Mensais a favor do sujeito passivo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411",
+  "nome": "IVA Reg. Suj. Passivo -Op.Gerais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111",
+  "nome": "IVA Reg. Suj. Passivo -Op.Gerais-Venda",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541110",
+  "nome": "IVA Reg. Suj. Passivo -Op.Gerais-Venda-Isentas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411101",
+  "nome": "IVA Reg. Suj. Passivo -Op.Gerais-Venda-Isentas - Mercado Interno",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541111",
+  "nome": "IVA Reg. Suj. Passivo.-Op.Gerais-Vendas - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411111",
+  "nome": "IVA Reg. Suj. Passivo.-Op.Gerais-Vendas - M. Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111111",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111112",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541112",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas-2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411121",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111211",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111212",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541113",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas-5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411131",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111311",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111312",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno - IVA Cativo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541114",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas-7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411141",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111411",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454111412",
+  "nome": "IVA Reg. Emp. - Op. gerais - Vendas - M.interno - IVA Cativo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454112",
+  "nome": "IVA Reg. Suj. Passivo.-Op.Gerais-Prest.Serv.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541121",
+  "nome": "IVA Reg. Suj. Passivo.-Op.Gerais-Prest.Serv. - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411211",
+  "nome": "IVA Reg. Suj. Passivo.-Op.Gerais-Prest.Serv. - 14%- M.Int.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454112111",
+  "nome": "IVA Reg. Emp. - Op. gerais - Prest. Serv. - M.interno - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454112112",
+  "nome": "IVA Reg. Emp. - Op. gerais - Prest. Serv. - M.interno - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541122",
+  "nome": "IVA Reg. Emp. - Op. gerais - Prest. Serv.-2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411221",
+  "nome": "IVA Reg. Emp. - Op. gerais - Prest. Serv. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454112211",
+  "nome": "IVA Reg. Emp. - Op. gerais - Prest. Serv. - M.interno - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454112212",
+  "nome": "IVA Reg. Emp. - Op. gerais - Prest. Serv. - M.interno - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiantamentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541130",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-Isentas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411301",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-Isentas-M.Int",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113011",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-Isentas-M.Int - 0%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113012",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-Isentas-M.Int -14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411302",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-Isentas-M.Ext",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113021",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-Isentas-M.Ext - 0%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113022",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-Isentas-M.Ext - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541131",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411311",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113111",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113112",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541132",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411321",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113211",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113212",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541133",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411331",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113311",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113312",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno - IVA Cativo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541134",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant.-7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411341",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113411",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454113412",
+  "nome": "IVA Reg. Emp. - Op. gerais - Adiant. - M.interno - IVA Cativo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454119",
+  "nome": "IVA Reg. Emp. - Op. gerais - Autoliq.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34541191",
+  "nome": "IVA Reg. Emp. - Op. gerais - Autoliq.- Serv.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411911",
+  "nome": "IVA Reg. Emp. - Op. gerais - Autoliq.- Serv.-14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345411912",
+  "nome": "IVA Reg. Emp. - Op. gerais - Autoliq.- Serv.-2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542",
+  "nome": "IVA Reg. Mensais a favor do Estado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421",
+  "nome": "IVA Reg. Mensais favor do Estado - Existencias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454210",
+  "nome": "IVA Reg. Mensais favor do Est. -Existencias-Isentas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542101",
+  "nome": "IVA Reg. Mensais favor do Est. -Existencias-Isentas-Mercado interno",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454211",
+  "nome": "IVA Reg. Mensais favor do Est.-Existencias - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542111",
+  "nome": "IVA Reg. Mensais favor do Est.-Existencias - 14% - M. Int.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421111",
+  "nome": "IVA Reg. Est. - Existências- M. interno  - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421112",
+  "nome": "IVA Reg. Est. - Existências- M. interno  - IVA Cativo 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542112",
+  "nome": "IVA Reg. Est. - Existências - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421121",
+  "nome": "IVA Reg. Est. - Existências - M. externo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454212",
+  "nome": "IVA Reg. Est. - Existências - 2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542121",
+  "nome": "IVA Reg. Est. - Existências- M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421211",
+  "nome": "IVA Reg. Est. - Existências- M. interno  - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421212",
+  "nome": "IVA Reg. Est. - Existências- M. interno  - IVA Cativo 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542122",
+  "nome": "IVA Reg. Est. - Existências - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421221",
+  "nome": "IVA Reg. Est. - Existências - M. externo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454213",
+  "nome": "IVA Reg. Est. - Existências - 5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542131",
+  "nome": "IVA Reg. Est. - Existências- M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421311",
+  "nome": "IVA Reg. Est. - Existências- M. interno  - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421312",
+  "nome": "IVA Reg. Est. - Existências- M. interno  - IVA Cativo 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542132",
+  "nome": "IVA Reg. Est. - Existências - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421321",
+  "nome": "IVA Reg. Est. - Existências - M. externo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454214",
+  "nome": "IVA Reg. Est. - Existências - 7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542141",
+  "nome": "IVA Reg. Est. - Existências- M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421411",
+  "nome": "IVA Reg. Est. - Existências- M. interno  - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421412",
+  "nome": "IVA Reg. Est. - Existências- M. interno  - IVA Cativo 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542142",
+  "nome": "IVA Reg. Est. - Existências - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345421421",
+  "nome": "IVA Reg. Est. - Existências - M. externo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422",
+  "nome": "IVA Reg. Mensais Est.-Meios Fixos e Investimentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454220",
+  "nome": "IVA Reg. Mensais Est.-Meios Fixos e Investimentos-Isentas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542201",
+  "nome": "IVA Reg. Mensais Est.-Meios Fixos e Invest. - Isentas - M.interno",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454221",
+  "nome": "IVA Reg. Mensais Est.-Meios Fixos e Investimentos - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542211",
+  "nome": "IVA Reg. Mensais Est.-Meios Fixos e Investimentos - 14% - M.int.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422111",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. interno  - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422112",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. interno  - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542212",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422121",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. externo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454222",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - 2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542221",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422211",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. interno  - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422212",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. interno  - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542222",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422221",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. externo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542223",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422231",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. externo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454223",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - 5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542231",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422311",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. interno  - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345422312",
+  "nome": "IVA Reg. Est. - Meios Fixos e Invest. - M. interno  - IVA Cativo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423",
+  "nome": "IVA Reg. Mensais Est.-Outros bens e serviços",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454230",
+  "nome": "IVA Reg. Est.-Outros bens e serviços-Isentas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542301",
+  "nome": "IVA Reg. Est.-Outros bens e serviços-Isentas-M.int",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231",
+  "nome": "IVA Reg. Est.-Outros bens",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542311",
+  "nome": "IVA Reg. Est.-Outros bens e serviços-M.interno-14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423111",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231111",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231112",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423112",
+  "nome": "IVA Reg. Est. - Outros Bens - M.externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231121",
+  "nome": "IVA Reg. Est. - Outros Bens - M.externo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542312",
+  "nome": "IVA Reg. Est. - Outros Bens  - 2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423121",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231211",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231212",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423122",
+  "nome": "IVA Reg. Est. - Outros Bens - M.externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231221",
+  "nome": "IVA Reg. Est. - Outros Bens - M.externo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542313",
+  "nome": "IVA Reg. Est. - Outros Bens  - 5%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423131",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231311",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231312",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno - IVA Cativo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423132",
+  "nome": "IVA Reg. Est. - Outros Bens - M.externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231321",
+  "nome": "IVA Reg. Est. - Outros Bens - M.externo - 5%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542314",
+  "nome": "IVA Reg. Est. - Outros Bens  - 7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423141",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231411",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231412",
+  "nome": "IVA Reg. Est. - Outros Bens - M.interno - IVA Cativo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423142",
+  "nome": "IVA Reg. Est. - Outros Bens - M.externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454231421",
+  "nome": "IVA Reg. Est. - Outros Bens - M.externo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232",
+  "nome": "IVA  - Reg. Est. -Serviços",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542321",
+  "nome": "IVA  - Reg. Est. - Serviços - 14%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423211",
+  "nome": "IVA  - Reg. Est. -Serviços - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232111",
+  "nome": "IVA  - Reg. Est. -Serviços - M. interno  - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232112",
+  "nome": "IVA  - Reg. Est. -Serviços - M. interno  - IVA Cativo - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423212",
+  "nome": "IVA  - Reg. Est. -Serviços - Mercado externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232121",
+  "nome": "IVA  - Reg. Est. -Serviços - Mercado externo - Autoliquidação - 14%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542322",
+  "nome": "IVA  - Reg. Est. -Serviços - 2%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423221",
+  "nome": "IVA  - Reg. Est. -Serviços - Mercado Interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232211",
+  "nome": "IVA  - Reg. Est. -Serviços - M. interno  - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232212",
+  "nome": "IVA  - Reg. Est. -Serviços - M. interno  - IVA Cativo - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423222",
+  "nome": "IVA  - Reg. Est. -Serviços - Mercado externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232221",
+  "nome": "IVA  - Reg. Est. -Serviços - Mercado externo - Autoliquidação - 2%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34542324",
+  "nome": "IVA Reg. Est. - Serviços - 7%",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423241",
+  "nome": "IVA Reg. Est. - Serviços - M.interno",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232411",
+  "nome": "IVA Reg. Est. - Serviços - M.interno - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232412",
+  "nome": "IVA Reg. Est. - Serviços - M.interno - IVA Cativo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "345423242",
+  "nome": "IVA Reg. Est. - Serviços - M.externo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3454232421",
+  "nome": "IVA Reg. Est. - Serviços - M.externo - 7%",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34543",
+  "nome": "Anual por cálculo do pró rata definitivo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34544",
+  "nome": "Outras regularizações anuais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3455",
+  "nome": "IVA apuramento",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34551",
+  "nome": "Apuramento do regime de IVA normal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34552",
+  "nome": "Apuramento do regime de IVA de caixa",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3456",
+  "nome": "IVA a pagar",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34561",
+  "nome": "IVA a pagar de apuramento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34562",
+  "nome": "IVA a pagar de cativo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34563",
+  "nome": "IVA a pagar de liquidações oficiosas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3457",
+  "nome": "IVA a Recuperar",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34571",
+  "nome": "IVA a recuperar de apuramentos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34572",
+  "nome": "IVA a recuperar de cativo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3458",
+  "nome": "IVA reembolsos pedidos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34581",
+  "nome": "Reembolsos pedidos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34582",
+  "nome": "Reembolsos deferidos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34583",
+  "nome": "Reembolsos indeferidos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34584",
+  "nome": "Reembolsos reclamados, recorridos ou impugnados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3459",
+  "nome": "IVA Liquidações Oficiosas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "34591",
+  "nome": "IVA Liquidações Oficiosas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "346",
+  "nome": "Certificado de Crédito Fiscal a Compensar",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "347",
+  "nome": "Imposto de selo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3471",
+  "nome": "Imposto de selo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "348",
+  "nome": "Subsidios a preços",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3481",
+  "nome": "Subsidios a preços",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "349",
+  "nome": "Outros impostos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3491",
+  "nome": "Outros impostos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3492",
+  "nome": "Segurança Social",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35",
+  "nome": "ENTIDADES PART.E PARTICIPADAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "351",
+  "nome": "Entidades Participantes",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3511",
+  "nome": "Estado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35111",
+  "nome": "c/ subscrição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35112",
+  "nome": "c/ adiantamento sobre lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35113",
+  "nome": "c/ lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35114",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3512",
+  "nome": "Empresas do grupo-subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35121",
+  "nome": "c/ subscrição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35122",
+  "nome": "c/ adiantamento sobre lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35123",
+  "nome": "c/ lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35124",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3513",
+  "nome": "Empresas do grupo associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35131",
+  "nome": "c/ subscrição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35132",
+  "nome": "c/ adiantamento sobre lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35133",
+  "nome": "c/ lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35134",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3514",
+  "nome": "Outros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35141",
+  "nome": "c/ subscrição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35142",
+  "nome": "c/ adiantamento sobre lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35143",
+  "nome": "c/ lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35144",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "352",
+  "nome": "Entidades Participadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3521",
+  "nome": "Estado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35211",
+  "nome": "c/ subscrição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35212",
+  "nome": "c/ adiantamento sobre lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35213",
+  "nome": "c/ lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35214",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3522",
+  "nome": "Empresas do grupo-subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35221",
+  "nome": "c/ subscrição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35222",
+  "nome": "c/ adiantamento sobre lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35223",
+  "nome": "c/ lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35224",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3523",
+  "nome": "Empresas do grupo associadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35231",
+  "nome": "c/ subscrição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35232",
+  "nome": "c/ adiantamento sobre lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35233",
+  "nome": "c/ lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35234",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3524",
+  "nome": "Outros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35241",
+  "nome": "c/ subscrição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35242",
+  "nome": "c/ adiantamento sobre lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35243",
+  "nome": "c/ lucros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "35244",
+  "nome": "Empréstimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "36",
+  "nome": "PESSOAL",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "361",
+  "nome": "Pessoal - remunerações",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3611",
+  "nome": "Orgaõs sociais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "36111",
+  "nome": "Orgaõs sociais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3612",
+  "nome": "Empregados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "36121",
+  "nome": "Empregados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "362",
+  "nome": "Pessoal Participações  Resultados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3621",
+  "nome": "Orgaõs sociais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "36211",
+  "nome": "Orgaõs sociais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3622",
+  "nome": "Empregados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "36221",
+  "nome": "Empregados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "363",
+  "nome": "Pessoal adiantamentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3631",
+  "nome": "Pessoal adiantamentos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "369",
+  "nome": "Pessoal outros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3691",
+  "nome": "Pessoal outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "37",
+  "nome": "OUTROS VALORES A RECEBER E A PAGAR",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "371",
+  "nome": "Compras de Imobilizado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3711",
+  "nome": "Corporeo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "37112",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "371121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "371122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3712",
+  "nome": "Incorporeo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "37122",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "371221",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "371222",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3713",
+  "nome": "Financeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "37132",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "371321",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "371322",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "372",
+  "nome": "Vendas de Imobilizado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3721",
+  "nome": "Corporeo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "37212",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "372121",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "372122",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3722",
+  "nome": "Incorporeo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "37222",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "372221",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "372222",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3723",
+  "nome": "Financeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "37232",
+  "nome": "Não grupo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "372321",
+  "nome": "Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "372322",
+  "nome": "Estrangeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "373",
+  "nome": "Proveitos a facturar",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3731",
+  "nome": "Vendas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3732",
+  "nome": "Prestações de serviço",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3733",
+  "nome": "Juros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "374",
+  "nome": "Encargos a repartir p/periodos fut.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3741",
+  "nome": "Descontos de emissão de obrigações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3742",
+  "nome": "Descontos  emissão tit.de part.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "375",
+  "nome": "Encargos a pagar",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3751",
+  "nome": "Remunerações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3752",
+  "nome": "Juros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3753",
+  "nome": "Encargos c/ Imp. Selo s/ Vendas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "376",
+  "nome": "Proveitos a rep.p/ periodos futuros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3761",
+  "nome": "Premios de emissão de obrigações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3762",
+  "nome": "Premios de emissão tít.de partic.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3763",
+  "nome": "Subsídios para investimento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3764",
+  "nome": "Diferenças de cambio favor.revers.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "377",
+  "nome": "Contas transitorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3771",
+  "nome": "Transacções sede/dep. da empr.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "379",
+  "nome": "Outros valores a rec. e a pagar",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3791",
+  "nome": "Outros Devedores",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3792",
+  "nome": "Outros Credores",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38",
+  "nome": "PROVISÕES P/ COBRANÇAS DUVIDOSAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "381",
+  "nome": "Provisões para Clientes",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3811",
+  "nome": "Clientes - correntes",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38111",
+  "nome": "Grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38112",
+  "nome": "Não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3812",
+  "nome": "Clientes - títulos a receber",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38121",
+  "nome": "Grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38122",
+  "nome": "Não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3813",
+  "nome": "Clientes - cobranças duvidosa",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38131",
+  "nome": "Grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38132",
+  "nome": "Não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "382",
+  "nome": "Provisões p/ saldos dev. fornecedor",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3821",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "383",
+  "nome": "Provisões p/particip.e participadas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3831",
+  "nome": "Participantes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3832",
+  "nome": "Participadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "384",
+  "nome": "Provisões p/dividas do pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3841",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38812",
+  "nome": "Não grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "389",
+  "nome": "Provisões p/outros saldos a receber",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3891",
+  "nome": "Vendas imobilizado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "38911",
+  "nome": "Grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "39",
+  "nome": "PROVISÕES P/ OUTROS RISCOS  ENCARGO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "391",
+  "nome": "Provisões para pensões",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3911",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "392",
+  "nome": "Provisões p/processos judiciais cur",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3921",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "393",
+  "nome": "Provisões p/acidentes de trabalho",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3931",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "394",
+  "nome": "Provisões p/garantias dadas a cli.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3941",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "399",
+  "nome": "Provisões outros riscos e encargos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "3991",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "41",
+  "nome": "TITULOS NEGOCIÁVEIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "411",
+  "nome": "Acções",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4111",
+  "nome": "Empresas do grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4112",
+  "nome": "Associadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4113",
+  "nome": "Outras empresas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "412",
+  "nome": "Obrigações",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4121",
+  "nome": "Empresas do grupo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4122",
+  "nome": "Associadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4123",
+  "nome": "Outras empresas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "413",
+  "nome": "Titulos divida pública",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4131",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "42",
+  "nome": "DEPOSITOS A PRAZO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "421",
+  "nome": "Moeda Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "42101",
+  "nome": "Banco ...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "422",
+  "nome": "Moeda estrangeira",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "42201",
+  "nome": "Banco ...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "424",
+  "nome": "Equipamento de Transporte",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "425",
+  "nome": "Ferramentas e Utensílios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "426",
+  "nome": "Equipamento Administrativo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "43",
+  "nome": "DEPOSITOS Á ORDEM",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "431",
+  "nome": "Moeda Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "43101",
+  "nome": "Banco ...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4311",
+  "nome": "Despesas de Constituição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4312",
+  "nome": "Despesas com Aumento de Capital",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "432",
+  "nome": "Moeda estrangeira",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "43201",
+  "nome": "Banco ...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "44",
+  "nome": "OUTROS DEPOSITOS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "441",
+  "nome": "Moeda Nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "44101",
+  "nome": "Banco ...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "442",
+  "nome": "Moeda Estrangeira",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "44201",
+  "nome": "Banco ...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "45",
+  "nome": "CAIXA",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "451",
+  "nome": "Fundo fixo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4511",
+  "nome": "Caixa Kwanza",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4512",
+  "nome": "Caixa Dólares",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "452",
+  "nome": "Valores para depositar",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4521",
+  "nome": "Valores para depositar",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "453",
+  "nome": "Valores destinados a pagamentos esp",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4531",
+  "nome": "Salarios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "46",
+  "nome": "...",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "461",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "47",
+  "nome": "...",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "471",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "48",
+  "nome": "CONTA TRANSITORIA",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4801",
+  "nome": "Banco ...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "482",
+  "nome": "De Imobilizações Corpóreas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "483",
+  "nome": "De Imobilizações Incorpóreas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "49",
+  "nome": "PROV.P/APLICAÇÕES DE TESOURARIA",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "491",
+  "nome": "Titulos Negociaveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4911",
+  "nome": "Acções",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4912",
+  "nome": "Obrigações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4913",
+  "nome": "Titulos divida pública",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "492",
+  "nome": "Outras aplicaçoes de tesouraria",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "4921",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "51",
+  "nome": "CAPITAL",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "511",
+  "nome": "Capital Inicial",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "52",
+  "nome": "ACÇÕES/QUOTAS PROPRIAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "521",
+  "nome": "Valor nominal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "5211",
+  "nome": "Valor nominal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "522",
+  "nome": "Descontos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "5221",
+  "nome": "Descontos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "523",
+  "nome": "Prémios",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "5231",
+  "nome": "Prémios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "53",
+  "nome": "PREMIOS DE EMISSÃO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "531",
+  "nome": "Prémios de emissão",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "54",
+  "nome": "PRESTAÇÕES SUPLEMENTARES",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "541",
+  "nome": "Prestações suplementares",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "55",
+  "nome": "RESERVAS LEGAIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "551",
+  "nome": "Reservas legais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "56",
+  "nome": "RESERVAS DE REAVALIAÇÃO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "561",
+  "nome": "Legais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "5611",
+  "nome": "Decreto lei",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "5612",
+  "nome": "Decreto lei",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "562",
+  "nome": "Autonomas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "5621",
+  "nome": "Avaliação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "5622",
+  "nome": "Realização",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "57",
+  "nome": "RESERVAS COM FINS ESPECIAIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "571",
+  "nome": "Reservas com fins especiais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "572",
+  "nome": "Reservas Estatutárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "58",
+  "nome": "RESERVAS LIVRES",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "581",
+  "nome": "Reservas livres",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "59",
+  "nome": "...",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61",
+  "nome": "VENDAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "611",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6111",
+  "nome": "Mercado nacional",
+  "tipo": "M",
+  "classe_iva": "311?11"
+ },
+ {
+  "codigo": "6112",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61121",
+  "nome": "Mercado africano",
+  "tipo": "M",
+  "classe_iva": "311021"
+ },
+ {
+  "codigo": "61122",
+  "nome": "Outros mercados",
+  "tipo": "M",
+  "classe_iva": "311021"
+ },
+ {
+  "codigo": "612",
+  "nome": "Sub-produtos, desp., res. e refugos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6121",
+  "nome": "Mercado nacional",
+  "tipo": "M",
+  "classe_iva": "311?11"
+ },
+ {
+  "codigo": "6122",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61221",
+  "nome": "Mercado africano",
+  "tipo": "M",
+  "classe_iva": "311021"
+ },
+ {
+  "codigo": "61222",
+  "nome": "Outros mercados",
+  "tipo": "M",
+  "classe_iva": "311021"
+ },
+ {
+  "codigo": "613",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6131",
+  "nome": "Mercado nacional",
+  "tipo": "M",
+  "classe_iva": "311?11"
+ },
+ {
+  "codigo": "6132",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61321",
+  "nome": "Mercado africano",
+  "tipo": "M",
+  "classe_iva": "311021"
+ },
+ {
+  "codigo": "61322",
+  "nome": "Outros mercados",
+  "tipo": "M",
+  "classe_iva": "311021"
+ },
+ {
+  "codigo": "614",
+  "nome": "Embalagens de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6141",
+  "nome": "Mercado nacional",
+  "tipo": "M",
+  "classe_iva": "311?11"
+ },
+ {
+  "codigo": "6142",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61421",
+  "nome": "Mercado africano",
+  "tipo": "M",
+  "classe_iva": "311021"
+ },
+ {
+  "codigo": "61422",
+  "nome": "Outros mercados",
+  "tipo": "M",
+  "classe_iva": "311021"
+ },
+ {
+  "codigo": "615",
+  "nome": "Subídios a preços",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6151",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6153",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61611",
+  "nome": "Matérias Primas - CMPVC",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61621",
+  "nome": "Matérias Subsidiárias - CMPVC",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61631",
+  "nome": "Materiais Diversos - CMPVC",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61641",
+  "nome": "Embalagens de Consumo - CMPVC",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617",
+  "nome": "Devoluções",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6171",
+  "nome": "Mercado nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61711",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "M",
+  "classe_iva": "4111?11"
+ },
+ {
+  "codigo": "61712",
+  "nome": "Sub-produtos, desp., res. e refugos",
+  "tipo": "M",
+  "classe_iva": "4111?11"
+ },
+ {
+  "codigo": "61713",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": "4111?11"
+ },
+ {
+  "codigo": "61714",
+  "nome": "Embalagens de consumo",
+  "tipo": "M",
+  "classe_iva": "4111?11"
+ },
+ {
+  "codigo": "6172",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61721",
+  "nome": "Mercado africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617211",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617212",
+  "nome": "Sub-produtos, desp., res. e refugos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617213",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617214",
+  "nome": "Embalagens de consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61722",
+  "nome": "Outros mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617221",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617222",
+  "nome": "Sub-produtos, desp., res. e refugos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617223",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "617224",
+  "nome": "Embalagens de consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618",
+  "nome": "Descontos e abatimentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6181",
+  "nome": "Mercado nacional",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61811",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61812",
+  "nome": "Sub-produtos, desp., res. e refugos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61813",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61814",
+  "nome": "Embalagens de consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6182",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61821",
+  "nome": "Mercado africano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618211",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618212",
+  "nome": "Sub-produtos, desp., res. e refugos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618213",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618214",
+  "nome": "Embalagens de consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "61822",
+  "nome": "Outros mercados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618221",
+  "nome": "Produtos acabados e intermedios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618222",
+  "nome": "Sub-produtos, desp., res. e refugos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618223",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "618224",
+  "nome": "Embalagens de consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "619",
+  "nome": "Transfências p/res.operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "62",
+  "nome": "Prestações de Serviço",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "621",
+  "nome": "Serviços principais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6211",
+  "nome": "Mercado nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6212",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "62121",
+  "nome": "Mercado africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "62122",
+  "nome": "Outros mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "622",
+  "nome": "Serviços semidários",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6221",
+  "nome": "Mercado nacional",
+  "tipo": "M",
+  "classe_iva": "312?11"
+ },
+ {
+  "codigo": "6222",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "62221",
+  "nome": "Mercado africano",
+  "tipo": "M",
+  "classe_iva": "312021"
+ },
+ {
+  "codigo": "62222",
+  "nome": "Outros mercados",
+  "tipo": "M",
+  "classe_iva": "312021"
+ },
+ {
+  "codigo": "628",
+  "nome": "Descontos e abatimentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6281",
+  "nome": "Mercado nacional",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6282",
+  "nome": "Mercado estrangeiro",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "62821",
+  "nome": "Mercado africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "62822",
+  "nome": "Outros mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "629",
+  "nome": "Transferencia p/resultados oper.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "63",
+  "nome": "Outros proveitos operacionais",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "631",
+  "nome": "Serviços suplementares",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6311",
+  "nome": "Aluguer de equipamento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6312",
+  "nome": "Cedência de pessoal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6313",
+  "nome": "Cedência de energia",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6314",
+  "nome": "Estudos, projectos e asist. Técnica",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "632",
+  "nome": "Royalties",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "633",
+  "nome": "Subsidios á exploração",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "634",
+  "nome": "Subsidios a investimento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "635",
+  "nome": "Imposto sobre o valor acrescentado",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "638",
+  "nome": "Outros proveitos ganhos oper.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6381",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "639",
+  "nome": "Transferência p/ res.operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "64",
+  "nome": "VAR.NOS INVENT.PROD.ACABA.PRO.CURSO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "641",
+  "nome": "Produtos e trabalhos em curso",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6411",
+  "nome": "Produtos e trabalhos em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "642",
+  "nome": "Produtos acabados",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6421",
+  "nome": "Produtos acabados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "643",
+  "nome": "Produtos intermedios",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6431",
+  "nome": "Produtos intermedios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "644",
+  "nome": "Prémios p/ Pensões",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "645",
+  "nome": "Encargos sobre Remunerações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "646",
+  "nome": "Seg. Acid. Trab. e Doenças Prof.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "647",
+  "nome": "Custos de Acção Social",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "648",
+  "nome": "Outros Custos c/ Pessoal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "649",
+  "nome": "Transferencia p/ res.operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "65",
+  "nome": "TRABALHOS P/ PROPRIA EMPRESA",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "651",
+  "nome": "Para Imobilizado",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6511",
+  "nome": "Corporeo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6512",
+  "nome": "Incorporeo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6513",
+  "nome": "Financeiro",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6514",
+  "nome": "Em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "652",
+  "nome": "P/encargos repartir p/exercicios fu",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6521",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "659",
+  "nome": "Transferencia p/ result. operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66",
+  "nome": "PROVEITOS GANHOS FINANCEIROS GERAIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "661",
+  "nome": "Juros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6611",
+  "nome": "De investimentos financeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66111",
+  "nome": "Obrigações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66113",
+  "nome": "Títulos de participação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66114",
+  "nome": "Emprestimos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66119",
+  "nome": "Outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6612",
+  "nome": "De mora relat.a dívidas terceiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66121",
+  "nome": "Dívidas recebidas a prestações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66122",
+  "nome": "De empréstimos de terceiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6614",
+  "nome": "Descontos de títulos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6615",
+  "nome": "De aplicações de tesouraria",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "662",
+  "nome": "Diferenças de cambio favoraveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6621",
+  "nome": "Realizadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6622",
+  "nome": "Não realizadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "663",
+  "nome": "Descontos pronto pag. obtidos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6631",
+  "nome": "Descontos pronto pag. obtidos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "664",
+  "nome": "Rendimentos investimento em imoveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6641",
+  "nome": "Rendimentos investimento em imoveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "665",
+  "nome": "Rendimentos participação de capital",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6651",
+  "nome": "Acções, quotas em outras empresas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6652",
+  "nome": "Acções, quotas incluidas nos fundos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6653",
+  "nome": "Acções quotas incl.tit.negociáveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "666",
+  "nome": "Ganhos na alienação aplic. Financ.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6661",
+  "nome": "Investimentos financeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66611",
+  "nome": "Subsidiárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66612",
+  "nome": "Associadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66613",
+  "nome": "Outras empresas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66614",
+  "nome": "Imóveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66615",
+  "nome": "Fundos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66619",
+  "nome": "Outros investimentos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6662",
+  "nome": "Títulos negociáveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "667",
+  "nome": "Reposição de provisões",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6671",
+  "nome": "Investimentos financeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66711",
+  "nome": "Subsidiárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66712",
+  "nome": "Associadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66713",
+  "nome": "Outras empresas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66714",
+  "nome": "Fundos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66719",
+  "nome": "Outros investimentos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6672",
+  "nome": "Aplicações de tesouraria",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66721",
+  "nome": "Títulos negociáveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66722",
+  "nome": "Depósitos a prazo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66723",
+  "nome": "Outros depósitos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "66729",
+  "nome": "Outros investimentos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "669",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "67",
+  "nome": "PROV. GANHOS FINAN.FILIAIS ASSOC.",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "671",
+  "nome": "Rendimento  participações  Capital",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6711",
+  "nome": "Subsidiárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6712",
+  "nome": "Associadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "679",
+  "nome": "Tranferência p/res.filiais e assoc.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68",
+  "nome": "OUTROS PROVEITOS E GANHOS NAO OPERA",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6801",
+  "nome": "Reposição de provisões",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68011",
+  "nome": "Existencias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680111",
+  "nome": "Materias-primas subs.e de consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680112",
+  "nome": "Produtos e trabalhos em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680113",
+  "nome": "Produtos acabadas e intermédios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680114",
+  "nome": "Sub-produtos, desperd.,res.,refugos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680115",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68012",
+  "nome": "Cobranças duvidosas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680121",
+  "nome": "Clientes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680122",
+  "nome": "Clientes - títulos a receber",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680123",
+  "nome": "Clientes - cobrança duvidosa",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680124",
+  "nome": "Saldos devedores de fornecedores",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680125",
+  "nome": "Participantes e participadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680126",
+  "nome": "Dívidas do pessoal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680129",
+  "nome": "Outros saldos a receber",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68013",
+  "nome": "Riscos e Encargos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680131",
+  "nome": "Pensões",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680132",
+  "nome": "Processos judiciais em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680133",
+  "nome": "Acidentes de trabalho",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680134",
+  "nome": "Garantias dadas a clientes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "680139",
+  "nome": "Outros riscos e encargos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6802",
+  "nome": "Anulação amortizações extraordina.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68021",
+  "nome": "Imobilizações corpóreas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68022",
+  "nome": "Imobilizações incorpóreas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6803",
+  "nome": "Ganhos em imobilizações",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68031",
+  "nome": "Venda de imobilizações corpóreas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68032",
+  "nome": "Venda de imobilizações incorpóreas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6804",
+  "nome": "Ganhos em existências",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6805",
+  "nome": "Recuperação de dívidas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68051",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6806",
+  "nome": "Benefícios penalidades contratuais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68061",
+  "nome": "Indeminizações do pessoal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68062",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6807",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6808",
+  "nome": "Descontinuidade de operações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6809",
+  "nome": "Alterações de polit.contabilisticas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6810",
+  "nome": "Correcções relat.exerc.anteriores",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68101",
+  "nome": "Estimativa de Impostos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68102",
+  "nome": "Restituição de impostos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6811",
+  "nome": "Outros ganhos e perdas não operac.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "68111",
+  "nome": "Donativos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6819",
+  "nome": "Transferencia p/res.não operac.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6841",
+  "nome": "Sobras",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "689",
+  "nome": "Tranf.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "69",
+  "nome": "PROVEITOS GANHOS EXTRAORDINARIOS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "691",
+  "nome": "Ganhos result.catastrofes naturais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6911",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "692",
+  "nome": "Ganhos result.de convulsões polit.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6921",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "693",
+  "nome": "Ganhos resultantes de expropriações",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6931",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "694",
+  "nome": "Ganhos Resultantes de sinistros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6941",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "695",
+  "nome": "Subsídios",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6951",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "696",
+  "nome": "Anulação de passivos não exigiveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "6961",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "699",
+  "nome": "Transf.Resultados Extraordinário",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "71",
+  "nome": "CUSTOS DAS EXISTENCIAS VENDIDAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "711",
+  "nome": "Materias Primas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7111",
+  "nome": "Mp - cevc",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "712",
+  "nome": "Materias Subsidiarias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7121",
+  "nome": "Ms - cevc",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "713",
+  "nome": "Materiais diversos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7131",
+  "nome": "Md - cevc",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "714",
+  "nome": "Embalagens de consumo",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7141",
+  "nome": "Ec - cevc",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "715",
+  "nome": "Outros materiais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7151",
+  "nome": "Om - cevc",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "716",
+  "nome": "Mercadorias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7161",
+  "nome": "Mr - cevc",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "719",
+  "nome": "Transferência p/ res.operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72",
+  "nome": "CUSTOS COM PESSOAL",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "721",
+  "nome": "Remunerações - Orgâos sociais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7211",
+  "nome": "Ordenados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7213",
+  "nome": "Subsídio de férias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7214",
+  "nome": "Subsídio de natal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7215",
+  "nome": "Subsídio de alimentação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7216",
+  "nome": "Prémios/Horas extras",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "722",
+  "nome": "Remunerações - Pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7221",
+  "nome": "Rp - Administratrativo/Outros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72211",
+  "nome": "Ordenados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72212",
+  "nome": "Trabalho nocturno",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72213",
+  "nome": "Subsídio de férias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72214",
+  "nome": "Subsídio de natal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72215",
+  "nome": "Subsídio de alimentação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72216",
+  "nome": "Prémios/Horas extras",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72218",
+  "nome": "Abono p/falhas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7222",
+  "nome": "Rp - Produção",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72221",
+  "nome": "Ordenados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72222",
+  "nome": "Trabalho nocturno",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72223",
+  "nome": "Subsídio de férias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72224",
+  "nome": "Subsídio de natal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72225",
+  "nome": "Subsídio de alimentação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72226",
+  "nome": "Prémios/Horas extras",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72228",
+  "nome": "Abono p/falhas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "723",
+  "nome": "Pensões",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7231",
+  "nome": "Órgãos sociais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7232",
+  "nome": "Pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72321",
+  "nome": "Administrativo/outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72322",
+  "nome": "Produção",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "724",
+  "nome": "Prémios para pensões",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7241",
+  "nome": "Órgãos sociais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7242",
+  "nome": "Pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72421",
+  "nome": "Administrativo/outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72422",
+  "nome": "Produção",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "725",
+  "nome": "Encargos sobre remunerações",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7251",
+  "nome": "Órgãos sociais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7252",
+  "nome": "Pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72521",
+  "nome": "Administrativo/outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72522",
+  "nome": "Produção",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "726",
+  "nome": "Seguros acidente trab.doenç.prof.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7261",
+  "nome": "Órgãos sociais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7262",
+  "nome": "Pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72621",
+  "nome": "Administrativo/outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72622",
+  "nome": "Produção",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "727",
+  "nome": "Formação",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7271",
+  "nome": "Órgãos sociais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7272",
+  "nome": "Pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72721",
+  "nome": "Administrativo/outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72722",
+  "nome": "Produção",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "728",
+  "nome": "Outros despesas com pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7281",
+  "nome": "Órgãos sociais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72819",
+  "nome": "Ajudas de custo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7282",
+  "nome": "Pessoal",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72821",
+  "nome": "Administrativo/outros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "728211",
+  "nome": "Indminizações por despedimento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "728219",
+  "nome": "Ajudas de custo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "72822",
+  "nome": "Produção",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "728221",
+  "nome": "Indminizações por despedimento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "728229",
+  "nome": "Ajudas de custo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "729",
+  "nome": "Transferência p/res.operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "73",
+  "nome": "AMORTIZAÇÕES DO EXERCICIO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "731",
+  "nome": "Imobilizações Corporeas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7312",
+  "nome": "Edifícios e outras construções",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7313",
+  "nome": "Equipamento básico",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7314",
+  "nome": "Equipamento de carga e transporte",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7315",
+  "nome": "Equipamento administrativo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7316",
+  "nome": "Taras e vasilhame",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7319",
+  "nome": "Outras imobilizações corporeas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "732",
+  "nome": "Imobilizações Incorporeas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7321",
+  "nome": "Trespasses",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7322",
+  "nome": "Despesas de investig.e desenv.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7323",
+  "nome": "Propr.ind.e out.direitos e cont.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7324",
+  "nome": "Despesas de constituição",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7329",
+  "nome": "Outras imobilizações incorporeas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "739",
+  "nome": "Transferência p/res.operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75",
+  "nome": "OUTROS CUSTOS E PERDAS OPERACIONAIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "751",
+  "nome": "Sub-contratos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7511",
+  "nome": "Sc-Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7512",
+  "nome": "Sc-Estrangeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75121",
+  "nome": "Sc-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75122",
+  "nome": "Sc-Outros Mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752",
+  "nome": "Fornecimentos Serviços de Terceiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75211",
+  "nome": "Água",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "75212",
+  "nome": "Electricidade",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "75213",
+  "nome": "Combustíveis",
+  "tipo": "I",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "752131",
+  "nome": "Gasoleo",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "752132",
+  "nome": "Gasolina",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "752133",
+  "nome": "Gás",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "75214",
+  "nome": "Conservação e reparação",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752142",
+  "nome": "Edifícios e outras construções",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752143",
+  "nome": "Equipamento básico",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752144",
+  "nome": "Equipamento de carga e transporte",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752145",
+  "nome": "Equipamento administrativo",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752149",
+  "nome": "Outras",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75215",
+  "nome": "Material protecção, seg.e conforto",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "75216",
+  "nome": "Ferrament.e utensílios desg.rápido",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "75217",
+  "nome": "Material de escritório",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "75218",
+  "nome": "Livros e documentação técnica",
+  "tipo": "M",
+  "classe_iva": "231?11"
+ },
+ {
+  "codigo": "75219",
+  "nome": "Outros fornecimentos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752191",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75220",
+  "nome": "Comunicação",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "75221",
+  "nome": "Rendas e alugueres",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752211",
+  "nome": "Rendas de imóveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752212",
+  "nome": "Rendas de equipamento",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75222",
+  "nome": "Seguros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752221",
+  "nome": "Ramo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752222",
+  "nome": "Ramo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752223",
+  "nome": "Ramo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752224",
+  "nome": "Ramo viaturas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75223",
+  "nome": "Deslocações e estadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75224",
+  "nome": "Despesas de representação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75226",
+  "nome": "Conservação e reparação",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752262",
+  "nome": "Edifícios e outras construções",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752263",
+  "nome": "Equipamento básico",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752264",
+  "nome": "Equipamento de carga e transporte",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752265",
+  "nome": "Equipamento administrativo",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752269",
+  "nome": "Outras",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75227",
+  "nome": "Vigilância e segurança",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "75228",
+  "nome": "Limpeza, higiene e conforto",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "75229",
+  "nome": "Publicidade e propaganda",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "75230",
+  "nome": "Contencioso e notariado",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75231",
+  "nome": "Comissões a intermediários",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752311",
+  "nome": "Ci-Nacionais",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752312",
+  "nome": "Ci-Estrangeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7523121",
+  "nome": "Ci-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7523122",
+  "nome": "Ci-Outros mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75232",
+  "nome": "Assistencia Tecnica",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752321",
+  "nome": "At-Nacionais",
+  "tipo": "M",
+  "classe_iva": "232?11"
+ },
+ {
+  "codigo": "752322",
+  "nome": "At-Estrangeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7523221",
+  "nome": "At-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7523222",
+  "nome": "At-Outros mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75233",
+  "nome": "Trabalhos executados no exterior",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752331",
+  "nome": "Serviços informaticos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752332",
+  "nome": "Analises laboratoriais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75234",
+  "nome": "Honorários e avenças",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752341",
+  "nome": "Trab. Independentes Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752342",
+  "nome": "Ti-Estrangeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7523421",
+  "nome": "Ti-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7523422",
+  "nome": "Ti-Outros mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75235",
+  "nome": "Royalties",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752351",
+  "nome": "Rt-Mercado Nacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "752352",
+  "nome": "Ri-Mercado Estrangeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7523521",
+  "nome": "Ri-Mercado Africano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7523522",
+  "nome": "Ti-Outros mercados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75237",
+  "nome": "Devoluções de forn. e serv. terc.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75238",
+  "nome": "Descontos e abat. forn. serv. terc.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75239",
+  "nome": "Outros serviços",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "753",
+  "nome": "Impostos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7531",
+  "nome": "Indirectos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75311",
+  "nome": "Imposto de selo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75312",
+  "nome": "Imposto de Produção e Consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75319",
+  "nome": "Outros impostos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7532",
+  "nome": "Directos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75321",
+  "nome": "Imposto de capitais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75322",
+  "nome": "Contribuição predial",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "753233",
+  "nome": "Trabalhos tipograficos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "753234",
+  "nome": "Estudos e pareceres",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "753235",
+  "nome": "Serviços contabilisticos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "75329",
+  "nome": "Outros impostos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "754",
+  "nome": "Despesas Confidenciais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "755",
+  "nome": "Quotizações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "756",
+  "nome": "Ofertas e amostras de existencias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "758",
+  "nome": "Outros custos e perdas operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "759",
+  "nome": "Transferencia p/res. operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76",
+  "nome": "CUSTOS PERDAS FINANCEIROS GERAIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "761",
+  "nome": "Juros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7611",
+  "nome": "De emprestimos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76111",
+  "nome": "Bancários",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "761111",
+  "nome": "Jb.-curto prazo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "761112",
+  "nome": "Jb.-médio e longo prazo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76112",
+  "nome": "Obrigações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76113",
+  "nome": "Títulos de participação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7612",
+  "nome": "De descobertos bancarios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7613",
+  "nome": "De mora relativos a dívidas a terc.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7614",
+  "nome": "De descontos de titulos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7615",
+  "nome": "De locação financeira",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "762",
+  "nome": "Diferenças de cambios desfavoraveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7621",
+  "nome": "Realizadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7622",
+  "nome": "Não realizadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "763",
+  "nome": "Descontos pronto pag.concedidos.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7631",
+  "nome": "Descontos a clientes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "764",
+  "nome": "Amortizações invest.em imóveis",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7641",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "765",
+  "nome": "Provisões p/aplicações financeiras",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7651",
+  "nome": "Investimentos financeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76511",
+  "nome": "Subsidiárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76512",
+  "nome": "Associadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76513",
+  "nome": "Outras empresas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76514",
+  "nome": "Fundos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76519",
+  "nome": "Outros investimentos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7652",
+  "nome": "Aplicações de tesouraria",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76521",
+  "nome": "Títulos de negociàveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76522",
+  "nome": "Depósitos a prazo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76523",
+  "nome": "Outros depósitos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76529",
+  "nome": "Outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "766",
+  "nome": "Perdas na alien.de ap.financeiras",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7661",
+  "nome": "Investimentos financeiros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76611",
+  "nome": "Subsiadiárias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76612",
+  "nome": "Associadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76613",
+  "nome": "Outras empresas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76614",
+  "nome": "Fundos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "76619",
+  "nome": "Outros investimentos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7662",
+  "nome": "Aplicações de títulos negociáveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "767",
+  "nome": "Serviços bancários",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7671",
+  "nome": "Sb - livros bancarios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7672",
+  "nome": "Sb - importação e exportação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7678",
+  "nome": "Sb - outros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "769",
+  "nome": "Trasnferência p/res.financeiros",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "77",
+  "nome": "CUSTOS PERDAS FINAN. FILIAIS ASSOC.",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "779",
+  "nome": "Tranferências p/ resultados financ.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78",
+  "nome": "OUTROS CUSTOS PERD.NAO OPERACIONAIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7801",
+  "nome": "Provisões do exercício",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78011",
+  "nome": "Existências",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780111",
+  "nome": "Matérias-primas subs.e de consumo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780112",
+  "nome": "Produtos e trabalhos em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780113",
+  "nome": "Produtos acabados e intermédios",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780114",
+  "nome": "Sub-prod., desperd., resíd. Refugos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780115",
+  "nome": "Mercadorias",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78012",
+  "nome": "Cobrança duvidosas",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780121",
+  "nome": "Clientes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780122",
+  "nome": "Clientes-títulos a receber",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780123",
+  "nome": "Clientes-cobrança duvidosa",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780124",
+  "nome": "Saldos devedores de fornecedores",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780125",
+  "nome": "Participantes e participadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780126",
+  "nome": "Dívidas do pessoal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780129",
+  "nome": "Outros saldos a receber",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78013",
+  "nome": "Riscos e encargos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780131",
+  "nome": "Pensões",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780132",
+  "nome": "Processos judiciais em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780133",
+  "nome": "Acidentes de trabalho",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780134",
+  "nome": "Garantias dadas a clientes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "780139",
+  "nome": "Outros riscos e encargos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7802",
+  "nome": "Amotizações extraordinárias",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78021",
+  "nome": "Imobilizações corporeas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78022",
+  "nome": "Imobilizações incorporeas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7803",
+  "nome": "Perdas em imobilizações",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78031",
+  "nome": "Venda de imobilizado corporeo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78032",
+  "nome": "Venda de imobilizado incorporeo",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78033",
+  "nome": "Abates",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78039",
+  "nome": "Outras",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7804",
+  "nome": "Perdas em existências",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78041",
+  "nome": "Quebras",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7805",
+  "nome": "Dívidas incobraveis",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7806",
+  "nome": "Multas e penalidades contratuais",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78061",
+  "nome": "Fiscais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78062",
+  "nome": "Não Fiscais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78063",
+  "nome": "Penalidades contratuais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7807",
+  "nome": "Custos de reestruturação",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7808",
+  "nome": "Descontinuidade de operações",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7809",
+  "nome": "Alterações de politicas contabil.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7810",
+  "nome": "Correcções relat.exerc.anteriores",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78101",
+  "nome": "Estimativa impostos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7811",
+  "nome": "Outros custos e perdas não operac.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78111",
+  "nome": "Donativos",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "781111",
+  "nome": "Donativos aceites",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "781112",
+  "nome": "Donativos não aceites",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78112",
+  "nome": "Reembolsos de subsídio à exploração",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "78113",
+  "nome": "Reembolsos de subsí. a investim.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7819",
+  "nome": "Transferencia para result.n.operac.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "789",
+  "nome": "Transferência para r. não op",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "79",
+  "nome": "CUSTOS PERDAS EXTRAORDINARIAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "791",
+  "nome": "Perdas result.de catàstrofes nat.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7911",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "792",
+  "nome": "Perdas result.de convulsões polít.",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7921",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "793",
+  "nome": "Perdas resultantes de expropriações",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7931",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "794",
+  "nome": "Perdas resultantes de sinistros",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "7941",
+  "nome": "...",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "799",
+  "nome": "Transferência p/resultados extr.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "81",
+  "nome": "RESULTADOS TRANSITADOS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "811",
+  "nome": "Ano",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8111",
+  "nome": "Resultado do ano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8112",
+  "nome": "Aplicações de resultados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8113",
+  "nome": "Correc.erros fund., no exerc. seg.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8114",
+  "nome": "Efeitos alter.politicas contab.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8115",
+  "nome": "Imposto rel. cor.erros./alter.pol.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "812",
+  "nome": "Ano...",
+  "tipo": "I",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8121",
+  "nome": "Resultado do ano",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8122",
+  "nome": "Aplicações de resultados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8123",
+  "nome": "Correc.erros fund., no exerc. seg.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8124",
+  "nome": "Efeitos alter.politicas contab.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8125",
+  "nome": "Imposto rel. cor.erros./alter.pol.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "82",
+  "nome": "RESULTADOS OPERACIONAIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8201",
+  "nome": "Vendas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8202",
+  "nome": "Prestação de serviço",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8203",
+  "nome": "Outros proveitos operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8204",
+  "nome": "Variação inv. prod.acab./vias fab.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8205",
+  "nome": "Trabalhos para a própria empresa",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8206",
+  "nome": "Custo merc.vend.e matérias cons.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8207",
+  "nome": "Custo com pessoal",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8208",
+  "nome": "Amortizações do exercício",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8209",
+  "nome": "Outros custos operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "8219",
+  "nome": "Transferencia resultados Liquidos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "83",
+  "nome": "RESULTADOS FINANCEIROS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "831",
+  "nome": "Proveitos e ganhos financ.gerais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "832",
+  "nome": "Custos e perdas financeiros gerais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "839",
+  "nome": "Tranferência p/resultados liquídos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "84",
+  "nome": "RESULT.FINAN.FILIAIS ASSOCIADAS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "841",
+  "nome": "Proveitos e ganhos filiais e assoc.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "842",
+  "nome": "Custos e perdas em filiais e assoc.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "849",
+  "nome": "Tranferência p/resultados liquídos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "85",
+  "nome": "RESULTADOS NAO OPERACIONAIS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "851",
+  "nome": "Proveitos e ganhos n.operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "852",
+  "nome": "Custos e perdas não operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "859",
+  "nome": "Tranferência p/resultados liquídos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "86",
+  "nome": "RESULTADOS EXTRAORDINARIOS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "861",
+  "nome": "Proveitos e ganhos extraordinários",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "862",
+  "nome": "Custos e perdas extraordinários",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "869",
+  "nome": "Tranferência p/resultados liquídos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "87",
+  "nome": "IMPOSTOS SOBRE OS LUCROS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "871",
+  "nome": "Impostos s/os resultados correntes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "872",
+  "nome": "Impostos s/resultados extraord.",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "879",
+  "nome": "Tranferência p/resultados liquídos",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "88",
+  "nome": "RESULTADOS LIQUIDOS DO EXERCICIO",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "881",
+  "nome": "Reultados operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "882",
+  "nome": "Resultados financeiros gerais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "883",
+  "nome": "Resultados em filiais e associadas",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "884",
+  "nome": "Resultados não operacionais",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "885",
+  "nome": "Imposto sobre resultados correntes",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "886",
+  "nome": "Resultados extraordinários",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "887",
+  "nome": "Impostos s/result.extraordinários",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "889",
+  "nome": "Tranferência p/result. Transitados",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
+  "codigo": "89",
+  "nome": "DIVIDENDOS ANTECIPADOS",
+  "tipo": "R",
+  "classe_iva": null
+ },
+ {
+  "codigo": "899",
+  "nome": "Tranferência p/result. Transitados",
+  "tipo": "M",
+  "classe_iva": null
+ }
+]
