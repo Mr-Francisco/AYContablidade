@@ -5,10 +5,10 @@ Todos os segredos vêm de variáveis de ambiente / `.env` — nunca do código n
 """
 
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, PostgresDsn, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -45,7 +45,12 @@ class Settings(BaseSettings):
     RATE_LIMIT_GERAL: str = "120/minute"
 
     # ---------- CORS ----------
-    CORS_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    # NoDecode é obrigatório: sem ele o pydantic-settings tenta json.loads() no valor
+    # do .env antes de qualquer validador correr, e "http://localhost:3000" rebenta
+    # com SettingsError. Com NoDecode o valor chega em bruto ao validador abaixo.
+    CORS_ORIGINS: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["http://localhost:3000"]
+    )
 
     # ---------- Integração AGT (consulta de NIF) ----------
     # O Piloto é estático e não consegue chamar a AGT directamente (CORS/credenciais);
