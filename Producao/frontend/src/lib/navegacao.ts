@@ -72,7 +72,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contabilidade/balancete-razao",
-        pendente: true,
         rotulo: "Balancete do Razão",
         seccao: "Balancetes",
         cap: "contab.ver",
@@ -94,7 +93,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contabilidade/notas",
-        pendente: true,
         rotulo: "Notas",
         seccao: "Demonstrações",
         cap: "contab.ver",
@@ -102,7 +100,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contabilidade/fluxos-caixa",
-        pendente: true,
         rotulo: "Fluxos de Caixa",
         seccao: "Demonstrações",
         cap: "contab.ver",
@@ -110,7 +107,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contabilidade/apuramento-iva",
-        pendente: true,
         rotulo: "Apuramento do IVA",
         seccao: "Apuramentos",
         cap: "contab.ver",
@@ -118,7 +114,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contabilidade/retencoes",
-        pendente: true,
         rotulo: "Retenções na Fonte",
         seccao: "Apuramentos",
         cap: "contab.ver",
@@ -126,7 +121,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contabilidade/extrato",
-        pendente: true,
         rotulo: "Extratos",
         seccao: "Exploração",
         cap: "contab.ver",
@@ -141,7 +135,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contabilidade/diarios",
-        pendente: true,
         rotulo: "Diários",
         seccao: "Tabelas",
         cap: "contab.ver",
@@ -149,7 +142,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contabilidade/documentos",
-        pendente: true,
         rotulo: "Documentos",
         seccao: "Tabelas",
         cap: "contab.ver",
