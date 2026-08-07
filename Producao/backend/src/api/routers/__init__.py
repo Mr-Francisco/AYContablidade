@@ -1,15 +1,21 @@
 """Routers da API, um por domínio.
 
-Cada área tem o seu ficheiro — `auth_router`, `user_router`, `licenca_router`,
-`empresa_router` — e é aqui que ficam agregados para o `main` os registar.
+Cada área tem o seu ficheiro e é aqui que ficam agregados para o `main` os
+registar. Regra 5: nenhum expõe dados sem Depends de autenticação — as únicas
+excepções são `/api/health` e a submissão pública de pedido de licença, que por
+definição é feita por quem ainda não tem conta.
 """
 
 from src.api.routers import (
     apuramentos_router,
     auth_router,
+    comercial_router,
+    compras_router,
     contabilidade_router,
     empresa_router,
+    imobilizados_router,
     licenca_router,
+    logistica_router,
     relatorios_router,
     rh_router,
     user_router,
@@ -26,15 +32,23 @@ ROUTERS = (
     relatorios_router.router,
     apuramentos_router.router,
     rh_router.router,
+    logistica_router.router,
+    comercial_router.router,
+    compras_router.router,
+    imobilizados_router.router,
 )
 
 __all__ = [
     "ROUTERS",
     "apuramentos_router",
     "auth_router",
+    "comercial_router",
+    "compras_router",
     "contabilidade_router",
     "empresa_router",
+    "imobilizados_router",
     "licenca_router",
+    "logistica_router",
     "relatorios_router",
     "rh_router",
     "user_router",

@@ -1,0 +1,202 @@
+"""Compras: fornecedores e documentos de compra.
+
+Nota: NÃO usar `from __future__ import annotations` — slowapi (docs/LESSONS.md).
+"""
+
+from datetime import date as Date
+from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+
+from src.api.deps import DB, EmpresaAtual, exigir_cap
+from src.db.models.comercial import Compra, CompraLinha
+from src.db.models.terceiros import Terceiro
+from src.services import compras as svc
+
+router = APIRouter(
+    prefix="/api/compras",
+    tags=["compras"],
+    dependencies=[Depends(exigir_cap("logistica.ver"))],
+)
+
+GERIR = Depends(exigir_cap("logistica.gerir"))
+
+
+class LinhaEntrada(BaseModel):
+    artigo_id: UUID
+    descricao: str | None = None
+    unidade: str | None = None
+    qtd: Decimal
+    preco: Decimal
+
+
+class CompraEntrada(BaseModel):
+    data: Date
+    documento_codigo: str = Field(min_length=1, max_length=10)
+    fornecedor_id: UUID | None = None
+    fornecedor_nome: str | None = None
+    armazem_id: UUID
+    iva_perc: Decimal = Decimal("0")
+    linhas: list[LinhaEntrada] = Field(min_length=1)
+
+
+class FornecedorEntrada(BaseModel):
+    nome: str = Field(min_length=1, max_length=200)
+    numero: str | None = None
+    nif: str | None = None
+    localidade: str | None = None
+    telefone: str | None = None
+    email: str | None = None
+    conta: str | None = None
+    condicoes_pagamento: str | None = None
+    estado: str = "activo"
+
+
+class EmitirPedido(BaseModel):
+    exercicio_id: UUID | None = None
+
+
+def _compra(db: DB, empresa_id: UUID, compra_id: UUID) -> Compra:
+    c = db.scalar(
+        select(Compra).where(Compra.id == compra_id, Compra.empresa_id == empresa_id)
+    )
+    if c is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Documento não encontrado.")
+    return c
+
+
+@router.get("/fornecedores")
+def listar_fornecedores(
+    empresa: EmpresaAtual, db: DB, procura: str | None = None
+) -> list[dict]:
+    q = select(Terceiro).where(
+        Terceiro.empresa_id == empresa.id, Terceiro.tipo == "fornecedor"
+    )
+    if procura:
+        termo = f"%{procura}%"
+        q = q.where(Terceiro.nome.ilike(termo) | Terceiro.nif.ilike(termo))
+    return [
+        {"id": f.id, "numero": f.numero, "nome": f.nome, "nif": f.nif,
+         "localidade": f.localidade, "telefone": f.telefone, "conta": f.conta,
+         "estado": f.estado}
+        for f in db.scalars(q.order_by(Terceiro.numero)).all()
+    ]
+
+
+@router.post("/fornecedores", status_code=status.HTTP_201_CREATED, dependencies=[GERIR])
+def criar_fornecedor(
+    request: Request, dados: FornecedorEntrada, empresa: EmpresaAtual, db: DB
+) -> dict:
+    numeros = db.scalars(
+        select(Terceiro.numero).where(
+            Terceiro.empresa_id == empresa.id, Terceiro.tipo == "fornecedor"
+        )
+    ).all()
+    proximo = f"{max((int(n) for n in numeros if n and n.isdigit()), default=0) + 1:03d}"
+    f = Terceiro(
+        empresa_id=empresa.id, tipo="fornecedor", tipo_terceiro="Fornecedor",
+        numero=dados.numero or proximo, **dados.model_dump(exclude={"numero"}),
+    )
+    db.add(f)
+    db.commit()
+    db.refresh(f)
+    return {"id": f.id, "numero": f.numero, "nome": f.nome}
+
+
+@router.get("/documentos")
+def documentos_disponiveis(empresa: EmpresaAtual, db: DB) -> list[dict]:
+    """Tipos de documento de compra — os documentos do diário de entradas."""
+    return [
+        {"codigo": d.codigo, "descricao": d.descricao, "diario_codigo": d.diario_codigo}
+        for d in svc.documentos_compra(db, empresa.id)
+    ]
+
+
+@router.get("")
+def listar_compras(
+    empresa: EmpresaAtual, db: DB, estado: str | None = None, limite: int = 200
+) -> list[dict]:
+    q = select(Compra).where(Compra.empresa_id == empresa.id)
+    if estado:
+        q = q.where(Compra.estado == estado)
+    return [
+        {"id": c.id, "numero": c.numero, "documento_codigo": c.documento_codigo,
+         "documento_nome": c.documento_nome, "data": c.data,
+         "fornecedor_id": c.fornecedor_id, "fornecedor_nome": c.fornecedor_nome,
+         "subtotal": c.subtotal, "iva": c.iva, "total": c.total, "estado": c.estado}
+        for c in db.scalars(
+            q.order_by(Compra.data.desc(), Compra.criado_em.desc()).limit(limite)
+        ).all()
+    ]
+
+
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[GERIR])
+def criar_compra(
+    request: Request, dados: CompraEntrada, empresa: EmpresaAtual, db: DB
+) -> dict:
+    linhas = [l.model_dump() for l in dados.linhas]
+    t = svc.calc_totais_compra(linhas, dados.iva_perc)
+
+    fornecedor_nome = dados.fornecedor_nome
+    if dados.fornecedor_id:
+        f = db.get(Terceiro, dados.fornecedor_id)
+        if f is None or f.empresa_id != empresa.id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Fornecedor não encontrado.")
+        fornecedor_nome = f.nome
+
+    c = Compra(
+        empresa_id=empresa.id, data=dados.data,
+        documento_codigo=dados.documento_codigo, fornecedor_id=dados.fornecedor_id,
+        fornecedor_nome=fornecedor_nome, armazem_id=dados.armazem_id,
+        iva_perc=dados.iva_perc, subtotal=t["subtotal"], iva=t["iva"],
+        total=t["total"], estado="rascunho",
+        linhas=[
+            CompraLinha(
+                ordem=i, artigo_id=l["artigo_id"], descricao=l["descricao"],
+                unidade=l["unidade"], qtd=l["qtd"], preco=l["preco"],
+                total=Decimal(str(l["qtd"])) * Decimal(str(l["preco"])),
+            )
+            for i, l in enumerate(linhas)
+        ],
+    )
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return {"id": c.id, "estado": c.estado, "total": c.total}
+
+
+@router.post("/{compra_id}/emitir", dependencies=[GERIR])
+def emitir_compra(
+    request: Request, compra_id: UUID, dados: EmitirPedido, empresa: EmpresaAtual, db: DB
+) -> dict:
+    """Emite a compra: cada linha entra em armazém, e é essa entrada que
+    contabiliza a factura do fornecedor."""
+    c = _compra(db, empresa.id, compra_id)
+    r = svc.emitir_compra(
+        db, empresa_id=empresa.id, compra=c, exercicio_id=dados.exercicio_id
+    )
+    db.commit()
+    return r
+
+
+@router.delete("/{compra_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[GERIR])
+def remover_compra(
+    request: Request, compra_id: UUID, empresa: EmpresaAtual, db: DB
+) -> None:
+    c = _compra(db, empresa.id, compra_id)
+    if c.estado == "emitida":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Uma compra emitida já movimentou stock e contabilidade — não pode "
+            "ser eliminada.",
+        )
+    db.delete(c)
+    db.commit()
+
+
+@router.get("/resumo")
+def resumo(empresa: EmpresaAtual, db: DB) -> dict:
+    return svc.resumo_compras(db, empresa_id=empresa.id)
