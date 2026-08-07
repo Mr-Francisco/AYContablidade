@@ -26,7 +26,7 @@ from src.db.models.rh import (
     PagamentoSalarial,
     ProcessamentoSalarial,
 )
-from src.db.models.tenancy import ConfigEmpresa
+from src.db.models.tenancy import ConfigEmpresa, Exercicio
 from src.services.contabilidade import (
     ErroContabilistico,
     conta_corrente,
@@ -41,6 +41,52 @@ CENT = Decimal("0.01")
 def r2(v: Decimal) -> Decimal:
     """Arredonda a 2 casas com meio-para-cima, como o `round2()` do Piloto."""
     return Decimal(v).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def periodo_de(mes: str | None) -> str | None:
+    """`AAAA-MM` (o que a API recebe) → período de dois dígitos (o que se grava).
+
+    As tabelas de RH guardam o PERÍODO contabilístico, não o mês com o ano: o
+    ano vem do exercício. Foi essa a decisão que tornou possível uma empresa
+    ter um segundo ano — no Piloto o mês era único em toda a história e o ano
+    seguinte deixava de poder ser processado.
+
+    A API continua a falar `AAAA-MM` porque é uma chave que não se presta a
+    enganos do lado de quem chama; a tradução faz-se aqui, à entrada, e não em
+    cada sítio que grava.
+    """
+    if not mes:
+        return mes
+    texto = str(mes).strip()
+    if len(texto) == 7 and texto[4] == "-":
+        return texto[5:7]
+    return texto.zfill(2)[:2]
+
+
+def _mes_e_exercicio(
+    db: Session, empresa_id: UUID, mes: str | None, exercicio_id: UUID | None
+) -> tuple[str | None, UUID | None]:
+    """Resolve o par (período, exercício) a partir do mês vindo da API.
+
+    Se o ano indicado não for o do exercício resolvido, é erro e não conversão
+    silenciosa: uma vez gravado, o período `08` do exercício errado é
+    indistinguível do certo, e quem o gravou não teria como saber.
+    """
+    ex = exercicio_efetivo(db, empresa_id, exercicio_id)
+    periodo = periodo_de(mes)
+
+    if mes and len(str(mes).strip()) == 7 and ex is not None:
+        ano = str(mes).strip()[:4]
+        exercicio = db.get(Exercicio, ex)
+        if exercicio is not None and not (
+            exercicio.inicio.year <= int(ano) <= exercicio.fim.year
+        ):
+            raise ErroContabilistico(
+                f"O mês {mes} não pertence ao exercício {exercicio.nome} "
+                f"({exercicio.inicio:%d-%m-%Y} a {exercicio.fim:%d-%m-%Y}). "
+                "Escolhe o exercício certo antes de processar."
+            )
+    return periodo, ex
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +160,7 @@ def alteracao_de(
     mes: str,
     exercicio_id: UUID | None = None,
 ) -> AlteracaoMensal | None:
-    ex = exercicio_efetivo(db, empresa_id, exercicio_id)
+    mes, ex = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
     return db.scalar(
         select(AlteracaoMensal).where(
             AlteracaoMensal.empresa_id == empresa_id,
@@ -123,6 +169,120 @@ def alteracao_de(
             AlteracaoMensal.mes == mes,
         )
     )
+
+
+
+def guardar_alteracao(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    colaborador_id: UUID,
+    mes: str,
+    faltas: Decimal,
+    abonos: list[dict],
+    descontos: list[dict],
+    exercicio_id: UUID | None = None,
+) -> AlteracaoMensal:
+    """Grava as alterações de um colaborador num mês.
+
+    Vive aqui e não no router porque o par (período, exercício) tem de ser o
+    MESMO na escrita e na leitura. Escrito no router, o `mes` ia com o ano e o
+    `exercicio_id` ficava nulo — o registo entrava na base e a leitura, que
+    filtra pelo exercício, nunca mais lhe punha a vista em cima.
+    """
+    mes, exercicio_id = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
+    a = db.scalar(
+        select(AlteracaoMensal).where(
+            AlteracaoMensal.empresa_id == empresa_id,
+            AlteracaoMensal.colaborador_id == colaborador_id,
+            AlteracaoMensal.exercicio_id == exercicio_id,
+            AlteracaoMensal.mes == mes,
+        )
+    )
+    if a is None:
+        a = AlteracaoMensal(
+            empresa_id=empresa_id,
+            colaborador_id=colaborador_id,
+            exercicio_id=exercicio_id,
+            mes=mes,
+        )
+        db.add(a)
+
+    a.faltas = faltas
+    a.abonos = [
+        {"desc": x.get("desc", ""), "valor": str(x.get("valor", 0))}
+        for x in abonos
+        if x.get("desc") or x.get("valor")
+    ]
+    a.descontos = [
+        {"desc": x.get("desc", ""), "valor": str(x.get("valor", 0))}
+        for x in descontos
+        if x.get("desc") or x.get("valor")
+    ]
+    db.flush()
+    return a
+
+
+def listar_alteracoes(
+    db: Session, *, empresa_id: UUID, mes: str, exercicio_id: UUID | None = None
+) -> list[AlteracaoMensal]:
+    mes, exercicio_id = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
+    return list(
+        db.scalars(
+            select(AlteracaoMensal).where(
+                AlteracaoMensal.empresa_id == empresa_id,
+                AlteracaoMensal.exercicio_id == exercicio_id,
+                AlteracaoMensal.mes == mes,
+            )
+        ).all()
+    )
+
+
+def linha_mapa_irt_para_gravar(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    colaborador_id: UUID,
+    mes: str,
+    exercicio_id: UUID | None = None,
+) -> MapaIrtLinha:
+    """Devolve a linha do mapa a editar, criando-a se ainda não existir.
+
+    Mesma razão de `guardar_alteracao`: escrita e leitura têm de concordar no
+    par (período, exercício).
+    """
+    mes, exercicio_id = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
+    linha = db.scalar(
+        select(MapaIrtLinha).where(
+            MapaIrtLinha.empresa_id == empresa_id,
+            MapaIrtLinha.colaborador_id == colaborador_id,
+            MapaIrtLinha.exercicio_id == exercicio_id,
+            MapaIrtLinha.mes == mes,
+        )
+    )
+    if linha is None:
+        linha = MapaIrtLinha(
+            empresa_id=empresa_id,
+            colaborador_id=colaborador_id,
+            exercicio_id=exercicio_id,
+            mes=mes,
+        )
+        db.add(linha)
+    return linha
+
+
+def listar_honorarios(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    mes: str | None = None,
+    exercicio_id: UUID | None = None,
+) -> list[Honorario]:
+    q = select(Honorario).where(Honorario.empresa_id == empresa_id)
+    if mes:
+        periodo, ex = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
+        q = q.where(Honorario.mes == periodo, Honorario.exercicio_id == ex)
+    return list(db.scalars(q.order_by(Honorario.data.desc())).all())
 
 
 def recibo(
@@ -244,7 +404,24 @@ def processar_mes(
     está preservado — ver a nota no relatório de migração.
     """
     c2 = cfg_rh(db, empresa_id)
-    exercicio_id = exercicio_efetivo(db, empresa_id, exercicio_id)
+    # Guardado antes de normalizar: o `mes` passa a ser o período de dois
+    # dígitos, mas a descrição e a referência do lançamento têm de mostrar o
+    # ano — `SAL-08` de 2026 e de 2027 seriam indistinguíveis no diário.
+    rotulo = str(mes)
+    mes, exercicio_id = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
+
+    # Reprocessar o mesmo mês lançava OUTRA vez o custo com pessoal: o registo
+    # do processamento é actualizado no sítio, mas o lançamento anterior fica,
+    # e passavam a existir dois. A folha ficava contada a dobrar na
+    # contabilidade e o registo só apontava para o último — não havia como dar
+    # por isso a olhar para o RH. Corrigir uma folha faz-se com um lançamento
+    # de rectificação, não repetindo o processamento.
+    if mes_processado(db, empresa_id, mes, exercicio_id):
+        raise ErroContabilistico(
+            f"A folha de {rotulo} já foi processada. Para a corrigir, lança a "
+            "rectificação na contabilidade — reprocessar duplicaria o custo."
+        )
+
     f = folha(
         db, empresa_id=empresa_id, mes=mes, so_ativos=True, exercicio_id=exercicio_id
     )
@@ -285,7 +462,8 @@ def processar_mes(
         lanc = postar(
             db, empresa_id=empresa_id, data=data or Date.today(),
             diario_codigo=c2["diario"], documento_codigo=c2["documento"], mes=mes,
-            descricao=f"Processamento salarial — {mes}", documento_ref=f"SAL-{mes}",
+            descricao=f"Processamento salarial — {rotulo}",
+            documento_ref=f"SAL-{rotulo}",
             origem="rh", exercicio_id=exercicio_id, linhas=linhas,
         )
         lancado = True
@@ -323,7 +501,7 @@ def processar_mes(
 def mes_processado(
     db: Session, empresa_id: UUID, mes: str, exercicio_id: UUID | None = None
 ) -> bool:
-    ex = exercicio_efetivo(db, empresa_id, exercicio_id)
+    mes, ex = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
     return (
         db.scalar(
             select(ProcessamentoSalarial.id).where(
@@ -339,7 +517,7 @@ def mes_processado(
 def mes_pago(
     db: Session, empresa_id: UUID, mes: str, exercicio_id: UUID | None = None
 ) -> bool:
-    ex = exercicio_efetivo(db, empresa_id, exercicio_id)
+    mes, ex = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
     return (
         db.scalar(
             select(PagamentoSalarial.id).where(
@@ -378,7 +556,8 @@ def pagar_mes(
     sem processar deixaria a conta do colaborador a descoberto, porque nunca
     teria sido creditada.
     """
-    exercicio_id = exercicio_efetivo(db, empresa_id, exercicio_id)
+    rotulo = str(mes)
+    mes, exercicio_id = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
     if mes_pago(db, empresa_id, mes, exercicio_id):
         raise ErroContabilistico("Este mês já foi pago.")
     if not mes_processado(db, empresa_id, mes, exercicio_id):
@@ -414,8 +593,8 @@ def pagar_mes(
         lanc = postar(
             db, empresa_id=empresa_id, data=data or Date.today(),
             diario_codigo=c2["diario_pag"], documento_codigo=c2["documento_pag"],
-            mes=mes, descricao=f"Pagamento de salários — {mes}",
-            documento_ref=f"PAG-{mes}", origem="rh", exercicio_id=exercicio_id,
+            mes=mes, descricao=f"Pagamento de salários — {rotulo}",
+            documento_ref=f"PAG-{rotulo}", origem="rh", exercicio_id=exercicio_id,
             linhas=linhas,
         )
         lancado = True
@@ -473,6 +652,7 @@ def processar_honorario(
         raise ErroContabilistico("Indica um valor válido.")
 
     data = data or Date.today()
+    mes, exercicio_id = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
     mes = mes or f"{data.month:02d}"
     lancado = False
     lancamento_id = None
@@ -503,6 +683,7 @@ def processar_honorario(
 
     h = Honorario(
         empresa_id=empresa_id, independente_id=ind.id, nome=ind.nome, data=data,
+        exercicio_id=exercicio_id,
         mes=mes, descricao=descricao, bruto=r["bruto"], taxa=r["taxa"],
         retencao=r["retencao"], liquido=r["liquido"], lancado=lancado,
         lancamento_id=lancamento_id, numero_op=numero_op,
@@ -529,7 +710,7 @@ def mapa_irt_linha(
     subsídio de férias e de Natal nas rubricas próprias, e o resto dos
     subsídios em "outros sujeitos". O utilizador reclassifica depois.
     """
-    exercicio_id = exercicio_efetivo(db, empresa_id, exercicio_id)
+    mes, exercicio_id = _mes_e_exercicio(db, empresa_id, mes, exercicio_id)
     gravada = db.scalar(
         select(MapaIrtLinha).where(
             MapaIrtLinha.empresa_id == empresa_id,

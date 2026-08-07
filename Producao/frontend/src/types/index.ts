@@ -395,3 +395,121 @@ export interface ResumoCompras {
   n_emitidas: number;
   por_emitir: string;
 }
+
+export interface Colaborador {
+  id: string;
+  numero: string;
+  nome: string;
+  categoria: string | null;
+  salario_base: string;
+  subsidios: string;
+  subsidio_ferias: string;
+  subsidio_natal: string;
+  subs_nao_sujeitos: string;
+  data_admissao: string | null;
+  iban: string | null;
+  nif: string | null;
+  num_ss: string | null;
+  provincia: string | null;
+  municipio: string | null;
+  estado: string;
+}
+
+export interface LinhaRecibo {
+  colaborador_id: string;
+  colaborador: string;
+  base: string;
+  subs: string;
+  bruto: string;
+  inss: string;
+  materia: string;
+  irt: string;
+  desc_extra: string;
+  desc_faltas: string;
+  faltas: string;
+  abonos_extra: string;
+  liquido: string;
+  inss_empresa: string;
+}
+
+export interface Folha {
+  linhas: LinhaRecibo[];
+  totais: {
+    bruto: string;
+    inss: string;
+    irt: string;
+    liquido: string;
+    inss_empresa: string;
+  };
+}
+
+export interface AlteracaoMensal {
+  id: string;
+  colaborador_id: string;
+  mes: string;
+  faltas: string;
+  // A chave é `desc`, não `descricao` — é o que o backend grava e lê.
+  abonos: { desc?: string; valor?: string }[];
+  descontos: { desc?: string; valor?: string }[];
+}
+
+export interface Processamento {
+  id: string;
+  mes: string;
+  totais: Folha["totais"];
+  lancado: boolean;
+  lancamento_id: string | null;
+  criado_em: string;
+}
+
+export interface PagamentoSalarial {
+  id: string;
+  mes: string;
+  valor: string;
+  conta: string | null;
+  lancado: boolean;
+  numero_op: string | null;
+}
+
+export interface Independente {
+  id: string;
+  nome: string;
+  nif: string | null;
+  atividade: string | null;
+  taxa_ret: string;
+  estado: string;
+}
+
+export interface Honorario {
+  id: string;
+  nome: string;
+  data: string;
+  mes: string | null;
+  descricao: string | null;
+  bruto: string;
+  taxa: string;
+  retencao: string;
+  liquido: string;
+  numero_op: string | null;
+}
+
+export interface EscalaoIrt {
+  de: string;
+  ate: string | null;
+  taxa: string;
+  fixa: string;
+}
+
+export interface ConfigRh {
+  inss_trab: string;
+  inss_empr: string;
+  irt_versao: string;
+  irt: EscalaoIrt[];
+  conta_custo: string;
+  conta_pagar: string;
+  conta_irt: string;
+  conta_inss: string;
+  conta_banco: string;
+  taxa_ret_hon: string;
+  [chave: string]: unknown;
+}

@@ -192,11 +192,7 @@ def remover_colaborador(
 # ---------------------------------------------------------------------------
 @router.get("/alteracoes")
 def listar_alteracoes(empresa: EmpresaAtual, db: DB, mes: str) -> list[dict]:
-    alts = db.scalars(
-        select(AlteracaoMensal).where(
-            AlteracaoMensal.empresa_id == empresa.id, AlteracaoMensal.mes == mes
-        )
-    ).all()
+    alts = svc.listar_alteracoes(db, empresa_id=empresa.id, mes=mes)
     return [
         {"id": a.id, "colaborador_id": a.colaborador_id, "mes": a.mes,
          "faltas": a.faltas, "abonos": a.abonos, "descontos": a.descontos}
@@ -213,17 +209,10 @@ def gravar_alteracao(
     db: DB,
 ) -> dict:
     _colab(db, empresa.id, colaborador_id)
-    a = svc.alteracao_de(db, empresa.id, colaborador_id, dados.mes)
-    if a is None:
-        a = AlteracaoMensal(
-            empresa_id=empresa.id, colaborador_id=colaborador_id, mes=dados.mes
-        )
-        db.add(a)
-    a.faltas = dados.faltas
-    a.abonos = [{"desc": x.get("desc", ""), "valor": str(x.get("valor", 0))}
-                for x in dados.abonos if x.get("desc") or x.get("valor")]
-    a.descontos = [{"desc": x.get("desc", ""), "valor": str(x.get("valor", 0))}
-                   for x in dados.descontos if x.get("desc") or x.get("valor")]
+    a = svc.guardar_alteracao(
+        db, empresa_id=empresa.id, colaborador_id=colaborador_id, mes=dados.mes,
+        faltas=dados.faltas, abonos=dados.abonos, descontos=dados.descontos,
+    )
     db.commit()
     return {"colaborador_id": colaborador_id, "mes": a.mes, "faltas": a.faltas}
 
@@ -323,14 +312,11 @@ def criar_independente(
 
 @router.get("/honorarios")
 def listar_honorarios(empresa: EmpresaAtual, db: DB, mes: str | None = None) -> list[dict]:
-    q = select(Honorario).where(Honorario.empresa_id == empresa.id)
-    if mes:
-        q = q.where(Honorario.mes == mes)
     return [
         {"id": h.id, "nome": h.nome, "data": h.data, "mes": h.mes,
          "descricao": h.descricao, "bruto": h.bruto, "taxa": h.taxa,
          "retencao": h.retencao, "liquido": h.liquido, "numero_op": h.numero_op}
-        for h in db.scalars(q.order_by(Honorario.data.desc())).all()
+        for h in svc.listar_honorarios(db, empresa_id=empresa.id, mes=mes)
     ]
 
 
@@ -378,18 +364,9 @@ def gravar_mapa_irt(
     db: DB,
 ) -> dict:
     _colab(db, empresa.id, colaborador_id)
-    linha = db.scalar(
-        select(MapaIrtLinha).where(
-            MapaIrtLinha.empresa_id == empresa.id,
-            MapaIrtLinha.colaborador_id == colaborador_id,
-            MapaIrtLinha.mes == dados.mes,
-        )
+    linha = svc.linha_mapa_irt_para_gravar(
+        db, empresa_id=empresa.id, colaborador_id=colaborador_id, mes=dados.mes
     )
-    if linha is None:
-        linha = MapaIrtLinha(
-            empresa_id=empresa.id, colaborador_id=colaborador_id, mes=dados.mes
-        )
-        db.add(linha)
 
     permitidas = set(SUBS_NAO_SUJEITOS) | set(SUBS_SUJEITOS)
     desconhecidas = set(dados.valores) - permitidas

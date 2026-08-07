@@ -181,6 +181,13 @@ class Honorario(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     )
     nome: Mapped[str | None] = mapped_column(String(200))
     data: Mapped[date] = mapped_column(Date, nullable=False)
+    # `mes` é o PERÍODO de dois dígitos, como nas restantes tabelas de RH — o
+    # ano vem do exercício. Sem `exercicio_id` os honorários do período 08 de
+    # dois anos diferentes ficavam indistinguíveis, que é precisamente o
+    # problema do Piloto que esta coluna existe para resolver.
+    exercicio_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("exercicios.id", ondelete="SET NULL"), index=True
+    )
     mes: Mapped[str | None] = mapped_column(String(2))
     descricao: Mapped[str | None] = mapped_column(Text)
 

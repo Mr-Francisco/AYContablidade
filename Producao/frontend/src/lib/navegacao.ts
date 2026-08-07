@@ -368,7 +368,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/rh",
-        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "rh.ver",
@@ -376,7 +375,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/rh/funcionarios",
-        pendente: true,
         rotulo: "Funcionários",
         seccao: "Salários",
         cap: "rh.ver",
@@ -384,7 +382,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/rh/alteracoes",
-        pendente: true,
         rotulo: "Alterações Mensais",
         seccao: "Salários",
         cap: "rh.ver",
@@ -392,7 +389,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/rh/processamento",
-        pendente: true,
         rotulo: "Processamento",
         seccao: "Salários",
         cap: "rh.ver",
@@ -400,7 +396,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/rh/pagamentos",
-        pendente: true,
         rotulo: "Pagamentos",
         seccao: "Salários",
         cap: "rh.ver",
@@ -408,7 +403,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/rh/recibos",
-        pendente: true,
         rotulo: "Recibos",
         seccao: "Salários",
         cap: "rh.ver",
@@ -416,7 +410,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/rh/simulacao",
-        pendente: true,
         rotulo: "Simulação",
         seccao: "Salários",
         cap: "rh.ver",
@@ -424,7 +417,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/rh/independentes",
-        pendente: true,
         rotulo: "Independentes",
         seccao: "Honorários",
         cap: "rh.ver",
@@ -432,7 +424,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/rh/tabelas",
-        pendente: true,
         rotulo: "Tabelas",
         seccao: "Recursos",
         cap: "rh.ver",

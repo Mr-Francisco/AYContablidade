@@ -40,3 +40,14 @@
 ` em CRLF e o formatador do Biome acusa o ficheiro inteiro — abrir com `newline="
 "` ao reescrever ficheiros do frontend.
 - `runtimeExecutable` relativo no `.claude/launch.json` da ENOENT mesmo com `cwd` definido — usar caminho absoluto.
+- Um teste de regressão só vale depois de se ver FALHAR com o defeito reposto: a 1.ª versão do teste do CUMP passava nos dois casos, porque tirar unidades exactamente ao custo médio não altera o custo médio — faltava a entrada seguinte a outro preço, que é onde a base errada se revela.
+- Funções que leem os mesmos movimentos têm de os classificar da mesma maneira: `custo_medio()` usava `if/elif` na transferência e `stock()` dois `if` — com origem igual ao destino uma contava 74 unidades e a outra 75, e `stock × custo_medio` inventava dinheiro.
+- Validar no formulário não valida nada: o frontend bloqueava a transferência para o próprio armazém e a API aceitava-a na mesma. Toda a regra de negócio verificada na UI tem de existir no serviço.
+- Testar a API com caminhos relativos a partir do browser bate no Next (`/api/...` → 404 HTML), não no backend em `:8001` — usar sempre a origem completa nos testes de endpoint.
+- Podem ficar dois uvicorn na mesma porta: um fica com o `:8001` e o outro corre sem porta. Editar código e ver o comportamento antigo é sinal disto — confirmar o dono da porta com `Get-NetTCPConnection -LocalPort 8001`.
+- Erro de CORS num ENDPOINT só (e não em todos) quer dizer que ele rebentou antes do middleware pôr o cabeçalho — é um 500 disfarçado, procurar a excepção e não a configuração de CORS.
+- O contrato da API e o esquema da base têm de ser traduzidos num sítio só: o router de RH declarava `mes` como `AAAA-MM` e gravava-o em colunas `varchar(2)`. A conversão pertence à entrada do serviço, não a cada sítio que grava.
+- Escrita feita no router e leitura feita no serviço divergem: `gravar_alteracao` no router deixava `exercicio_id` a nulo e a leitura filtrava por ele — o registo entrava na base e nunca mais era encontrado. Escritas passam pelo serviço.
+- Uma operação que lança na contabilidade precisa de guarda contra repetição: `processar_mes` fazia upsert do registo mas postava OUTRO lançamento, e a folha ficava contada a dobrar sem que nada no módulo o mostrasse.
+- `str.replace(velho, novo, 1)` em duas funções com o mesmo padrão substitui a mesma ocorrência duas vezes — deu uma linha duplicada e um `NameError` noutra função. Recortar o bloco da função antes de substituir.
+- Alterar um MODELO obriga a reiniciar o uvicorn: o `--reload` reimporta, mas uma coluna nova só aparece depois de a classe ser recarregada — sintoma típico é 500 numa consulta que corre bem se chamada directamente ao serviço.
