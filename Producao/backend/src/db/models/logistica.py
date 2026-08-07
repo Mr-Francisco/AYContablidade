@@ -49,7 +49,9 @@ class Artigo(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     codigo: Mapped[str] = mapped_column(String(20), nullable=False)
     descricao: Mapped[str] = mapped_column(String(300), nullable=False, index=True)
     familia: Mapped[str | None] = mapped_column(String(120))
+    subfamilia: Mapped[str | None] = mapped_column(String(120))
     unidade: Mapped[str | None] = mapped_column(String(20))
+    cod_barras: Mapped[str | None] = mapped_column(String(60))
     # "Mercadoria" | "Matéria-prima" | "Produto acabado" | "Serviço"
     tipo_artigo: Mapped[str | None] = mapped_column(String(40))
 
@@ -63,6 +65,10 @@ class Artigo(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     # Contas próprias do artigo; se vazias usam-se as da configuração do módulo.
     conta_existencia: Mapped[str | None] = mapped_column(String(20))
     conta_custo: Mapped[str | None] = mapped_column(String(20))
+    # Guardada por fidelidade ao Piloto, que a grava na ficha do artigo. Ainda
+    # não é lida em lado nenhum: as vendas usam a conta de proveito do tipo de
+    # documento. Perdê-la agora obrigaria a reintroduzi-la artigo a artigo.
+    conta_proveito: Mapped[str | None] = mapped_column(String(20))
 
     estado: Mapped[str] = mapped_column(String(20), default="activo", nullable=False)
 

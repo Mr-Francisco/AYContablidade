@@ -225,9 +225,17 @@ def custo_medio(
         elif m.tipo == "transferencia" and armazem_id is not None:
             # Globalmente é neutra e ignora-se. Por armazém, sai da origem e
             # entra no destino ao CUMP que a origem tinha nesse momento.
+            #
+            # Os dois ramos são `if` independentes, e não `if/elif`, para
+            # acompanharem o `stock()`. Com `elif`, uma transferência cujo
+            # destino é a própria origem só descontaria: a quantidade ficava
+            # igual (o `stock()` soma e subtrai) mas o valor perdia-se, e o
+            # custo médio passava a dividir por uma quantidade que não é a que
+            # o sistema mostra. Registos assim já não se conseguem criar, mas
+            # os que existam em bases antigas continuariam a inventar valor.
             if m.armazem_id == armazem_id:
                 sai(q)
-            elif m.armazem_destino_id == armazem_id:
+            if m.armazem_destino_id == armazem_id:
                 entra(q, cu)
 
     if qtd > 0:
@@ -314,6 +322,14 @@ def registar_movimento(
         raise ErroContabilistico("Quantidade inválida.")
     if td["cod"] == "transferencia" and armazem_destino_id is None:
         raise ErroContabilistico("Indica o armazém de destino.")
+    # Desvio ao Piloto, que só verifica se o destino está preenchido. Uma
+    # transferência para o próprio armazém não move nada, mas grava na mesma:
+    # queima um número sequencial e deixa no histórico uma linha que parece um
+    # movimento e não é. Nenhuma operação legítima é bloqueada por isto.
+    if td["cod"] == "transferencia" and armazem_destino_id == armazem_id:
+        raise ErroContabilistico(
+            "O armazém de destino tem de ser diferente do de origem."
+        )
     if td["cod"] == "saida":
         disp = stock(db, empresa_id=empresa_id, artigo_id=artigo_id, armazem_id=armazem_id)
         if qtd > disp:

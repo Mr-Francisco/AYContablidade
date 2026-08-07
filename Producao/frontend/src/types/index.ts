@@ -332,11 +332,66 @@ export interface Artigo {
   codigo: string;
   descricao: string;
   familia: string | null;
+  subfamilia: string | null;
   unidade: string | null;
+  cod_barras: string | null;
   tipo_artigo: string | null;
   preco_venda: string;
   preco_compra: string;
   taxa_iva: string;
   stock_min: string;
   estado: string;
+}
+
+export interface Armazem {
+  id: string;
+  codigo: string;
+  nome: string;
+  localizacao: string | null;
+}
+
+export interface LinhaExistencia {
+  artigo_id: string;
+  codigo: string;
+  descricao: string;
+  unidade: string | null;
+  stock: string;
+  custo_medio: string;
+  valor: string;
+  stock_min: string;
+  rutura: boolean;
+}
+
+export interface Existencias {
+  linhas: LinhaExistencia[];
+  valor_total: string;
+  em_rutura: number;
+}
+
+export interface DocumentoCompra {
+  codigo: string;
+  descricao: string;
+  diario_codigo: string | null;
+}
+
+export interface Compra {
+  id: string;
+  numero: string | null;
+  documento_codigo: string;
+  documento_nome: string | null;
+  data: string;
+  fornecedor_id: string | null;
+  fornecedor_nome: string | null;
+  subtotal: string;
+  iva: string;
+  total: string;
+  estado: string;
+}
+
+export interface ResumoCompras {
+  total_compras: string;
+  total_rececionado: string;
+  n_compras: number;
+  n_emitidas: number;
+  por_emitir: string;
 }

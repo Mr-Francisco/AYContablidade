@@ -260,7 +260,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/logistica/artigos",
-        pendente: true,
         rotulo: "Artigos",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -268,7 +267,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/compras",
-        pendente: true,
         rotulo: "Compras",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -276,7 +274,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/rececao",
-        pendente: true,
         rotulo: "Receção",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -284,7 +281,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/expedicao",
-        pendente: true,
         rotulo: "Expedição",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -292,7 +288,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/transferencia",
-        pendente: true,
         rotulo: "Transferência",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -300,7 +295,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/acerto-positivo",
-        pendente: true,
         rotulo: "Acerto Positivo",
         seccao: "Operações Logísticas",
         cap: "logistica.ver",
@@ -308,7 +302,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/acerto-negativo",
-        pendente: true,
         rotulo: "Acerto Negativo",
         seccao: "Operações Logísticas",
         cap: "logistica.ver",
@@ -316,7 +309,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/existencias",
-        pendente: true,
         rotulo: "Existências",
         seccao: "Exploração",
         cap: "logistica.ver",
@@ -324,7 +316,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/armazens",
-        pendente: true,
         rotulo: "Armazéns",
         seccao: "Recursos",
         cap: "logistica.ver",
@@ -332,7 +323,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/logistica/fornecedores",
-        pendente: true,
         rotulo: "Fornecedores",
         seccao: "Recursos",
         cap: "logistica.ver",

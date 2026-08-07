@@ -28,7 +28,9 @@ class ArtigoEntrada(BaseModel):
     descricao: str = Field(min_length=1, max_length=300)
     codigo: str | None = Field(default=None, max_length=20)
     familia: str | None = None
+    subfamilia: str | None = None
     unidade: str | None = None
+    cod_barras: str | None = None
     tipo_artigo: str | None = None
     preco_venda: Decimal = Decimal("0")
     preco_compra: Decimal = Decimal("0")
@@ -36,6 +38,7 @@ class ArtigoEntrada(BaseModel):
     stock_min: Decimal = Decimal("0")
     conta_existencia: str | None = None
     conta_custo: str | None = None
+    conta_proveito: str | None = None
     estado: str = "activo"
 
 
@@ -67,7 +70,10 @@ def listar_artigos(empresa: EmpresaAtual, db: DB, so_ativos: bool = False) -> li
         q = q.where(Artigo.estado == "activo")
     return [
         {"id": a.id, "codigo": a.codigo, "descricao": a.descricao, "familia": a.familia,
-         "unidade": a.unidade, "tipo_artigo": a.tipo_artigo,
+         "subfamilia": a.subfamilia, "unidade": a.unidade,
+         "cod_barras": a.cod_barras, "tipo_artigo": a.tipo_artigo,
+         "conta_existencia": a.conta_existencia, "conta_custo": a.conta_custo,
+         "conta_proveito": a.conta_proveito,
          "preco_venda": a.preco_venda, "preco_compra": a.preco_compra,
          "taxa_iva": a.taxa_iva, "stock_min": a.stock_min, "estado": a.estado}
         for a in db.scalars(q.order_by(Artigo.codigo)).all()
