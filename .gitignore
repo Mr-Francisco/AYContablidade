@@ -399,3 +399,45 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# ---------------------------------------------------------------------------
+# AYContabilidade — Produção (Next.js + FastAPI + PostgreSQL)
+# ---------------------------------------------------------------------------
+
+# Segredos — NUNCA versionar (Regra 6: segredos só em .env / variáveis de ambiente)
+.env
+.env.*
+!.env.example
+config.ini
+!config.ini.example
+
+# Python
+.venv/
+venv/
+env/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Next.js / Node
+.next/
+out/
+.turbo/
+next-env.d.ts
+.vercel
+
+# Base de dados / dumps locais
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*

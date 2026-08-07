@@ -10,12 +10,12 @@ Frontend:
 Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, Radix UI, Framer Motion, Recharts, SWR, Leaflet, Prisma
 
 Backend:
-FastAPI (Python 3.13), SQLAlchemy 2.x, Alembic, Pydantic 2.x, JWT (PyJWT), SlowAPI (Rate Limiting)
+FastAPI (Python 3.12), SQLAlchemy 2.x, Alembic, Pydantic 2.x, JWT (PyJWT), SlowAPI (Rate Limiting)
 
 Serviços:
 Integração com a API da OpenAI (modelo mais recente disponível) para funcionalidades de perguntas e respostas sobre os dados do sistema.
 Infra:
-PostgreSQL 18
+PostgreSQL 18.x
 
 ## Estrutura
 

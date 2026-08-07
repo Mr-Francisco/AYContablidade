@@ -17,12 +17,15 @@ O sistema segue uma arquitetura cliente-servidor com separação clara entre fro
 
 - API RESTful.
 - Autenticação via JWT com renovação de sessão.
-- Controlo de acessos baseado em funções (RBAC): `admin`, `executive`, `tecnico`.(Se necesario com base no Piloto)
+- Controlo de acessos baseado em funções (RBAC) com os **8 perfis do Piloto** (`Piloto/assets/js/app.js` → `PERFIS`):
+  `superadmin`, `admin`, `contabilista`, `financeiro`, `comercial`, `logistica`, `rh`, `consulta`.
+- Capacidades pela matriz `CAPS` do Piloto (`contab.*`, `financeiro.*`, `comercial.*`, `logistica.*`, `imob.*`, `analitica.*`, `rh.*`, `empresa.*`); `superadmin` e `admin` têm `*`.
+- Restrição adicional por utilizador via `modulosPermitidos`, como no Piloto.
 - ORM SQLAlchemy para interação com a base de dados.
 - Migrações de esquema com Alembic.
 
 ## Base de Dados
 
-- PostgreSQL 16.
+- PostgreSQL 18.
 - ORM principal: SQLAlchemy + Alembic (Backend FastAPI).
 - Prisma: Utilizado apenas quando necessário no frontend ou ferramentas auxiliares.

@@ -10,7 +10,8 @@
 
 ## Backend
 1. **Autenticação:** Sessão/JWT obrigatório em todas as rotas de dados.
-2. **RBAC:** Respeitar os perfis `admin`, `executive`, `tecnico`; novas rotas devem atualizar o mapa `ROUTE_ROLES`.
+2. **RBAC:** Respeitar os 8 perfis do Piloto (`superadmin`, `admin`, `contabilista`, `financeiro`, `comercial`, `logistica`, `rh`, `consulta`) e a matriz de capacidades `CAPS`; novas rotas devem declarar a capacidade exigida (ex.: `contab.lancar`).
+3. **Palavras-passe:** hash bcrypt, mínimo 8 caracteres (desvio justificado ao Piloto — ver `docs/SECURITY.md`).
 3. **IA:** Funcionamento local por defeito; OpenAI permitido apenas para o módulo de Q&A autorizado.
 
 ## Migração Piloto -> Produção

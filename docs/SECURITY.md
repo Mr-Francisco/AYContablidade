@@ -4,7 +4,8 @@
 - **JWT:** PyJWT para criação e validação de tokens de acesso.
 - **Renovação:** `POST /auth/refresh` mantém a sessão ativa.
 - **Revogação:** `token_version` no backend permite invalidar tokens em caso de alteração de perfil.
-- **RBAC:** Controlo de acessos com três níveis se necessario : `admin`, `executive`, `tecnico` (De Acordo ao Piloto ).
+- **RBAC:** Os **8 perfis do Piloto** — `superadmin`, `admin`, `contabilista`, `financeiro`, `comercial`, `logistica`, `rh`, `consulta` — com a matriz de capacidades `CAPS` de `Piloto/assets/js/app.js`.
+- **Palavras-passe:** hash com bcrypt; mínimo de 8 caracteres. *(Desvio justificado ao Piloto, que guardava a palavra-passe em texto simples com mínimo de 4 — inaceitável em produção.)*
 
 ## Práticas Obrigatórias
 - Segredos e chaves apenas em variáveis de ambiente (`.env`).

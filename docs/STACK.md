@@ -16,7 +16,7 @@
 
 ## Backend
 
-- **Linguagem:** Python 3.13
+- **Linguagem:** Python 3.12
 - **Framework:** FastAPI
 - **ORM:** SQLAlchemy 2.x
 - **Migrações:** Alembic
@@ -33,5 +33,5 @@
 
 ## Infraestrutura
 
-- **Base de Dados:** PostgreSQL 18
+- **Base de Dados:** PostgreSQL 18.x
 - **Containerização:** Docker + Docker Compose

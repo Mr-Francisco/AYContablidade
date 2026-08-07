@@ -1,0 +1,35 @@
+# AYContabilidade — Backend (FastAPI + SQLAlchemy + PostgreSQL 18)
+# Python 3.12
+
+# --- API ---
+fastapi>=0.118
+uvicorn[standard]>=0.37
+python-multipart>=0.0.20
+
+# --- Base de dados ---
+SQLAlchemy>=2.0.36
+alembic>=1.14
+psycopg[binary]>=3.2
+
+# --- Validação e configuração ---
+pydantic>=2.10
+pydantic-settings>=2.7
+email-validator>=2.2
+
+# --- Autenticação ---
+# bcrypt usado directamente (sem passlib): o passlib 1.7.4 está sem manutenção e
+# rebenta com bcrypt >= 4.1 ao ler o atributo __about__ removido. Ver docs/LESSONS.md.
+PyJWT>=2.10
+bcrypt>=4.2
+
+# --- Rate limiting ---
+# Atenção: nos módulos com rotas decoradas por @limiter.limit NÃO usar
+# "from __future__ import annotations" (TypeError ForwardRef). Ver docs/LESSONS.md.
+slowapi>=0.1.9
+
+# --- HTTP (proxy da consulta de NIF à AGT) ---
+httpx>=0.28
+
+# --- Testes ---
+pytest>=8.3
+pytest-asyncio>=0.25

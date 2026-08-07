@@ -1,7 +1,7 @@
 # Base de Dados
 
 ## Tecnologia Principal
-- **Motor:** PostgreSQL 16.
+- **Motor:** PostgreSQL 18.
 - **ORM Principal:** SQLAlchemy + Alembic (Backend FastAPI).
 - **ORM Auxiliar:** Prisma (Apenas para tarefas específicas de frontend ou scripts auxiliares, se necessário).
 
