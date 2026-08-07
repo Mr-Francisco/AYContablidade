@@ -244,8 +244,16 @@ class DiarioFecho(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
 
     __tablename__ = "diario_fechos"
     __table_args__ = (
+        # nulls_not_distinct: `exercicio_id` pode ser NULL e, por omissão, o
+        # Postgres trata NULLs como distintos — o mesmo diário/período seria
+        # fechável várias vezes sem a restrição se opor.
         UniqueConstraint(
-            "empresa_id", "diario_codigo", "exercicio_id", "mes", name="diario_fecho"
+            "empresa_id",
+            "diario_codigo",
+            "exercicio_id",
+            "mes",
+            name="diario_fecho",
+            postgresql_nulls_not_distinct=True,
         ),
     )
 
@@ -266,7 +274,13 @@ class NotaTexto(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
 
     __tablename__ = "notas_texto"
     __table_args__ = (
-        UniqueConstraint("empresa_id", "numero", "exercicio_id", name="nota_texto"),
+        UniqueConstraint(
+            "empresa_id",
+            "numero",
+            "exercicio_id",
+            name="nota_texto",
+            postgresql_nulls_not_distinct=True,
+        ),
     )
 
     numero: Mapped[str] = mapped_column(String(10), nullable=False)
@@ -289,8 +303,16 @@ class SequenciaDocumento(UUIDMixin, EmpresaScopedMixin, Base):
 
     __tablename__ = "sequencias_documento"
     __table_args__ = (
+        # nulls_not_distinct é ESSENCIAL aqui: `exercicio_id` pode ser NULL e,
+        # com a semântica normal do Postgres, o ON CONFLICT do incremento nunca
+        # encontraria a linha existente — inseria uma nova a cada chamada e o
+        # contador devolvia sempre 1, gerando nºs de operação duplicados.
         UniqueConstraint(
-            "empresa_id", "documento_codigo", "exercicio_id", name="sequencia_documento"
+            "empresa_id",
+            "documento_codigo",
+            "exercicio_id",
+            name="sequencia_documento",
+            postgresql_nulls_not_distinct=True,
         ),
     )
 
