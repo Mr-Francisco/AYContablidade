@@ -5,13 +5,15 @@ com rotas decoradas por `@limiter.limit` — o slowapi rebenta com
 TypeError/ForwardRef com anotações adiadas (ver docs/LESSONS.md).
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from src.core.config import get_settings
+from src.services.contabilidade import ErroContabilistico
 
 settings = get_settings()
 
@@ -43,8 +45,20 @@ def criar_app() -> FastAPI:
         """Sonda de disponibilidade. Única rota sem autenticação."""
         return {"estado": "ok", "ambiente": settings.AMBIENTE}
 
-    # Os routers de dados são registados aqui à medida que os módulos forem
-    # migrados. Regra 5: nenhum deles pode ser exposto sem Depends de autenticação.
+    # Um router por domínio (src/api/routers/). Regra 5: nenhum expõe dados sem
+    # Depends de autenticação — a única excepção do sistema é /api/health e a
+    # submissão pública de pedido de licença, que por definição é feita por quem
+    # ainda não tem conta.
+    from src.api.routers import ROUTERS
+
+    for r in ROUTERS:
+        app.include_router(r)
+
+    @app.exception_handler(ErroContabilistico)
+    def _erro_contabilistico(request: Request, exc: ErroContabilistico) -> JSONResponse:
+        """Uma violação de regra contabilística é um erro do pedido, não do
+        servidor: devolve 422 com a mensagem, em vez de um 500 opaco."""
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
 
     return app
 
