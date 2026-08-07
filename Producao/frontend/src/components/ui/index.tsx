@@ -1,11 +1,18 @@
 "use client";
 
-import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import type {
+  HTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  TdHTMLAttributes,
+  ThHTMLAttributes,
+} from "react";
 
 import { cn } from "@/lib/utils";
 
 export { Botao } from "./Botao";
 export { Cartao, GrelhaRevelada, ItemRevelado, TituloCartao } from "./Cartao";
+export { BarraFiltros, Selector } from "./Filtros";
 
 // ---------------------------------------------------------------------------
 // Cabeçalho de página
@@ -157,7 +164,7 @@ export function Th({
   className,
   numerico,
   ...props
-}: HTMLAttributes<HTMLTableCellElement> & { numerico?: boolean }) {
+}: ThHTMLAttributes<HTMLTableCellElement> & { numerico?: boolean }) {
   return (
     <th
       className={cn(
@@ -175,7 +182,7 @@ export function Td({
   className,
   numerico,
   ...props
-}: HTMLAttributes<HTMLTableCellElement> & { numerico?: boolean }) {
+}: TdHTMLAttributes<HTMLTableCellElement> & { numerico?: boolean }) {
   return (
     <td
       className={cn(

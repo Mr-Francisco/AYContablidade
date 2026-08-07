@@ -83,6 +83,13 @@ export interface Exercicio {
   fim: string;
   estado: "aberto" | "fechado";
   ativo: boolean;
+  /** Resultado do último Apuramento de Resultados; nulo se ainda por apurar. */
+  apuramento: {
+    em: string;
+    ate: string;
+    resultado: string;
+    lancamento_ids: string[];
+  } | null;
 }
 
 // ---------------------------------------------------------------------------

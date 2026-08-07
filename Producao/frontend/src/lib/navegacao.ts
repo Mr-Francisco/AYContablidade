@@ -17,6 +17,12 @@ export interface ItemNav {
   /** Perfis com acesso, quando não há capacidade específica. */
   perfis?: string[];
   icone?: string;
+  /**
+   * Página ainda por construir. Fica aqui para a estrutura de destino estar
+   * documentada num só sítio, mas é filtrada da navegação — um link para uma
+   * rota inexistente dá 404 e parece avaria.
+   */
+  pendente?: boolean;
 }
 
 export interface GrupoNav {
@@ -25,9 +31,11 @@ export interface GrupoNav {
   modulo?: Modulo;
   perfis?: string[];
   filhos?: ItemNav[];
+  /** Grupo de nível superior ainda por construir — ver ItemNav.pendente. */
+  pendente?: boolean;
 }
 
-export const NAV: GrupoNav[] = [
+const NAV_COMPLETO: GrupoNav[] = [
   { rotulo: "Painel", href: "/" },
 
   {
@@ -64,6 +72,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contabilidade/balancete-razao",
+        pendente: true,
         rotulo: "Balancete do Razão",
         seccao: "Balancetes",
         cap: "contab.ver",
@@ -85,6 +94,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contabilidade/notas",
+        pendente: true,
         rotulo: "Notas",
         seccao: "Demonstrações",
         cap: "contab.ver",
@@ -92,6 +102,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contabilidade/fluxos-caixa",
+        pendente: true,
         rotulo: "Fluxos de Caixa",
         seccao: "Demonstrações",
         cap: "contab.ver",
@@ -99,6 +110,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contabilidade/apuramento-iva",
+        pendente: true,
         rotulo: "Apuramento do IVA",
         seccao: "Apuramentos",
         cap: "contab.ver",
@@ -106,6 +118,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contabilidade/retencoes",
+        pendente: true,
         rotulo: "Retenções na Fonte",
         seccao: "Apuramentos",
         cap: "contab.ver",
@@ -113,6 +126,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contabilidade/extrato",
+        pendente: true,
         rotulo: "Extratos",
         seccao: "Exploração",
         cap: "contab.ver",
@@ -127,6 +141,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contabilidade/diarios",
+        pendente: true,
         rotulo: "Diários",
         seccao: "Tabelas",
         cap: "contab.ver",
@@ -134,6 +149,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contabilidade/documentos",
+        pendente: true,
         rotulo: "Documentos",
         seccao: "Tabelas",
         cap: "contab.ver",
@@ -148,6 +164,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/analitica",
+        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "analitica.ver",
@@ -155,6 +172,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/analitica/mapa",
+        pendente: true,
         rotulo: "Mapa de Custos",
         seccao: "Analítica",
         cap: "analitica.ver",
@@ -162,6 +180,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/analitica/centros",
+        pendente: true,
         rotulo: "Centros de Custo",
         seccao: "Analítica",
         cap: "analitica.ver",
@@ -176,6 +195,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/contas-correntes",
+        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "financeiro.ver",
@@ -183,6 +203,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contas-correntes/clientes",
+        pendente: true,
         rotulo: "Clientes",
         seccao: "Contas Correntes",
         cap: "financeiro.ver",
@@ -190,6 +211,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/contas-correntes/fornecedores",
+        pendente: true,
         rotulo: "Fornecedores",
         seccao: "Contas Correntes",
         cap: "financeiro.ver",
@@ -204,6 +226,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/comercial",
+        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "comercial.ver",
@@ -211,6 +234,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/comercial/vendas",
+        pendente: true,
         rotulo: "Vendas",
         seccao: "Comercial",
         cap: "comercial.ver",
@@ -218,6 +242,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/comercial/consulta-faturas",
+        pendente: true,
         rotulo: "Consulta de Faturas",
         seccao: "Comercial",
         cap: "comercial.ver",
@@ -225,6 +250,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/comercial/clientes",
+        pendente: true,
         rotulo: "Clientes",
         seccao: "Comercial",
         cap: "comercial.ver",
@@ -232,6 +258,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/comercial/vendedores",
+        pendente: true,
         rotulo: "Vendedores",
         seccao: "Comercial",
         cap: "comercial.ver",
@@ -246,6 +273,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/logistica/artigos",
+        pendente: true,
         rotulo: "Artigos",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -253,6 +281,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/compras",
+        pendente: true,
         rotulo: "Compras",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -260,6 +289,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/rececao",
+        pendente: true,
         rotulo: "Receção",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -267,6 +297,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/expedicao",
+        pendente: true,
         rotulo: "Expedição",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -274,6 +305,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/transferencia",
+        pendente: true,
         rotulo: "Transferência",
         seccao: "Inventário",
         cap: "logistica.ver",
@@ -281,6 +313,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/acerto-positivo",
+        pendente: true,
         rotulo: "Acerto Positivo",
         seccao: "Operações Logísticas",
         cap: "logistica.ver",
@@ -288,6 +321,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/acerto-negativo",
+        pendente: true,
         rotulo: "Acerto Negativo",
         seccao: "Operações Logísticas",
         cap: "logistica.ver",
@@ -295,6 +329,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/existencias",
+        pendente: true,
         rotulo: "Existências",
         seccao: "Exploração",
         cap: "logistica.ver",
@@ -302,6 +337,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/armazens",
+        pendente: true,
         rotulo: "Armazéns",
         seccao: "Recursos",
         cap: "logistica.ver",
@@ -309,6 +345,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/logistica/fornecedores",
+        pendente: true,
         rotulo: "Fornecedores",
         seccao: "Recursos",
         cap: "logistica.ver",
@@ -323,6 +360,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/imobilizados",
+        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "imob.ver",
@@ -330,6 +368,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/imobilizados/ativos",
+        pendente: true,
         rotulo: "Ficha de Ativos",
         seccao: "Imobilizado",
         cap: "imob.ver",
@@ -337,6 +376,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/imobilizados/amortizacoes",
+        pendente: true,
         rotulo: "Amortizações",
         seccao: "Imobilizado",
         cap: "imob.ver",
@@ -351,6 +391,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/rh",
+        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "rh.ver",
@@ -358,6 +399,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/rh/funcionarios",
+        pendente: true,
         rotulo: "Funcionários",
         seccao: "Salários",
         cap: "rh.ver",
@@ -365,6 +407,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/rh/alteracoes",
+        pendente: true,
         rotulo: "Alterações Mensais",
         seccao: "Salários",
         cap: "rh.ver",
@@ -372,6 +415,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/rh/processamento",
+        pendente: true,
         rotulo: "Processamento",
         seccao: "Salários",
         cap: "rh.ver",
@@ -379,6 +423,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/rh/pagamentos",
+        pendente: true,
         rotulo: "Pagamentos",
         seccao: "Salários",
         cap: "rh.ver",
@@ -386,6 +431,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/rh/recibos",
+        pendente: true,
         rotulo: "Recibos",
         seccao: "Salários",
         cap: "rh.ver",
@@ -393,6 +439,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/rh/simulacao",
+        pendente: true,
         rotulo: "Simulação",
         seccao: "Salários",
         cap: "rh.ver",
@@ -400,6 +447,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/rh/independentes",
+        pendente: true,
         rotulo: "Independentes",
         seccao: "Honorários",
         cap: "rh.ver",
@@ -407,6 +455,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/rh/tabelas",
+        pendente: true,
         rotulo: "Tabelas",
         seccao: "Recursos",
         cap: "rh.ver",
@@ -421,6 +470,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/fiscalidade",
+        pendente: true,
         rotulo: "Impostos",
         seccao: "Fiscalidade",
         cap: "contab.ver",
@@ -428,6 +478,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/fiscalidade/regimes-iva",
+        pendente: true,
         rotulo: "Regimes de IVA",
         seccao: "Fiscalidade",
         cap: "contab.ver",
@@ -435,6 +486,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/fiscalidade/obrigacoes",
+        pendente: true,
         rotulo: "Obrigações",
         seccao: "Fiscalidade",
         cap: "contab.ver",
@@ -442,6 +494,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/fiscalidade/calendario",
+        pendente: true,
         rotulo: "Calendário Fiscal",
         seccao: "Fiscalidade",
         cap: "contab.ver",
@@ -449,6 +502,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/fiscalidade/mapa-remuneracoes",
+        pendente: true,
         rotulo: "Mapa de Remunerações",
         seccao: "Declarações",
         cap: "rh.ver",
@@ -463,6 +517,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/assistente",
+        pendente: true,
         rotulo: "Perguntas e Respostas",
         seccao: "Assistente",
         cap: "contab.ver",
@@ -470,6 +525,7 @@ export const NAV: GrupoNav[] = [
       },
       {
         href: "/assistente/diagnostico",
+        pendente: true,
         rotulo: "Diagnóstico",
         seccao: "Assistente",
         cap: "contab.ver",
@@ -483,6 +539,7 @@ export const NAV: GrupoNav[] = [
     filhos: [
       {
         href: "/gestao/utilizadores",
+        pendente: true,
         rotulo: "Utilizadores",
         seccao: "Sistema",
         perfis: ["admin"],
@@ -491,8 +548,22 @@ export const NAV: GrupoNav[] = [
     ],
   },
 
-  { rotulo: "Configurações", href: "/configuracoes", perfis: ["admin"] },
+  {
+    rotulo: "Configurações",
+    href: "/configuracoes",
+    perfis: ["admin"],
+    pendente: true,
+  },
 ];
+
+/**
+ * Navegação visível: só o que já existe. À medida que as páginas forem sendo
+ * construídas, basta tirar-lhes o `pendente` em NAV_COMPLETO.
+ */
+export const NAV: GrupoNav[] = NAV_COMPLETO.filter((g) => !g.pendente)
+  .map((g) => ({ ...g, filhos: g.filhos?.filter((f) => !f.pendente) }))
+  // Um grupo cujos filhos estejam todos por construir desaparece da barra.
+  .filter((g) => !g.filhos || g.filhos.length > 0);
 
 /** O grupo a que uma rota pertence — decide o ribbon a mostrar. */
 export function grupoDaRota(caminho: string): GrupoNav | null {
