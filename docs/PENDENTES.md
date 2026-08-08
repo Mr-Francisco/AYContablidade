@@ -8,32 +8,16 @@ o comportamento existir e estiver verificado — não quando o código foi escri
 
 ---
 
-## 1. O estado da empresa não pode ser alterado por ninguém
+## 1. Estado das empresas — FEITO
 
-**Estado:** por fazer. É a lacuna mais séria desta lista.
+`PATCH /api/licencas/empresas/{id}/estado` permite ao superadministrador
+suspender, reactivar e cancelar, com motivo e auditoria. Suspender e cancelar
+sobem a `token_version` de todos os utilizadores da empresa, o que corta as
+sessões abertas no pedido seguinte — sem isso, suspender só travava logins
+novos. Na interface, botões por linha com diálogo de confirmação.
 
-`EstadoEmpresa` tem `activa`, `suspensa` e `cancelada`
-([constants.py:152](../Producao/backend/src/core/constants.py:152)), e o login
-recusa a entrada a quem pertence a uma empresa que não esteja activa
-([auth_router.py:128](../Producao/backend/src/api/routers/auth_router.py:128)).
-
-Só que **nenhuma rota escreve nesse campo**. Uma empresa fica `activa` no
-momento da activação da licença e nunca mais muda. A verificação no login é uma
-porta trancada sem ninguém que lhe possa mexer na chave.
-
-Consequência prática: não há forma de suspender uma empresa que deixe de pagar,
-ou de cortar o acesso a uma empresa comprometida, a não ser mexendo à mão na
-base de dados.
-
-A especificação pede "estado das empresas" na área do superadmin.
-
-**Falta:** rota do superadmin para suspender/reactivar/cancelar uma empresa, com
-auditoria. Suspender tem de expulsar quem já está dentro — subir o
-`token_version` de todos os utilizadores da empresa, senão as sessões abertas
-continuam a funcionar até expirarem.
-
-**Confirma-se assim:** suspender uma empresa com um utilizador com sessão
-aberta; o pedido seguinte desse utilizador tem de falhar, e não só o login.
+Confirmado a correr: um utilizador com sessão aberta apanha 401 imediatamente
+após a suspensão, e não apenas no login seguinte.
 
 ---
 
