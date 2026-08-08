@@ -12,8 +12,12 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const COOKIE = "aycontab_access_token";
 
-/** Rotas acessíveis sem sessão. */
-const PUBLICAS = ["/entrar", "/registar", "/activar"];
+/** Rotas acessíveis sem sessão.
+ *
+ *  A raiz é a página de apresentação: existe para ser encontrada por quem
+ *  ainda não é cliente, e por isso tem de responder a quem chega sem sessão
+ *  nenhuma — incluindo aos motores de busca. A aplicação começa em `/painel`. */
+const PUBLICAS = ["/", "/entrar", "/registar", "/activar"];
 
 /** Das públicas, aquelas de onde se deve tirar quem JÁ tem sessão.
  *
@@ -45,7 +49,7 @@ export function proxy(request: NextRequest) {
   );
   if (temSessao && soSemSessao) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/painel";
     url.search = "";
     return NextResponse.redirect(url);
   }
@@ -55,7 +59,10 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Tudo excepto ficheiros estáticos e imagens.
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Tudo excepto ficheiros estáticos, imagens e os ficheiros que os motores
+    // de busca vão buscar. O `robots.txt` e o `sitemap.xml` TÊM de responder a
+    // quem chega sem sessão: apanhados por esta guarda, devolviam um
+    // redireccionamento para o login e a apresentação deixava de ser indexada.
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

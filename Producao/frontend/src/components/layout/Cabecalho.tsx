@@ -103,7 +103,7 @@ export function Cabecalho() {
   return (
     <header className="sticky top-0 z-40 bg-superficie border-b border-borda shadow-suave">
       <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-5 py-2.5">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+        <Link href="/painel" className="flex shrink-0 items-center gap-2.5">
           <span className="rounded-lg bg-marca px-2.5 py-1 text-2xl font-black leading-none tracking-[-1px] text-white">
             SGD
           </span>

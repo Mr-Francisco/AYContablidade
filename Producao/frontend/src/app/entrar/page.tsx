@@ -45,7 +45,7 @@ function Formulario() {
     // Uma conta de administração da plataforma não pertence a nenhuma empresa.
     // Largá-la no painel da contabilidade dava-lhe um ecrã vazio construído a
     // partir de meia dúzia de pedidos que respondem todos 400.
-    router.push(u.empresa_id ? "/" : "/plataforma");
+    router.push(u.empresa_id ? "/painel" : "/plataforma");
   }
 
   function falhou(e: unknown) {

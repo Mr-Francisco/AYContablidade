@@ -79,3 +79,6 @@
 - Uma resposta 404 do Next em rotas que existem (e que já funcionaram) é cache do Turbopack: parar o servidor, apagar `.next` e arrancar de novo. O `.next` sobrevive a reinícios e serve um manifesto de rotas velho.
 - Uma alteração que muda o que OUTRA chave do SWR devolve tem de a revalidar (`mutate("/api/...")`): sem isso a interface contradiz-se — o cabeçalho anunciava o modelo anterior enquanto a tabela já mostrava o novo.
 - Uma conta sem empresa (a da plataforma) não pode receber o menu do ERP: essas rotas exigem `empresa_id` e respondem 400 em série. Filtrar a navegação por `utilizador.empresa_id`, e não só por perfil.
+- O `robots.txt` e o `sitemap.xml` são apanhados pelo `matcher` do `proxy.ts` como se fossem rotas: sem os excluir, respondem 307 para o login e a página pública deixa de ser indexada.
+- Uma página pública deve ser componente de servidor sem `"use client"`: fica pré-renderizada como estática, chega pronta e não carrega JavaScript nenhum. Framer Motion numa landing obriga a página inteira a ser cliente — as micro-interacções fazem-se em CSS.
+- No tema escuro a `--color-marca` clareia (#6f95e0) e texto branco por cima dá 2,98:1, abaixo do mínimo. Sobre superfícies de marca, no escuro usa-se tinta escura — é o que a variante `acento` já fazia.

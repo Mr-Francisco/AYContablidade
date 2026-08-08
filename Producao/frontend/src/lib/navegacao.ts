@@ -40,7 +40,7 @@ export interface GrupoNav {
 }
 
 const NAV_COMPLETO: GrupoNav[] = [
-  { rotulo: "Painel", href: "/" },
+  { rotulo: "Painel", href: "/painel" },
 
   {
     rotulo: "Contabilidade",
