@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     # Tentativas de código antes de bloquear, e por quanto tempo.
     TOTP_MAX_TENTATIVAS: int = 3
     TOTP_BLOQUEIO_MINUTOS: int = 15
+    # Validade do desafio entre o primeiro e o segundo passo do login. Curta de
+    # propósito: é uma janela em que a palavra-passe já foi aceite e só falta o
+    # código. Longa demais transforma-se num token de meia-sessão esquecido.
+    TOTP_DESAFIO_MINUTOS: int = 5
     RATE_LIMIT_GERAL: str = "120/minute"
 
     # ---------- CORS ----------

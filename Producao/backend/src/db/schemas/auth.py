@@ -81,6 +81,26 @@ class TokenResposta(BaseModel):
     utilizador: UtilizadorPublico
 
 
+class DesafioResposta(BaseModel):
+    """Primeiro passo concluído: falta o código do segundo factor.
+
+    Não traz `access_token` — não há sessão nenhuma ainda. O `desafio` só é
+    aceite pelo `/auth/login/2fa` e mais nada.
+    """
+
+    requer_2fa: bool = True
+    desafio: str
+    expira_em: datetime
+
+
+class Login2FaPedido(BaseModel):
+    desafio: str
+    #: Seis dígitos da aplicação autenticadora ou um código de recuperação
+    #: `XXXX-XXXX`. O mesmo campo aceita os dois: quem perdeu o telemóvel não
+    #: tem de descobrir onde escrever o código de papel.
+    codigo: str = Field(min_length=6, max_length=32)
+
+
 # ---------------------------------------------------------------------------
 # Segundo factor (TOTP)
 # ---------------------------------------------------------------------------

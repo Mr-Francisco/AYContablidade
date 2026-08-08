@@ -13,6 +13,7 @@ import {
 
 import { api, ErroApi, guardarToken, lerToken, limparSessao } from "@/lib/api";
 import type {
+  Desafio2Fa,
   Empresa,
   Modulo,
   Perfil,
@@ -62,7 +63,14 @@ interface AuthContexto {
   utilizador: Utilizador | null;
   empresa: Empresa | null;
   aCarregar: boolean;
-  entrar: (email: string, password: string, empresa?: string) => Promise<void>;
+  /** Devolve um desafio quando falta o segundo factor, ou `null` se entrou. */
+  entrar: (
+    email: string,
+    password: string,
+    empresa?: string,
+  ) => Promise<Desafio2Fa | null>;
+  /** Segundo passo do login, com o código da aplicação ou de recuperação. */
+  entrarCom2Fa: (desafio: string, codigo: string) => Promise<void>;
   sair: () => void;
   /** Capacidade da matriz CAPS, ex.: `pode("contab.lancar")`. */
   pode: (acao: string) => boolean;
@@ -116,24 +124,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // `empresa` é o código («BE001») ou o nome. Obrigatório para todos menos o
   // superadministrador da plataforma, que não pertence a nenhuma — por isso
   // vai opcional e é o backend que decide se falta.
+  const abrirSessao = useCallback(async (r: RespostaLogin) => {
+    guardarToken(r.access_token, r.expira_absoluto);
+    setUtilizador(r.utilizador);
+    if (r.utilizador.empresa_id) {
+      try {
+        setEmpresa(await api.get<Empresa>("/api/empresa"));
+      } catch {
+        /* sem acesso à ficha da empresa — não impede entrar */
+      }
+    }
+  }, []);
+
+  // Devolve `null` quando a sessão ficou aberta, ou o desafio quando falta o
+  // segundo factor. Aqui não fica estado nenhum a meio: enquanto houver
+  // desafio não há sessão, e o desafio não abre porta nenhuma sozinho.
   const entrar = useCallback(
-    async (email: string, password: string, empresa?: string) => {
-      const r = await api.post<RespostaLogin>(
+    async (
+      email: string,
+      password: string,
+      empresa?: string,
+    ): Promise<Desafio2Fa | null> => {
+      const r = await api.post<RespostaLogin | Desafio2Fa>(
         "/api/auth/login",
         { email, password, empresa: empresa?.trim() || null },
         { publico: true },
       );
-      guardarToken(r.access_token, r.expira_absoluto);
-      setUtilizador(r.utilizador);
-      if (r.utilizador.empresa_id) {
-        try {
-          setEmpresa(await api.get<Empresa>("/api/empresa"));
-        } catch {
-          /* sem acesso à ficha da empresa — não impede entrar */
-        }
-      }
+      if ("requer_2fa" in r) return r;
+      await abrirSessao(r);
+      return null;
     },
-    [],
+    [abrirSessao],
+  );
+
+  const entrarCom2Fa = useCallback(
+    async (desafio: string, codigo: string) => {
+      await abrirSessao(
+        await api.post<RespostaLogin>(
+          "/api/auth/login/2fa",
+          { desafio, codigo: codigo.trim() },
+          { publico: true },
+        ),
+      );
+    },
+    [abrirSessao],
   );
 
   const sair = useCallback(() => {
@@ -174,13 +208,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       empresa,
       aCarregar,
       entrar,
+      entrarCom2Fa,
       sair,
       pode,
       moduloAtivo,
       ehAdmin:
         utilizador?.perfil === "admin" || utilizador?.perfil === "superadmin",
     }),
-    [utilizador, empresa, aCarregar, entrar, sair, pode, moduloAtivo],
+    [
+      utilizador,
+      empresa,
+      aCarregar,
+      entrar,
+      entrarCom2Fa,
+      sair,
+      pode,
+      moduloAtivo,
+    ],
   );
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;

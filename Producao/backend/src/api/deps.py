@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.auth.permissions import licenca_valida, pode, pode_accao
-from src.auth.security import TokenInvalido, descodificar_token
+from src.auth.security import TIPO_ACESSO, TokenInvalido, descodificar_token
 from src.core.constants import Accao, EstadoEmpresa, Modulo, Perfil
 from src.db.base import get_db
 from src.db.models.tenancy import Empresa, Licenca
@@ -62,6 +62,13 @@ def utilizador_atual(
         payload = descodificar_token(token)
     except TokenInvalido as e:
         raise _nao_autenticado(str(e)) from e
+
+    # Só tokens de ACESSO abrem sessão. O desafio emitido entre os dois passos
+    # do login prova a palavra-passe e mais nada: aceitá-lo aqui deixaria
+    # contornar o segundo factor bastando não fazer o segundo pedido. Tokens
+    # antigos, anteriores ao campo, contam como de acesso.
+    if payload.get("tipo", TIPO_ACESSO) != TIPO_ACESSO:
+        raise _nao_autenticado("Token inválido.")
 
     try:
         user_id = UUID(str(payload.get("sub")))

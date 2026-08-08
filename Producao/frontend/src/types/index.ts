@@ -50,6 +50,17 @@ export interface EstadoTotp {
   obrigatorio: boolean;
 }
 
+/** Primeiro passo do login quando a conta tem segundo factor.
+ *
+ * Não traz token nenhum: enquanto houver desafio não há sessão. Uma
+ * palavra-passe errada numa conta com 2FA devolve isto na mesma — é o que
+ * impede o formulário de servir para confirmar palavras-passe. */
+export interface Desafio2Fa {
+  requer_2fa: true;
+  desafio: string;
+  expira_em: string;
+}
+
 /** Material de configuração. Só existe entre iniciar e confirmar. */
 export interface InicioTotp {
   qr_svg: string;
