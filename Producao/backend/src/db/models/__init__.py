@@ -6,6 +6,7 @@ que ninguém importe fica invisível para as migrações.
 """
 
 from src.db.base import Base
+from src.db.models.auditoria import RegistoAuditoria
 from src.db.models.comercial import (
     Compra,
     CompraLinha,
@@ -53,6 +54,7 @@ __all__ = [
     "Artigo",
     "Ativo",
     "Base",
+    "RegistoAuditoria",
     "CentroCusto",
     "Colaborador",
     "Compra",

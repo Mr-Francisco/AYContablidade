@@ -38,6 +38,8 @@ from src.db.schemas.licenca import (
     LicencaPublica,
 )
 from src.services import licenciamento as lic_svc
+from src.services.auditoria import auditar
+from src.services.auditoria import listar as listar_auditoria
 from src.services.licenciamento import ErroLicenca
 from src.services.seed import seed_empresa
 
@@ -50,6 +52,14 @@ router = APIRouter(
     tags=["licenciamento"],
     dependencies=[Depends(exigir_superadmin)],
 )
+
+
+
+def _legivel(valor):
+    """Converte para algo que caiba em JSONB (datas, Decimals, enums)."""
+    if valor is None or isinstance(valor, (str, int, float, bool, list, dict)):
+        return valor
+    return str(valor)
 
 
 # ---------------------------------------------------------------------------
@@ -86,6 +96,16 @@ def activar(request: Request, dados: ActivacaoPedido, db: DB) -> ActivacaoRespos
     # O seed corre na MESMA transacção que a criação: uma empresa sem plano de
     # contas não serviria para nada, e ficar a meio seria pior do que falhar.
     seed_empresa(db, empresa)
+    # Sem actor: quem activa ainda não tem conta no momento em que o faz. É o
+    # único registo de auditoria sem autor, e tem de ser legível como tal.
+    auditar(
+        db, actor=None, accao="licenca.activar", request=request,
+        alvo_tipo="empresa", alvo_id=empresa.id,
+        alvo_desc=f"{empresa.nome} ({empresa.codigo})",
+        empresa_id=empresa.id,
+        detalhes={"nif": empresa.nif, "plano": r["plano"],
+                  "admin_email": dados.admin_email},
+    )
     db.commit()
 
     return ActivacaoResposta(
@@ -123,6 +143,15 @@ def gerar(
     except ErroLicenca as e:
         raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from e
 
+    auditar(
+        db, actor=user, accao="licenca.gerar", request=request,
+        alvo_tipo="licenca", alvo_id=lic.id,
+        alvo_desc=f"{lic.chave_prefixo}… para {lic.nome_previsto}",
+        detalhes={"nif": lic.nif_previsto, "plano": lic.plano,
+                  "duracao_meses": lic.duracao_meses,
+                  "limite_utilizadores": lic.limite_utilizadores,
+                  "limite_tokens_mes": lic.limite_tokens_mes},
+    )
     db.commit()
     db.refresh(lic)
     return LicencaGerada(
@@ -165,9 +194,39 @@ def empresas(db: DB) -> list[EmpresaPublica]:
     ]
 
 
+
+@router.get("/auditoria")
+def auditoria(
+    db: DB,
+    empresa_id: UUID | None = None,
+    accao: str | None = None,
+    limite: int = 300,
+) -> list[dict]:
+    """Registo de auditoria de TODA a plataforma.
+
+    Aqui o `empresa_id` é um filtro opcional e não uma fronteira: o
+    superadministrador vê tudo por definição, incluindo o que os
+    administradores fizeram dentro das empresas deles. A fronteira existe na
+    rota equivalente de `/api/empresa/auditoria`, que a força.
+    """
+    return [
+        {
+            "id": r.id, "criado_em": r.criado_em, "accao": r.accao,
+            "actor_nome": r.actor_nome, "actor_email": r.actor_email,
+            "actor_perfil": r.actor_perfil, "alvo_tipo": r.alvo_tipo,
+            "alvo_id": r.alvo_id, "alvo_desc": r.alvo_desc,
+            "empresa_id": r.empresa_id, "detalhes": r.detalhes,
+            "ip": r.ip,
+        }
+        for r in listar_auditoria(
+            db, empresa_id=empresa_id, accao=accao, limite=limite
+        )
+    ]
+
 @router.patch("/{licenca_id}", response_model=LicencaPublica)
 def atualizar(
-    request: Request, licenca_id: UUID, dados: LicencaAtualizar, db: DB
+    request: Request, licenca_id: UUID, dados: LicencaAtualizar,
+    user: UtilizadorAtual, db: DB,
 ) -> LicencaPublica:
     """Altera o contrato: plano, validade, estado e limites.
 
@@ -179,16 +238,27 @@ def atualizar(
     if lic is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Licença não encontrada.")
 
-    for campo, valor in dados.model_dump(exclude_unset=True).items():
+    alterados = dados.model_dump(exclude_unset=True)
+    antes = {c: _legivel(getattr(lic, c)) for c in alterados}
+    for campo, valor in alterados.items():
         setattr(lic, campo, valor)
 
+    auditar(
+        db, actor=user, accao="licenca.actualizar", request=request,
+        alvo_tipo="licenca", alvo_id=lic.id,
+        alvo_desc=f"{lic.chave_prefixo}… de {lic.nome_previsto}",
+        empresa_id=lic.empresa_id,
+        detalhes={"antes": antes, "depois": {c: _legivel(v) for c, v in alterados.items()}},
+    )
     db.commit()
     db.refresh(lic)
     return LicencaPublica.model_validate(lic)
 
 
 @router.delete("/{licenca_id}", status_code=status.HTTP_204_NO_CONTENT)
-def revogar(request: Request, licenca_id: UUID, db: DB) -> None:
+def revogar(
+    request: Request, licenca_id: UUID, user: UtilizadorAtual, db: DB
+) -> None:
     """Revoga uma licença.
 
     Uma licença POR ACTIVAR é apagada — não chegou a servir para nada. Uma
@@ -200,6 +270,13 @@ def revogar(request: Request, licenca_id: UUID, db: DB) -> None:
     if lic is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Licença não encontrada.")
 
+    auditar(
+        db, actor=user, accao="licenca.revogar", request=request,
+        alvo_tipo="licenca", alvo_id=lic.id,
+        alvo_desc=f"{lic.chave_prefixo}… de {lic.nome_previsto}",
+        empresa_id=lic.empresa_id,
+        detalhes={"apagada": lic.empresa_id is None},
+    )
     if lic.empresa_id is None:
         db.delete(lic)
     else:

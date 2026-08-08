@@ -33,6 +33,7 @@ from src.core.constants import (
 from src.db.base import agora
 from src.db.models.user import User
 from src.db.schemas.auth import UtilizadorPublico
+from src.services.auditoria import auditar
 from src.db.schemas.user import (
     AprovarPedido,
     DefinirPassword,
@@ -60,6 +61,14 @@ def _da_empresa(db: DB, empresa_id: UUID, user_id: UUID) -> User:
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Utilizador não encontrado.")
     return user
+
+
+
+def _legivel(valor):
+    """Converte para algo que caiba em JSONB (enums, datas, UUIDs)."""
+    if valor is None or isinstance(valor, (str, int, float, bool, list, dict)):
+        return valor
+    return str(valor)
 
 
 @router.get("", response_model=list[UtilizadorPublico])
@@ -113,7 +122,11 @@ def pendentes(empresa: EmpresaAtual, db: DB) -> list[UtilizadorPublico]:
 
 @router.post("", response_model=UtilizadorPublico, status_code=status.HTTP_201_CREATED)
 def criar(
-    request: Request, dados: UtilizadorCriar, empresa: EmpresaAtual, db: DB
+    request: Request,
+    dados: UtilizadorCriar,
+    empresa: EmpresaAtual,
+    quem: UtilizadorAtual,
+    db: DB,
 ) -> UtilizadorPublico:
     validar_forca_password(dados.password)
 
@@ -160,6 +173,14 @@ def criar(
         permissoes_accao=dados.permissoes_accao,
     )
     db.add(user)
+    db.flush()
+    auditar(
+        db, actor=quem, accao="utilizador.criar", request=request,
+        alvo_tipo="utilizador", alvo_id=user.id,
+        alvo_desc=f"{user.nome} <{user.email}>", empresa_id=empresa.id,
+        detalhes={"perfil": str(user.perfil),
+                  "modulos_permitidos": user.modulos_permitidos},
+    )
     db.commit()
     db.refresh(user)
     return UtilizadorPublico.model_validate(user)
@@ -205,11 +226,20 @@ def atualizar(
         "ativo" in campos and campos["ativo"] != user.ativo
     )
 
+    antes = {c: _legivel(getattr(user, c)) for c in campos}
     for campo, valor in campos.items():
         setattr(user, campo, valor)
     if revoga:
         user.token_version += 1
 
+    auditar(
+        db, actor=atual, accao="utilizador.actualizar", request=request,
+        alvo_tipo="utilizador", alvo_id=user.id,
+        alvo_desc=f"{user.nome} <{user.email}>", empresa_id=empresa.id,
+        detalhes={"antes": antes,
+                  "depois": {c: _legivel(v) for c, v in campos.items()},
+                  "sessoes_revogadas": revoga},
+    )
     db.commit()
     db.refresh(user)
     return UtilizadorPublico.model_validate(user)
@@ -241,6 +271,12 @@ def aprovar(
     user.aprovado_por_id = atual.id
     user.aprovado_em = agora()
 
+    auditar(
+        db, actor=atual, accao="utilizador.aprovar", request=request,
+        alvo_tipo="utilizador", alvo_id=user.id,
+        alvo_desc=f"{user.nome} <{user.email}>", empresa_id=empresa.id,
+        detalhes={"perfil": str(user.perfil)},
+    )
     db.commit()
     db.refresh(user)
     return UtilizadorPublico.model_validate(user)
@@ -252,6 +288,7 @@ def definir_password(
     user_id: UUID,
     dados: DefinirPassword,
     empresa: EmpresaAtual,
+    atual: UtilizadorAtual,
     db: DB,
 ) -> None:
     """Define a palavra-passe de outro utilizador e corta-lhe as sessões."""
@@ -259,6 +296,16 @@ def definir_password(
     validar_forca_password(dados.password_nova)
     user.password_hash = hash_password(dados.password_nova)
     user.token_version += 1
+
+    # Um administrador a mudar a palavra-passe de outra pessoa é das acções
+    # mais sensíveis que existem: dá-lhe acesso à conta. A palavra-passe em si
+    # não entra nos detalhes — o `auditar` filtra-a de qualquer maneira.
+    auditar(
+        db, actor=atual, accao="utilizador.definir_password", request=request,
+        alvo_tipo="utilizador", alvo_id=user.id,
+        alvo_desc=f"{user.nome} <{user.email}>", empresa_id=empresa.id,
+        detalhes={"sessoes_revogadas": True},
+    )
     db.commit()
 
 
@@ -275,5 +322,13 @@ def remover(
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Não pode eliminar a sua própria conta."
         )
+    # Auditar ANTES de apagar: depois do delete os campos já não se leem, e é
+    # justamente esta acção que mais interessa ter registada.
+    auditar(
+        db, actor=atual, accao="utilizador.remover", request=request,
+        alvo_tipo="utilizador", alvo_id=user.id,
+        alvo_desc=f"{user.nome} <{user.email}>", empresa_id=empresa.id,
+        detalhes={"perfil": str(user.perfil)},
+    )
     db.delete(user)
     db.commit()

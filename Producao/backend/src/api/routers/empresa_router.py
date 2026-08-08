@@ -10,10 +10,18 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from src.api.deps import DB, EmpresaAtual, exigir_perfil, licenca_da_empresa
+from src.api.deps import (
+    DB,
+    EmpresaAtual,
+    UtilizadorAtual,
+    exigir_perfil,
+    licenca_da_empresa,
+)
 from src.core.constants import Perfil, RegimeIVA
 from src.db.models.tenancy import ConfigEmpresa
 from src.db.schemas.licenca import EmpresaPublica, LicencaPublica
+from src.services.auditoria import auditar
+from src.services.auditoria import listar as listar_auditoria
 
 router = APIRouter(
     prefix="/api/empresa",
@@ -46,6 +54,38 @@ class ConfigPublica(BaseModel):
     agt: dict
 
 
+
+def _legivel(valor):
+    """Converte para algo que caiba em JSONB (enums, datas, UUIDs)."""
+    if valor is None or isinstance(valor, (str, int, float, bool, list, dict)):
+        return valor
+    return str(valor)
+
+
+@router.get("/auditoria")
+def auditoria(
+    empresa: EmpresaAtual, db: DB, accao: str | None = None, limite: int = 200
+) -> list[dict]:
+    """Registo de auditoria DESTA empresa.
+
+    O `empresa_id` é passado sempre e não vem do pedido: é o que garante que um
+    administrador vê o que aconteceu à sua empresa e nada mais, incluindo as
+    acções que o superadministrador fez sobre ela — que é justamente o que ele
+    tem direito a saber.
+    """
+    return [
+        {
+            "id": r.id, "criado_em": r.criado_em, "accao": r.accao,
+            "actor_nome": r.actor_nome, "actor_email": r.actor_email,
+            "actor_perfil": r.actor_perfil, "alvo_tipo": r.alvo_tipo,
+            "alvo_desc": r.alvo_desc, "detalhes": r.detalhes, "ip": r.ip,
+        }
+        for r in listar_auditoria(
+            db, empresa_id=empresa.id, accao=accao, limite=limite
+        )
+    ]
+
+
 @router.get("", response_model=EmpresaPublica)
 def obter(empresa: EmpresaAtual) -> EmpresaPublica:
     return EmpresaPublica.model_validate(empresa)
@@ -53,7 +93,8 @@ def obter(empresa: EmpresaAtual) -> EmpresaPublica:
 
 @router.patch("", response_model=EmpresaPublica)
 def atualizar(
-    request: Request, dados: EmpresaAtualizar, empresa: EmpresaAtual, db: DB
+    request: Request, dados: EmpresaAtualizar, empresa: EmpresaAtual,
+    quem: UtilizadorAtual, db: DB,
 ) -> EmpresaPublica:
     """Actualiza os dados da empresa.
 
@@ -78,9 +119,17 @@ def atualizar(
         )
         empresa.regime_historico = historico
 
+    antes = {c: _legivel(getattr(empresa, c)) for c in campos}
     for campo, valor in campos.items():
         setattr(empresa, campo, valor)
 
+    auditar(
+        db, actor=quem, accao="empresa.actualizar", request=request,
+        alvo_tipo="empresa", alvo_id=empresa.id, alvo_desc=empresa.nome,
+        empresa_id=empresa.id,
+        detalhes={"antes": antes,
+                  "depois": {c: _legivel(v) for c, v in campos.items()}},
+    )
     db.commit()
     db.refresh(empresa)
     return EmpresaPublica.model_validate(empresa)
@@ -113,7 +162,8 @@ def obter_config(empresa: EmpresaAtual, db: DB) -> ConfigPublica:
 
 @router.patch("/config", response_model=ConfigPublica)
 def atualizar_config(
-    request: Request, dados: ConfigAtualizar, empresa: EmpresaAtual, db: DB
+    request: Request, dados: ConfigAtualizar, empresa: EmpresaAtual,
+    quem: UtilizadorAtual, db: DB,
 ) -> ConfigPublica:
     """Actualiza módulos activos, parametrizações e integração AGT.
 
