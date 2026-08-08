@@ -233,7 +233,13 @@ def perguntar(
     registo.modelo = r["modelo"]
     registo.tokens_entrada = r["tokens_entrada"]
     registo.tokens_saida = r["tokens_saida"]
-    registo.custo = custo_de(r["modelo"], r["tokens_entrada"], r["tokens_saida"])
+    # Grava os PREÇOS aplicados junto com o custo: sem eles, mudar a tabela
+    # tornava este número impossível de reconstruir mais tarde.
+    registo.custo, preco = custo_de(
+        r["modelo"], r["tokens_entrada"], r["tokens_saida"]
+    )
+    registo.preco_entrada = preco.entrada
+    registo.preco_saida = preco.saida
 
     # Repor os nomes reais só agora, depois de tudo estar gravado. O histórico
     # guarda a resposta como o utilizador a viu.

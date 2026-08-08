@@ -924,3 +924,15 @@ export interface ContaPlataformaCriada {
   email: string;
   password_inicial: string;
 }
+
+/** Tabela de preços da API de IA em vigor no servidor.
+ *
+ * A `origem` diz se veio de configuração ou do recurso embutido — a diferença
+ * importa a quem confere a factura. */
+export interface PrecosIa {
+  origem: string;
+  de_configuracao: boolean;
+  confirmado_em: string | null;
+  por_omissao: { entrada: string; saida: string };
+  modelos: { modelo: string; entrada: string; saida: string }[];
+}

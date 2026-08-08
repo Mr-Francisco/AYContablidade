@@ -9,11 +9,14 @@ from decimal import Decimal
 
 import pytest
 
-from src.services.ia.consumo import (
-    PRECO_POR_OMISSAO,
-    PRECOS,
-    custo_de,
-)
+from src.services.ia.consumo import custo_de as _custo_e_preco
+from src.services.ia.precos import tabela
+
+
+def custo_de(modelo, entrada, saida):
+    """Só o custo. O `custo_de` do serviço devolve também os preços aplicados,
+    porque quem grava a consulta tem de os guardar."""
+    return _custo_e_preco(modelo, entrada, saida)[0]
 
 
 def test_custo_de_um_modelo_conhecido():
@@ -37,11 +40,12 @@ def test_modelo_desconhecido_sobrestima():
     que custa dinheiro. Sobrestimar apenas trava mais cedo.
     """
     desconhecido = custo_de("modelo-que-nao-existe", 1_000_000, 1_000_000)
-    mais_caro = max(
-        custo_de(m, 1_000_000, 1_000_000) for m in PRECOS
-    )
+    t = tabela()
+    mais_caro = max(custo_de(m, 1_000_000, 1_000_000) for m in t.modelos)
     assert desconhecido >= mais_caro
-    assert PRECO_POR_OMISSAO == max(PRECOS.values(), key=lambda p: p[0] + p[1])
+    assert t.por_omissao == max(
+        t.modelos.values(), key=lambda p: p.entrada + p.saida
+    )
 
 
 def test_modelos_mini_sao_mais_baratos():

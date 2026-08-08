@@ -746,6 +746,38 @@ def consumo_ia(db: DB) -> list[dict]:
 
     return consumo_por_empresa(db)
 
+
+@router.get("/precos-ia")
+def precos_ia() -> dict:
+    """Tabela de preços em vigor e de onde foi lida.
+
+    A origem interessa a quem confere a factura: saber que se está a usar o
+    recurso embutido em vez da configuração explica uma divergência que de
+    outra forma pareceria erro de contagem.
+    """
+    from pathlib import Path
+
+    from src.services.ia.precos import tabela
+
+    t = tabela()
+    de_configuracao = t.origem != "embutida"
+    return {
+        # Só o nome do ficheiro. O caminho absoluto do servidor não interessa a
+        # quem está do outro lado e revela a estrutura de pastas da máquina.
+        "origem": Path(t.origem).name if de_configuracao else "embutida",
+        "de_configuracao": de_configuracao,
+        "confirmado_em": t.confirmado_em,
+        "por_omissao": {
+            "entrada": str(t.por_omissao.entrada),
+            "saida": str(t.por_omissao.saida),
+        },
+        "modelos": [
+            {"modelo": m, "entrada": str(p.entrada), "saida": str(p.saida)}
+            for m, p in sorted(t.modelos.items())
+        ],
+    }
+
+
 @router.patch("/{licenca_id}", response_model=LicencaPublica)
 def atualizar(
     request: Request, licenca_id: UUID, dados: LicencaAtualizar,

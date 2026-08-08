@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import useSWR from "swr";
-
+import { PrecosIa } from "@/components/plataforma/PrecosIa";
 import {
   ACarregar,
   Alerta,
@@ -61,12 +61,7 @@ export default function ConsumoIa() {
         descricao="O que cada empresa consumiu este mês, e quanto está a custar à plataforma."
       />
 
-      <Alerta tipo="aviso" className="mb-4">
-        Os <b>tokens</b> são medidos ao certo — vêm na resposta da API. O{" "}
-        <b>custo é uma estimativa</b>, calculada dos tokens por uma tabela de
-        preços que tem de ser confirmada contra a facturação real da OpenAI.
-        Serve para dar previsibilidade, não para fechar contas.
-      </Alerta>
+      <PrecosIa />
 
       {isLoading ? (
         <Cartao>

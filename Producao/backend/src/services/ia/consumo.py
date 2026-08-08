@@ -7,9 +7,14 @@ isso o limite é verificado ANTES de cada chamada, e não depois.
 Duas grandezas, e a distinção importa:
 
 - TOKENS: medem-se ao certo, vêm na resposta da API. É o que se conta.
-- CUSTO: é uma ESTIMATIVA. Sai dos tokens multiplicados por uma tabela de
-  preços que vive aqui e que tem de ser confirmada contra a facturação real da
-  OpenAI. Serve para dar previsibilidade, não para fechar contas.
+- CUSTO: é uma ESTIMATIVA. Sai dos tokens multiplicados pela tabela de preços
+  de `services/ia/precos.py`, que vive em configuração e tem de ser confirmada
+  contra a facturação real da OpenAI. Serve para dar previsibilidade, não para
+  fechar contas.
+
+Cada consulta guarda os PREÇOS que lhe foram aplicados. Sem isso, mudar a
+tabela tornava o histórico inexplicável: ficava o custo, mas não havia como
+reconstruir de onde vinha.
 
 O limite é verificado contra o consumo JÁ REGISTADO, porque não há forma de
 saber quanto custará uma chamada antes de a fazer. A consequência é que a
@@ -28,39 +33,47 @@ from sqlalchemy.orm import Session
 from src.core.constants import EstadoLicenca
 from src.db.models.ia import ConsultaIA
 from src.db.models.tenancy import Licenca
+from src.services.ia.precos import Preco, preco_de
 
 ZERO = Decimal("0")
 CENT = Decimal("0.0001")
 
-#: Preço por 1 000 000 de tokens, em dólares (entrada, saída).
-#:
-#: TEM DE SER CONFIRMADO contra os preços em vigor. Um preço desactualizado aqui
-#: não parte nada — o consumo continua a ser medido em tokens, que é exacto —
-#: mas faz o custo estimado divergir da factura.
-PRECOS: dict[str, tuple[Decimal, Decimal]] = {
-    "gpt-4o": (Decimal("2.50"), Decimal("10.00")),
-    "gpt-4o-mini": (Decimal("0.15"), Decimal("0.60")),
-    "gpt-4.1": (Decimal("2.00"), Decimal("8.00")),
-    "gpt-4.1-mini": (Decimal("0.40"), Decimal("1.60")),
-}
-#: Usado quando o modelo não está na tabela. Deliberadamente o mais CARO dos
-#: conhecidos: um modelo desconhecido deve sobrestimar o custo, nunca
-#: subestimá-lo — subestimar é que deixa passar consumo a mais.
-PRECO_POR_OMISSAO = (Decimal("2.50"), Decimal("10.00"))
-
 #: A partir de que percentagem do limite se avisa quem consulta.
 LIMIAR_AVISO = 80
 
+#: Tokens por unidade de preço. Os preços são por milhão.
+POR_MILHAO = Decimal("1000000")
 
-def custo_de(modelo: str | None, tokens_entrada: int | None,
-             tokens_saida: int | None) -> Decimal:
-    """Custo estimado de uma consulta, em dólares."""
-    entrada, saida = PRECOS.get(str(modelo or ""), PRECO_POR_OMISSAO)
+
+def custo_com_precos(
+    tokens_entrada: int | None,
+    tokens_saida: int | None,
+    preco: Preco,
+) -> Decimal:
+    """Custo de uma consulta a preços DADOS, em dólares.
+
+    Separado de `custo_de` porque o histórico se recalcula com os preços que
+    ficaram gravados na consulta, e não com os que estão em vigor hoje.
+    """
     total = (
-        Decimal(tokens_entrada or 0) * entrada
-        + Decimal(tokens_saida or 0) * saida
-    ) / Decimal("1000000")
+        Decimal(tokens_entrada or 0) * preco.entrada
+        + Decimal(tokens_saida or 0) * preco.saida
+    ) / POR_MILHAO
     return total.quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def custo_de(
+    modelo: str | None, tokens_entrada: int | None, tokens_saida: int | None
+) -> tuple[Decimal, Preco]:
+    """Custo estimado de uma consulta e os preços que lhe foram aplicados.
+
+    Devolve os dois de propósito: quem grava a consulta tem de guardar também
+    os preços. Sem eles o custo era um número sem forma de o reconstruir, e
+    bastava a OpenAI mudar a tabela para a facturação histórica deixar de ser
+    explicável.
+    """
+    preco = preco_de(modelo)
+    return custo_com_precos(tokens_entrada, tokens_saida, preco), preco
 
 
 def _inicio_do_mes(hoje: date | None = None) -> date:

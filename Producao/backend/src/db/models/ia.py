@@ -41,10 +41,19 @@ class ConsultaIA(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     tokens_entrada: Mapped[int | None] = mapped_column(Integer)
     tokens_saida: Mapped[int | None] = mapped_column(Integer)
     # Custo ESTIMADO em dólares, calculado dos tokens pela tabela de preços de
-    # `services/ia/consumo.py`. Fica gravado no momento da consulta, e não
+    # `services/ia/precos.py`. Fica gravado no momento da consulta, e não
     # recalculado depois: se a tabela de preços mudar, o histórico tem de
     # continuar a dizer o que a consulta custou na altura.
     custo: Mapped[Decimal | None] = mapped_column(Numeric(12, 4))
+    # OS PREÇOS APLICADOS, em dólares por milhão de tokens. Sem isto, o custo
+    # gravado era um número sem forma de o reconstruir: quando a OpenAI mudasse
+    # os preços deixava de haver maneira de explicar como se chegou aos valores
+    # antigos, e a facturação histórica ficava inauditável.
+    #
+    # Seis casas decimais porque há modelos abaixo de um cêntimo por milhão de
+    # tokens, e arredondar o preço antes de multiplicar propaga o erro.
+    preco_entrada: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+    preco_saida: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
     duracao_ms: Mapped[int | None] = mapped_column(Integer)
     erro: Mapped[str | None] = mapped_column(Text)
 
