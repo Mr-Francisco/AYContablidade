@@ -159,61 +159,35 @@ pessoa muda a palavra-passe.
 
 ---
 
-## 10. `permissoes_accao` não é aplicada em lado nenhum
+## 10. `permissoes_accao` — FEITO
 
-**Estado:** por fazer. Encontrado na revisão de 2026-08-08.
-
-Os módulos passaram a ser aplicados no servidor, mas `permissoes_accao` —
-o mapa `{módulo: [ver, criar, editar, eliminar, exportar]}` — continua a ser
-gravado, devolvido pela API e editável em `/gestao/utilizadores` sem que nada
-o leia. `pode_accao` existe e só era chamada pela `exigir_accao`, que nenhum
-router usava.
-
-**O que isto significa hoje:** dar a alguém `{"comercial": ["ver"]}` para o
-tornar só de leitura não impede nada — `POST /api/comercial/vendas` exige
-`comercial.gerir`, que vem da matriz por perfil, e ele emite facturas na mesma.
-
-**Falta:** fazer `exigir_cap` consultar também `pode_accao`, traduzindo o
-sufixo da capacidade (`ver`/`gerir`) para a acção. É o mesmo sítio onde a
-verificação de módulo ficou.
-
-**Confirma-se assim:** dar `{"comercial": ["ver"]}` a um utilizador do perfil
-comercial e verificar que `POST /api/comercial/vendas` passa a dar 403.
+Verificada em `pode_capacidade`, chamada por `exigir_cap`. Uma lista com só
+`ver` bloqueia a escrita; acrescentar `criar` volta a permitir. A tradução é
+grosseira — as rotas declaram `ver` ou `gerir`, não as cinco acções em separado
+— mas o que interessa fica garantido.
 
 ---
 
-## 11. `X-Forwarded-For` é aceite sem lista de proxies de confiança
+## 11. Origem do pedido — FEITO
 
-**Estado:** por fazer. Encontrado na mesma revisão.
+Uma única fonte de verdade em `core/rede.py`, com `PROXIES_CONFIAVEIS`. Vazio,
+que é o valor por omissão, ignora sempre o cabeçalho. Da cadeia vale o ÚLTIMO
+valor. O limitador de pedidos passou a usar a mesma fonte.
 
-`src/services/auditoria.py` grava o primeiro valor de `X-Forwarded-For` sem
-verificar de onde veio o pedido. Qualquer pedido autenticado com um cabeçalho
-forjado grava o IP que quiser na auditoria — quem quisesse apagar o rasto da
-origem das suas acções conseguia-o.
-
-Há aqui uma incoerência a resolver de uma vez: o rate limiting usa
-`request.client.host` (não falsificável, mas errado atrás de um proxy, onde o
-limite de 5/min passaria a ser global). Os dois lados discordam.
-
-**Falta:** uma definição de proxies de confiança usada pelos dois — só aceitar
-`X-Forwarded-For` quando o pedido vem de um proxy conhecido.
+**Obriga a `--no-proxy-headers` no arranque do uvicorn**, que por omissão
+reescreve o cliente a partir do cabeçalho antes de a aplicação o ver. Já está
+no `.claude/launch.json` e no `CLAUDE.md`.
 
 ---
 
-## 12. Ler `Exercicio` de outra empresa por UUID adivinhado
+## 12. Posse do exercício — FEITO
 
-**Estado:** por fazer. Baixo, mas é uma regra quebrada.
+Os cinco `db.get(Exercicio, ...)` passam a filtrar por empresa, e o
+`exercicio_efetivo` confirma que o id vindo do cliente é da empresa.
 
-Três sítios fazem `db.get(Exercicio, ...)` sem filtrar por empresa:
-`services/ia/contexto.py`, `services/contabilidade.py` e
-`services/demonstracoes.py`. O que se expõe é o nome e as datas do exercício
-("Exercício 2026"), não valores — confirmei que as consultas de dados a jusante
-filtram sempre por `empresa_id`. E exige adivinhar um UUIDv4.
-
-**Falta:** acrescentar `Exercicio.empresa_id == empresa_id` aos três, como já
-faz `services/apuramentos.py`. E validar `exercicio_id` em
-`contabilidade.exercicio_efetivo`, que hoje devolve o que vier do cliente sem
-verificar posse.
+A consequência séria não era a fuga: um `exercicio_id` inventado fazia a
+verificação de diário fechado não encontrar fecho nenhum, e o lançamento entrava
+num período fechado. Confirmado a correr antes e depois.
 
 ---
 
