@@ -886,3 +886,38 @@ export interface RegistoAuditoria {
   detalhes: Record<string, unknown>;
   ip: string | null;
 }
+
+/** Um membro de uma empresa, visto pela administração da plataforma.
+ *
+ * Só identificação e acesso — o superadministrador gere contas, não consulta
+ * a contabilidade dos clientes. */
+export interface UtilizadorDaEmpresa {
+  id: string;
+  nome: string;
+  email: string;
+  perfil: Perfil;
+  ativo: boolean;
+  aprovado: boolean;
+  totp_ativo: boolean;
+  ultimo_login: string | null;
+  criado_em: string;
+}
+
+/** Conta de administração da plataforma. */
+export interface ContaPlataforma {
+  id: string;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  totp_ativo: boolean;
+  ultimo_login: string | null;
+  criado_em: string;
+}
+
+/** Só existe no momento da criação — a palavra-passe não se recupera depois. */
+export interface ContaPlataformaCriada {
+  id: string;
+  nome: string;
+  email: string;
+  password_inicial: string;
+}

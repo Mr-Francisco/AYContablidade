@@ -535,6 +535,13 @@ const NAV_COMPLETO: GrupoNav[] = [
         icone: "sparkles",
       },
       {
+        href: "/plataforma/contas",
+        rotulo: "Contas",
+        seccao: "Plataforma",
+        perfis: ["superadmin"],
+        icone: "utilizadores",
+      },
+      {
         href: "/plataforma/auditoria",
         rotulo: "Auditoria",
         seccao: "Plataforma",

@@ -20,6 +20,7 @@ const CORES: Record<string, string> = {
   empresa: "#3d7fe0",
   utilizador: "#1a9c5f",
   "2fa": "#c77700",
+  superadmin: "#c62828",
 };
 
 const ROTULOS: Record<string, string> = {
@@ -39,6 +40,15 @@ const ROTULOS: Record<string, string> = {
   "2fa.codigos": "Códigos de recuperação renovados",
   "2fa.recuperacao_usada": "Entrou com código de recuperação",
   "2fa.bloqueio": "Conta bloqueada por tentativas",
+  "utilizador.perfil": "Perfil alterado",
+  "utilizador.password_temporaria": "Palavra-passe temporária gerada",
+  "utilizador.2fa_reposto": "2FA reposto pela plataforma",
+  "superadmin.criar": "Conta de plataforma criada",
+  "superadmin.activar": "Conta de plataforma activada",
+  "superadmin.desactivar": "Conta de plataforma desactivada",
+  "superadmin.remover": "Conta de plataforma removida",
+  "superadmin.password_temporaria": "Palavra-passe de plataforma gerada",
+  "superadmin.2fa_reposto": "2FA de plataforma reposto",
 };
 
 /** Rótulo da linha. Sem isto, uma acção nova aparece como slug cru.

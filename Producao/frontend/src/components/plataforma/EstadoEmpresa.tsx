@@ -1,9 +1,9 @@
 "use client";
 
-import { Ban, CircleCheckBig, PauseCircle, X } from "lucide-react";
+import { Ban, CircleCheckBig, PauseCircle, Users, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type FormEvent, useState } from "react";
-
+import { UtilizadoresDaEmpresa } from "@/components/plataforma/UtilizadoresDaEmpresa";
 import { Alerta, Botao, Campo, Entrada, Selo } from "@/components/ui";
 import { api, ErroApi } from "@/lib/api";
 import type { EmpresaPlataforma } from "@/types";
@@ -56,6 +56,7 @@ export function AccoesEstado({
   aoMudar: () => void;
 }) {
   const [alvo, setAlvo] = useState<Estado | null>(null);
+  const [verContas, setVerContas] = useState(false);
 
   // Só se oferece o que faz sentido a partir do estado actual. Mostrar
   // «Suspender» a uma empresa já suspensa levaria a um 409 do servidor.
@@ -67,7 +68,16 @@ export function AccoesEstado({
         : ["activa"];
 
   return (
-    <div className="flex justify-end gap-1.5">
+    <div className="flex flex-wrap justify-end gap-1.5">
+      <button
+        type="button"
+        onClick={() => setVerContas(true)}
+        className="inline-flex items-center gap-1 rounded-lg border border-borda px-2.5 py-1 text-xs font-semibold transition-colors hover:border-marca hover:text-marca"
+      >
+        <Users size={13} />
+        Contas
+      </button>
+
       {disponiveis.map((e) => (
         <button
           key={e}
@@ -95,6 +105,13 @@ export function AccoesEstado({
             setAlvo(null);
             aoMudar();
           }}
+        />
+      )}
+
+      {verContas && (
+        <UtilizadoresDaEmpresa
+          empresa={empresa}
+          aoFechar={() => setVerContas(false)}
         />
       )}
     </div>
