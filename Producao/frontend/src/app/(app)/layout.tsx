@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { AvisoDeSeguranca } from "@/components/layout/AvisoDeSeguranca";
 import { Cabecalho } from "@/components/layout/Cabecalho";
 import { ACarregar } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +36,7 @@ export default function LayoutAplicacao({
   return (
     <div className="flex min-h-screen flex-col">
       <Cabecalho />
+      <AvisoDeSeguranca />
       {/* min-w-0 impede que uma tabela larga alargue o main e crie barra
           horizontal na página inteira. */}
       <main className="min-w-0 flex-1">

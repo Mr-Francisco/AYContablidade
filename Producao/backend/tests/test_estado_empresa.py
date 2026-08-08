@@ -15,6 +15,8 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from src.auth.security import ESCOPO_PLATAFORMA
+
 
 class SessaoFalsa:
     """Sessão mínima com uma empresa e os seus utilizadores."""
@@ -65,7 +67,7 @@ class _Resultado:
 
 @pytest.fixture
 def ambiente():
-    from src.api.deps import utilizador_atual
+    from src.api.deps import escopo_do_token, utilizador_atual
     from src.api.main import app
     from src.core.constants import EstadoEmpresa, Perfil
     from src.db.base import get_db
@@ -102,7 +104,8 @@ def ambiente():
             totp_ativo=False,
             totp_codigos_recuperacao=[],
             totp_falhas=0,
-            permissoes_extra=[],
+            password_provisoria=False,
+        permissoes_extra=[],
             permissoes_accao={},
         )
 
@@ -121,6 +124,7 @@ def ambiente():
         totp_ativo=True,
         totp_codigos_recuperacao=[],
         totp_falhas=0,
+        password_provisoria=False,
         permissoes_extra=[],
         permissoes_accao={},
     )
@@ -128,6 +132,9 @@ def ambiente():
     db = SessaoFalsa(empresa, membros)
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[utilizador_atual] = lambda: superadmin
+    # A sessão de administração da plataforma leva um escopo próprio; sem ele
+    # as rotas recusam, e é isso que se está a simular aqui.
+    app.dependency_overrides[escopo_do_token] = lambda: ESCOPO_PLATAFORMA
 
     with TestClient(app) as cliente:
         yield cliente, empresa, membros, superadmin, db

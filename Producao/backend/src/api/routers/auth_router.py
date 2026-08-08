@@ -78,8 +78,18 @@ _HASH_INEXISTENTE = hash_password("nao-existe-nenhuma-conta-com-esta-palavra-pas
 def _empresa_corresponde(db: DB, empresa_id, indicado: str) -> bool:
     """Confirma que o texto indicado no login identifica a empresa da conta.
 
-    Aceita o código («BE001») ou o nome, ambos sem distinguir maiúsculas nem
-    espaços à volta — quem escreve à mão não acerta na caixa.
+    ACEITA O CÓDIGO («BE001») OU O NOME — decisão tomada, não acidente. Quem
+    entra todos os dias sabe o nome da casa onde trabalha e não decora `BE001`;
+    obrigar ao código transformava o terceiro campo num obstáculo diário para
+    proteger o que ele não protege.
+
+    Isto não enfraquece nada: a empresa é um factor de IDENTIFICAÇÃO e não um
+    segredo. Está no papel timbrado, no site e nas facturas. O que guarda a
+    conta é a palavra-passe e o segundo factor; a empresa serve para saber a
+    que conta o e-mail pertence quando a mesma pessoa trabalha em duas.
+
+    Os dois sem distinguir maiúsculas nem espaços à volta — quem escreve à mão
+    não acerta na caixa.
     """
     empresa = db.get(Empresa, empresa_id)
     if empresa is None:
@@ -442,5 +452,7 @@ def alterar_password(
     validar_forca_password(dados.password_nova)
 
     user.password_hash = hash_password(dados.password_nova)
+    # A palavra-passe passa a ser só dela: o aviso deixa de fazer sentido.
+    user.password_provisoria = False
     user.token_version += 1
     db.commit()

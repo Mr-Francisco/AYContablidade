@@ -71,6 +71,9 @@ class UtilizadorPublico(BaseModel):
     # Se a conta tem segundo factor. Não é segredo — a interface precisa de
     # saber o estado para o mostrar. O segredo em si nunca sai daqui.
     totp_ativo: bool = False
+    # A palavra-passe actual foi definida por outra pessoa. A interface usa
+    # isto para avisar no primeiro acesso — não tranca nada.
+    password_provisoria: bool = False
 
 
 class TokenResposta(BaseModel):

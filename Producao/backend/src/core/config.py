@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     # código. Longa demais transforma-se num token de meia-sessão esquecido.
     TOTP_DESAFIO_MINUTOS: int = 5
 
+    # A sessão de quem administra a plataforma é MAIS CURTA. Essa conta vale
+    # todas as empresas juntas, e o que mais a expõe não é o ataque remoto — é
+    # um portátil deixado aberto e uma sessão que dura o dia inteiro.
+    SESSAO_SUPERADMIN_HORAS: int = 2
+    ACCESS_TOKEN_SUPERADMIN_MINUTOS: int = 15
+
     # Quantas contas de administração da plataforma podem existir ao todo.
     # Três: a inicial e mais duas. Ter só uma é um ponto único de falha — perder
     # a palavra-passe dessa conta deixa a plataforma sem operador. Ter muitas

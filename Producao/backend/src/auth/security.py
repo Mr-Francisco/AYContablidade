@@ -67,6 +67,16 @@ def validar_forca_password(password: str) -> None:
 TIPO_ACESSO = "acesso"
 TIPO_DESAFIO = "desafio"
 
+#: Escopo das sessões que administram a plataforma. Vai no token e é exigido
+#: pelas rotas de administração. Não substitui a verificação do perfil — que
+#: continua a ser feita contra a base — mas garante que uma sessão emitida sem
+#: esta marca nunca administra nada, por muito que o perfil na base mude.
+ESCOPO_PLATAFORMA = "plataforma"
+
+#: Repetido aqui para não importar `core.constants` — que importa este módulo
+#: por outras vias — e fechar um ciclo. Se divergir, os testes acusam.
+PERFIL_SUPERADMIN = "superadmin"
+
 
 def criar_access_token(
     *,
@@ -82,14 +92,28 @@ def criar_access_token(
     /auth/refresh volta a passar o mesmo valor, para que renovar o token nunca
     prolongue a sessão indefinidamente (ver "Decisões de Desenho" no CLAUDE.md).
 
+    A SESSÃO DA PLATAFORMA É MAIS CURTA. Uma conta que administra a plataforma
+    vale todas as empresas juntas, e o que mais a expõe não é o ataque remoto —
+    é um portátil deixado aberto e uma sessão que dura o dia inteiro. Por isso
+    o token de quem a administra expira em minutos e a sessão inteira em poucas
+    horas, e leva um `escopo` próprio que as rotas da plataforma exigem.
+
     Devolve (token, expiração absoluta) — quem chama guarda a segunda para o refresh.
     """
     s = get_settings()
     emitido = agora()
-    if expira_absoluto is None:
-        expira_absoluto = emitido + timedelta(hours=s.SESSAO_ABSOLUTA_HORAS)
+    da_plataforma = perfil == PERFIL_SUPERADMIN
 
-    expira = min(emitido + timedelta(minutes=s.ACCESS_TOKEN_MINUTOS), expira_absoluto)
+    if expira_absoluto is None:
+        horas = (
+            s.SESSAO_SUPERADMIN_HORAS if da_plataforma else s.SESSAO_ABSOLUTA_HORAS
+        )
+        expira_absoluto = emitido + timedelta(hours=horas)
+
+    minutos = (
+        s.ACCESS_TOKEN_SUPERADMIN_MINUTOS if da_plataforma else s.ACCESS_TOKEN_MINUTOS
+    )
+    expira = min(emitido + timedelta(minutes=minutos), expira_absoluto)
 
     payload: dict[str, Any] = {
         "sub": str(user_id),
@@ -101,6 +125,9 @@ def criar_access_token(
         "exp": int(expira.timestamp()),
         "sa": int(expira_absoluto.timestamp()),
     }
+    if da_plataforma:
+        payload["escopo"] = ESCOPO_PLATAFORMA
+
     token = jwt.encode(payload, s.JWT_SECRET_KEY, algorithm=s.JWT_ALGORITHM)
     return token, expira_absoluto
 

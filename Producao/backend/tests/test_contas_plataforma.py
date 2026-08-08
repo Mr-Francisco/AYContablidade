@@ -18,6 +18,8 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from src.auth.security import ESCOPO_PLATAFORMA
+
 
 class SessaoFalsa:
     def __init__(self, empresa, utilizadores):
@@ -125,6 +127,7 @@ def _user(**kw):
         totp_ativo=True,
         totp_codigos_recuperacao=[],
         totp_falhas=0,
+        password_provisoria=False,
         permissoes_extra=[],
         permissoes_accao={},
         criado_em=agora(),
@@ -135,7 +138,7 @@ def _user(**kw):
 
 @pytest.fixture
 def ambiente():
-    from src.api.deps import utilizador_atual
+    from src.api.deps import escopo_do_token, utilizador_atual
     from src.api.main import app
     from src.core.constants import EstadoEmpresa, Perfil, RegimeIVA
     from src.db.base import agora, get_db
@@ -162,6 +165,9 @@ def ambiente():
     db = SessaoFalsa(empresa, [operador, membro])
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[utilizador_atual] = lambda: operador
+    # A sessão de administração da plataforma leva um escopo próprio; sem ele
+    # as rotas recusam, e é isso que se está a simular aqui.
+    app.dependency_overrides[escopo_do_token] = lambda: ESCOPO_PLATAFORMA
 
     with TestClient(app) as cliente:
         yield cliente, empresa, membro, operador, db
@@ -417,3 +423,35 @@ def test_devolver_o_acesso_a_outra_conta_de_plataforma(ambiente):
 
     assert verificar_password(r.json()["password_temporaria"], outra.password_hash)
     assert "superadmin.password_temporaria" in db.accoes()
+
+
+# ---------------------------------------------------------------------------
+# Aviso de palavra-passe provisória
+# ---------------------------------------------------------------------------
+def test_a_password_temporaria_marca_a_conta_como_provisoria(ambiente):
+    """A marca não tranca nada: serve para AVISAR no primeiro acesso que há
+    outra pessoa a saber aquela palavra-passe. Forçar a mudança punha um
+    obstáculo em frente a quem acabou de recuperar o acesso."""
+    cliente, empresa, membro, _, _ = ambiente
+    assert membro.password_provisoria is False
+    cliente.post(
+        f"/api/licencas/empresas/{empresa.id}/utilizadores/{membro.id}/password"
+    )
+    assert membro.password_provisoria is True
+
+
+def test_a_conta_de_plataforma_nasce_marcada(ambiente):
+    """Quem a cria fica a saber a palavra-passe inicial."""
+    cliente, _, _, _, db = ambiente
+    _criar(cliente)
+    nova = next(u for u in db._users if u.email == "maria@plataforma.ao")
+    assert nova.password_provisoria is True
+
+
+def test_devolver_o_acesso_a_uma_conta_de_plataforma_tambem_marca(ambiente):
+    cliente, _, _, _, db = ambiente
+    _criar(cliente)
+    outra = next(u for u in db._users if u.email == "maria@plataforma.ao")
+    outra.password_provisoria = False
+    cliente.post(f"/api/licencas/superadmins/{outra.id}/password")
+    assert outra.password_provisoria is True

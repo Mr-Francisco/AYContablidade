@@ -39,6 +39,9 @@ export interface Utilizador {
   permissoes_accao: Record<string, string[]>;
   ultimo_login: string | null;
   totp_ativo: boolean;
+  /** A palavra-passe actual foi definida por outra pessoa. Só serve para
+   *  avisar — não tranca nada. */
+  password_provisoria: boolean;
 }
 
 /** Estado do segundo factor da própria conta. Nunca traz o segredo. */

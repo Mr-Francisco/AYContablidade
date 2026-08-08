@@ -395,6 +395,7 @@ def password_temporaria(
 
     nova = lic_svc.gerar_password_temporaria()
     membro.password_hash = hash_password(nova)
+    membro.password_provisoria = True
     membro.token_version += 1
 
     auditar(
@@ -533,6 +534,9 @@ def criar_superadmin(
         # que ela é ao nascer não deve obrigar a ir ver o modelo — e um default
         # alterado um dia não pode mudar isto sem que alguém repare.
         token_version=1,
+        # Quem cria fica a saber esta palavra-passe. A marca faz o aviso
+        # aparecer no primeiro acesso do dono.
+        password_provisoria=True,
         totp_ativo=False,
         totp_segredo=None,
         totp_codigos_recuperacao=[],
@@ -653,6 +657,7 @@ def password_de_superadmin(
     alvo = _outro_superadmin(db, user, alvo_id)
     nova = lic_svc.gerar_password_temporaria()
     alvo.password_hash = hash_password(nova)
+    alvo.password_provisoria = True
     alvo.token_version += 1
 
     auditar(

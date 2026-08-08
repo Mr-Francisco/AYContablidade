@@ -68,6 +68,7 @@ def ambiente():
         totp_falhas=0,
         # Estes têm `server_default` e são preenchidos pela base; um objecto
         # construído em memória fica com None e o `UtilizadorPublico` recusa.
+        password_provisoria=False,
         permissoes_extra=[],
         permissoes_accao={},
     )

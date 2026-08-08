@@ -19,7 +19,12 @@ from sqlalchemy.orm import Session
 
 from src.auth.permissions import licenca_valida, pode, pode_accao
 from src.core.config import get_settings
-from src.auth.security import TIPO_ACESSO, TokenInvalido, descodificar_token
+from src.auth.security import (
+    ESCOPO_PLATAFORMA,
+    TIPO_ACESSO,
+    TokenInvalido,
+    descodificar_token,
+)
 from src.core.constants import Accao, EstadoEmpresa, Modulo, Perfil
 from src.db.base import get_db
 from src.db.models.tenancy import Empresa, Licenca
@@ -99,6 +104,23 @@ def utilizador_atual(
 
 UtilizadorAtual = Annotated[User, Depends(utilizador_atual)]
 DB = Annotated[Session, Depends(get_db)]
+
+
+def escopo_do_token(token: Annotated[str, Depends(obter_token)]) -> str | None:
+    """Escopo declarado no token, se houver.
+
+    Existe em separado porque o `utilizador_atual` devolve o utilizador e não o
+    payload — e o escopo é uma propriedade da SESSÃO, não da conta. Duas coisas
+    diferentes: o perfil diz quem a pessoa é hoje, o escopo diz o que aquela
+    sessão foi emitida para fazer.
+    """
+    try:
+        return descodificar_token(token).get("escopo")
+    except TokenInvalido:
+        return None
+
+
+EscopoAtual = Annotated[str | None, Depends(escopo_do_token)]
 
 
 def licenca_da_empresa(db: Session, empresa_id: UUID) -> Licenca | None:
@@ -195,8 +217,18 @@ def exigir_perfil(*perfis: Perfil):
     return _verificar
 
 
-def exigir_superadmin(user: UtilizadorAtual) -> User:
+def exigir_superadmin(user: UtilizadorAtual, escopo: EscopoAtual) -> User:
     """Só o operador da plataforma: gestão de licenças e de empresas.
+
+    Três exigências, e cada uma tapa um buraco diferente:
+
+    1. O PERFIL, lido da base. Diz quem a pessoa é agora.
+    2. O ESCOPO no token. Diz que aquela sessão foi emitida para administrar a
+       plataforma — e é o que garante que uma sessão sem essa marca nunca o
+       faz. Uma sessão emitida antes de a conta ser promovida não a tem;
+       promover alguém não transforma retroactivamente as sessões abertas dessa
+       pessoa em sessões de administração.
+    3. O SEGUNDO FACTOR.
 
     Exige também o segundo factor. A conta que administra a plataforma vale
     todas as empresas juntas: uma palavra-passe descoberta chegaria para gerar
@@ -215,6 +247,11 @@ def exigir_superadmin(user: UtilizadorAtual) -> User:
     if Perfil(user.perfil) != Perfil.SUPERADMIN:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Operação reservada ao superadministrador."
+        )
+    if escopo != ESCOPO_PLATAFORMA:
+        raise _nao_autenticado(
+            "Esta sessão não é de administração da plataforma. Volte a iniciar "
+            "sessão."
         )
     if not user.totp_ativo:
         if not (get_settings().TOTP_CHAVE_CIFRA or "").strip():

@@ -63,6 +63,18 @@ class User(UUIDMixin, TimestampMixin, Base):
     # token emitido com uma versão anterior deixa imediatamente de ser aceite.
     token_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
+    #: A palavra-passe actual foi definida por OUTRA pessoa — o administrador da
+    #: empresa ou quem administra a plataforma. Enquanto for verdade, há duas
+    #: pessoas com acesso a esta conta.
+    #:
+    #: Não tranca nada: serve para AVISAR no primeiro acesso. Forçar a mudança
+    #: transformaria a recuperação de acesso num obstáculo, e quem acabou de
+    #: recuperar a conta é precisamente quem menos precisa de mais um passo.
+    #: Limpa-se sozinha quando a pessoa muda a palavra-passe.
+    password_provisoria: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
+
     # --- Segundo factor (TOTP) ---
     # O segredo vai CIFRADO (ver src/auth/totp.py). Em claro, quem leia a base
     # gera códigos válidos de qualquer conta.

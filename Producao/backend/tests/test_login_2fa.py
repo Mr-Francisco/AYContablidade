@@ -98,6 +98,7 @@ def ambiente():
         totp_segredo=totp.cifrar_segredo(segredo),
         totp_codigos_recuperacao=[totp.hash_codigo(c) for c in codigos],
         totp_falhas=0,
+        password_provisoria=False,
         permissoes_extra=[],
         permissoes_accao={},
     )
@@ -426,3 +427,30 @@ def test_o_codigo_de_recuperacao_errado_tambem_conta(ambiente):
     for _ in range(3):
         _passo2(cliente, _passo1(cliente).json()["desafio"], "AAAA-BBBB")
     assert user.totp_bloqueado_ate is not None
+
+
+# ---------------------------------------------------------------------------
+# A empresa no login: código OU nome
+# ---------------------------------------------------------------------------
+def test_o_login_aceita_o_codigo_e_o_nome(ambiente):
+    """Decisão tomada: os dois. A empresa é um factor de IDENTIFICAÇÃO e não um
+    segredo — está no papel timbrado e nas facturas. Quem entra todos os dias
+    sabe o nome da casa onde trabalha e não decora `BE001`."""
+    cliente, _, _, _, _ = ambiente
+    assert _passo1(cliente, empresa=CODIGO_EMPRESA).json().get("requer_2fa")
+    assert _passo1(cliente, empresa="Teste, Lda.").json().get("requer_2fa")
+
+
+def test_a_empresa_nao_distingue_maiusculas_nem_espacos(ambiente):
+    """Quem escreve à mão não acerta na caixa."""
+    cliente, _, _, _, _ = ambiente
+    for variante in ["  ts001  ", "TS001", "  teste, lda.  ", "TESTE, LDA."]:
+        assert _passo1(cliente, empresa=variante).json().get("requer_2fa"), variante
+
+
+def test_uma_empresa_que_nao_e_a_da_conta_nao_serve(ambiente):
+    cliente, _, _, segredo, _ = ambiente
+    r = _passo1(cliente, empresa="Outra Empresa, Lda.")
+    # Conta com 2FA: recebe o isco, e o isco nunca valida.
+    assert r.json().get("requer_2fa") is True
+    assert _passo2(cliente, r.json()["desafio"], pyotp.TOTP(segredo).now()).status_code == 401

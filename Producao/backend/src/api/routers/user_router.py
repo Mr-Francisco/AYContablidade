@@ -295,6 +295,8 @@ def definir_password(
     user = _da_empresa(db, empresa.id, user_id)
     validar_forca_password(dados.password_nova)
     user.password_hash = hash_password(dados.password_nova)
+    # Definida por outra pessoa: o dono é avisado no primeiro acesso.
+    user.password_provisoria = True
     user.token_version += 1
 
     # Um administrador a mudar a palavra-passe de outra pessoa é das acções
