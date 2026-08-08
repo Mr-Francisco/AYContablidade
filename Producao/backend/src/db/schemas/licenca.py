@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from src.core.constants import EstadoLicenca, RegimeIVA
+from src.core.constants import EstadoEmpresa, EstadoLicenca, RegimeIVA
 
 
 class LicencaCriar(BaseModel):
@@ -119,3 +119,12 @@ class EmpresaPublica(BaseModel):
     forma_juridica: str | None
     estado: str
     criado_em: datetime
+
+
+class EmpresaEstadoPedido(BaseModel):
+    """Mudança de estado de uma empresa, feita pelo superadministrador."""
+
+    estado: EstadoEmpresa
+    #: Fica na auditoria. Daqui a um ano, «suspensa» sem motivo não explica
+    #: nada a quem for ver porque é que a empresa deixou de entrar.
+    motivo: str | None = Field(default=None, max_length=300)

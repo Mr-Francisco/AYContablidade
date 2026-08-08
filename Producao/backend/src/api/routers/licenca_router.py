@@ -26,11 +26,13 @@ from sqlalchemy import select
 from src.api.deps import DB, UtilizadorAtual, exigir_superadmin
 from src.api.limites import LIMITE_LOGIN, limiter
 from src.auth.security import hash_password, validar_forca_password
-from src.core.constants import EstadoLicenca
+from src.core.constants import EstadoEmpresa, EstadoLicenca
 from src.db.models.tenancy import Empresa, Licenca
+from src.db.models.user import User
 from src.db.schemas.licenca import (
     ActivacaoPedido,
     ActivacaoResposta,
+    EmpresaEstadoPedido,
     EmpresaPublica,
     LicencaAtualizar,
     LicencaCriar,
@@ -193,6 +195,71 @@ def empresas(db: DB) -> list[EmpresaPublica]:
         for e in db.scalars(select(Empresa).order_by(Empresa.nome)).all()
     ]
 
+
+
+@router.patch("/empresas/{empresa_id}/estado", response_model=EmpresaPublica)
+def mudar_estado_empresa(
+    request: Request,
+    empresa_id: UUID,
+    dados: EmpresaEstadoPedido,
+    user: UtilizadorAtual,
+    db: DB,
+) -> EmpresaPublica:
+    """Suspende, reactiva ou cancela uma empresa.
+
+    Sem isto o campo `estado` era decorativo: o login recusava quem não
+    estivesse activa, mas nada no sistema conseguia escrever lá — uma porta
+    trancada sem ninguém que lhe pudesse mexer na chave. Suspender uma empresa
+    que deixasse de pagar obrigava a mexer à mão na base de dados.
+
+    SUSPENDER OU CANCELAR EXPULSA QUEM JÁ ESTÁ DENTRO. Subir a `token_version`
+    de todos os utilizadores da empresa invalida as sessões abertas no pedido
+    seguinte. Sem isso, suspender só travava logins novos, e quem estivesse com
+    o sistema aberto continuava a trabalhar até o token expirar — que é
+    precisamente o contrário do que se quer ao cortar o acesso a uma empresa.
+
+    Todas as transições são permitidas, incluindo desfazer um cancelamento.
+    Tornar um estado terminal só empurraria o problema de volta para o SQL à
+    mão, que é o que esta rota existe para acabar.
+    """
+    empresa = db.get(Empresa, empresa_id)
+    if empresa is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Empresa não encontrada.")
+
+    anterior = str(empresa.estado)
+    novo = str(dados.estado)
+    if anterior == novo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"A empresa já está {novo}."
+        )
+
+    empresa.estado = dados.estado
+
+    expulsos = 0
+    if dados.estado != EstadoEmpresa.ACTIVA:
+        for u in db.scalars(select(User).where(User.empresa_id == empresa.id)).all():
+            u.token_version += 1
+            expulsos += 1
+
+    auditar(
+        db,
+        actor=user,
+        accao="empresa.estado",
+        request=request,
+        alvo_tipo="empresa",
+        alvo_id=empresa.id,
+        alvo_desc=f"{empresa.codigo} — {empresa.nome}",
+        empresa_id=empresa.id,
+        detalhes={
+            "antes": anterior,
+            "depois": novo,
+            "motivo": (dados.motivo or "").strip() or None,
+            "sessoes_terminadas": expulsos,
+        },
+    )
+    db.commit()
+    db.refresh(empresa)
+    return EmpresaPublica.model_validate(empresa)
 
 
 @router.get("/auditoria")

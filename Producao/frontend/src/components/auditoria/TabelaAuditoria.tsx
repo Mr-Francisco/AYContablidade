@@ -19,6 +19,7 @@ const CORES: Record<string, string> = {
   licenca: "#6c2fb0",
   empresa: "#3d7fe0",
   utilizador: "#1a9c5f",
+  "2fa": "#c77700",
 };
 
 const ROTULOS: Record<string, string> = {
@@ -27,12 +28,33 @@ const ROTULOS: Record<string, string> = {
   "licenca.revogar": "Licença revogada",
   "licenca.activar": "Licença activada",
   "empresa.actualizar": "Empresa alterada",
+  "empresa.estado": "Estado alterado",
   "utilizador.criar": "Utilizador criado",
   "utilizador.actualizar": "Utilizador alterado",
   "utilizador.aprovar": "Conta aprovada",
   "utilizador.definir_password": "Palavra-passe definida",
   "utilizador.remover": "Utilizador removido",
+  "2fa.activar": "2FA activado",
+  "2fa.desactivar": "2FA desactivado",
+  "2fa.codigos": "Códigos de recuperação renovados",
+  "2fa.recuperacao_usada": "Entrou com código de recuperação",
+  "2fa.bloqueio": "Conta bloqueada por tentativas",
 };
+
+/** Rótulo da linha. Sem isto, uma acção nova aparece como slug cru.
+ *
+ * A mudança de estado de uma empresa diz QUAL — num registo, «Estado alterado»
+ * obriga a abrir os detalhes para saber se a empresa foi suspensa ou
+ * reactivada, que é justamente o que se quer ver de relance. */
+function rotulo(accao: string, detalhes?: Record<string, unknown> | null) {
+  if (accao === "empresa.estado") {
+    const depois = detalhes?.depois;
+    if (depois === "suspensa") return "Empresa suspensa";
+    if (depois === "cancelada") return "Empresa cancelada";
+    if (depois === "activa") return "Empresa reactivada";
+  }
+  return ROTULOS[accao] ?? accao;
+}
 
 export function TabelaAuditoria({
   registos,
@@ -82,7 +104,7 @@ export function TabelaAuditoria({
                 </Td>
                 <Td>
                   <Selo cor={CORES[familia] ?? "#62657a"}>
-                    {ROTULOS[r.accao] ?? r.accao}
+                    {rotulo(r.accao, r.detalhes)}
                   </Selo>
                 </Td>
                 <Td className="max-w-[200px] truncate">

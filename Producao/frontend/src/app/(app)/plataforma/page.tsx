@@ -3,7 +3,10 @@
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-
+import {
+  AccoesEstado,
+  SeloEstado,
+} from "@/components/plataforma/EstadoEmpresa";
 import {
   ACarregar,
   BarraFiltros,
@@ -31,10 +34,11 @@ import type {
 export default function Empresas() {
   const [procura, setProcura] = useState("");
 
-  const { data: empresas, isLoading } = useSWR<EmpresaPlataforma[]>(
-    "/api/licencas/empresas",
-    buscador,
-  );
+  const {
+    data: empresas,
+    isLoading,
+    mutate,
+  } = useSWR<EmpresaPlataforma[]>("/api/licencas/empresas", buscador);
   const { data: licencas } = useSWR<LicencaPlataforma[]>(
     "/api/licencas",
     buscador,
@@ -155,6 +159,7 @@ export default function Empresas() {
                   <Th numerico>Tokens no mês</Th>
                   <Th numerico>Custo</Th>
                   <Th>Estado</Th>
+                  <Th numerico>Acções</Th>
                 </tr>
               </thead>
               <tbody>
@@ -194,11 +199,10 @@ export default function Empresas() {
                       </Td>
                       <Td numerico>{c?.custo ? `${c.custo} USD` : "—"}</Td>
                       <Td>
-                        <Selo
-                          cor={e.estado === "activa" ? "#1a9c5f" : "#8a8a8a"}
-                        >
-                          {e.estado}
-                        </Selo>
+                        <SeloEstado estado={e.estado} />
+                      </Td>
+                      <Td>
+                        <AccoesEstado empresa={e} aoMudar={() => mutate()} />
                       </Td>
                     </Tr>
                   );
