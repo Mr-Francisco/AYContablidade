@@ -62,3 +62,7 @@
 - Uma lista vazia raramente significa «nenhum»: `licenca.modulos_incluidos` vazia quer dizer TODOS no `modulo_ativo` do backend, e tratá-la como lista normal punha um plano Enterprise a mostrar todos os módulos como «não incluídos».
 - Rótulos, cores e capacidades de perfis vivem no backend e devem ser servidos por um endpoint de metadados — duplicá-los no frontend garante que divergem, e a interface passa a prometer acessos que a API recusa.
 - Rota estática tem de vir ANTES da paramétrica no mesmo router: `/api/users/metadados` declarado depois de `/api/users/{user_id}` seria apanhado como um id.
+
+- Não usar `AnimatePresence mode="wait"` para trocar passos de um formulário: o nó de saída fica preso e o passo seguinte nunca monta. Uma `key` que muda no painel basta para remontar e animar a entrada.
+- Nunca escrever `open(p,'wb').write(open(p,'rb').read())` — o ficheiro de escrita é aberto (e truncado) antes de o de leitura ser lido. Ler para uma variável primeiro.
+- Antes de concluir que uma alteração ao backend não fez efeito, confirmar que o processo na porta é o novo: `Get-NetTCPConnection -LocalPort 8001` e comparar o `StartTime`. O `pkill` não mata processos Windows.
