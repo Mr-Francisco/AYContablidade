@@ -11,7 +11,7 @@ Existe por duas razões, e a segunda é a mais importante:
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,6 +40,11 @@ class ConsultaIA(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     modelo: Mapped[str | None] = mapped_column(String(80))
     tokens_entrada: Mapped[int | None] = mapped_column(Integer)
     tokens_saida: Mapped[int | None] = mapped_column(Integer)
+    # Custo ESTIMADO em dólares, calculado dos tokens pela tabela de preços de
+    # `services/ia/consumo.py`. Fica gravado no momento da consulta, e não
+    # recalculado depois: se a tabela de preços mudar, o histórico tem de
+    # continuar a dizer o que a consulta custou na altura.
+    custo: Mapped[Decimal | None] = mapped_column(Numeric(12, 4))
     duracao_ms: Mapped[int | None] = mapped_column(Integer)
     erro: Mapped[str | None] = mapped_column(Text)
 

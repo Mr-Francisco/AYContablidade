@@ -12,7 +12,9 @@ from pydantic import BaseModel, Field
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
 from src.services.ia import contexto as ctx
 from src.services.ia import diagnostico as diag
+from src.services.ia import consumo as cons
 from src.services.ia import qa
+from src.services.ia.consumo import QuotaExcedida
 from src.services.ia.qa import ErroIA
 
 router = APIRouter(
@@ -194,12 +196,28 @@ def perguntar(
             ate=dados.ate, mes=dados.mes,
             incluir_diagnostico=dados.incluir_diagnostico,
         )
+    except QuotaExcedida as e:
+        # 402 e não 503: o serviço está bem, o que acabou foi o plano. É o
+        # mesmo código que a licença inactiva usa, e a interface já o sabe
+        # distinguir de uma falha.
+        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, str(e)) from e
     except ErroIA as e:
         # A tentativa falhada fica gravada no histórico — por isso commit.
         db.commit()
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from e
     db.commit()
     return r
+
+
+
+@router.get("/consumo")
+def consumo(empresa: EmpresaAtual, db: DB) -> dict:
+    """Consumo de IA da empresa no mês e como se compara com o limite.
+
+    Os tokens são medidos ao certo; o custo é uma ESTIMATIVA a partir de uma
+    tabela de preços que tem de ser confirmada contra a facturação real.
+    """
+    return cons.estado_quota(db, empresa_id=empresa.id)
 
 
 @router.get("/historico")

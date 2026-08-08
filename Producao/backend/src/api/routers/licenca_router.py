@@ -223,6 +223,19 @@ def auditoria(
         )
     ]
 
+
+@router.get("/consumo-ia")
+def consumo_ia(db: DB) -> list[dict]:
+    """Consumo de IA de TODAS as empresas no mês.
+
+    É a informação de que a plataforma precisa para ter previsibilidade de
+    custo: quem consome o quê, quem está perto do limite, e quanto está a
+    custar em dólares antes de a factura chegar.
+    """
+    from src.services.ia.consumo import consumo_por_empresa
+
+    return consumo_por_empresa(db)
+
 @router.patch("/{licenca_id}", response_model=LicencaPublica)
 def atualizar(
     request: Request, licenca_id: UUID, dados: LicencaAtualizar,

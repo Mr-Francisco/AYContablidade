@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from src.core.config import get_settings
 from src.db.models.ia import ConsultaIA
 from src.services.ia.contexto import construir
+from src.services.ia.consumo import custo_de, verificar_quota
 from src.services.ia.redaccao import (
     Pseudonimizador,
     limpar_texto,
@@ -184,6 +185,10 @@ def perguntar(
     if not ambitos:
         raise ErroIA("Escolha pelo menos um âmbito de análise.")
 
+    # Antes de construir o contexto e antes de contactar a API: uma chamada já
+    # feita custa dinheiro mesmo que a resposta seja recusada.
+    quota = verificar_quota(db, empresa_id=empresa_id)
+
     pacote, ps = construir(
         db, empresa_id=empresa_id, ambitos=ambitos, exercicio_id=exercicio_id,
         de=de, ate=ate, mes=mes, incluir_diagnostico=incluir_diagnostico,
@@ -228,6 +233,7 @@ def perguntar(
     registo.modelo = r["modelo"]
     registo.tokens_entrada = r["tokens_entrada"]
     registo.tokens_saida = r["tokens_saida"]
+    registo.custo = custo_de(r["modelo"], r["tokens_entrada"], r["tokens_saida"])
 
     # Repor os nomes reais só agora, depois de tudo estar gravado. O histórico
     # guarda a resposta como o utilizador a viu.
@@ -242,7 +248,15 @@ def perguntar(
         "ambitos": ambitos,
         "entidades_pseudonimizadas": ps.total,
         "tokens": {"entrada": r["tokens_entrada"], "saida": r["tokens_saida"]},
+        "custo": registo.custo,
         "duracao_ms": registo.duracao_ms,
+        # O consumo ANTES desta consulta, mais o que ela gastou: é o que
+        # permite avisar quem está a chegar ao limite antes de lá chegar.
+        "quota": {
+            "percentagem": quota["percentagem"],
+            "a_avisar": quota["a_avisar"],
+            "sem_limite": quota["sem_limite"],
+        },
     }
 
 
