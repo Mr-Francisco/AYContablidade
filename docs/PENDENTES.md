@@ -94,35 +94,44 @@ a servir para descobrir quem tem conta.
 
 ---
 
-## 6. Preços da OpenAI no código, e não em configuração
+## 6. Preços da OpenAI — FEITO
 
-**Estado:** parcial.
+A tabela vive em `backend/config/precos_ia.json`: os preços mudam sem aviso e
+não devem obrigar a um deploy. Não é segredo — os preços são públicos — por
+isso está versionado. Se o ficheiro faltar ou estiver mal formado, usa-se a
+tabela embutida e regista-se o aviso: um ficheiro de preços partido não pode
+desligar o módulo de IA.
 
-O registo de consumo já guarda o essencial — `modelo`, `tokens_entrada`,
-`tokens_saida`, `custo` ([ia.py](../Producao/backend/src/db/models/ia.py)).
+Cada consulta guarda `preco_entrada` e `preco_saida`. O custo de uma consulta
+antiga reproduz-se ao cêntimo pelos preços que lhe ficaram gravados, mesmo
+depois de a tabela mudar.
 
-Falta o resto do que foi pedido:
-
-- A tabela `PRECOS` está **escrita no código**
-  ([consumo.py:40](../Producao/backend/src/services/ia/consumo.py:40)); pediu
-  configuração centralizada.
-- O registo guarda o custo mas **não os preços aplicados**. Quando os preços da
-  OpenAI mudarem, deixa de ser possível reconstruir como se chegou aos custos
-  antigos — e a facturação histórica passa a ser inauditável.
-
-**Falta:** preços em configuração e duas colunas (`preco_entrada`,
-`preco_saida`) gravadas em cada registo, com o valor em vigor no momento.
+O ficheiro declara a data em que os preços foram confirmados, e a interface
+mostra-a a quem confere a factura. **Confirme-a contra a facturação real da
+OpenAI e actualize `_confirmado_em`** — é a única parte que depende de si.
 
 ---
 
-## 7. Rotação da chave da OpenAI
+## 7. Rotação da chave da OpenAI — À SUA ESPERA
 
-**Estado:** por fazer, à espera da revisão de segurança final.
+**Só o Yuri pode fazer isto:** exige o painel da OpenAI, ao qual não tenho
+acesso.
 
-Ficou combinado: revogar a chave actual, gerar uma nova e guardá-la
-exclusivamente em variáveis de ambiente ou num gestor de segredos. A chave que
-esteve num commit local nunca chegou a ser publicada — verifiquei os 28 commits
-antes do push — mas continua a ser uma chave que passou por um ficheiro.
+Numa altura anterior a chave esteve escrita no `.env.example`. Verifiquei os
+28 commits e **nunca chegou a ser publicada** — mas passou por um ficheiro
+dentro de uma pasta de repositório, o que significa que pode ter ficado em
+cópias de segurança, cache do editor, histórico da consola ou noutro clone. Uma
+chave que tocou num ficheiro versionado conta como exposta.
+
+Três passos:
+
+1. `platform.openai.com` → API keys → revogar a chave actual;
+2. criar uma nova;
+3. colá-la só em `Producao/backend/.env`, na linha `OPENAI_API_KEY=` — esse
+   ficheiro está no `.gitignore` e nunca é versionado.
+
+Nada no código precisa de mudar: a chave já é lida só de variável de ambiente,
+e as empresas nunca lhe tocam — todas as chamadas passam pelo backend.
 
 ---
 
