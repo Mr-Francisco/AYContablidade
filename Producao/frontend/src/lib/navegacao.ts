@@ -429,7 +429,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/fiscalidade",
-        pendente: true,
         rotulo: "Impostos",
         seccao: "Fiscalidade",
         cap: "contab.ver",
@@ -437,7 +436,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/fiscalidade/regimes-iva",
-        pendente: true,
         rotulo: "Regimes de IVA",
         seccao: "Fiscalidade",
         cap: "contab.ver",
@@ -445,7 +443,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/fiscalidade/obrigacoes",
-        pendente: true,
         rotulo: "Obrigações",
         seccao: "Fiscalidade",
         cap: "contab.ver",
@@ -453,7 +450,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/fiscalidade/calendario",
-        pendente: true,
         rotulo: "Calendário Fiscal",
         seccao: "Fiscalidade",
         cap: "contab.ver",
@@ -461,7 +457,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/fiscalidade/mapa-remuneracoes",
-        pendente: true,
         rotulo: "Mapa de Remunerações",
         seccao: "Declarações",
         cap: "rh.ver",

@@ -624,3 +624,84 @@ export interface MapaAnalitico {
   linhas: LinhaAnalitica[];
   totais: { debito: string; credito: string; saldo: string };
 }
+
+export interface Imposto {
+  sigla: string;
+  nome: string;
+  categoria: string;
+  incidencia: string;
+  taxa: string;
+  calculo: string;
+  modelos: string[];
+  prazo: string;
+  retencao: string;
+}
+
+export interface RegimeIva {
+  id: string;
+  nome: string;
+  cor: string;
+  limite: string;
+  taxa: string;
+  deducao: string;
+  declaracao: string;
+  pagamento: string;
+  obrigacoes: string[];
+}
+
+export interface RegimeIi {
+  id: string;
+  nome: string;
+  antigo: string;
+  taxa: string;
+  declaracao: string;
+  provisorio: string;
+}
+
+export interface FormaJuridica {
+  id: string;
+  nome: string;
+  nota: string;
+}
+
+export interface MesCalendario {
+  mes: string;
+  itens: string[];
+}
+
+export interface FonteFiscal {
+  nome: string;
+  url: string;
+}
+
+export interface CatalogoFiscal {
+  impostos: Imposto[];
+  regimes_iva: RegimeIva[];
+  regimes_ii: RegimeIi[];
+  formas: FormaJuridica[];
+  calendario: MesCalendario[];
+  fontes: FonteFiscal[];
+  categorias: string[];
+}
+
+export interface ObrigacaoFiscal {
+  imposto: string;
+  obrigacao: string;
+  periodicidade: string;
+  prazo: string;
+  cor: string;
+}
+
+export interface RespostaObrigacoes {
+  forma: FormaJuridica;
+  regime_iva: RegimeIva;
+  regime_ii: RegimeIi;
+  obrigacoes: ObrigacaoFiscal[];
+}
+
+export interface SimulacaoIva {
+  regime: string;
+  liquidado: string;
+  dedutivel: string;
+  a_entregar: string;
+}
