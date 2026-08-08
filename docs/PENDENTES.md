@@ -21,30 +21,27 @@ após a suspensão, e não apenas no login seguinte.
 
 ---
 
-## 2. O superadmin não vê nem gere os administradores das empresas
+## 2. Contas: administradores das empresas e da plataforma — FEITO
 
-**Estado:** por fazer.
+O superadministrador passa a ver e a gerir as contas de cada empresa: listar,
+promover a administrador, gerar palavra-passe temporária e repor o 2FA de quem
+perdeu o telemóvel. Resolve o caso em que o administrador de uma empresa perde
+o acesso e não tem ninguém acima dele lá dentro.
 
-A área do superadmin tem empresas, licenças, contratos, limites, planos, consumo
-e auditoria. Não tem utilizadores: as rotas em
-[licenca_router.py](../Producao/backend/src/api/routers/licenca_router.py) são
-`POST /licencas`, `GET /licencas`, `GET /licencas/empresas`,
-`GET /licencas/auditoria`, `GET /licencas/consumo-ia`, `PATCH` e `DELETE` de uma
-licença.
+A fronteira mantém-se: gerem-se **contas e acessos**, nunca dados de negócio. A
+promoção a superadministrador está bloqueada — seria uma porta lateral para a
+administração da plataforma através de uma conta de empresa.
 
-A especificação pede "administradores das empresas" na área do superadmin.
+E a plataforma deixa de ter uma conta única: podem existir até
+`MAX_SUPERADMINS` (três), cada uma com dono conhecido, para que a inicial não
+seja a de todos os dias. Criar exige a palavra-passe de quem cria; a inicial é
+gerada e mostrada uma vez. O que impede o sistema de ficar sem operador é
+ninguém poder mexer na própria conta.
 
-Isto interessa sobretudo num caso concreto: o administrador de uma empresa perde
-o acesso (esquece a palavra-passe, sai da empresa, perde o segundo factor). Hoje
-não há caminho nenhum para resolver isso sem tocar na base de dados.
-
-**Falta:** listagem dos utilizadores por empresa e, no mínimo, poder promover
-outro membro a administrador. Qualquer acção destas sobre a conta de outra
-pessoa tem de ficar auditada com o autor.
-
-**Nota de desenho:** o superadmin não deve poder ler dados de negócio de uma
-empresa — só gerir contas e acessos. A fronteira entre "administrar a
-plataforma" e "ver os dados dos clientes" tem de continuar de pé.
+**Fica em aberto, e é honesto dizê-lo:** quem gera uma palavra-passe temporária
+fica a sabê-la até o dono a mudar. Sem um canal de e-mail não há como evitar —
+a alternativa (deixar escolher a palavra-passe) seria pior. Fica auditado. Uma
+mudança forçada no primeiro acesso resolveria o resto; ver o ponto 9.
 
 ---
 
@@ -149,6 +146,23 @@ Empresa**"; a segunda diz só "o código da empresa".
 Aceitar o nome é mais simpático para quem entra todos os dias e não decora
 `BE001`. Aceitar só o código é mais restrito e não deixa adivinhar empresas pelo
 nome. **Diga qual prefere** e alinho a implementação e a especificação.
+
+---
+
+## 9. Mudança de palavra-passe forçada no primeiro acesso
+
+**Estado:** por fazer. Nasceu do ponto 2.
+
+Quem gera uma palavra-passe temporária — para um administrador de empresa ou
+para uma conta de plataforma nova — fica a sabê-la. Enquanto o dono não a
+mudar, há duas pessoas com acesso àquela conta.
+
+**Falta:** uma marca na conta que obrigue a definir palavra-passe nova antes de
+fazer qualquer outra coisa, tal como o 2FA obrigatório fecha a área da
+plataforma sem trancar a entrada.
+
+**Confirma-se assim:** gerar uma palavra-passe temporária, entrar com ela, e
+verificar que nenhuma rota de dados responde até a palavra-passe ser mudada.
 
 ---
 
