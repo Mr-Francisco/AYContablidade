@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.auth.permissions import licenca_valida, pode, pode_accao
+from src.core.config import get_settings
 from src.auth.security import TIPO_ACESSO, TokenInvalido, descodificar_token
 from src.core.constants import Accao, EstadoEmpresa, Modulo, Perfil
 from src.db.base import get_db
@@ -195,9 +196,38 @@ def exigir_perfil(*perfis: Perfil):
 
 
 def exigir_superadmin(user: UtilizadorAtual) -> User:
-    """Só o operador da plataforma: gestão de licenças e de empresas."""
+    """Só o operador da plataforma: gestão de licenças e de empresas.
+
+    Exige também o segundo factor. A conta que administra a plataforma vale
+    todas as empresas juntas: uma palavra-passe descoberta chegaria para gerar
+    licenças, ler a auditoria e mexer nos contratos de toda a gente.
+
+    A exigência é aqui e não no login, de propósito. Recusar a ENTRADA a um
+    superadmin sem 2FA trancava-o fora sem forma de o configurar — bastava uma
+    instalação nova para ficar sem operador. Assim entra, chega ao perfil,
+    configura, e só as rotas da plataforma é que estão fechadas até lá.
+
+    Falha FECHADA se faltar a chave de cifra: sem ela o 2FA não se consegue
+    activar, e deixar passar por causa de uma variável em falta seria desligar
+    a protecção exactamente quando o servidor está mal configurado. A mensagem
+    diz qual é o problema, e a saída é definir a variável e reiniciar.
+    """
     if Perfil(user.perfil) != Perfil.SUPERADMIN:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Operação reservada ao superadministrador."
+        )
+    if not user.totp_ativo:
+        if not (get_settings().TOTP_CHAVE_CIFRA or "").strip():
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                "A administração da plataforma exige verificação em dois passos, "
+                "mas o servidor não tem a variável TOTP_CHAVE_CIFRA definida e "
+                "por isso não é possível activá-la. Contacte quem administra o "
+                "servidor.",
+            )
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "A administração da plataforma exige verificação em dois passos. "
+            "Active-a no seu perfil para continuar.",
         )
     return user
