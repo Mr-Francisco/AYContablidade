@@ -200,3 +200,15 @@ class PasswordTemporaria(BaseModel):
     """Palavra-passe gerada para devolver o acesso a quem o perdeu."""
 
     password_temporaria: str
+
+
+class ConfigIaPublica(BaseModel):
+    """Definições de IA da plataforma."""
+
+    max_tokens_saida: int
+    minimo: int
+    maximo: int
+
+
+class ConfigIaAtualizar(BaseModel):
+    max_tokens_saida: int = Field(ge=200, le=4000)

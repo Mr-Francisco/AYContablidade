@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from src.core.config import get_settings
 from src.db.models.ia import ConsultaIA
 from src.services.ia.contexto import construir
+from src.services.ia import config as config_ia
 from src.services.ia.consumo import custo_de, verificar_quota
 from src.services.ia.redaccao import (
     Pseudonimizador,
@@ -91,7 +92,7 @@ def listar_modelos() -> list[str]:
     return sorted(m["id"] for m in dados if m.get("id", "").startswith("gpt"))
 
 
-def _chamar_openai(pacote: dict, pergunta: str) -> dict:
+def _chamar_openai(pacote: dict, pergunta: str, max_saida: int) -> dict:
     s = _settings()
     if not s.OPENAI_API_KEY:
         raise ErroIA(
@@ -101,8 +102,21 @@ def _chamar_openai(pacote: dict, pergunta: str) -> dict:
 
     corpo = {
         "model": s.OPENAI_MODELO,
+        # O CORTE É AQUI, imposto pela API, e não no pedido ao modelo. Pedir
+        # brevidade nas instruções ajuda a resposta a acabar bem, mas é um
+        # pedido — o modelo pode não o cumprir. Isto é um limite.
+        "max_tokens": max_saida,
         "messages": [
-            {"role": "system", "content": INSTRUCOES},
+            {
+                "role": "system",
+                "content": (
+                    f"{INSTRUCOES}\n"
+                    f"12. Tens um limite de {max_saida} tokens para a resposta. "
+                    "Escreve de forma a CABER nele: vai ao essencial e fecha o "
+                    "raciocínio. Uma resposta cortada a meio não serve a "
+                    "ninguém."
+                ),
+            },
             {
                 "role": "user",
                 "content": (
@@ -220,9 +234,13 @@ def perguntar(
     )
     db.add(registo)
 
+    # Lido agora, não em memória: se o superadministrador alterar o tecto, a
+    # pergunta seguinte já usa o valor novo.
+    max_saida = config_ia.max_tokens_saida(db)
+
     inicio = time.monotonic()
     try:
-        r = _chamar_openai(pacote, pergunta_limpa)
+        r = _chamar_openai(pacote, pergunta_limpa, max_saida)
     except ErroIA as e:
         registo.erro = str(e)
         registo.duracao_ms = int((time.monotonic() - inicio) * 1000)
@@ -253,7 +271,13 @@ def perguntar(
         "modelo": r["modelo"],
         "ambitos": ambitos,
         "entidades_pseudonimizadas": ps.total,
-        "tokens": {"entrada": r["tokens_entrada"], "saida": r["tokens_saida"]},
+        "tokens": {
+            "entrada": r["tokens_entrada"],
+            "saida": r["tokens_saida"],
+            # O tecto em vigor, para a interface poder explicar uma resposta
+            # curta em vez de a deixar parecer um defeito.
+            "max_saida": max_saida,
+        },
         "custo": registo.custo,
         "duracao_ms": registo.duracao_ms,
         # O consumo ANTES desta consulta, mais o que ela gastou: é o que

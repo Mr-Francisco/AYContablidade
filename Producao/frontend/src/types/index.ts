@@ -756,7 +756,9 @@ export interface RespostaIa {
   modelo: string;
   ambitos: string[];
   entidades_pseudonimizadas: number;
-  tokens: { entrada: number; saida: number };
+  /**  é o tecto definido para a plataforma. Serve para a interface
+   *  explicar uma resposta curta em vez de a deixar parecer um defeito. */
+  tokens: { entrada: number; saida: number; max_saida?: number };
   duracao_ms: number;
 }
 
@@ -948,4 +950,11 @@ export interface PrecosIa {
   confirmado_em: string | null;
   por_omissao: { entrada: string; saida: string };
   modelos: { modelo: string; entrada: string; saida: string }[];
+}
+
+/** Definições de IA da plataforma, geridas pelo superadministrador. */
+export interface ConfigIa {
+  max_tokens_saida: number;
+  minimo: number;
+  maximo: number;
 }

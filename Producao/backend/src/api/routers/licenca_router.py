@@ -33,6 +33,8 @@ from src.db.models.user import User
 from src.db.schemas.licenca import (
     ActivacaoPedido,
     ActivacaoResposta,
+    ConfigIaAtualizar,
+    ConfigIaPublica,
     EmpresaEstadoPedido,
     EmpresaPublica,
     LicencaAtualizar,
@@ -745,6 +747,61 @@ def consumo_ia(db: DB) -> list[dict]:
     from src.services.ia.consumo import consumo_por_empresa
 
     return consumo_por_empresa(db)
+
+
+@router.get("/config-ia", response_model=ConfigIaPublica)
+def config_ia(db: DB) -> ConfigIaPublica:
+    """Definições de IA que valem para todas as empresas."""
+    from src.services.ia import config as cfg_ia
+
+    return ConfigIaPublica(
+        max_tokens_saida=cfg_ia.max_tokens_saida(db),
+        minimo=cfg_ia.MIN_TOKENS_SAIDA,
+        maximo=cfg_ia.MAX_TOKENS_SAIDA,
+    )
+
+
+@router.patch("/config-ia", response_model=ConfigIaPublica)
+def actualizar_config_ia(
+    request: Request, dados: ConfigIaAtualizar, user: UtilizadorAtual, db: DB
+) -> ConfigIaPublica:
+    """Altera o tecto de tokens por resposta.
+
+    Vale para todas as empresas e a partir da pergunta seguinte — o valor é
+    lido a cada pedido, não guardado em memória, por isso não é preciso
+    reiniciar nada.
+
+    O tecto limita a RESPOSTA, que é a parte cara — custa cerca de quatro vezes
+    a entrada — e a única que se consegue limitar antes de acontecer: quando se
+    chama a API, o contexto já está construído. Não substitui as quotas por
+    empresa; trabalha com elas, encurtando o que cada pergunta gasta.
+    """
+    from src.services.ia import config as cfg_ia
+
+    try:
+        novo = cfg_ia.validar(dados.max_tokens_saida)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
+
+    cfg = cfg_ia.obter(db)
+    anterior = cfg.max_tokens_saida
+    if anterior == novo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"O limite já está em {novo} tokens."
+        )
+    cfg.max_tokens_saida = novo
+
+    auditar(
+        db, actor=user, accao="plataforma.config_ia", request=request,
+        alvo_tipo="plataforma", alvo_desc="Limite de tokens por resposta",
+        detalhes={"antes": anterior, "depois": novo},
+    )
+    db.commit()
+    return ConfigIaPublica(
+        max_tokens_saida=novo,
+        minimo=cfg_ia.MIN_TOKENS_SAIDA,
+        maximo=cfg_ia.MAX_TOKENS_SAIDA,
+    )
 
 
 @router.get("/precos-ia")

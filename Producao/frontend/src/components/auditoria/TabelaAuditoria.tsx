@@ -21,6 +21,7 @@ const CORES: Record<string, string> = {
   utilizador: "#1a9c5f",
   "2fa": "#c77700",
   superadmin: "#c62828",
+  plataforma: "#6c2fb0",
 };
 
 const ROTULOS: Record<string, string> = {
@@ -49,6 +50,7 @@ const ROTULOS: Record<string, string> = {
   "superadmin.remover": "Conta de plataforma removida",
   "superadmin.password_temporaria": "Palavra-passe de plataforma gerada",
   "superadmin.2fa_reposto": "2FA de plataforma reposto",
+  "plataforma.config_ia": "Limite de tokens alterado",
 };
 
 /** Rótulo da linha. Sem isto, uma acção nova aparece como slug cru.

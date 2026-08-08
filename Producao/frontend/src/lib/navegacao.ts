@@ -548,6 +548,13 @@ const NAV_COMPLETO: GrupoNav[] = [
         perfis: ["superadmin"],
         icone: "shield",
       },
+      {
+        href: "/plataforma/configuracoes",
+        rotulo: "Configurações",
+        seccao: "Plataforma",
+        perfis: ["superadmin"],
+        icone: "cog",
+      },
     ],
   },
 

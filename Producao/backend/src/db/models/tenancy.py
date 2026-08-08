@@ -19,6 +19,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -225,3 +226,30 @@ class Exercicio(UUIDMixin, TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return f"<Exercicio {self.nome} {self.estado}>"
+
+
+class ConfigPlataforma(UUIDMixin, TimestampMixin, Base):
+    """Definições da PLATAFORMA, não de uma empresa. Linha única.
+
+    O que aqui está aplica-se a todas as empresas e só o superadministrador lhe
+    mexe. Vive na base e não em ficheiro porque se ajusta a partir da interface
+    — quem gere a plataforma não vai editar JSON no servidor para apertar um
+    tecto de custo.
+    """
+
+    __tablename__ = "config_plataforma"
+
+    #: Tecto de tokens de RESPOSTA por pergunta. A saída é a parte cara — custa
+    #: cerca de quatro vezes a entrada — e é a única que se consegue limitar
+    #: antes de acontecer: o contexto já está construído quando se chama a API.
+    #:
+    #: Vai como `max_tokens` no pedido, que é um corte imposto pela OpenAI, E é
+    #: dito ao modelo nas instruções. As duas coisas, porque sozinhas falham de
+    #: maneiras diferentes: o `max_tokens` sozinho corta a meio de uma frase, e
+    #: pedir ao modelo sozinho é um pedido que ele pode não cumprir.
+    max_tokens_saida: Mapped[int] = mapped_column(
+        Integer, default=800, server_default=text("800"), nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<ConfigPlataforma max_saida={self.max_tokens_saida}>"
