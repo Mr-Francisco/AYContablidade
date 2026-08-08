@@ -593,3 +593,34 @@ export interface ProcessoAmortizacao {
   por: string | null;
   criado_em: string;
 }
+
+export interface LinhaContaCorrente {
+  codigo: string;
+  nome: string;
+  entidade: string;
+  debito: string;
+  credito: string;
+  saldo: string;
+  mov: number;
+}
+
+export interface ContasCorrentes {
+  linhas: LinhaContaCorrente[];
+  totais: { debito: string; credito: string; saldo: string };
+  natureza: string;
+  com_saldo: number;
+}
+
+export interface LinhaAnalitica {
+  codigo: string;
+  nome: string;
+  debito: string;
+  credito: string;
+  saldo: string;
+  n: number;
+}
+
+export interface MapaAnalitico {
+  linhas: LinhaAnalitica[];
+  totais: { debito: string; credito: string; saldo: string };
+}

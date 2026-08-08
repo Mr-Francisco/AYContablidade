@@ -156,7 +156,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/analitica",
-        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "analitica.ver",
@@ -164,7 +163,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/analitica/mapa",
-        pendente: true,
         rotulo: "Mapa de Custos",
         seccao: "Analítica",
         cap: "analitica.ver",
@@ -172,7 +170,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/analitica/centros",
-        pendente: true,
         rotulo: "Centros de Custo",
         seccao: "Analítica",
         cap: "analitica.ver",
@@ -187,7 +184,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/contas-correntes",
-        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "financeiro.ver",
@@ -195,7 +191,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contas-correntes/clientes",
-        pendente: true,
         rotulo: "Clientes",
         seccao: "Contas Correntes",
         cap: "financeiro.ver",
@@ -203,7 +198,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/contas-correntes/fornecedores",
-        pendente: true,
         rotulo: "Fornecedores",
         seccao: "Contas Correntes",
         cap: "financeiro.ver",
