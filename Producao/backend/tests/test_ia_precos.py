@@ -144,3 +144,31 @@ def test_o_historico_recalcula_se_pelos_precos_gravados(monkeypatch, tmp_path):
 
     # Mas com os preços gravados, o valor antigo reproduz-se ao cêntimo.
     assert custo_com_precos(1_000_000, 0, preco_antigo) == custo_antigo
+
+
+# ---------------------------------------------------------------------------
+# Snapshots datados
+# ---------------------------------------------------------------------------
+def test_um_snapshot_datado_usa_o_preco_do_modelo_base():
+    """REGRESSÃO encontrada com a API real: a OpenAI não devolve `gpt-4o` —
+    devolve `gpt-4o-2024-08-06`, a versão concreta que atendeu o pedido. Uma
+    correspondência exacta falhava sempre e mandava tudo para o preço de
+    omissão."""
+    assert precos.preco_de("gpt-4o-2024-08-06") == precos.preco_de("gpt-4o")
+    assert precos.preco_de("gpt-4.1-2025-04-14") == precos.preco_de("gpt-4.1")
+
+
+def test_o_prefixo_mais_longo_ganha():
+    """REGRESSÃO: `gpt-4o` também é prefixo de `gpt-4o-mini-2024-07-18`. Se
+    ganhasse o primeiro que casasse, um modelo barato era cobrado ao preço do
+    caro — dezasseis vezes mais — e as quotas travavam cedo demais."""
+    mini = precos.preco_de("gpt-4o-mini")
+    assert precos.preco_de("gpt-4o-mini-2024-07-18") == mini
+    assert mini != precos.preco_de("gpt-4o")
+
+
+def test_um_modelo_de_outra_familia_continua_no_de_omissao():
+    """O prefixo não pode ser tão permissivo que passe a apanhar tudo."""
+    t = precos.tabela()
+    assert precos.preco_de("claude-qualquer-coisa") == t.por_omissao
+    assert precos.preco_de("gpt") == t.por_omissao

@@ -113,6 +113,24 @@ def recarregar() -> Tabela:
 
 
 def preco_de(modelo: str | None) -> Preco:
-    """Preço a aplicar a um modelo. Nunca falha: cai no de omissão."""
+    """Preço a aplicar a um modelo. Nunca falha: cai no de omissão.
+
+    ACEITA SNAPSHOTS DATADOS. A API não devolve `gpt-4o` — devolve
+    `gpt-4o-2024-08-06`, a versão concreta que atendeu o pedido. Uma
+    correspondência exacta falhava sempre e mandava tudo para o preço de
+    omissão. Para o `gpt-4o` isso até dava o valor certo por acaso, porque o de
+    omissão é o dele; para o `gpt-4o-mini` sobrestimava DEZASSEIS VEZES, o que
+    faria as quotas travar cedo demais e o painel de custos mentir.
+
+    O prefixo MAIS LONGO ganha: `gpt-4o-mini-2024-07-18` casa com `gpt-4o-mini`
+    e não com `gpt-4o`, que também é prefixo dele.
+    """
     t = tabela()
-    return t.modelos.get(str(modelo or ""), t.por_omissao)
+    nome = str(modelo or "")
+    if nome in t.modelos:
+        return t.modelos[nome]
+
+    candidatos = [m for m in t.modelos if nome.startswith(m)]
+    if candidatos:
+        return t.modelos[max(candidatos, key=len)]
+    return t.por_omissao
