@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     # propósito: é uma janela em que a palavra-passe já foi aceite e só falta o
     # código. Longa demais transforma-se num token de meia-sessão esquecido.
     TOTP_DESAFIO_MINUTOS: int = 5
+
+    # Quantas contas de administração da plataforma podem existir ao todo.
+    # Três: a inicial e mais duas. Ter só uma é um ponto único de falha — perder
+    # a palavra-passe dessa conta deixa a plataforma sem operador. Ter muitas
+    # multiplica a superfície de ataque mais poderosa do sistema.
+    MAX_SUPERADMINS: int = 3
     RATE_LIMIT_GERAL: str = "120/minute"
 
     # ---------- CORS ----------

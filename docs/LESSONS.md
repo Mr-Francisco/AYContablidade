@@ -67,3 +67,4 @@
 - Nunca escrever `open(p,'wb').write(open(p,'rb').read())` — o ficheiro de escrita é aberto (e truncado) antes de o de leitura ser lido. Ler para uma variável primeiro.
 - Antes de concluir que uma alteração ao backend não fez efeito, confirmar que o processo na porta é o novo: `Get-NetTCPConnection -LocalPort 8001` e comparar o `StartTime`. O `pkill` não mata processos Windows.
 - Em testes contra o backend a correr, `SessionLocal` tem `expire_on_commit=False`: o objecto guarda o valor antigo e atribuir-lhe o mesmo valor obsoleto não emite UPDATE nenhum. Chamar `db.expire_all()` antes de ler ou repor estado que o servidor escreveu — ou ler a base directamente com `engine.connect()`.
+- Um teste de guarda tem de correr no cenário em que só esse guarda protege: com um único superadmin, remover a regra "não mexer na própria conta" ainda dava 409 vindo da rede de segurança, e o teste passava sem provar nada.

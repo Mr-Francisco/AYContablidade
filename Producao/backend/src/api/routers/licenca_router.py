@@ -21,12 +21,13 @@ Nota: NÃO usar `from __future__ import annotations` aqui — slowapi
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from src.api.deps import DB, UtilizadorAtual, exigir_superadmin
+from src.core.config import get_settings
 from src.api.limites import LIMITE_LOGIN, limiter
-from src.auth.security import hash_password, validar_forca_password
-from src.core.constants import EstadoEmpresa, EstadoLicenca
+from src.auth.security import hash_password, validar_forca_password, verificar_password
+from src.core.constants import EstadoEmpresa, EstadoLicenca, Perfil
 from src.db.models.tenancy import Empresa, Licenca
 from src.db.models.user import User
 from src.db.schemas.licenca import (
@@ -38,6 +39,13 @@ from src.db.schemas.licenca import (
     LicencaCriar,
     LicencaGerada,
     LicencaPublica,
+    MudarPerfilPedido,
+    PasswordTemporaria,
+    SuperadminAtualizar,
+    SuperadminCriado,
+    SuperadminCriar,
+    SuperadminPublico,
+    UtilizadorDaEmpresa,
 )
 from src.services import licenciamento as lic_svc
 from src.services.auditoria import auditar
@@ -260,6 +268,436 @@ def mudar_estado_empresa(
     db.commit()
     db.refresh(empresa)
     return EmpresaPublica.model_validate(empresa)
+
+
+# ---------------------------------------------------------------------------
+# Utilizadores das empresas
+#
+# Existe para um caso concreto: o administrador de uma empresa perde o acesso —
+# esquece a palavra-passe, sai da empresa, perde o telemóvel do 2FA. Sem estas
+# rotas não havia caminho nenhum para o resolver sem mexer à mão na base.
+#
+# A fronteira mantém-se: aqui gerem-se CONTAS e ACESSOS, nunca dados de
+# negócio. O superadministrador não passa a ver a contabilidade de ninguém.
+# ---------------------------------------------------------------------------
+def _empresa_ou_404(db: DB, empresa_id: UUID) -> Empresa:
+    empresa = db.get(Empresa, empresa_id)
+    if empresa is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Empresa não encontrada.")
+    return empresa
+
+
+def _membro_ou_404(db: DB, empresa: Empresa, user_id: UUID) -> User:
+    """O utilizador tem de ser DESTA empresa.
+
+    A verificação não é formalidade: sem ela, um `user_id` de outra empresa —
+    ou de um superadministrador — passava por aqui e as rotas de recuperação
+    tornavam-se uma porta lateral para mexer em qualquer conta do sistema.
+    """
+    user = db.get(User, user_id)
+    if user is None or user.empresa_id != empresa.id:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Utilizador não encontrado nesta empresa."
+        )
+    return user
+
+
+@router.get(
+    "/empresas/{empresa_id}/utilizadores", response_model=list[UtilizadorDaEmpresa]
+)
+def utilizadores_da_empresa(
+    empresa_id: UUID, db: DB
+) -> list[UtilizadorDaEmpresa]:
+    """Quem tem conta nesta empresa, e com que acesso."""
+    empresa = _empresa_ou_404(db, empresa_id)
+    return [
+        UtilizadorDaEmpresa.model_validate(u)
+        for u in db.scalars(
+            select(User)
+            .where(User.empresa_id == empresa.id)
+            .order_by(User.perfil, User.nome)
+        ).all()
+    ]
+
+
+@router.post(
+    "/empresas/{empresa_id}/utilizadores/{user_id}/perfil",
+    response_model=UtilizadorDaEmpresa,
+)
+def mudar_perfil_membro(
+    request: Request,
+    empresa_id: UUID,
+    user_id: UUID,
+    dados: MudarPerfilPedido,
+    user: UtilizadorAtual,
+    db: DB,
+) -> UtilizadorDaEmpresa:
+    """Muda o perfil de um membro. Serve para promover a administrador.
+
+    É o caminho para uma empresa que ficou sem administrador — porque o único
+    que tinha saiu — voltar a ter quem a gere.
+
+    NÃO promove a superadministrador. Deixar essa transição aqui abria uma
+    porta lateral para a administração da plataforma através de uma conta de
+    empresa, contornando o limite e o registo próprio que essas contas têm.
+    """
+    if dados.perfil == Perfil.SUPERADMIN:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Uma conta de empresa não pode ser promovida a administrador da "
+            "plataforma. Essas contas criam-se na área de administração.",
+        )
+
+    empresa = _empresa_ou_404(db, empresa_id)
+    membro = _membro_ou_404(db, empresa, user_id)
+    anterior = str(membro.perfil)
+    if anterior == str(dados.perfil):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"O utilizador já é {dados.perfil}."
+        )
+
+    membro.perfil = dados.perfil
+    # O perfil está dentro do token: sem subir a versão, a sessão aberta
+    # continuava com as permissões antigas até expirar.
+    membro.token_version += 1
+
+    auditar(
+        db, actor=user, accao="utilizador.perfil", request=request,
+        alvo_tipo="utilizador", alvo_id=membro.id,
+        alvo_desc=f"{membro.nome} <{membro.email}>", empresa_id=empresa.id,
+        detalhes={"antes": anterior, "depois": str(dados.perfil)},
+    )
+    db.commit()
+    db.refresh(membro)
+    return UtilizadorDaEmpresa.model_validate(membro)
+
+
+@router.post(
+    "/empresas/{empresa_id}/utilizadores/{user_id}/password",
+    response_model=PasswordTemporaria,
+)
+def password_temporaria(
+    request: Request, empresa_id: UUID, user_id: UUID, user: UtilizadorAtual, db: DB
+) -> PasswordTemporaria:
+    """Gera uma palavra-passe temporária e corta as sessões abertas.
+
+    Para quem perdeu o acesso e não tem quem lho devolva — o administrador de
+    uma empresa não tem, por definição, ninguém acima dele lá dentro.
+
+    A palavra-passe é GERADA e mostrada uma vez, não escolhida por quem executa
+    a operação: uma escolhida à pressa acaba em «12345678». Mas isto não deixa
+    de ser o que é — quem a gera fica a saber a palavra-passe de outra pessoa
+    até esta a mudar. Por isso fica auditado com destaque, e a interface diz-lhe
+    para a mudar assim que entrar.
+    """
+    empresa = _empresa_ou_404(db, empresa_id)
+    membro = _membro_ou_404(db, empresa, user_id)
+
+    nova = lic_svc.gerar_password_temporaria()
+    membro.password_hash = hash_password(nova)
+    membro.token_version += 1
+
+    auditar(
+        db, actor=user, accao="utilizador.password_temporaria", request=request,
+        alvo_tipo="utilizador", alvo_id=membro.id,
+        alvo_desc=f"{membro.nome} <{membro.email}>", empresa_id=empresa.id,
+        detalhes={"sessoes_revogadas": True, "por": "administração da plataforma"},
+    )
+    db.commit()
+    return PasswordTemporaria(password_temporaria=nova)
+
+
+@router.delete(
+    "/empresas/{empresa_id}/utilizadores/{user_id}/2fa",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def repor_2fa_membro(
+    request: Request, empresa_id: UUID, user_id: UUID, user: UtilizadorAtual, db: DB
+) -> None:
+    """Desliga o 2FA de um membro que perdeu o telemóvel e os códigos.
+
+    Sem isto, uma palavra-passe nova não chegava: a conta continuava a pedir um
+    código que ninguém consegue gerar, e ficava inalcançável para sempre.
+
+    Corta também as sessões: se a conta foi comprometida — outra razão para
+    fazer isto — deixá-las vivas não resolvia nada.
+    """
+    empresa = _empresa_ou_404(db, empresa_id)
+    membro = _membro_ou_404(db, empresa, user_id)
+    if not membro.totp_ativo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este utilizador não tem verificação em dois passos activa.",
+        )
+
+    membro.totp_ativo = False
+    membro.totp_segredo = None
+    membro.totp_ativado_em = None
+    membro.totp_ultimo_contador = None
+    membro.totp_codigos_recuperacao = []
+    membro.totp_falhas = 0
+    membro.totp_bloqueado_ate = None
+    membro.token_version += 1
+
+    auditar(
+        db, actor=user, accao="utilizador.2fa_reposto", request=request,
+        alvo_tipo="utilizador", alvo_id=membro.id,
+        alvo_desc=f"{membro.nome} <{membro.email}>", empresa_id=empresa.id,
+        detalhes={"por": "administração da plataforma", "sessoes_revogadas": True},
+    )
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Contas de administração da plataforma
+#
+# Uma só conta é um ponto único de falha: perder-lhe a palavra-passe deixa a
+# plataforma sem operador, e usá-la todos os dias aumenta a probabilidade de a
+# expor. Daí existirem até `MAX_SUPERADMINS` — a inicial e mais duas, cada uma
+# com dono conhecido — sem multiplicar sem limite a superfície mais poderosa
+# do sistema.
+#
+# O que impede a plataforma de ficar sem operador é a regra de NINGUÉM PODER
+# MEXER NA PRÓPRIA CONTA: como quem executa está sempre activo e nunca é o
+# alvo, sobra sempre pelo menos ele. `_garantir_que_sobra_alguem` é uma rede por
+# baixo dessa regra e, tal como as coisas estão, não chega a disparar — fica
+# para o dia em que alguém relaxar a primeira sem reparar na consequência.
+# ---------------------------------------------------------------------------
+def _superadmins(db: DB) -> list[User]:
+    return list(
+        db.scalars(
+            select(User)
+            .where(User.perfil == Perfil.SUPERADMIN)
+            .order_by(User.criado_em)
+        ).all()
+    )
+
+
+@router.get("/superadmins", response_model=list[SuperadminPublico])
+def listar_superadmins(db: DB) -> list[SuperadminPublico]:
+    """Contas de administração da plataforma."""
+    return [SuperadminPublico.model_validate(u) for u in _superadmins(db)]
+
+
+@router.post(
+    "/superadmins",
+    response_model=SuperadminCriado,
+    status_code=status.HTTP_201_CREATED,
+)
+def criar_superadmin(
+    request: Request, dados: SuperadminCriar, user: UtilizadorAtual, db: DB
+) -> SuperadminCriado:
+    """Cria outra conta de administração da plataforma.
+
+    Exige a palavra-passe de quem cria. É das acções mais poderosas do sistema
+    e um ecrã deixado aberto não pode bastar para a fazer.
+
+    A palavra-passe inicial é gerada e mostrada uma vez. Quem cria fica a
+    sabê-la até o dono a mudar — não há como evitar isso sem um canal de
+    e-mail, e a alternativa (deixar quem cria escolhê-la) seria pior. Fica
+    auditado, e a conta nova não administra nada até activar o segundo factor.
+    """
+    if not verificar_password(dados.password_actual, user.password_hash):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "A sua palavra-passe não está correcta."
+        )
+
+    limite = get_settings().MAX_SUPERADMINS
+    existentes = _superadmins(db)
+    if len(existentes) >= limite:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Já existem {len(existentes)} contas de administração da "
+            f"plataforma, que é o máximo. Remova uma antes de criar outra.",
+        )
+
+    email = dados.email.strip().lower()
+    if db.scalar(select(User).where(func.lower(User.email) == email)):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Já existe uma conta com este e-mail."
+        )
+
+    password = lic_svc.gerar_password_temporaria()
+    novo = User(
+        empresa_id=None,
+        nome=dados.nome.strip(),
+        email=email,
+        password_hash=hash_password(password),
+        perfil=Perfil.SUPERADMIN,
+        ativo=True,
+        # Não há ninguém acima para aprovar uma conta destas: quem a cria já é
+        # a autoridade máxima do sistema.
+        aprovado=True,
+        # O estado de segurança inicial vai EXPLÍCITO e não herdado dos
+        # defaults das colunas. Para a conta mais poderosa do sistema, ler o
+        # que ela é ao nascer não deve obrigar a ir ver o modelo — e um default
+        # alterado um dia não pode mudar isto sem que alguém repare.
+        token_version=1,
+        totp_ativo=False,
+        totp_segredo=None,
+        totp_codigos_recuperacao=[],
+        totp_falhas=0,
+        totp_bloqueado_ate=None,
+    )
+    db.add(novo)
+    db.flush()
+
+    auditar(
+        db, actor=user, accao="superadmin.criar", request=request,
+        alvo_tipo="utilizador", alvo_id=novo.id,
+        alvo_desc=f"{novo.nome} <{novo.email}>",
+        detalhes={"total_apos": len(existentes) + 1, "limite": limite},
+    )
+    db.commit()
+    db.refresh(novo)
+    return SuperadminCriado(
+        id=novo.id, nome=novo.nome, email=novo.email, password_inicial=password
+    )
+
+
+def _outro_superadmin(db: DB, user: User, alvo_id: UUID) -> User:
+    """Devolve o superadministrador alvo, recusando o próprio."""
+    if alvo_id == user.id:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Não pode desactivar nem remover a sua própria conta. Peça a outro "
+            "administrador da plataforma que o faça.",
+        )
+    alvo = db.get(User, alvo_id)
+    if alvo is None or Perfil(alvo.perfil) != Perfil.SUPERADMIN:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Conta de administração não encontrada."
+        )
+    return alvo
+
+
+def _garantir_que_sobra_alguem(db: DB, a_remover: User) -> None:
+    """Rede de segurança: nunca deixar a plataforma sem operador activo.
+
+    Hoje NÃO chega a disparar, e vale a pena dizê-lo em vez de fingir que é
+    esta a protecção: quem executa a operação está sempre activo — senão não
+    tinha sessão — e nunca é o alvo, porque `_outro_superadmin` o impede. Sobra
+    sempre pelo menos ele.
+
+    Fica na mesma, porque o dia em que alguém achar que a regra de não mexer na
+    própria conta é um incómodo e a relaxar, é este cálculo que evita o sistema
+    ficar sem forma de gerar licenças, ver a auditoria ou criar um operador.
+    """
+    activos = [u for u in _superadmins(db) if u.ativo and u.id != a_remover.id]
+    if not activos:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Esta é a última conta de administração activa. Crie ou reactive "
+            "outra antes de a desactivar.",
+        )
+
+
+@router.patch("/superadmins/{alvo_id}", response_model=SuperadminPublico)
+def actualizar_superadmin(
+    request: Request,
+    alvo_id: UUID,
+    dados: SuperadminAtualizar,
+    user: UtilizadorAtual,
+    db: DB,
+) -> SuperadminPublico:
+    """Activa ou desactiva outra conta de administração."""
+    alvo = _outro_superadmin(db, user, alvo_id)
+    if alvo.ativo == dados.ativo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"A conta já está {'activa' if dados.ativo else 'inactiva'}.",
+        )
+    if not dados.ativo:
+        _garantir_que_sobra_alguem(db, alvo)
+        # Desactivar sem cortar as sessões deixava a conta a trabalhar até o
+        # token expirar, e o `utilizador_atual` só a travaria no pedido
+        # seguinte — que é o que esta subida de versão garante.
+        alvo.token_version += 1
+
+    alvo.ativo = dados.ativo
+    auditar(
+        db, actor=user,
+        accao="superadmin.activar" if dados.ativo else "superadmin.desactivar",
+        request=request, alvo_tipo="utilizador", alvo_id=alvo.id,
+        alvo_desc=f"{alvo.nome} <{alvo.email}>",
+    )
+    db.commit()
+    db.refresh(alvo)
+    return SuperadminPublico.model_validate(alvo)
+
+
+@router.delete("/superadmins/{alvo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remover_superadmin(
+    request: Request, alvo_id: UUID, user: UtilizadorAtual, db: DB
+) -> None:
+    """Remove outra conta de administração da plataforma."""
+    alvo = _outro_superadmin(db, user, alvo_id)
+    _garantir_que_sobra_alguem(db, alvo)
+
+    descricao = f"{alvo.nome} <{alvo.email}>"
+    auditar(
+        db, actor=user, accao="superadmin.remover", request=request,
+        alvo_tipo="utilizador", alvo_id=alvo.id, alvo_desc=descricao,
+    )
+    db.delete(alvo)
+    db.commit()
+
+
+@router.post(
+    "/superadmins/{alvo_id}/password", response_model=PasswordTemporaria
+)
+def password_de_superadmin(
+    request: Request, alvo_id: UUID, user: UtilizadorAtual, db: DB
+) -> PasswordTemporaria:
+    """Devolve o acesso a outra conta de administração que o perdeu."""
+    alvo = _outro_superadmin(db, user, alvo_id)
+    nova = lic_svc.gerar_password_temporaria()
+    alvo.password_hash = hash_password(nova)
+    alvo.token_version += 1
+
+    auditar(
+        db, actor=user, accao="superadmin.password_temporaria", request=request,
+        alvo_tipo="utilizador", alvo_id=alvo.id,
+        alvo_desc=f"{alvo.nome} <{alvo.email}>",
+        detalhes={"sessoes_revogadas": True},
+    )
+    db.commit()
+    return PasswordTemporaria(password_temporaria=nova)
+
+
+@router.delete("/superadmins/{alvo_id}/2fa", status_code=status.HTTP_204_NO_CONTENT)
+def repor_2fa_superadmin(
+    request: Request, alvo_id: UUID, user: UtilizadorAtual, db: DB
+) -> None:
+    """Repõe o 2FA de outra conta de administração que perdeu o telemóvel.
+
+    Sem isto, uma conta de administração sem telemóvel e sem códigos ficava
+    inalcançável — e como o 2FA é obrigatório para administrar, nem uma
+    palavra-passe nova a resolvia.
+    """
+    alvo = _outro_superadmin(db, user, alvo_id)
+    if not alvo.totp_ativo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Esta conta não tem verificação em dois passos activa.",
+        )
+
+    alvo.totp_ativo = False
+    alvo.totp_segredo = None
+    alvo.totp_ativado_em = None
+    alvo.totp_ultimo_contador = None
+    alvo.totp_codigos_recuperacao = []
+    alvo.totp_falhas = 0
+    alvo.totp_bloqueado_ate = None
+    alvo.token_version += 1
+
+    auditar(
+        db, actor=user, accao="superadmin.2fa_reposto", request=request,
+        alvo_tipo="utilizador", alvo_id=alvo.id,
+        alvo_desc=f"{alvo.nome} <{alvo.email}>",
+        detalhes={"sessoes_revogadas": True},
+    )
+    db.commit()
 
 
 @router.get("/auditoria")

@@ -330,3 +330,21 @@ def _somar_meses(inicio: date, meses: int) -> date:
 
 def _bissexto(ano: int) -> bool:
     return ano % 4 == 0 and (ano % 100 != 0 or ano % 400 == 0)
+
+
+def gerar_password_temporaria(grupos: int = 4) -> str:
+    """Palavra-passe forte, gerada pelo servidor e legível ao telefone.
+
+    Serve dois casos: devolver o acesso a quem o perdeu, e criar uma conta de
+    administração da plataforma. Nos dois, quem executa a operação vai ter de
+    a transmitir a outra pessoa — muitas vezes a ler em voz alta.
+
+    Por isso o alfabeto não tem `0/O` nem `1/I/l`, que se confundem a ler e a
+    ouvir, e os grupos vão separados por hífen. Quatro grupos de quatro dão
+    cerca de 80 bits: não é para ser decorada, é para ser mudada.
+    """
+    alfabeto = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    partes = [
+        "".join(secrets.choice(alfabeto) for _ in range(4)) for _ in range(grupos)
+    ]
+    return "-".join(partes)

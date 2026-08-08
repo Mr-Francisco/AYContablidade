@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from src.core.constants import EstadoEmpresa, EstadoLicenca, RegimeIVA
+from src.core.constants import EstadoEmpresa, EstadoLicenca, Perfil, RegimeIVA
 
 
 class LicencaCriar(BaseModel):
@@ -128,3 +128,75 @@ class EmpresaEstadoPedido(BaseModel):
     #: Fica na auditoria. Daqui a um ano, «suspensa» sem motivo não explica
     #: nada a quem for ver porque é que a empresa deixou de entrar.
     motivo: str | None = Field(default=None, max_length=300)
+
+
+# ---------------------------------------------------------------------------
+# Utilizadores vistos pelo superadministrador
+# ---------------------------------------------------------------------------
+class UtilizadorDaEmpresa(BaseModel):
+    """Um membro de uma empresa, visto pela administração da plataforma.
+
+    Só identificação e acesso. Nada de dados de negócio: o superadministrador
+    gere contas, não consulta a contabilidade dos clientes.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    nome: str
+    email: EmailStr
+    perfil: Perfil
+    ativo: bool
+    aprovado: bool
+    totp_ativo: bool
+    ultimo_login: datetime | None
+    criado_em: datetime
+
+
+class MudarPerfilPedido(BaseModel):
+    perfil: Perfil
+
+
+class SuperadminCriar(BaseModel):
+    nome: str = Field(min_length=2, max_length=120)
+    email: EmailStr
+    #: Palavra-passe de quem está a criar. Criar outra conta de administração
+    #: da plataforma é das acções mais poderosas do sistema: um ecrã deixado
+    #: aberto não pode bastar para a fazer.
+    password_actual: str = Field(min_length=1)
+
+
+class SuperadminCriado(BaseModel):
+    """A palavra-passe inicial, mostrada UMA vez.
+
+    Gerada pelo servidor e não escolhida por quem cria: uma palavra-passe
+    inventada à pressa para a conta mais poderosa do sistema é o pior sítio
+    possível para o fazer.
+    """
+
+    id: UUID
+    nome: str
+    email: EmailStr
+    password_inicial: str
+
+
+class SuperadminPublico(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    nome: str
+    email: EmailStr
+    ativo: bool
+    totp_ativo: bool
+    ultimo_login: datetime | None
+    criado_em: datetime
+
+
+class SuperadminAtualizar(BaseModel):
+    ativo: bool
+
+
+class PasswordTemporaria(BaseModel):
+    """Palavra-passe gerada para devolver o acesso a quem o perdeu."""
+
+    password_temporaria: str
