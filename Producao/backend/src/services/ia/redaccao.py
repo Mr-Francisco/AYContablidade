@@ -15,6 +15,7 @@ Não acrescentam nada à análise e são exactamente o que não pode sair.
 """
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 # Padrões de identificadores a remover por completo. Aplicados como rede de
@@ -44,6 +45,8 @@ class Pseudonimizador:
     _por_real: dict[str, str] = field(default_factory=dict)
     _por_pseudo: dict[str, str] = field(default_factory=dict)
     _contadores: dict[str, int] = field(default_factory=dict)
+    # Nomes de terceiros e colaboradores: minúsculas → grafia canónica.
+    _entidades: dict[str, str] = field(default_factory=dict)
 
     def pseudonimo(self, nome: str | None, categoria: str = "Entidade") -> str:
         """Devolve o pseudónimo estável de um nome dentro deste pedido."""
@@ -59,6 +62,42 @@ class Pseudonimizador:
         self._por_real[real] = pseudo
         self._por_pseudo[pseudo] = real
         return pseudo
+
+    def registar_entidades(self, nomes: "Iterable[str | None]") -> None:
+        """Ensina ao pseudonimizador que nomes pertencem a entidades reais.
+
+        Serve para `pseudonimo_se_entidade`. Sem isto, o nome de um cliente
+        escapava pelo PLANO DE CONTAS: as subcontas de terceiros chamam-se pelo
+        nome da entidade («31121001 — AS Imagem, Lda.»), e a lista de contas
+        mais movimentadas ia com o nome real enquanto os campos `entidade` já
+        iam pseudonimizados. A verificação final não apanhava — um nome de
+        empresa não tem forma de NIF nem de IBAN.
+        """
+        for n in nomes:
+            if n and str(n).strip():
+                limpo = str(n).strip()
+                self._entidades.setdefault(limpo.casefold(), limpo)
+
+    def pseudonimo_se_entidade(
+        self, nome: str | None, categoria: str = "Entidade"
+    ) -> str:
+        """Pseudonimiza só se o nome for de uma entidade registada.
+
+        Aplica-se a campos que TANTO podem trazer um nome de pessoa como um
+        termo do plano de contas: «Vendas» e «Bancos» têm de passar intactos,
+        senão a resposta deixa de fazer sentido.
+
+        A comparação ignora a caixa, mas o pseudónimo é atribuído à grafia
+        CANÓNICA — a que veio da ficha da entidade. Sem isso, o mesmo cliente
+        escrito de duas maneiras na conta e na ficha ganhava dois pseudónimos, e
+        o `repor()` devolvia à resposta a grafia errada.
+        """
+        if not nome or not str(nome).strip():
+            return nome or ""
+        canonico = self._entidades.get(str(nome).strip().casefold())
+        if canonico is None:
+            return str(nome)
+        return self.pseudonimo(canonico, categoria)
 
     def repor(self, texto: str) -> str:
         """Devolve os nomes reais a um texto vindo da IA.

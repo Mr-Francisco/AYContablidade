@@ -705,3 +705,44 @@ export interface SimulacaoIva {
   dedutivel: string;
   a_entregar: string;
 }
+
+export interface AmbitoIa {
+  id: string;
+  nome: string;
+  modulo: string;
+  descricao: string;
+}
+
+export interface EstadoIa {
+  disponivel: boolean;
+  modelo: string;
+  diagnostico_local: boolean;
+}
+
+export interface RespostaIa {
+  id: string;
+  resposta: string;
+  modelo: string;
+  ambitos: string[];
+  entidades_pseudonimizadas: number;
+  tokens: { entrada: number; saida: number };
+  duracao_ms: number;
+}
+
+export interface ConsultaIa {
+  id: string;
+  pergunta: string;
+  resposta: string | null;
+  contexto: string[] | null;
+  modelo: string | null;
+  erro: string | null;
+  entidades_pseudonimizadas: number;
+  duracao_ms: number | null;
+  criado_em: string;
+}
+
+export interface PreviaContexto {
+  pacote: Record<string, unknown>;
+  entidades_pseudonimizadas: number;
+  identificadores_detectados: string[];
+}

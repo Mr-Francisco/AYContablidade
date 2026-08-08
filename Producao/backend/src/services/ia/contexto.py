@@ -23,6 +23,8 @@ from sqlalchemy.orm import Session
 
 from src.db.models.comercial import Venda
 from src.db.models.contabilidade import Lancamento, LancamentoLinha
+from src.db.models.rh import Colaborador, Independente
+from src.db.models.terceiros import Terceiro
 from src.db.models.tenancy import Empresa, Exercicio
 from src.services import comercial as com_svc
 from src.services import imobilizados as imo_svc
@@ -75,6 +77,34 @@ def _dec(v) -> str:
 # ---------------------------------------------------------------------------
 # Construtores por âmbito
 # ---------------------------------------------------------------------------
+
+def _registar_entidades(db: Session, empresa_id: UUID, ps: Pseudonimizador) -> None:
+    """Carrega os nomes de terceiros e colaboradores da empresa.
+
+    Faz-se ANTES de construir qualquer âmbito, porque o pseudonimizador precisa
+    de saber que nomes são de entidades para decidir o que substituir nos
+    campos ambíguos — como o nome de uma conta, que tanto pode ser «Vendas»
+    como «AS Imagem, Lda.».
+
+    São duas consultas de uma coluna só; o custo é irrelevante ao lado do resto
+    do pacote, e a alternativa — adivinhar pelo código da conta — falharia
+    assim que outro módulo passasse a criar contas por entidade.
+    """
+    ps.registar_entidades(
+        db.scalars(select(Terceiro.nome).where(Terceiro.empresa_id == empresa_id)).all()
+    )
+    ps.registar_entidades(
+        db.scalars(
+            select(Colaborador.nome).where(Colaborador.empresa_id == empresa_id)
+        ).all()
+    )
+    ps.registar_entidades(
+        db.scalars(
+            select(Independente.nome).where(Independente.empresa_id == empresa_id)
+        ).all()
+    )
+
+
 def _ctx_contabilidade(db, empresa_id, exercicio_id, de, ate, mes, ps) -> dict:
     dr = demonstracao_resultados(
         db, empresa_id=empresa_id, exercicio_id=exercicio_id, de=de, ate=ate, mes=mes
@@ -131,9 +161,14 @@ def _ctx_contabilidade(db, empresa_id, exercicio_id, de, ate, mes, ps) -> dict:
             "custos": _dec(res["custos"]), "proveitos": _dec(res["proveitos"]),
             "resultado": _dec(res["resultado"]),
         },
+        # O `nome` passa pelo pseudonimizador: as subcontas de terceiros
+        # chamam-se pelo nome da entidade («31121001 — AS Imagem, Lda.»), e sem
+        # isto o nome do cliente saía pelo plano de contas enquanto os campos
+        # `entidade` já iam pseudonimizados. Só os nomes que são de entidades
+        # conhecidas são substituídos — «Vendas» e «Bancos» passam intactos.
         "contas_mais_movimentadas": [
-            {"codigo": c, "nome": n, "debito": _dec(d), "credito": _dec(cr),
-             "movimentos": k}
+            {"codigo": c, "nome": ps.pseudonimo_se_entidade(n, "Entidade"),
+             "debito": _dec(d), "credito": _dec(cr), "movimentos": k}
             for c, n, d, cr, k in db.execute(q).all()
         ],
     }
@@ -339,6 +374,7 @@ def construir(
     nomes reais.
     """
     ps = Pseudonimizador()
+    _registar_entidades(db, empresa_id, ps)
     empresa = db.get(Empresa, empresa_id)
     ex = db.get(Exercicio, exercicio_id) if exercicio_id else None
 

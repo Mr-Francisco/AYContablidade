@@ -23,14 +23,25 @@ router = APIRouter(
 )
 
 
-class PerguntaPedido(BaseModel):
-    pergunta: str = Field(min_length=1, max_length=2000)
+class ContextoPedido(BaseModel):
+    """O que define o pacote: âmbitos e período. A pergunta NÃO entra aqui.
+
+    A pré-visualização usa este esquema e não o de `PerguntaPedido`: a página
+    promete que se pode confirmar o que sai antes de perguntar, e exigir a
+    pergunta para isso contrariava a própria garantia. O pacote é exactamente o
+    mesmo — a pergunta viaja à parte, no pedido ao modelo.
+    """
+
     ambitos: list[str] = Field(min_length=1)
     exercicio_id: UUID | None = None
     de: Date | None = None
     ate: Date | None = None
     mes: str | None = Field(default=None, max_length=2)
     incluir_diagnostico: bool = True
+
+
+class PerguntaPedido(ContextoPedido):
+    pergunta: str = Field(min_length=1, max_length=2000)
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +126,7 @@ def diagnostico(
 @router.post("/contexto")
 def previsualizar_contexto(
     request: Request,
-    dados: PerguntaPedido,
+    dados: ContextoPedido,
     empresa: EmpresaAtual,
     user: UtilizadorAtual,
     db: DB,

@@ -471,7 +471,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/assistente",
-        pendente: true,
         rotulo: "Perguntas e Respostas",
         seccao: "Assistente",
         cap: "contab.ver",
@@ -479,7 +478,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/assistente/diagnostico",
-        pendente: true,
         rotulo: "Diagnóstico",
         seccao: "Assistente",
         cap: "contab.ver",
