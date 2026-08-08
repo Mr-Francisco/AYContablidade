@@ -76,38 +76,33 @@ O pedido foi explícito: sessão própria e mais curta para o superadmin, **impo
 no backend e não apenas na interface**.
 
 **Falta:** distinguir a sessão de superadmin no próprio token (por exemplo, um
-`escopo` que as rotas da plataforma exijam), com expiração mais curta. O 2FA
-obrigatório para o superadmin (ponto 4) faz parte da mesma resposta.
+`escopo` que as rotas da plataforma exijam), com expiração mais curta.
+
+**Já feito desde então:** o 2FA passou a ser obrigatório para administrar a
+plataforma, e o token ganhou um campo `tipo`. O que falta é a duração própria e
+o escopo — a metade que resta desta resposta.
 
 ---
 
-## 4. Segundo factor (2FA/TOTP)
+## 4. Segundo factor (2FA/TOTP) — FEITO
 
-**Estado:** etapa 1 de 6 feita.
+As seis etapas estão fechadas e verificadas.
 
 - [x] **Etapa 1** — primitivas: segredo, cifra em repouso, verificação com
       janela de ±30 s, anti-repetição, QR, códigos de recuperação.
 - [x] **Etapa 2** — activar e desactivar por utilizador: QR, confirmação por
       código, códigos de recuperação mostrados uma única vez.
-- [x] **Etapa 3** — login em dois passos, com o campo `tipo` no JWT a impedir
-      que o desafio abra sessão, e o desafio-isco a não denunciar qual dos
-      factores falhou. Interface incluída.
-- [ ] **Etapa 4** — bloqueio ao fim de 3 tentativas, auditoria da falha,
-      limite por conta e não só por IP.
-- [ ] **Etapa 6** — obrigatório para o superadmin.
-
-**A etapa 5 (interface) saiu diluída nas etapas 2 e 3**, que é onde os ecrãs
-fazem sentido: a configuração vive em `/perfil` e o segundo passo no `/entrar`.
-
-**O que falta na etapa 4 e porque importa:** hoje o segundo passo está protegido
-pelo limite por IP (5/minuto). Quem tenha muitos IPs pode tentar códigos de seis
-dígitos sem que a conta se defenda. Os campos `totp_falhas` e
-`totp_bloqueado_ate` já existem no modelo, por preencher.
-
-**Nota da etapa 6:** o `super@plataforma.ao` **não tem 2FA configurado**. Um
-bloqueio simples a superadmins sem 2FA tranca-o fora da plataforma no login
-seguinte. Tem de ser inscrição forçada — deixá-lo entrar só para configurar —
-e não recusa.
+- [x] **Etapa 3** — login em dois passos. O campo `tipo` no JWT impede que o
+      desafio abra sessão; o desafio-isco não denuncia qual dos factores falhou.
+- [x] **Etapa 4** — bloqueio da conta ao fim de 3 falhas, por 15 minutos, com
+      auditoria. O bloqueio recusa com a MESMA mensagem de sempre: uma
+      mensagem própria daria, ao fim de três tentativas, a confirmação de que
+      a palavra-passe estava certa.
+- [x] **Etapa 5** — interface: a configuração em `/perfil`, o segundo passo no
+      `/entrar`, e o aviso na área da plataforma.
+- [x] **Etapa 6** — obrigatório para administrar a plataforma, por inscrição
+      forçada e não por bloqueio: o superadmin sem 2FA entra e chega ao perfil,
+      mas as rotas da plataforma recusam até activar.
 
 ---
 
