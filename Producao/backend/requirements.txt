@@ -22,6 +22,17 @@ email-validator>=2.2
 PyJWT>=2.10
 bcrypt>=4.2
 
+# --- Segundo factor (TOTP, RFC 6238) ---
+# pyotp implementa o RFC e compara os códigos em tempo constante.
+# segno gera o QR Code em SVG, sem depender do Pillow — o QR é desenhado no
+# servidor e enviado como texto, para o segredo nunca passar pelo cliente em
+# forma legível.
+# cryptography cifra o segredo TOTP em repouso: em claro, quem leia a base
+# consegue gerar códigos de qualquer conta.
+pyotp>=2.9
+segno>=1.6
+cryptography>=44
+
 # --- Rate limiting ---
 # Atenção: nos módulos com rotas decoradas por @limiter.limit NÃO usar
 # "from __future__ import annotations" (TypeError ForwardRef). Ver docs/LESSONS.md.

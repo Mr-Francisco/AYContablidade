@@ -42,6 +42,17 @@ class Settings(BaseSettings):
 
     # ---------- Rate limiting (SlowAPI) ----------
     RATE_LIMIT_LOGIN: str = "5/minute"
+
+    # --- Segundo factor (TOTP) ---
+    # Cifra o segredo TOTP em repouso. Variável PRÓPRIA e não derivada da
+    # JWT_SECRET_KEY de propósito: rodar o segredo JWT é normal, e derivá-la
+    # trancaria toda a gente fora do 2FA sem aviso. Sem esta variável, activar
+    # o 2FA falha com mensagem — nada mais deixa de funcionar.
+    #   python -c "import secrets; print(secrets.token_urlsafe(32))"
+    TOTP_CHAVE_CIFRA: str | None = None
+    # Tentativas de código antes de bloquear, e por quanto tempo.
+    TOTP_MAX_TENTATIVAS: int = 3
+    TOTP_BLOQUEIO_MINUTOS: int = 15
     RATE_LIMIT_GERAL: str = "120/minute"
 
     # ---------- CORS ----------
