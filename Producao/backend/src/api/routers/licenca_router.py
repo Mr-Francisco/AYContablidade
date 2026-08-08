@@ -749,59 +749,89 @@ def consumo_ia(db: DB) -> list[dict]:
     return consumo_por_empresa(db)
 
 
-@router.get("/config-ia", response_model=ConfigIaPublica)
-def config_ia(db: DB) -> ConfigIaPublica:
-    """Definições de IA que valem para todas as empresas."""
+def _config_ia_publica(db: DB) -> ConfigIaPublica:
     from src.services.ia import config as cfg_ia
 
+    pacote, historico = cfg_ia.retencao(db)
     return ConfigIaPublica(
         max_tokens_saida=cfg_ia.max_tokens_saida(db),
         minimo=cfg_ia.MIN_TOKENS_SAIDA,
         maximo=cfg_ia.MAX_TOKENS_SAIDA,
+        ia_dias_pacote=pacote,
+        dias_pacote_min=cfg_ia.MIN_DIAS_PACOTE,
+        dias_pacote_max=cfg_ia.MAX_DIAS_PACOTE,
+        ia_dias_historico=historico,
+        dias_historico_min=cfg_ia.MIN_DIAS_HISTORICO,
+        dias_historico_max=cfg_ia.MAX_DIAS_HISTORICO,
     )
+
+
+@router.get("/config-ia", response_model=ConfigIaPublica)
+def config_ia(db: DB) -> ConfigIaPublica:
+    """Definições de IA que valem para todas as empresas."""
+    return _config_ia_publica(db)
 
 
 @router.patch("/config-ia", response_model=ConfigIaPublica)
 def actualizar_config_ia(
     request: Request, dados: ConfigIaAtualizar, user: UtilizadorAtual, db: DB
 ) -> ConfigIaPublica:
-    """Altera o tecto de tokens por resposta.
+    """Altera o tecto de tokens por resposta e os prazos de retenção.
 
-    Vale para todas as empresas e a partir da pergunta seguinte — o valor é
-    lido a cada pedido, não guardado em memória, por isso não é preciso
-    reiniciar nada.
+    Vale a partir da pergunta seguinte — os valores são lidos a cada pedido,
+    não guardados em memória, por isso não é preciso reiniciar nada.
 
     O tecto limita a RESPOSTA, que é a parte cara — custa cerca de quatro vezes
-    a entrada — e a única que se consegue limitar antes de acontecer: quando se
-    chama a API, o contexto já está construído. Não substitui as quotas por
-    empresa; trabalha com elas, encurtando o que cada pergunta gasta.
+    a entrada — e a única que se consegue limitar antes de acontecer. Não
+    substitui as quotas por empresa; trabalha com elas.
+
+    Os prazos são dois porque são coisas diferentes: descartar o pacote enviado
+    liberta espaço sem perder nada de contas; apagar a consulta apaga também o
+    consumo daquele período.
     """
     from src.services.ia import config as cfg_ia
 
+    cfg = cfg_ia.obter(db)
+    antes = {
+        "max_tokens_saida": cfg.max_tokens_saida,
+        "ia_dias_pacote": cfg.ia_dias_pacote,
+        "ia_dias_historico": cfg.ia_dias_historico,
+    }
+    pedido = dados.model_dump(exclude_none=True)
+    if not pedido:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Nada para alterar."
+        )
+
     try:
-        novo = cfg_ia.validar(dados.max_tokens_saida)
+        if "max_tokens_saida" in pedido:
+            cfg.max_tokens_saida = cfg_ia.validar(pedido["max_tokens_saida"])
+        # Os dois prazos validam-se em conjunto: um deles sozinho pode ser
+        # válido e mesmo assim ficar maior do que o outro.
+        pacote = pedido.get("ia_dias_pacote", cfg.ia_dias_pacote)
+        historico = pedido.get("ia_dias_historico", cfg.ia_dias_historico)
+        cfg.ia_dias_pacote, cfg.ia_dias_historico = cfg_ia.validar_retencao(
+            pacote, historico
+        )
     except ValueError as e:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
 
-    cfg = cfg_ia.obter(db)
-    anterior = cfg.max_tokens_saida
-    if anterior == novo:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, f"O limite já está em {novo} tokens."
-        )
-    cfg.max_tokens_saida = novo
+    depois = {
+        "max_tokens_saida": cfg.max_tokens_saida,
+        "ia_dias_pacote": cfg.ia_dias_pacote,
+        "ia_dias_historico": cfg.ia_dias_historico,
+    }
+    mudou = {k: v for k, v in depois.items() if antes[k] != v}
+    if not mudou:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Nada mudou.")
 
     auditar(
         db, actor=user, accao="plataforma.config_ia", request=request,
-        alvo_tipo="plataforma", alvo_desc="Limite de tokens por resposta",
-        detalhes={"antes": anterior, "depois": novo},
+        alvo_tipo="plataforma", alvo_desc="Configurações de IA",
+        detalhes={"antes": {k: antes[k] for k in mudou}, "depois": mudou},
     )
     db.commit()
-    return ConfigIaPublica(
-        max_tokens_saida=novo,
-        minimo=cfg_ia.MIN_TOKENS_SAIDA,
-        maximo=cfg_ia.MAX_TOKENS_SAIDA,
-    )
+    return _config_ia_publica(db)
 
 
 @router.get("/precos-ia")

@@ -21,7 +21,14 @@ import {
 import useSWR from "swr";
 
 import { mesPorExtenso, ultimosMeses } from "@/components/rh/mes";
-import { Alerta, Botao, Cartao, Selector, Selo } from "@/components/ui";
+import {
+  Alerta,
+  Botao,
+  CabecalhoPagina,
+  Cartao,
+  Selector,
+  Selo,
+} from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { useExercicios } from "@/lib/hooks";
@@ -77,15 +84,20 @@ export default function Assistente() {
   const { data: estado } = useSWR<EstadoIa>("/api/ia/estado", buscador, {
     revalidateOnFocus: false,
   });
-  const { data: disponiveis } = useSWR<AmbitoIa[]>(
-    "/api/ia/ambitos",
+  // Uma conta sem empresa — o superadministrador da plataforma — não tem
+  // dados de negócio para consultar, e estas rotas respondem 400. Sem esta
+  // condição, a página pedia-as, ficava sem âmbitos e sem histórico, e depois
+  // recusava a pergunta com «Escolha pelo menos um contexto» — uma mensagem
+  // que manda corrigir o que não tem correcção possível.
+  const temEmpresa = Boolean(utilizador?.empresa_id);
+
+  const { data: disponiveis, error: erroAmbitos } = useSWR<AmbitoIa[]>(
+    temEmpresa ? "/api/ia/ambitos" : null,
     buscador,
-    {
-      revalidateOnFocus: false,
-    },
+    { revalidateOnFocus: false },
   );
   const { data: historico } = useSWR<ConsultaIa[]>(
-    "/api/ia/historico?so_minhas=true&limite=20",
+    temEmpresa ? "/api/ia/historico?so_minhas=true&limite=20" : null,
     buscador,
     { revalidateOnFocus: false },
   );
@@ -160,7 +172,23 @@ export default function Assistente() {
     const limpo = texto.trim();
     setErro(null);
     if (!limpo) return;
-    if (!ambitos.length) return setErro("Escolha pelo menos um contexto.");
+    if (!ambitos.length) {
+      // A mensagem tem de dizer o que se passa, e o que se passa nem sempre é
+      // «esqueceu-se de escolher»: pode não haver nada para escolher.
+      setAjustesAbertos(true);
+      if (erroAmbitos) {
+        // A lista nem sequer carregou. Dizer «escolha um contexto» aqui
+        // mandava corrigir o que não está ao alcance de quem pergunta.
+        return setErro(
+          falhou(erroAmbitos, "Não foi possível carregar os contextos."),
+        );
+      }
+      return setErro(
+        disponiveis?.length
+          ? "Escolha pelo menos um contexto — abaixo, em Contexto."
+          : "Não há nenhum contexto disponível para esta conta. Sem módulos consultáveis, não há dados sobre que perguntar.",
+      );
+    }
 
     const temporario = `a-decorrer-${Date.now()}`;
     setTrocas((v) => [
@@ -236,6 +264,43 @@ export default function Assistente() {
   }
 
   const indisponivel = estado && !estado.disponivel;
+
+  // Uma conta de administração da plataforma não pertence a nenhuma empresa e
+  // não tem contabilidade sobre que perguntar. Mostrar-lhe o formulário seria
+  // oferecer uma porta que dá para uma parede.
+  if (utilizador && !temEmpresa) {
+    return (
+      <>
+        <CabecalhoPagina
+          titulo="Assistente"
+          descricao="Responde sobre os dados de uma empresa."
+        />
+        <Cartao className="max-w-[620px]">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-marca/10 text-marca">
+              <Sparkles size={19} />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-[17px] font-bold leading-tight">
+                Esta conta não está ligada a nenhuma empresa
+              </h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-texto-suave">
+                O assistente responde a partir da contabilidade de uma empresa —
+                saldos, lançamentos, movimentos. As contas de administração da
+                plataforma gerem licenças, empresas e acessos, e por isso não
+                têm dados de negócio sobre que perguntar.
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-texto-suave">
+                Para acompanhar o que as empresas estão a consumir, use{" "}
+                <b>Plataforma → Consumo de IA</b>. Para alterar o tamanho máximo
+                das respostas, <b>Plataforma → Configurações</b>.
+              </p>
+            </div>
+          </div>
+        </Cartao>
+      </>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-140px)] min-w-0 flex-col">

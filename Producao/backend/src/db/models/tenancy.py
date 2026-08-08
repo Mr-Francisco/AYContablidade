@@ -251,5 +251,21 @@ class ConfigPlataforma(UUIDMixin, TimestampMixin, Base):
         Integer, default=800, server_default=text("800"), nullable=False
     )
 
+    #: Dias até o PACOTE enviado ser descartado. É o que ocupa espaço a sério —
+    #: cerca de 3 kB por consulta, contra escassas centenas de bytes do resto.
+    #: Serve para auditar o que saiu para a API, e essa utilidade tem uma vida
+    #: curta: passado um mês, ninguém vai conferir o contexto de uma pergunta.
+    #: A consulta fica, com a pergunta, a resposta e os números.
+    ia_dias_pacote: Mapped[int] = mapped_column(
+        Integer, default=30, server_default=text("30"), nullable=False
+    )
+
+    #: Dias até a consulta ser APAGADA. Aqui perde-se também o consumo daquele
+    #: período, por isso o mínimo é largo: os totais mensais são calculados a
+    #: partir destas linhas, e apagar de mais faz o consumo mentir.
+    ia_dias_historico: Mapped[int] = mapped_column(
+        Integer, default=365, server_default=text("365"), nullable=False
+    )
+
     def __repr__(self) -> str:
         return f"<ConfigPlataforma max_saida={self.max_tokens_saida}>"

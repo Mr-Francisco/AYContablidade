@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Trash2 } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import useSWR from "swr";
 
@@ -178,6 +178,8 @@ export default function ConfiguracoesDaPlataforma() {
         </Cartao>
 
         <div className="flex min-w-0 flex-col gap-4">
+          {data && <Retencao data={data} aoGravar={mutate} />}
+
           <Cartao className="min-w-0">
             <TituloCartao>Como isto controla o custo</TituloCartao>
             <div className="flex flex-col gap-2 text-sm leading-relaxed text-texto-suave">
@@ -207,5 +209,150 @@ export default function ConfiguracoesDaPlataforma() {
         </div>
       </div>
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+/** Prazos de retenção do histórico do assistente.
+ *
+ * São DOIS porque são coisas diferentes, e confundi-las custa caro nos dois
+ * sentidos: descartar o pacote enviado liberta quase todo o espaço sem perder
+ * nada de contas; apagar a consulta apaga também o consumo daquele período.
+ */
+function Retencao({
+  data,
+  aoGravar,
+}: {
+  data: ConfigIa;
+  aoGravar: () => void;
+}) {
+  const [pacote, setPacote] = useState(String(data.ia_dias_pacote));
+  const [historico, setHistorico] = useState(String(data.ia_dias_historico));
+  const [erro, setErro] = useState<string | null>(null);
+  const [gravado, setGravado] = useState(false);
+  const [aGravar, setAGravar] = useState(false);
+
+  useEffect(() => {
+    setPacote(String(data.ia_dias_pacote));
+    setHistorico(String(data.ia_dias_historico));
+  }, [data]);
+
+  const nPacote = Number(pacote);
+  const nHistorico = Number(historico);
+  const mudou =
+    nPacote !== data.ia_dias_pacote || nHistorico !== data.ia_dias_historico;
+  const valido =
+    Number.isInteger(nPacote) &&
+    Number.isInteger(nHistorico) &&
+    nPacote >= data.dias_pacote_min &&
+    nPacote <= data.dias_pacote_max &&
+    nHistorico >= data.dias_historico_min &&
+    nHistorico <= data.dias_historico_max &&
+    nPacote <= nHistorico;
+
+  async function submeter(e: FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    setGravado(false);
+    setAGravar(true);
+    try {
+      await api.patch("/api/licencas/config-ia", {
+        ia_dias_pacote: nPacote,
+        ia_dias_historico: nHistorico,
+      });
+      setGravado(true);
+      aoGravar();
+      setTimeout(() => setGravado(false), 4000);
+    } catch (e2) {
+      setErro(
+        e2 instanceof ErroApi
+          ? e2.mensagemUtilizador
+          : "Não foi possível gravar.",
+      );
+    } finally {
+      setAGravar(false);
+    }
+  }
+
+  return (
+    <Cartao className="min-w-0">
+      <TituloCartao
+        extra={
+          <span className="inline-flex items-center gap-1.5 text-xs text-texto-suave">
+            <Trash2 size={13} />
+            Limpeza
+          </span>
+        }
+      >
+        Histórico do assistente
+      </TituloCartao>
+
+      <form onSubmit={submeter} className="flex flex-col gap-3">
+        <p className="text-sm leading-relaxed text-texto-suave">
+          O histórico é limpo sozinho, à medida que se fazem perguntas — não é
+          preciso agendar nada.
+        </p>
+
+        <Campo
+          rotulo="Descartar o pacote enviado ao fim de"
+          dica={`Entre ${data.dias_pacote_min} e ${data.dias_pacote_max} dias. É o que ocupa espaço: cerca de 3 kB por pergunta. A pergunta, a resposta e os números ficam.`}
+        >
+          <div className="flex items-center gap-2">
+            <Entrada
+              type="number"
+              value={pacote}
+              onChange={(e) => setPacote(e.target.value)}
+              min={data.dias_pacote_min}
+              max={data.dias_pacote_max}
+              className="tabular max-w-[110px]"
+            />
+            <span className="text-sm text-texto-suave">dias</span>
+          </div>
+        </Campo>
+
+        <Campo
+          rotulo="Apagar a consulta ao fim de"
+          dica={`Entre ${data.dias_historico_min} e ${data.dias_historico_max} dias. Aqui perde-se também o consumo desse período — por isso o mínimo é largo.`}
+        >
+          <div className="flex items-center gap-2">
+            <Entrada
+              type="number"
+              value={historico}
+              onChange={(e) => setHistorico(e.target.value)}
+              min={data.dias_historico_min}
+              max={data.dias_historico_max}
+              className="tabular max-w-[110px]"
+            />
+            <span className="text-sm text-texto-suave">dias</span>
+          </div>
+        </Campo>
+
+        {nPacote > nHistorico && (
+          <Alerta tipo="aviso">
+            O pacote não pode durar mais do que a consulta — a essa altura já
+            teria sido apagada.
+          </Alerta>
+        )}
+
+        <Alerta tipo="info">
+          As consultas do <b>mês corrente nunca são apagadas</b>, seja qual for
+          o prazo: é delas que saem os totais de consumo que travam quem passa
+          da quota.
+        </Alerta>
+
+        {erro && <Alerta tipo="erro">{erro}</Alerta>}
+        {gravado && <Alerta tipo="sucesso">Prazos gravados.</Alerta>}
+
+        <div>
+          <Botao
+            type="submit"
+            variante="primario"
+            disabled={aGravar || !mudou || !valido}
+          >
+            {aGravar ? "A gravar…" : "Gravar prazos"}
+          </Botao>
+        </div>
+      </form>
+    </Cartao>
   );
 }

@@ -957,4 +957,12 @@ export interface ConfigIa {
   max_tokens_saida: number;
   minimo: number;
   maximo: number;
+  /** Dias até o pacote enviado ser descartado — é o que ocupa espaço. */
+  ia_dias_pacote: number;
+  dias_pacote_min: number;
+  dias_pacote_max: number;
+  /** Dias até a consulta ser apagada. Aqui perde-se também o consumo. */
+  ia_dias_historico: number;
+  dias_historico_min: number;
+  dias_historico_max: number;
 }

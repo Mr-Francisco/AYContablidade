@@ -11,6 +11,7 @@ texto.
 """
 
 import json
+import logging
 import time
 from typing import Any
 from uuid import UUID
@@ -32,6 +33,8 @@ from src.services.ia.redaccao import (
 
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODELOS_URL = "https://api.openai.com/v1/models"
+
+log = logging.getLogger(__name__)
 
 INSTRUCOES = """\
 És um assistente de análise contabilística de um ERP angolano que segue o Plano \
@@ -258,6 +261,15 @@ def perguntar(
     )
     registo.preco_entrada = preco.entrada
     registo.preco_saida = preco.saida
+
+    # A limpeza corre aqui, depois de a consulta nova estar gravada: quem cria
+    # linhas é quem as vai limpando, sem agendador nenhum. O trabalho é
+    # proporcional ao que ESTA empresa acumulou, e falhar não pode custar a
+    # resposta que já foi paga.
+    try:
+        config_ia.limpar_historico(db, empresa_id=empresa_id)
+    except Exception:  # noqa: BLE001
+        log.warning("Não foi possível limpar o histórico de IA.", exc_info=True)
 
     # Repor os nomes reais só agora, depois de tudo estar gravado. O histórico
     # guarda a resposta como o utilizador a viu.

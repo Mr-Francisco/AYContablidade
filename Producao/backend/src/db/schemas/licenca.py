@@ -203,12 +203,24 @@ class PasswordTemporaria(BaseModel):
 
 
 class ConfigIaPublica(BaseModel):
-    """Definições de IA da plataforma."""
+    """Definições de IA da plataforma, com os limites de cada campo."""
 
     max_tokens_saida: int
     minimo: int
     maximo: int
+    #: Dias até o pacote enviado ser descartado — é o que ocupa espaço.
+    ia_dias_pacote: int
+    dias_pacote_min: int
+    dias_pacote_max: int
+    #: Dias até a consulta ser apagada. Aqui perde-se também o consumo.
+    ia_dias_historico: int
+    dias_historico_min: int
+    dias_historico_max: int
 
 
 class ConfigIaAtualizar(BaseModel):
-    max_tokens_saida: int = Field(ge=200, le=4000)
+    """Todos os campos opcionais: a interface grava uma secção de cada vez."""
+
+    max_tokens_saida: int | None = Field(default=None, ge=200, le=4000)
+    ia_dias_pacote: int | None = Field(default=None, ge=7, le=365)
+    ia_dias_historico: int | None = Field(default=None, ge=90, le=3650)
