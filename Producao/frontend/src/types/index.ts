@@ -513,3 +513,83 @@ export interface ConfigRh {
   taxa_ret_hon: string;
   [chave: string]: unknown;
 }
+
+export interface Ativo {
+  id: string;
+  codigo: string;
+  designacao: string;
+  conta_imob: string | null;
+  conta_amort_acum: string | null;
+  conta_custo_amort: string | null;
+  data_aquisicao: string | null;
+  valor_aquisicao: string;
+  taxa: string;
+  metodo: string;
+  amort_acumulada: string;
+  valor_liquido: string;
+  amort_anual: string;
+  amort_mensal: string;
+  percent_amortizado: number;
+  fornecedor: string | null;
+  estado: string;
+}
+
+export interface LinhaMapaImob {
+  id: string;
+  codigo: string;
+  designacao: string;
+  conta: string | null;
+  data_aquisicao: string | null;
+  valor_bruto: string;
+  taxa: string;
+  metodo: string;
+  amort_acumulada_ant: string;
+  amort_exercicio: string;
+  amort_acumulada: string;
+  valor_liquido: string;
+  estado: string;
+}
+
+export interface MapaImob {
+  linhas: LinhaMapaImob[];
+  totais: {
+    valor_bruto: string;
+    amort_acumulada_ant: string;
+    amort_exercicio: string;
+    amort_acumulada: string;
+    valor_liquido: string;
+  };
+}
+
+export interface LinhaPeriodoImob {
+  id: string;
+  codigo: string;
+  designacao: string;
+  conta: string | null;
+  taxa: string;
+  metodo: string;
+  valor_bruto: string;
+  amort_acumulada_atual: string;
+  valor_liquido_atual: string;
+  valor_periodo: string;
+  ja_processado: boolean;
+  lancamento_id: string | null;
+  estado: string;
+}
+
+export interface MapaPeriodoImob {
+  linhas: LinhaPeriodoImob[];
+  total_periodo: string;
+  processado: boolean;
+}
+
+export interface ProcessoAmortizacao {
+  id: string;
+  exercicio_id: string;
+  mes: string;
+  data: string;
+  total_amort: string;
+  itens: number;
+  por: string | null;
+  criado_em: string;
+}

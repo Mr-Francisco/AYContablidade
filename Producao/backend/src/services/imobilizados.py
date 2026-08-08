@@ -211,6 +211,14 @@ def processar_periodo(
         raise ErroContabilistico("Indica o exercício a processar.")
     if not mes:
         raise ErroContabilistico("Indica o período a processar.")
+    # `amort_do_periodo` já devolve zero para o período 00, por isso processá-lo
+    # não amortizava nada — mas gravava na mesma um registo de processamento e o
+    # período passava a mostrar-se "processado". A Abertura não é um mês.
+    if mes == "00":
+        raise ErroContabilistico(
+            "O período 00 é a Abertura e não tem amortização. Escolhe um "
+            "período de 01 a 12."
+        )
     if processo_de(db, empresa_id, exercicio_id, mes) is not None:
         raise ErroContabilistico(
             "Este período já foi processado — reabre-o antes de processar de novo."

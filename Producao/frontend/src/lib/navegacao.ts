@@ -337,7 +337,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/imobilizados",
-        pendente: true,
         rotulo: "Painel",
         seccao: "Painel",
         cap: "imob.ver",
@@ -345,7 +344,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/imobilizados/ativos",
-        pendente: true,
         rotulo: "Ficha de Ativos",
         seccao: "Imobilizado",
         cap: "imob.ver",
@@ -353,7 +351,6 @@ const NAV_COMPLETO: GrupoNav[] = [
       },
       {
         href: "/imobilizados/amortizacoes",
-        pendente: true,
         rotulo: "Amortizações",
         seccao: "Imobilizado",
         cap: "imob.ver",

@@ -1,0 +1,544 @@
+"use client";
+
+import { PlayCircle, RotateCcw } from "lucide-react";
+import { AlertDialog, Tabs } from "radix-ui";
+import { useState } from "react";
+import useSWR from "swr";
+
+import {
+  ACarregar,
+  Alerta,
+  BarraFiltros,
+  Botao,
+  CabecalhoPagina,
+  Cartao,
+  EnvolveTabela,
+  Kpi,
+  Selector,
+  Selo,
+  Tabela,
+  Td,
+  Th,
+  TituloCartao,
+  Tr,
+  Vazio,
+} from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
+import { api, buscador, ErroApi } from "@/lib/api";
+import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
+import { useExercicios, usePeriodos } from "@/lib/hooks";
+import type { MapaImob, MapaPeriodoImob, ProcessoAmortizacao } from "@/types";
+
+const SEPARADOR =
+  "rounded-lg px-3 py-1.5 text-sm font-semibold text-texto-suave data-[state=active]:bg-superficie data-[state=active]:text-texto data-[state=active]:shadow-suave";
+
+export default function Amortizacoes() {
+  const { empresa, pode } = useAuth();
+  const moeda = empresa?.moeda ?? "Kz";
+  const { exercicios, activo } = useExercicios();
+  const { periodos } = usePeriodos();
+
+  const [exercicioId, setExercicioId] = useState("");
+  const [mes, setMes] = useState(
+    String(new Date().getMonth() + 1).padStart(2, "0"),
+  );
+  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const [confirmar, setConfirmar] = useState(false);
+  const [reabrir, setReabrir] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const exId = exercicioId || activo?.id || "";
+
+  const { data: mapaAnual, isLoading } = useSWR<MapaImob>(
+    "/api/imobilizados/mapa",
+    buscador,
+  );
+  const {
+    data: mapaPeriodo,
+    isLoading: aCarregarPeriodo,
+    mutate: mutatePeriodo,
+  } = useSWR<MapaPeriodoImob>(
+    exId
+      ? `/api/imobilizados/mapa-periodo?exercicio_id=${exId}&mes=${mes}`
+      : null,
+    buscador,
+  );
+  const { data: processos, mutate: mutateProcessos } = useSWR<
+    ProcessoAmortizacao[]
+  >(exId ? `/api/imobilizados/processos?exercicio_id=${exId}` : null, buscador);
+
+  const nomePeriodo =
+    periodos.find((p) => p.codigo === mes)?.nome ?? `Período ${mes}`;
+  const jaProcessado = mapaPeriodo?.processado ?? false;
+  // O período 00 é a Abertura, não é um mês: não tem amortização nenhuma.
+  const ehAbertura = mes === "00";
+
+  async function processar() {
+    setOcupado(true);
+    setErro(null);
+    setAviso(null);
+    try {
+      const r = await api.post<{
+        total_amort: string;
+        processados: number;
+        lancados: number;
+        erros?: string[];
+      }>("/api/imobilizados/processos", {
+        exercicio_id: exId,
+        mes,
+        data,
+      });
+      setAviso(
+        `${nomePeriodo} processado: ${formataMoeda(r.total_amort, moeda)} em ${r.processados} ${r.processados === 1 ? "activo" : "activos"}, ${r.lancados} com lançamento.` +
+          (r.erros?.length ? ` Com avisos: ${r.erros.join(" · ")}` : ""),
+      );
+      mutatePeriodo();
+      mutateProcessos();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível processar.",
+      );
+    } finally {
+      setOcupado(false);
+      setConfirmar(false);
+    }
+  }
+
+  async function desfazer() {
+    setOcupado(true);
+    setErro(null);
+    setAviso(null);
+    try {
+      await api.delete(
+        `/api/imobilizados/processos?exercicio_id=${exId}&mes=${mes}`,
+      );
+      setAviso(
+        `${nomePeriodo} reaberto: as amortizações acumuladas foram repostas e os lançamentos removidos.`,
+      );
+      mutatePeriodo();
+      mutateProcessos();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível reabrir.",
+      );
+    } finally {
+      setOcupado(false);
+      setReabrir(false);
+    }
+  }
+
+  return (
+    <>
+      <CabecalhoPagina
+        titulo="Amortizações"
+        descricao="Processamento das quotas do período e mapa anual do imobilizado."
+        accoes={
+          pode("imob.gerir") &&
+          exId && (
+            <div className="flex gap-2">
+              {jaProcessado && (
+                <Botao onClick={() => setReabrir(true)}>
+                  <RotateCcw size={16} />
+                  Reabrir
+                </Botao>
+              )}
+              <Botao
+                variante="primario"
+                disabled={jaProcessado || ehAbertura}
+                onClick={() => setConfirmar(true)}
+              >
+                <PlayCircle size={16} />
+                Processar {nomePeriodo}
+              </Botao>
+            </div>
+          )
+        }
+      />
+
+      {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
+      {erro && <Alerta tipo="erro">{erro}</Alerta>}
+
+      <BarraFiltros className="mb-4">
+        <Selector
+          rotulo="Exercício"
+          valor={exId}
+          aoMudar={setExercicioId}
+          opcoes={exercicios.map((e) => ({ valor: e.id, rotulo: e.nome }))}
+          placeholder="Escolher exercício…"
+          larguraMinima="14rem"
+        />
+        <Selector
+          rotulo="Período"
+          valor={mes}
+          aoMudar={setMes}
+          opcoes={periodos.map((p) => ({
+            valor: p.codigo,
+            rotulo: `${p.codigo} — ${p.nome}`,
+          }))}
+          larguraMinima="14rem"
+        />
+        <div className="flex items-end pb-0.5">
+          <Selo cor={jaProcessado ? "#1a9c5f" : "#c98a10"}>
+            {jaProcessado ? "Processado" : "Por processar"}
+          </Selo>
+        </div>
+      </BarraFiltros>
+
+      {ehAbertura && (
+        <Alerta tipo="info" className="mb-4">
+          O período 00 é a Abertura e não é um mês — não tem amortização.
+          Escolha um período de 01 a 12.
+        </Alerta>
+      )}
+
+      {jaProcessado && (
+        <Alerta tipo="info" className="mb-4">
+          {nomePeriodo} já foi processado. Reprocessar em cima duplicaria a
+          amortização acumulada de cada activo, por isso é preciso{" "}
+          <b>reabrir</b> primeiro — o que repõe as acumuladas e remove os
+          lançamentos gerados.
+        </Alerta>
+      )}
+
+      <Tabs.Root defaultValue="periodo">
+        <Tabs.List className="mb-4 inline-flex gap-1 rounded-xl bg-fundo p-1">
+          <Tabs.Trigger value="periodo" className={SEPARADOR}>
+            Período
+          </Tabs.Trigger>
+          <Tabs.Trigger value="anual" className={SEPARADOR}>
+            Mapa anual
+          </Tabs.Trigger>
+          <Tabs.Trigger value="historico" className={SEPARADOR}>
+            Histórico
+          </Tabs.Trigger>
+        </Tabs.List>
+
+        <Tabs.Content value="periodo">
+          {mapaPeriodo && (
+            <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
+              <div className="min-w-0">
+                <Kpi
+                  rotulo={
+                    jaProcessado ? "Amortizado no período" : "A amortizar"
+                  }
+                  valor={formataCompacto(mapaPeriodo.total_periodo, moeda)}
+                  detalhe={nomePeriodo}
+                  cor="var(--grafico-4)"
+                />
+              </div>
+              <div className="min-w-0">
+                <Kpi
+                  rotulo="Activos com quota"
+                  valor={String(
+                    mapaPeriodo.linhas.filter(
+                      (l) => Number(l.valor_periodo) > 0,
+                    ).length,
+                  )}
+                  detalhe={`de ${mapaPeriodo.linhas.length} no total`}
+                  cor="var(--grafico-2)"
+                />
+              </div>
+              <div className="min-w-0">
+                <Kpi
+                  rotulo="Estado"
+                  valor={jaProcessado ? "Processado" : "Por processar"}
+                  detalhe={
+                    jaProcessado ? "Reabra para refazer" : "Ainda editável"
+                  }
+                  cor={jaProcessado ? "var(--grafico-6)" : "var(--grafico-1)"}
+                />
+              </div>
+            </div>
+          )}
+
+          <Cartao className="p-0">
+            <TituloCartao className="px-5 pt-5" extra={nomePeriodo}>
+              Quotas do período
+            </TituloCartao>
+            {aCarregarPeriodo ? (
+              <ACarregar />
+            ) : !mapaPeriodo?.linhas.length ? (
+              <Vazio>
+                {exId
+                  ? "Não há activos para amortizar."
+                  : "Escolha um exercício."}
+              </Vazio>
+            ) : (
+              <EnvolveTabela className="rounded-none border-0 border-t">
+                <Tabela>
+                  <thead>
+                    <tr>
+                      <Th>Código</Th>
+                      <Th>Designação</Th>
+                      <Th>Conta</Th>
+                      <Th numerico>Valor bruto</Th>
+                      <Th numerico>Acum. actual</Th>
+                      <Th numerico>Líquido actual</Th>
+                      <Th numerico>Quota do período</Th>
+                      <Th>Lançado</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mapaPeriodo.linhas.map((l) => (
+                      <Tr key={l.id}>
+                        <Td className="tabular font-bold">{l.codigo}</Td>
+                        <Td className="max-w-[240px] truncate font-semibold">
+                          {l.designacao}
+                        </Td>
+                        <Td className="tabular text-texto-suave">
+                          {l.conta || "—"}
+                        </Td>
+                        <Td numerico>{formataMoeda(l.valor_bruto, moeda)}</Td>
+                        <Td numerico>
+                          {formataMoeda(l.amort_acumulada_atual, moeda)}
+                        </Td>
+                        <Td numerico>
+                          {formataMoeda(l.valor_liquido_atual, moeda)}
+                        </Td>
+                        <Td numerico className="font-semibold">
+                          {formataMoeda(l.valor_periodo, moeda)}
+                        </Td>
+                        <Td>
+                          {l.ja_processado ? (
+                            <Selo cor={l.lancamento_id ? "#1a9c5f" : "#c98a10"}>
+                              {l.lancamento_id ? "Sim" : "Só na ficha"}
+                            </Selo>
+                          ) : (
+                            <span className="text-texto-suave">—</span>
+                          )}
+                        </Td>
+                      </Tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-borda font-bold">
+                      <Td colSpan={6}>Total do período</Td>
+                      <Td numerico>
+                        {formataMoeda(mapaPeriodo.total_periodo, moeda)}
+                      </Td>
+                      <Td />
+                    </tr>
+                  </tfoot>
+                </Tabela>
+              </EnvolveTabela>
+            )}
+          </Cartao>
+        </Tabs.Content>
+
+        <Tabs.Content value="anual">
+          <Cartao className="p-0">
+            <TituloCartao
+              className="px-5 pt-5"
+              extra="Quota anual completa, independente do que já foi processado"
+            >
+              Mapa anual de amortizações
+            </TituloCartao>
+            {isLoading ? (
+              <ACarregar />
+            ) : !mapaAnual?.linhas.length ? (
+              <Vazio>Não há activos registados.</Vazio>
+            ) : (
+              <EnvolveTabela className="rounded-none border-0 border-t">
+                <Tabela>
+                  <thead>
+                    <tr>
+                      <Th>Código</Th>
+                      <Th>Designação</Th>
+                      <Th>Aquisição</Th>
+                      <Th numerico>Valor bruto</Th>
+                      <Th numerico>Taxa</Th>
+                      <Th numerico>Acum. anterior</Th>
+                      <Th numerico>Do exercício</Th>
+                      <Th numerico>Acum. final</Th>
+                      <Th numerico>Valor líquido</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mapaAnual.linhas.map((l) => (
+                      <Tr key={l.id}>
+                        <Td className="tabular font-bold">{l.codigo}</Td>
+                        <Td className="max-w-[220px] truncate font-semibold">
+                          {l.designacao}
+                        </Td>
+                        <Td className="tabular">
+                          {l.data_aquisicao
+                            ? new Date(l.data_aquisicao).toLocaleDateString(
+                                "pt-PT",
+                              )
+                            : "—"}
+                        </Td>
+                        <Td numerico>{formataMoeda(l.valor_bruto, moeda)}</Td>
+                        <Td numerico>{l.taxa} %</Td>
+                        <Td numerico>
+                          {formataMoeda(l.amort_acumulada_ant, moeda)}
+                        </Td>
+                        <Td numerico className="font-semibold">
+                          {formataMoeda(l.amort_exercicio, moeda)}
+                        </Td>
+                        <Td numerico>
+                          {formataMoeda(l.amort_acumulada, moeda)}
+                        </Td>
+                        <Td numerico className="font-semibold">
+                          {formataMoeda(l.valor_liquido, moeda)}
+                        </Td>
+                      </Tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-borda font-bold">
+                      <Td colSpan={3}>Totais</Td>
+                      <Td numerico>
+                        {formataMoeda(mapaAnual.totais.valor_bruto, moeda)}
+                      </Td>
+                      <Td />
+                      <Td numerico>
+                        {formataMoeda(
+                          mapaAnual.totais.amort_acumulada_ant,
+                          moeda,
+                        )}
+                      </Td>
+                      <Td numerico>
+                        {formataMoeda(mapaAnual.totais.amort_exercicio, moeda)}
+                      </Td>
+                      <Td numerico>
+                        {formataMoeda(mapaAnual.totais.amort_acumulada, moeda)}
+                      </Td>
+                      <Td numerico>
+                        {formataMoeda(mapaAnual.totais.valor_liquido, moeda)}
+                      </Td>
+                    </tr>
+                  </tfoot>
+                </Tabela>
+              </EnvolveTabela>
+            )}
+          </Cartao>
+        </Tabs.Content>
+
+        <Tabs.Content value="historico">
+          <Cartao className="p-0">
+            <TituloCartao className="px-5 pt-5">
+              Períodos processados
+            </TituloCartao>
+            {!processos?.length ? (
+              <Vazio>Ainda não foi processado nenhum período.</Vazio>
+            ) : (
+              <EnvolveTabela className="rounded-none border-0 border-t">
+                <Tabela>
+                  <thead>
+                    <tr>
+                      <Th>Período</Th>
+                      <Th>Data</Th>
+                      <Th numerico>Activos</Th>
+                      <Th numerico>Total amortizado</Th>
+                      <Th>Processado por</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {processos.map((p) => (
+                      <Tr key={p.id}>
+                        <Td className="font-semibold">
+                          {p.mes} —{" "}
+                          {periodos.find((x) => x.codigo === p.mes)?.nome ?? ""}
+                        </Td>
+                        <Td className="tabular">
+                          {new Date(p.data).toLocaleDateString("pt-PT")}
+                        </Td>
+                        <Td numerico>{p.itens}</Td>
+                        <Td numerico className="font-semibold">
+                          {formataMoeda(p.total_amort, moeda)}
+                        </Td>
+                        <Td className="text-texto-suave">{p.por || "—"}</Td>
+                      </Tr>
+                    ))}
+                  </tbody>
+                </Tabela>
+              </EnvolveTabela>
+            )}
+          </Cartao>
+        </Tabs.Content>
+      </Tabs.Root>
+
+      <AlertDialog.Root open={confirmar} onOpenChange={setConfirmar}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(540px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-borda bg-superficie p-6 shadow-forte">
+            <AlertDialog.Title className="mb-2 text-base font-bold">
+              Processar {nomePeriodo}?
+            </AlertDialog.Title>
+            <AlertDialog.Description className="mb-4 text-sm text-texto-suave">
+              São amortizados{" "}
+              <b className="tabular">
+                {formataMoeda(mapaPeriodo?.total_periodo ?? "0", moeda)}
+              </b>
+              . A amortização acumulada de cada activo sobe e, nos que têm
+              contas definidas, é lançada na contabilidade. Fica reversível pelo
+              botão Reabrir.
+            </AlertDialog.Description>
+            <div className="mb-5">
+              <label
+                htmlFor="data-lancamento"
+                className="mb-1 block text-xs font-semibold text-texto-suave"
+              >
+                Data do lançamento
+              </label>
+              <input
+                id="data-lancamento"
+                type="date"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+                className="w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <AlertDialog.Cancel asChild>
+                <Botao>Cancelar</Botao>
+              </AlertDialog.Cancel>
+              <AlertDialog.Action asChild>
+                <Botao
+                  variante="primario"
+                  disabled={ocupado}
+                  onClick={processar}
+                >
+                  {ocupado ? "A processar…" : "Processar"}
+                </Botao>
+              </AlertDialog.Action>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+
+      <AlertDialog.Root open={reabrir} onOpenChange={setReabrir}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(520px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-borda bg-superficie p-6 shadow-forte">
+            <AlertDialog.Title className="mb-2 text-base font-bold">
+              Reabrir {nomePeriodo}?
+            </AlertDialog.Title>
+            <AlertDialog.Description className="mb-5 text-sm text-texto-suave">
+              As amortizações acumuladas voltam ao valor que tinham antes e os
+              lançamentos gerados são removidos. É o passo obrigatório para
+              corrigir um período — sem ele, reprocessar somava a quota outra
+              vez por cima.
+            </AlertDialog.Description>
+            <div className="flex justify-end gap-2">
+              <AlertDialog.Cancel asChild>
+                <Botao>Cancelar</Botao>
+              </AlertDialog.Cancel>
+              <AlertDialog.Action asChild>
+                <Botao variante="perigo" disabled={ocupado} onClick={desfazer}>
+                  {ocupado ? "A reabrir…" : "Reabrir período"}
+                </Botao>
+              </AlertDialog.Action>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+    </>
+  );
+}
