@@ -308,7 +308,10 @@ export default function Assistente() {
                         timeStyle: "short",
                       })}
                     </span>
-                    {(c.contexto ?? []).map((a) => (
+                    {/* `contexto` é um objecto com os âmbitos lá dentro, não
+                        uma lista deles. Tratá-lo como lista rebentava a página
+                        inteira do histórico assim que houvesse uma consulta. */}
+                    {(c.contexto?.ambitos ?? []).map((a) => (
                       <Selo key={a} cor="#62657a">
                         {a}
                       </Selo>

@@ -760,11 +760,24 @@ export interface RespostaIa {
   duracao_ms: number;
 }
 
+/** O que foi pedido numa consulta: âmbitos e período.
+ *
+ * É um OBJECTO e não uma lista de âmbitos — estava declarado como
+ * `string[]`, e chamar `.map` nele rebentava a página inteira do histórico
+ * assim que existisse uma consulta gravada. */
+export interface ContextoDaConsulta {
+  ambitos: string[];
+  exercicio_id: string | null;
+  de: string | null;
+  ate: string | null;
+  mes: string | null;
+}
+
 export interface ConsultaIa {
   id: string;
   pergunta: string;
   resposta: string | null;
-  contexto: string[] | null;
+  contexto: ContextoDaConsulta | null;
   modelo: string | null;
   erro: string | null;
   entidades_pseudonimizadas: number;
