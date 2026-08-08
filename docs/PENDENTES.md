@@ -87,18 +87,27 @@ obrigatório para o superadmin (ponto 4) faz parte da mesma resposta.
 
 - [x] **Etapa 1** — primitivas: segredo, cifra em repouso, verificação com
       janela de ±30 s, anti-repetição, QR, códigos de recuperação.
-      24 testes. O login não foi tocado: o sistema comporta-se como antes.
-- [ ] **Etapa 2** — activar e desactivar por utilizador: QR, confirmação por
+- [x] **Etapa 2** — activar e desactivar por utilizador: QR, confirmação por
       código, códigos de recuperação mostrados uma única vez.
-- [ ] **Etapa 3** — login em dois passos.
-- [ ] **Etapa 4** — bloqueio ao fim de 3 tentativas, auditoria, limite por conta.
-- [ ] **Etapa 5** — interface.
+- [x] **Etapa 3** — login em dois passos, com o campo `tipo` no JWT a impedir
+      que o desafio abra sessão, e o desafio-isco a não denunciar qual dos
+      factores falhou. Interface incluída.
+- [ ] **Etapa 4** — bloqueio ao fim de 3 tentativas, auditoria da falha,
+      limite por conta e não só por IP.
 - [ ] **Etapa 6** — obrigatório para o superadmin.
 
-**Cuidado que não se pode perder na etapa 2:** `totp_ativo` só pode passar a
-verdadeiro **depois** de o utilizador confirmar um código. Se ficar activo logo
-ao gerar o segredo, quem começar a configuração e desistir fica fora da conta no
-login seguinte.
+**A etapa 5 (interface) saiu diluída nas etapas 2 e 3**, que é onde os ecrãs
+fazem sentido: a configuração vive em `/perfil` e o segundo passo no `/entrar`.
+
+**O que falta na etapa 4 e porque importa:** hoje o segundo passo está protegido
+pelo limite por IP (5/minuto). Quem tenha muitos IPs pode tentar códigos de seis
+dígitos sem que a conta se defenda. Os campos `totp_falhas` e
+`totp_bloqueado_ate` já existem no modelo, por preencher.
+
+**Nota da etapa 6:** o `super@plataforma.ao` **não tem 2FA configurado**. Um
+bloqueio simples a superadmins sem 2FA tranca-o fora da plataforma no login
+seguinte. Tem de ser inscrição forçada — deixá-lo entrar só para configurar —
+e não recusa.
 
 ---
 
