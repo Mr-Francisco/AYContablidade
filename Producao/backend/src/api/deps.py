@@ -17,7 +17,13 @@ from fastapi import Cookie, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.auth.permissions import licenca_valida, pode, pode_accao
+from src.auth.permissions import (
+    licenca_valida,
+    modulo_ativo,
+    modulo_da_capacidade,
+    pode,
+    pode_accao,
+)
 from src.core.config import get_settings
 from src.auth.security import (
     ESCOPO_PLATAFORMA,
@@ -27,7 +33,7 @@ from src.auth.security import (
 )
 from src.core.constants import Accao, EstadoEmpresa, Modulo, Perfil
 from src.db.base import get_db
-from src.db.models.tenancy import Empresa, Licenca
+from src.db.models.tenancy import ConfigEmpresa, Empresa, Licenca
 from src.db.models.user import User
 
 # Nome próprio da aplicação. Cookies em localhost são partilhados entre PORTAS,
@@ -166,16 +172,44 @@ EmpresaAtual = Annotated[Empresa, Depends(empresa_atual)]
 
 
 def exigir_cap(acao: str):
-    """Fábrica de dependência: exige uma capacidade da matriz CAPS.
+    """Exige uma capacidade da matriz CAPS **e** o módulo a que ela pertence.
 
     Uso:  @router.post(..., dependencies=[Depends(exigir_cap("contab.lancar"))])
-    """
 
-    def _verificar(user: UtilizadorAtual) -> User:
+    A VERIFICAÇÃO DO MÓDULO ESTÁ AQUI, e não em cada router, porque foi assim
+    que ela se perdeu: a matriz CAPS só sabe de perfis, e um perfil de consulta
+    inclui `rh.ver`. Um administrador que restringisse um utilizador ao módulo
+    de contabilidade via a restrição aplicada no menu do browser e mais nada —
+    o pedido directo a `/api/rh/colaboradores` devolvia salários, NIF e número
+    de segurança social. Ficando na porta por onde todas as rotas de negócio já
+    passam, nenhum router se pode esquecer dela.
+
+    São três camadas, e todas contam: o plano da licença, a desactivação global
+    na empresa, e a lista pessoal do utilizador (ver `modulo_ativo`).
+    """
+    modulo = modulo_da_capacidade(acao)
+
+    def _verificar(user: UtilizadorAtual, db: DB) -> User:
         if not pode(user, acao):
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN,
                 f"Sem permissão para esta operação ({acao}).",
+            )
+
+        # Capacidades transversais (`empresa.ver`) não pertencem a módulo
+        # nenhum, e o superadmin não é limitado por módulos de empresas.
+        if modulo is None or user.empresa_id is None:
+            return user
+
+        cfg = db.scalar(
+            select(ConfigEmpresa).where(ConfigEmpresa.empresa_id == user.empresa_id)
+        )
+        if not modulo_ativo(
+            modulo, user, config=cfg, licenca=licenca_da_empresa(db, user.empresa_id)
+        ):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                f"O módulo {modulo} não está disponível para esta conta.",
             )
         return user
 

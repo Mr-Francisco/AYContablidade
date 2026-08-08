@@ -92,6 +92,30 @@ def modulo_ativo(
     return True
 
 
+#: Prefixo da capacidade -> módulo a que pertence.
+#:
+#: Existe para que a verificação de módulo possa ser feita a partir da
+#: capacidade que o router já declara, sem obrigar cada router a declarar duas
+#: coisas. Um router que declare `exigir_cap("rh.ver")` está, por construção,
+#: a dizer que é do módulo de RH.
+#:
+#: Uma capacidade fora deste mapa (`empresa.ver`) não pertence a módulo nenhum
+#: e não é filtrada — é o caso das rotas transversais.
+MODULO_DA_CAPACIDADE: dict[str, Modulo] = {
+    "contab": Modulo.CONTABILIDADE,
+    "financeiro": Modulo.CONTAS_CORRENTES,
+    "comercial": Modulo.COMERCIAL,
+    "logistica": Modulo.LOGISTICA,
+    "imob": Modulo.IMOBILIZADOS,
+    "analitica": Modulo.ANALITICA,
+    "rh": Modulo.RH,
+}
+
+
+def modulo_da_capacidade(acao: str) -> Modulo | None:
+    return MODULO_DA_CAPACIDADE.get(str(acao).split(".", 1)[0])
+
+
 def pode_accao(user: User, modulo: Modulo | str, accao: Accao | str) -> bool:
     """Permissão por módulo e acção (ver/criar/editar/eliminar/exportar).
 
