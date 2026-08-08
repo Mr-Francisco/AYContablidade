@@ -45,23 +45,15 @@ mudança forçada no primeiro acesso resolveria o resto; ver o ponto 9.
 
 ---
 
-## 3. O superadmin autentica-se como um utilizador normal
+## 3. Sessão própria do superadministrador — FEITO
 
-**Estado:** por fazer. Já assinalado por si.
+A sessão de quem administra a plataforma dura 2 horas e o token 15 minutos,
+contra 12 horas e 30 minutos das restantes. O que mais expõe essa conta não é
+o ataque remoto — é um portátil deixado aberto com a sessão viva o dia inteiro.
 
-`exigir_superadmin` protege todas as rotas da plataforma, e isso funciona. Mas o
-**token é do mesmo tipo** que o de um utilizador comum: mesma duração, mesmas
-condições de emissão. A separação existe na autorização, não na autenticação.
-
-O pedido foi explícito: sessão própria e mais curta para o superadmin, **imposta
-no backend e não apenas na interface**.
-
-**Falta:** distinguir a sessão de superadmin no próprio token (por exemplo, um
-`escopo` que as rotas da plataforma exijam), com expiração mais curta.
-
-**Já feito desde então:** o 2FA passou a ser obrigatório para administrar a
-plataforma, e o token ganhou um campo `tipo`. O que falta é a duração própria e
-o escopo — a metade que resta desta resposta.
+O token leva um `escopo` próprio que as rotas de administração exigem. Não
+substitui a verificação do perfil: o perfil diz quem a pessoa é hoje, o escopo
+diz o que aquela sessão foi emitida para fazer.
 
 ---
 
@@ -134,35 +126,27 @@ antes do push — mas continua a ser uma chave que passou por um ficheiro.
 
 ---
 
-## 8. Ponto por decidir: o login aceita o código **ou** o nome da empresa
+## 8. Login por código ou nome da empresa — DECIDIDO
 
-**Não é uma falha — é uma divergência que precisa de uma decisão sua.**
+**Os dois.** O login aceita o código (`BE001`) e o nome, sem distinguir
+maiúsculas nem espaços.
 
-Hoje o login aceita qualquer um dos dois, sem distinguir maiúsculas
-([auth_router.py:67](../Producao/backend/src/api/routers/auth_router.py:67)).
-A primeira versão da especificação dizia "o código da empresa **ou o Nome da
-Empresa**"; a segunda diz só "o código da empresa".
-
-Aceitar o nome é mais simpático para quem entra todos os dias e não decora
-`BE001`. Aceitar só o código é mais restrito e não deixa adivinhar empresas pelo
-nome. **Diga qual prefere** e alinho a implementação e a especificação.
+A empresa é um factor de IDENTIFICAÇÃO e não um segredo: está no papel
+timbrado, no site e nas facturas. Quem entra todos os dias sabe o nome da casa
+onde trabalha e não decora `BE001`. O que guarda a conta é a palavra-passe e o
+segundo factor.
 
 ---
 
-## 9. Mudança de palavra-passe forçada no primeiro acesso
+## 9. Aviso de palavra-passe provisória — FEITO
 
-**Estado:** por fazer. Nasceu do ponto 2.
+Decidiu-se **avisar e não forçar**: forçar a mudança punha um obstáculo em
+frente a quem acabou de recuperar o acesso.
 
-Quem gera uma palavra-passe temporária — para um administrador de empresa ou
-para uma conta de plataforma nova — fica a sabê-la. Enquanto o dono não a
-mudar, há duas pessoas com acesso àquela conta.
-
-**Falta:** uma marca na conta que obrigue a definir palavra-passe nova antes de
-fazer qualquer outra coisa, tal como o 2FA obrigatório fecha a área da
-plataforma sem trancar a entrada.
-
-**Confirma-se assim:** gerar uma palavra-passe temporária, entrar com ela, e
-verificar que nenhuma rota de dados responde até a palavra-passe ser mudada.
+Uma marca `password_provisoria` assinala as contas cuja palavra-passe foi
+definida por outra pessoa. No acesso seguinte aparece um aviso a sugerir que a
+mude e que active a verificação em dois passos. Limpa-se sozinha quando a
+pessoa muda a palavra-passe.
 
 ---
 
