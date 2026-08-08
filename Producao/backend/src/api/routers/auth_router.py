@@ -182,8 +182,14 @@ def _empresa_por_identificador(db: DB, indicado: str):
     )
 
 @router.post("/registar", response_model=UtilizadorPublico, status_code=status.HTTP_201_CREATED)
+@limiter.limit(LIMITE_LOGIN)
 def registar(request: Request, dados: RegistoPedido, db: DB) -> UtilizadorPublico:
     """Auto-registo numa empresa existente.
+
+    Leva o limite apertado por duas razões: cria contas sem sessão, e a
+    resposta confirma se um código de empresa existe. O código não é um
+    segredo — é um factor de identificação —, mas sem travão seria trivial
+    enumerar todas as empresas da plataforma a partir de fora.
 
     Preserva o fluxo do Piloto — a conta nasce por aprovar e um administrador
     valida-a — acrescentando só o que a multiempresa exige: saber a que empresa
