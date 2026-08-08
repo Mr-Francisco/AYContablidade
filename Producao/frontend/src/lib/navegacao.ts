@@ -33,6 +33,10 @@ export interface GrupoNav {
   filhos?: ItemNav[];
   /** Grupo de nível superior ainda por construir — ver ItemNav.pendente. */
   pendente?: boolean;
+  /** Área da plataforma, não de uma empresa. É o único grupo que faz sentido
+   *  para uma conta sem empresa — todos os outros consultam dados de negócio
+   *  e respondem 400 a quem não pertence a nenhuma. */
+  daPlataforma?: boolean;
 }
 
 const NAV_COMPLETO: GrupoNav[] = [
@@ -512,6 +516,7 @@ const NAV_COMPLETO: GrupoNav[] = [
   // administrador de empresa nunca vê isto.
   {
     rotulo: "Plataforma",
+    daPlataforma: true,
     filhos: [
       {
         href: "/plataforma",

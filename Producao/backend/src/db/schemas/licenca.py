@@ -216,11 +216,67 @@ class ConfigIaPublica(BaseModel):
     ia_dias_historico: int
     dias_historico_min: int
     dias_historico_max: int
+    #: Modelo em uso agora — já resolvido, nunca `None`. É o do registo marcado
+    #: como padrão; sem padrão activo, o do ambiente. A interface mostra o que
+    #: está mesmo a responder, e não um campo vazio.
+    modelo_ia: str
+    #: Interruptor geral do assistente.
+    ia_ativa: bool
 
 
 class ConfigIaAtualizar(BaseModel):
-    """Todos os campos opcionais: a interface grava uma secção de cada vez."""
+    """Todos os campos opcionais: a interface grava uma secção de cada vez.
+
+    O MODELO NÃO ESTÁ AQUI. Escolhe-se marcando o padrão no registo de modelos
+    (`/licencas/modelos-ia`), onde vive junto com os preços que lhe
+    correspondem — a mesma decisão em dois sítios acabaria por divergir.
+    """
 
     max_tokens_saida: int | None = Field(default=None, ge=200, le=4000)
     ia_dias_pacote: int | None = Field(default=None, ge=7, le=365)
     ia_dias_historico: int | None = Field(default=None, ge=90, le=3650)
+    ia_ativa: bool | None = None
+
+
+# ---------------------------------------------------------------------------
+# Registo de modelos de IA
+# ---------------------------------------------------------------------------
+class ModeloIaPublico(BaseModel):
+    """Um modelo do registo, como a interface o vê.
+
+    Os preços saem como STRING, como todo o dinheiro nesta API: em vírgula
+    flutuante, `0.075` não é exactamente setenta e cinco milésimos, e estes
+    números multiplicam-se por milhões de tokens.
+    """
+
+    id: UUID
+    nome: str
+    modelo_id: str
+    preco_entrada: str
+    preco_entrada_cache: str | None
+    preco_saida: str
+    nota: str | None
+    ativo: bool
+    padrao: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ModeloIaCriar(BaseModel):
+    nome: str = Field(min_length=1, max_length=80)
+    modelo_id: str = Field(min_length=1, max_length=120)
+    #: Texto, e validados no serviço: os limites e a relação entre eles são
+    #: regras de negócio, não de formato.
+    preco_entrada: str
+    preco_saida: str
+    preco_entrada_cache: str | None = None
+    nota: str | None = Field(default=None, max_length=160)
+
+
+class ModeloIaAtualizar(BaseModel):
+    nome: str | None = Field(default=None, max_length=80)
+    preco_entrada: str | None = None
+    preco_saida: str | None = None
+    preco_entrada_cache: str | None = None
+    nota: str | None = Field(default=None, max_length=160)
+    ativo: bool | None = None

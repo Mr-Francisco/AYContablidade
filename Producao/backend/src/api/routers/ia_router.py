@@ -157,15 +157,23 @@ def previsualizar_contexto(
 # Perguntas e respostas
 # ---------------------------------------------------------------------------
 @router.get("/estado")
-def estado() -> dict:
-    """Se o módulo de perguntas está operacional."""
-    from src.core.config import get_settings
+def estado(db: DB) -> dict:
+    """Se o módulo de perguntas está operacional, e com que modelo.
 
-    s = get_settings()
+    O modelo vem da configuração da plataforma e não do ambiente: é o
+    superadministrador que o escolhe, e a interface tem de mostrar o que está
+    mesmo a ser usado.
+    """
+    from src.services.ia import config as cfg_ia
+
+    ligada = cfg_ia.ia_ativa(db)
     return {
-        "disponivel": qa.ia_disponivel(),
-        "modelo": s.OPENAI_MODELO,
+        "disponivel": qa.ia_disponivel() and ligada,
+        "modelo": cfg_ia.modelo(db),
         "diagnostico_local": True,
+        # Distingue «falta a chave» de «foi desligado» — são coisas diferentes
+        # e a mensagem a mostrar também é.
+        "desligada_pela_plataforma": not ligada,
     }
 
 

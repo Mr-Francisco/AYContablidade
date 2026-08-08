@@ -8,11 +8,11 @@ import { Alerta, EnvolveTabela, Tabela, Td, Th, Tr } from "@/components/ui";
 import { buscador } from "@/lib/api";
 import type { PrecosIa as Precos } from "@/types";
 
-/** Tabela de preços em vigor, dobrada por omissão.
+/** Preços em vigor, dobrados por omissão.
  *
  * Está aqui porque a pergunta que se faz ao olhar para uma coluna de custos é
- * «de onde veio este número?». Sem isto, a resposta estava num ficheiro do
- * servidor a que quem confere a factura não tem acesso.
+ * «de onde veio este número?». Os preços são os do registo de modelos, que o
+ * superadministrador mantém em Configurações.
  */
 export function PrecosIa() {
   const { data } = useSWR<Precos>("/api/licencas/precos-ia", buscador, {
@@ -33,7 +33,7 @@ export function PrecosIa() {
           <>
             {" "}
             <b>
-              O ficheiro de preços não pôde ser lido e está a usar-se a tabela
+              O registo de modelos não pôde ser lido e está a usar-se a tabela
               embutida
             </b>{" "}
             — os valores podem estar desactualizados.
@@ -65,6 +65,7 @@ export function PrecosIa() {
                 <tr>
                   <Th>Modelo</Th>
                   <Th numerico>Entrada</Th>
+                  <Th numerico>Em cache</Th>
                   <Th numerico>Saída</Th>
                 </tr>
               </thead>
@@ -74,6 +75,9 @@ export function PrecosIa() {
                     <Td className="font-semibold">{m.modelo}</Td>
                     <Td numerico className="tabular">
                       {m.entrada} USD
+                    </Td>
+                    <Td numerico className="tabular">
+                      {m.entrada_cache ? `${m.entrada_cache} USD` : "—"}
                     </Td>
                     <Td numerico className="tabular">
                       {m.saida} USD
@@ -91,6 +95,9 @@ export function PrecosIa() {
                     {data.por_omissao.entrada} USD
                   </Td>
                   <Td numerico className="tabular text-texto-suave">
+                    —
+                  </Td>
+                  <Td numerico className="tabular text-texto-suave">
                     {data.por_omissao.saida} USD
                   </Td>
                 </Tr>
@@ -99,15 +106,9 @@ export function PrecosIa() {
           </EnvolveTabela>
 
           <p className="mt-2 text-xs text-texto-suave">
-            Por 1 000 000 de tokens. Origem: <b>{data.origem}</b>
-            {data.confirmado_em && (
-              <>
-                , confirmados em{" "}
-                {new Date(data.confirmado_em).toLocaleDateString("pt-PT")}
-              </>
-            )}
-            . Cada consulta guarda os preços que lhe foram aplicados, por isso
-            mudar esta tabela nunca reescreve o histórico.
+            Por 1 000 000 de tokens. Origem: <b>{data.origem}</b>. Cada consulta
+            guarda os preços que lhe foram aplicados, por isso corrigir um preço
+            nunca reescreve o histórico.
           </p>
         </div>
       )}

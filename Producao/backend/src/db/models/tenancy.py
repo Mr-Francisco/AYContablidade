@@ -251,6 +251,18 @@ class ConfigPlataforma(UUIDMixin, TimestampMixin, Base):
         Integer, default=800, server_default=text("800"), nullable=False
     )
 
+    #: O MODELO NÃO VIVE AQUI. Vive em `ia_modelos`, na linha marcada como
+    #: padrão, junto com os preços que lhe correspondem. Ter a escolha aqui e a
+    #: tabela de preços noutro sítio era guardar a mesma decisão em dois
+    #: lugares — e dois lugares acabam sempre por divergir.
+
+    #: Interruptor geral do assistente. Desligado, nenhuma empresa consulta a
+    #: API — nem as que ainda têm quota. É o travão para quando algo corre mal
+    #: e não há tempo para ir licença a licença.
+    ia_ativa: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true"), nullable=False
+    )
+
     #: Dias até o PACOTE enviado ser descartado. É o que ocupa espaço a sério —
     #: cerca de 3 kB por consulta, contra escassas centenas de bytes do resto.
     #: Serve para auditar o que saiu para a API, e essa utilidade tem uma vida

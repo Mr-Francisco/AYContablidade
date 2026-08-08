@@ -748,6 +748,9 @@ export interface EstadoIa {
   disponivel: boolean;
   modelo: string;
   diagnostico_local: boolean;
+  /** Distingue «falta a chave» de «foi desligado pela administração» — são
+   *  coisas diferentes e a mensagem a mostrar também é. */
+  desligada_pela_plataforma: boolean;
 }
 
 export interface RespostaIa {
@@ -947,9 +950,13 @@ export interface ContaPlataformaCriada {
 export interface PrecosIa {
   origem: string;
   de_configuracao: boolean;
-  confirmado_em: string | null;
   por_omissao: { entrada: string; saida: string };
-  modelos: { modelo: string; entrada: string; saida: string }[];
+  modelos: {
+    modelo: string;
+    entrada: string;
+    saida: string;
+    entrada_cache: string | null;
+  }[];
 }
 
 /** Definições de IA da plataforma, geridas pelo superadministrador. */
@@ -965,4 +972,29 @@ export interface ConfigIa {
   ia_dias_historico: number;
   dias_historico_min: number;
   dias_historico_max: number;
+  /** Modelo em uso agora, já resolvido pelo servidor: o do registo marcado
+   *  como padrão. Só de leitura — escolhe-se no registo de modelos. */
+  modelo_ia: string;
+  /** Interruptor geral do assistente. */
+  ia_ativa: boolean;
+}
+
+/** Um modelo do registo, gerido pelo superadministrador.
+ *
+ *  Os preços são `string` de propósito, como todo o dinheiro nesta API: em
+ *  vírgula flutuante, `0.075` não é setenta e cinco milésimos, e estes números
+ *  multiplicam-se por milhões de tokens. */
+export interface ModeloIa {
+  id: string;
+  nome: string;
+  /** O identificador técnico que vai no pedido à API. */
+  modelo_id: string;
+  preco_entrada: string;
+  preco_entrada_cache: string | null;
+  preco_saida: string;
+  nota: string | null;
+  ativo: boolean;
+  padrao: boolean;
+  /** Só na criação, quando não foi possível confirmar o ID junto da OpenAI. */
+  aviso?: string;
 }

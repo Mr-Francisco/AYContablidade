@@ -94,21 +94,31 @@ a servir para descobrir quem tem conta.
 
 ---
 
-## 6. Preços da OpenAI — FEITO
+## 6. Modelos de IA e preços — FEITO
 
-A tabela vive em `backend/config/precos_ia.json`: os preços mudam sem aviso e
-não devem obrigar a um deploy. Não é segredo — os preços são públicos — por
-isso está versionado. Se o ficheiro faltar ou estiver mal formado, usa-se a
-tabela embutida e regista-se o aviso: um ficheiro de preços partido não pode
-desligar o módulo de IA.
+Vivem no registo `ia_modelos`, gerido pelo superadministrador em
+**Plataforma → Configurações**. Cada linha tem nome, identificador técnico,
+preço de entrada, preço da entrada em cache, preço de saída, estado e a marca
+de padrão. Acrescentar, corrigir preços, desactivar e escolher o padrão fazem-se
+pela interface, sem deploy nem reinício.
 
-Cada consulta guarda `preco_entrada` e `preco_saida`. O custo de uma consulta
-antiga reproduz-se ao cêntimo pelos preços que lhe ficaram gravados, mesmo
-depois de a tabela mudar.
+O registo começa com os três modelos com capacidade para analisar
+contabilidade — `gpt-4.1`, `gpt-4.1-mini` e `gpt-4o-mini` — e o padrão é o
+equilibrado. Um identificador escrito à mão é confirmado junto da API antes de
+entrar; se a API não estiver acessível, entra com aviso, porque não poder
+verificar não pode impedir de configurar.
 
-O ficheiro declara a data em que os preços foram confirmados, e a interface
-mostra-a a quem confere a factura. **Confirme-a contra a facturação real da
-OpenAI e actualize `_confirmado_em`** — é a única parte que depende de si.
+**O modelo é imposto pelo servidor.** O pedido de pergunta não tem campo por
+onde o escolher, e a lista de opções são os modelos activos do registo — sem
+preço não há custo estimado, e sem custo estimado as quotas por empresa não
+travam nada.
+
+Cada consulta guarda o modelo, os tokens (entrada, entrada em cache e saída) e
+os preços que lhe foram aplicados. Corrigir um preço hoje **não** reescreve o
+custo de ontem: o histórico reproduz-se ao cêntimo pelos preços da altura.
+
+Falta uma coisa, e é sua: **confirmar os preços contra a facturação real da
+OpenAI**. Os que lá estão vieram da tabela pública e são uma semente.
 
 ---
 

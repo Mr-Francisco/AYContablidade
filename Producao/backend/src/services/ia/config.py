@@ -13,7 +13,8 @@ from sqlalchemy import null as sa_null
 from sqlalchemy.orm import Session
 
 from src.db.base import agora
-from src.db.models.ia import ConsultaIA
+from src.db.models.ia import ConsultaIA, ModeloIA
+from src.core.config import get_settings
 from src.db.models.tenancy import ConfigPlataforma
 
 #: Limites do tecto de tokens de resposta.
@@ -167,3 +168,60 @@ def limpar_historico(db: Session, *, empresa_id: UUID) -> dict:
     ).rowcount
 
     return {"apagadas": apagadas or 0, "pacotes_descartados": limpas or 0}
+
+
+# ---------------------------------------------------------------------------
+# Modelo e interruptor
+# ---------------------------------------------------------------------------
+def modelos_suportados(db: Session) -> list[str]:
+    """Modelos que a plataforma pode usar agora — os activos do registo.
+
+    SÃO OS QUE TÊM PREÇO, e a regra não é arbitrária: sem preço não se estima
+    o custo, sem custo estimado as quotas por empresa ficam cegas, e uma quota
+    cega não trava nada. Por isso um modelo só entra aqui depois de alguém
+    dizer quanto custa — é o registo que impõe as duas coisas ao mesmo tempo.
+
+    Não é a lista da OpenAI. Essa traz quase uma centena de entradas — modelos
+    antigos, de embeddings, de áudio — que esta integração não usa, e oferecê-la
+    seria convidar a escolher algo que não funciona aqui.
+    """
+    return list(
+        db.scalars(
+            select(ModeloIA.modelo_id)
+            .where(ModeloIA.ativo.is_(True))
+            .order_by(ModeloIA.preco_saida.desc())
+        )
+    )
+
+
+def modelo(db: Session) -> str:
+    """Modelo a usar agora: o do registo marcado como padrão.
+
+    Cai no `OPENAI_MODELO` do ambiente se não houver padrão activo — numa base
+    ainda por semear, ou depois de alguém desactivar o que estava escolhido.
+    Sem esta saída, o assistente ficava calado por causa de uma configuração
+    incompleta, e prefere-se que responda pelo valor do ambiente.
+    """
+    escolhido = db.scalar(
+        select(ModeloIA.modelo_id).where(
+            ModeloIA.padrao.is_(True), ModeloIA.ativo.is_(True)
+        )
+    )
+    return (escolhido or "").strip() or get_settings().OPENAI_MODELO
+
+
+def validar_modelo(db: Session, nome: str) -> str:
+    suportados = modelos_suportados(db)
+    limpo = (nome or "").strip()
+    if limpo not in suportados:
+        raise ValueError(
+            f"«{limpo}» não é um modelo activo no registo. Os disponíveis são: "
+            f"{', '.join(suportados) or '(nenhum)'}."
+        )
+    return limpo
+
+
+def ia_ativa(db: Session) -> bool:
+    """O assistente está ligado para toda a plataforma?"""
+    valor = db.scalar(select(ConfigPlataforma.ia_ativa).limit(1))
+    return True if valor is None else bool(valor)

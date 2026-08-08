@@ -95,7 +95,7 @@ def listar_modelos() -> list[str]:
     return sorted(m["id"] for m in dados if m.get("id", "").startswith("gpt"))
 
 
-def _chamar_openai(pacote: dict, pergunta: str, max_saida: int) -> dict:
+def _chamar_openai(pacote: dict, pergunta: str, max_saida: int, modelo: str) -> dict:
     s = _settings()
     if not s.OPENAI_API_KEY:
         raise ErroIA(
@@ -104,7 +104,7 @@ def _chamar_openai(pacote: dict, pergunta: str, max_saida: int) -> dict:
         )
 
     corpo = {
-        "model": s.OPENAI_MODELO,
+        "model": modelo,
         # O CORTE É AQUI, imposto pela API, e não no pedido ao modelo. Pedir
         # brevidade nas instruções ajuda a resposta a acabar bem, mas é um
         # pedido — o modelo pode não o cumprir. Isto é um limite.
@@ -163,10 +163,14 @@ def _chamar_openai(pacote: dict, pergunta: str, max_saida: int) -> dict:
     dados = r.json()
     escolha = (dados.get("choices") or [{}])[0]
     uso = dados.get("usage") or {}
+    # A entrada servida de cache é cobrada mais barato e vem aqui dentro. Está
+    # INCLUÍDA em `prompt_tokens` — quem a somar à parte conta-a duas vezes.
+    detalhe_entrada = uso.get("prompt_tokens_details") or {}
     return {
         "texto": (escolha.get("message") or {}).get("content") or "",
         "modelo": dados.get("model"),
         "tokens_entrada": uso.get("prompt_tokens"),
+        "tokens_entrada_cache": detalhe_entrada.get("cached_tokens") or 0,
         "tokens_saida": uso.get("completion_tokens"),
     }
 
@@ -239,11 +243,17 @@ def perguntar(
 
     # Lido agora, não em memória: se o superadministrador alterar o tecto, a
     # pergunta seguinte já usa o valor novo.
+    if not config_ia.ia_ativa(db):
+        raise ErroIA(
+            "O assistente está desligado pela administração da plataforma. "
+            "Contacte o suporte."
+        )
     max_saida = config_ia.max_tokens_saida(db)
+    modelo = config_ia.modelo(db)
 
     inicio = time.monotonic()
     try:
-        r = _chamar_openai(pacote, pergunta_limpa, max_saida)
+        r = _chamar_openai(pacote, pergunta_limpa, max_saida, modelo)
     except ErroIA as e:
         registo.erro = str(e)
         registo.duracao_ms = int((time.monotonic() - inicio) * 1000)
@@ -253,13 +263,20 @@ def perguntar(
     registo.duracao_ms = int((time.monotonic() - inicio) * 1000)
     registo.modelo = r["modelo"]
     registo.tokens_entrada = r["tokens_entrada"]
+    registo.tokens_entrada_cache = r["tokens_entrada_cache"]
     registo.tokens_saida = r["tokens_saida"]
     # Grava os PREÇOS aplicados junto com o custo: sem eles, mudar a tabela
-    # tornava este número impossível de reconstruir mais tarde.
+    # tornava este número impossível de reconstruir mais tarde. É por isto que
+    # o superadministrador pode corrigir um preço sem reescrever o passado.
     registo.custo, preco = custo_de(
-        r["modelo"], r["tokens_entrada"], r["tokens_saida"]
+        db,
+        r["modelo"],
+        r["tokens_entrada"],
+        r["tokens_saida"],
+        r["tokens_entrada_cache"],
     )
     registo.preco_entrada = preco.entrada
+    registo.preco_entrada_cache = preco.entrada_cache
     registo.preco_saida = preco.saida
 
     # A limpeza corre aqui, depois de a consulta nova estar gravada: quem cria

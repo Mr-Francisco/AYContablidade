@@ -63,6 +63,11 @@ export function Cabecalho() {
 
   const grupoVisivel = useMemo(
     () => (g: GrupoNav) => {
+      // Uma conta de administração da plataforma não pertence a empresa
+      // nenhuma. Oferecer-lhe Contabilidade ou RH era oferecer portas que dão
+      // para uma parede: essas rotas consultam dados de uma empresa e
+      // respondem 400 a quem não tem nenhuma.
+      if (utilizador && !utilizador.empresa_id) return Boolean(g.daPlataforma);
       if (g.modulo && !moduloAtivo(g.modulo as Modulo)) return false;
       if (g.filhos) return g.filhos.some(itemVisivel);
       if (g.perfis?.length) {

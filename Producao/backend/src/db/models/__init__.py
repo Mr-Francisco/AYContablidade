@@ -27,7 +27,7 @@ from src.db.models.contabilidade import (
     NotaTexto,
     SequenciaDocumento,
 )
-from src.db.models.ia import ConsultaIA
+from src.db.models.ia import ConsultaIA, ModeloIA
 from src.db.models.imobilizados import Ativo, ProcessoAmortizacao
 from src.db.models.logistica import Armazem, Artigo, MovimentoStock
 from src.db.models.rh import (
@@ -61,6 +61,7 @@ __all__ = [
     "CompraLinha",
     "ConfigEmpresa",
     "ConsultaIA",
+    "ModeloIA",
     "Conta",
     "Diario",
     "DiarioFecho",

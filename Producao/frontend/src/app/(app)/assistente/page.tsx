@@ -326,7 +326,9 @@ export default function Assistente() {
           <Selo cor={estado.disponivel ? "#1a9c5f" : "#c98a10"}>
             {estado.disponivel
               ? `Operacional — ${estado.modelo}`
-              : "Sem chave configurada"}
+              : estado.desligada_pela_plataforma
+                ? "Desligado pela administração"
+                : "Sem chave configurada"}
           </Selo>
         )}
       </div>
@@ -367,8 +369,10 @@ export default function Assistente() {
 
           {indisponivel && (
             <Alerta tipo="aviso" className="mb-2">
-              Falta a chave da OpenAI nas variáveis de ambiente. O{" "}
-              <b>Diagnóstico</b> continua a funcionar — corre inteiramente no
+              {estado?.desligada_pela_plataforma
+                ? "O assistente foi desligado pela administração da plataforma."
+                : "Falta a chave da OpenAI nas variáveis de ambiente."}{" "}
+              O <b>Diagnóstico</b> continua a funcionar — corre inteiramente no
               servidor, por regras, sem contactar nenhuma API externa.
             </Alerta>
           )}

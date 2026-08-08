@@ -1,10 +1,11 @@
 "use client";
 
-import { Check, Sparkles, Trash2 } from "lucide-react";
+import { Check, Power, Sparkles, Trash2 } from "lucide-react";
+import { AlertDialog, Switch } from "radix-ui";
 import { type FormEvent, useEffect, useState } from "react";
 import useSWR from "swr";
 
-import { PrecosIa } from "@/components/plataforma/PrecosIa";
+import { ModelosIa } from "@/components/plataforma/ModelosIa";
 import {
   ACarregar,
   Alerta,
@@ -79,103 +80,111 @@ export default function ConfiguracoesDaPlataforma() {
         descricao="Definições que valem para todas as empresas."
       />
 
+      {data && <Interruptor data={data} aoGravar={mutate} />}
+
       <div className="grid min-w-0 gap-4 lg:grid-cols-[1.2fr_1fr]">
-        <Cartao className="min-w-0">
-          <TituloCartao
-            extra={
-              <span className="inline-flex items-center gap-1.5 text-xs text-texto-suave">
-                <Sparkles size={13} />
-                Assistente
-              </span>
-            }
-          >
-            Tamanho máximo das respostas
-          </TituloCartao>
+        <div className="flex min-w-0 flex-col gap-4">
+          <ModelosIa />
 
-          {isLoading || !data ? (
-            <ACarregar />
-          ) : (
-            <form onSubmit={submeter} className="flex flex-col gap-4">
-              <p className="text-sm leading-relaxed text-texto-suave">
-                Quantos tokens, no máximo, cada resposta do assistente pode ter.
-                A resposta é a parte cara — custa cerca de{" "}
-                <b>quatro vezes mais</b> do que a pergunta — e é a única que se
-                consegue limitar antes de acontecer.
-              </p>
+          <Cartao className="min-w-0">
+            <TituloCartao
+              extra={
+                <span className="inline-flex items-center gap-1.5 text-xs text-texto-suave">
+                  <Sparkles size={13} />
+                  Assistente
+                </span>
+              }
+            >
+              Tamanho máximo das respostas
+            </TituloCartao>
 
-              <div className="flex flex-wrap gap-2">
-                {SUGESTOES.map((s) => {
-                  const escolhido = numero === s.valor;
-                  return (
-                    <button
-                      key={s.valor}
-                      type="button"
-                      onClick={() => setValor(String(s.valor))}
-                      title={s.nota}
-                      aria-pressed={escolhido}
-                      className={`flex flex-col items-start rounded-xl border px-3 py-2 transition-colors ${
-                        escolhido
-                          ? "border-marca bg-marca/5"
-                          : "border-borda hover:border-marca"
-                      }`}
-                    >
-                      <span className="text-sm font-semibold">{s.rotulo}</span>
-                      <span className="tabular text-xs text-texto-suave">
-                        {s.valor} tokens
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+            {isLoading || !data ? (
+              <ACarregar />
+            ) : (
+              <form onSubmit={submeter} className="flex flex-col gap-4">
+                <p className="text-sm leading-relaxed text-texto-suave">
+                  Quantos tokens, no máximo, cada resposta do assistente pode
+                  ter. A resposta é a parte cara — custa cerca de{" "}
+                  <b>quatro vezes mais</b> do que a pergunta — e é a única que
+                  se consegue limitar antes de acontecer.
+                </p>
 
-              <Campo
-                rotulo="Ou um valor à medida"
-                dica={`Entre ${data.minimo} e ${data.maximo} tokens.`}
-              >
-                <Entrada
-                  type="number"
-                  value={valor}
-                  onChange={(e) => setValor(e.target.value)}
-                  min={data.minimo}
-                  max={data.maximo}
-                  step={50}
-                  className="tabular max-w-[180px]"
-                />
-              </Campo>
+                <div className="flex flex-wrap gap-2">
+                  {SUGESTOES.map((s) => {
+                    const escolhido = numero === s.valor;
+                    return (
+                      <button
+                        key={s.valor}
+                        type="button"
+                        onClick={() => setValor(String(s.valor))}
+                        title={s.nota}
+                        aria-pressed={escolhido}
+                        className={`flex flex-col items-start rounded-xl border px-3 py-2 transition-colors ${
+                          escolhido
+                            ? "border-marca bg-marca/5"
+                            : "border-borda hover:border-marca"
+                        }`}
+                      >
+                        <span className="text-sm font-semibold">
+                          {s.rotulo}
+                        </span>
+                        <span className="tabular text-xs text-texto-suave">
+                          {s.valor} tokens
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-              <Alerta tipo="info">
-                Vale a partir da <b>pergunta seguinte</b>, em todas as empresas
-                — não é preciso reiniciar nada. O limite é imposto pelo servidor
-                no pedido à API, e não apenas sugerido ao modelo: uma resposta
-                nunca passa deste tamanho.
-              </Alerta>
-
-              {erro && <Alerta tipo="erro">{erro}</Alerta>}
-              {gravado && (
-                <Alerta tipo="sucesso">
-                  Gravado. As perguntas seguintes já usam este limite.
-                </Alerta>
-              )}
-
-              <div>
-                <Botao
-                  type="submit"
-                  variante="primario"
-                  disabled={aGravar || !mudou || !valido}
+                <Campo
+                  rotulo="Ou um valor à medida"
+                  dica={`Entre ${data.minimo} e ${data.maximo} tokens.`}
                 >
-                  {aGravar ? (
-                    "A gravar…"
-                  ) : (
-                    <>
-                      <Check size={15} />
-                      Gravar
-                    </>
-                  )}
-                </Botao>
-              </div>
-            </form>
-          )}
-        </Cartao>
+                  <Entrada
+                    type="number"
+                    value={valor}
+                    onChange={(e) => setValor(e.target.value)}
+                    min={data.minimo}
+                    max={data.maximo}
+                    step={50}
+                    className="tabular max-w-[180px]"
+                  />
+                </Campo>
+
+                <Alerta tipo="info">
+                  Vale a partir da <b>pergunta seguinte</b>, em todas as
+                  empresas — não é preciso reiniciar nada. O limite é imposto
+                  pelo servidor no pedido à API, e não apenas sugerido ao
+                  modelo: uma resposta nunca passa deste tamanho.
+                </Alerta>
+
+                {erro && <Alerta tipo="erro">{erro}</Alerta>}
+                {gravado && (
+                  <Alerta tipo="sucesso">
+                    Gravado. As perguntas seguintes já usam este limite.
+                  </Alerta>
+                )}
+
+                <div>
+                  <Botao
+                    type="submit"
+                    variante="primario"
+                    disabled={aGravar || !mudou || !valido}
+                  >
+                    {aGravar ? (
+                      "A gravar…"
+                    ) : (
+                      <>
+                        <Check size={15} />
+                        Gravar
+                      </>
+                    )}
+                  </Botao>
+                </div>
+              </form>
+            )}
+          </Cartao>
+        </div>
 
         <div className="flex min-w-0 flex-col gap-4">
           {data && <Retencao data={data} aoGravar={mutate} />}
@@ -201,14 +210,132 @@ export default function ConfiguracoesDaPlataforma() {
               </p>
             </div>
           </Cartao>
-
-          <Cartao className="min-w-0">
-            <TituloCartao>Preços aplicados</TituloCartao>
-            <PrecosIa />
-          </Cartao>
         </div>
       </div>
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+/** Interruptor geral do assistente.
+ *
+ * Desligar bloqueia toda a gente, incluindo quem ainda tem quota — é o travão
+ * para quando algo corre mal e não há tempo para ir licença a licença. Por
+ * isso desligar pergunta e ligar não: um lado tem consequências para todos, o
+ * outro devolve o normal.
+ */
+function Interruptor({
+  data,
+  aoGravar,
+}: {
+  data: ConfigIa;
+  aoGravar: () => void;
+}) {
+  const [aGravar, setAGravar] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [aConfirmar, setAConfirmar] = useState(false);
+
+  async function definir(ativa: boolean) {
+    setErro(null);
+    setAGravar(true);
+    try {
+      await api.patch("/api/licencas/config-ia", { ia_ativa: ativa });
+      aoGravar();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível gravar.",
+      );
+    } finally {
+      setAGravar(false);
+      setAConfirmar(false);
+    }
+  }
+
+  return (
+    <Cartao className="mb-4 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <span
+            className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl ${
+              data.ia_ativa
+                ? "bg-marca/10 text-marca"
+                : "bg-perigo/10 text-perigo"
+            }`}
+          >
+            <Power size={17} />
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold">
+              Assistente {data.ia_ativa ? "ligado" : "desligado"}
+            </p>
+            <p className="text-sm leading-relaxed text-texto-suave">
+              {data.ia_ativa ? (
+                <>
+                  A responder com <b>{data.modelo_ia}</b> — todas as empresas
+                  com módulo e quota podem perguntar.
+                </>
+              ) : (
+                "Nenhuma empresa consegue perguntar, mesmo com quota por usar."
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label
+            htmlFor="ia-ativa"
+            className="text-sm font-semibold text-texto-suave"
+          >
+            {data.ia_ativa ? "Ligado" : "Desligado"}
+          </label>
+          <Switch.Root
+            id="ia-ativa"
+            checked={data.ia_ativa}
+            disabled={aGravar}
+            onCheckedChange={(v) => (v ? definir(true) : setAConfirmar(true))}
+            className="relative h-6 w-11 shrink-0 rounded-full border border-borda bg-superficie-2 transition-colors data-[state=checked]:border-marca data-[state=checked]:bg-marca disabled:opacity-50"
+          >
+            <Switch.Thumb className="block size-4.5 translate-x-0.5 rounded-full bg-superficie shadow transition-transform data-[state=checked]:translate-x-[1.4rem]" />
+          </Switch.Root>
+        </div>
+      </div>
+
+      {erro && (
+        <div className="mt-3">
+          <Alerta tipo="erro">{erro}</Alerta>
+        </div>
+      )}
+
+      <AlertDialog.Root open={aConfirmar} onOpenChange={setAConfirmar}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(28rem,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-borda bg-superficie p-6 shadow-forte">
+            <AlertDialog.Title className="text-lg font-semibold">
+              Desligar o assistente?
+            </AlertDialog.Title>
+            <AlertDialog.Description className="mt-2 text-sm leading-relaxed text-texto-suave">
+              Deixa de haver perguntas em <b>todas as empresas</b>, incluindo as
+              que ainda têm quota por usar. O histórico e o consumo já
+              registados não se perdem, e voltar a ligar repõe tudo de imediato.
+            </AlertDialog.Description>
+            <div className="mt-5 flex justify-end gap-2">
+              <AlertDialog.Cancel asChild>
+                <Botao variante="neutro">Manter ligado</Botao>
+              </AlertDialog.Cancel>
+              <Botao
+                variante="perigo"
+                onClick={() => definir(false)}
+                disabled={aGravar}
+              >
+                {aGravar ? "A desligar…" : "Desligar"}
+              </Botao>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+    </Cartao>
   );
 }
 

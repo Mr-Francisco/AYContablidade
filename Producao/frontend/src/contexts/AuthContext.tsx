@@ -63,14 +63,15 @@ interface AuthContexto {
   utilizador: Utilizador | null;
   empresa: Empresa | null;
   aCarregar: boolean;
-  /** Devolve um desafio quando falta o segundo factor, ou `null` se entrou. */
+  /** Devolve o desafio quando falta o segundo factor, ou o utilizador que
+   *  entrou — quem chama tem de saber para onde o levar. */
   entrar: (
     email: string,
     password: string,
     empresa?: string,
-  ) => Promise<Desafio2Fa | null>;
+  ) => Promise<Desafio2Fa | Utilizador>;
   /** Segundo passo do login, com o código da aplicação ou de recuperação. */
-  entrarCom2Fa: (desafio: string, codigo: string) => Promise<void>;
+  entrarCom2Fa: (desafio: string, codigo: string) => Promise<Utilizador>;
   sair: () => void;
   /** Capacidade da matriz CAPS, ex.: `pode("contab.lancar")`. */
   pode: (acao: string) => boolean;
@@ -144,7 +145,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string,
       password: string,
       empresa?: string,
-    ): Promise<Desafio2Fa | null> => {
+      // Devolve o desafio quando falta o segundo factor, e o utilizador
+      // quando a sessão ficou aberta. Quem chama precisa de saber quem
+      // entrou: uma conta da plataforma não tem empresa e não pode ser
+      // largada no painel da contabilidade.
+    ): Promise<Desafio2Fa | Utilizador> => {
       const r = await api.post<RespostaLogin | Desafio2Fa>(
         "/api/auth/login",
         { email, password, empresa: empresa?.trim() || null },
@@ -152,20 +157,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       if ("requer_2fa" in r) return r;
       await abrirSessao(r);
-      return null;
+      return r.utilizador;
     },
     [abrirSessao],
   );
 
   const entrarCom2Fa = useCallback(
-    async (desafio: string, codigo: string) => {
-      await abrirSessao(
-        await api.post<RespostaLogin>(
-          "/api/auth/login/2fa",
-          { desafio, codigo: codigo.trim() },
-          { publico: true },
-        ),
+    async (desafio: string, codigo: string): Promise<Utilizador> => {
+      const r = await api.post<RespostaLogin>(
+        "/api/auth/login/2fa",
+        { desafio, codigo: codigo.trim() },
+        { publico: true },
       );
+      await abrirSessao(r);
+      return r.utilizador;
     },
     [abrirSessao],
   );

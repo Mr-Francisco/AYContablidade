@@ -41,6 +41,9 @@ from src.db.schemas.licenca import (
     LicencaCriar,
     LicencaGerada,
     LicencaPublica,
+    ModeloIaAtualizar,
+    ModeloIaCriar,
+    ModeloIaPublico,
     MudarPerfilPedido,
     PasswordTemporaria,
     SuperadminAtualizar,
@@ -763,6 +766,8 @@ def _config_ia_publica(db: DB) -> ConfigIaPublica:
         ia_dias_historico=historico,
         dias_historico_min=cfg_ia.MIN_DIAS_HISTORICO,
         dias_historico_max=cfg_ia.MAX_DIAS_HISTORICO,
+        modelo_ia=cfg_ia.modelo(db),
+        ia_ativa=cfg_ia.ia_ativa(db),
     )
 
 
@@ -796,6 +801,7 @@ def actualizar_config_ia(
         "max_tokens_saida": cfg.max_tokens_saida,
         "ia_dias_pacote": cfg.ia_dias_pacote,
         "ia_dias_historico": cfg.ia_dias_historico,
+        "ia_ativa": cfg.ia_ativa,
     }
     pedido = dados.model_dump(exclude_none=True)
     if not pedido:
@@ -816,10 +822,14 @@ def actualizar_config_ia(
     except ValueError as e:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
 
+    if "ia_ativa" in pedido:
+        cfg.ia_ativa = bool(pedido["ia_ativa"])
+
     depois = {
         "max_tokens_saida": cfg.max_tokens_saida,
         "ia_dias_pacote": cfg.ia_dias_pacote,
         "ia_dias_historico": cfg.ia_dias_historico,
+        "ia_ativa": cfg.ia_ativa,
     }
     mudou = {k: v for k, v in depois.items() if antes[k] != v}
     if not mudou:
@@ -835,34 +845,217 @@ def actualizar_config_ia(
 
 
 @router.get("/precos-ia")
-def precos_ia() -> dict:
-    """Tabela de preços em vigor e de onde foi lida.
+def precos_ia(db: DB) -> dict:
+    """Preços em vigor e de onde vieram.
 
     A origem interessa a quem confere a factura: saber que se está a usar o
-    recurso embutido em vez da configuração explica uma divergência que de
-    outra forma pareceria erro de contagem.
+    recurso embutido em vez do registo explica uma divergência que de outra
+    forma pareceria erro de contagem.
     """
-    from pathlib import Path
-
     from src.services.ia.precos import tabela
 
-    t = tabela()
-    de_configuracao = t.origem != "embutida"
+    t = tabela(db)
     return {
-        # Só o nome do ficheiro. O caminho absoluto do servidor não interessa a
-        # quem está do outro lado e revela a estrutura de pastas da máquina.
-        "origem": Path(t.origem).name if de_configuracao else "embutida",
-        "de_configuracao": de_configuracao,
-        "confirmado_em": t.confirmado_em,
+        "origem": t.origem,
+        "de_configuracao": t.origem != "embutida",
         "por_omissao": {
             "entrada": str(t.por_omissao.entrada),
             "saida": str(t.por_omissao.saida),
         },
         "modelos": [
-            {"modelo": m, "entrada": str(p.entrada), "saida": str(p.saida)}
+            {
+                "modelo": m,
+                "entrada": str(p.entrada),
+                "saida": str(p.saida),
+                "entrada_cache": (
+                    str(p.entrada_cache) if p.entrada_cache is not None else None
+                ),
+            }
             for m, p in sorted(t.modelos.items())
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# Registo de modelos de IA
+#
+# É aqui que se decide o que a plataforma usa e quanto isso custa. Fica na área
+# do superadministrador — o `router` inteiro exige `exigir_superadmin` — e
+# nenhuma empresa lhe chega. Uma empresa que pudesse escolher o modelo escolhia
+# o mais caro, e quem paga a factura da OpenAI é a plataforma.
+# ---------------------------------------------------------------------------
+def _modelo_publico(m) -> ModeloIaPublico:
+    """Preços como texto: em vírgula flutuante, `0.075` não é setenta e cinco
+    milésimos, e estes números multiplicam-se por milhões de tokens."""
+    return ModeloIaPublico(
+        id=m.id,
+        nome=m.nome,
+        modelo_id=m.modelo_id,
+        preco_entrada=str(m.preco_entrada),
+        preco_entrada_cache=(
+            str(m.preco_entrada_cache) if m.preco_entrada_cache is not None else None
+        ),
+        preco_saida=str(m.preco_saida),
+        nota=m.nota,
+        ativo=m.ativo,
+        padrao=m.padrao,
+    )
+
+
+@router.get("/modelos-ia", response_model=list[ModeloIaPublico])
+def modelos_ia(db: DB) -> list[ModeloIaPublico]:
+    """Modelos registados, incluindo os desactivados.
+
+    Os desactivados aparecem de propósito: podem ter atendido consultas
+    antigas, e é o preço deles que explica o custo dessas linhas.
+    """
+    from src.services.ia import modelos as svc
+
+    return [_modelo_publico(m) for m in svc.listar(db)]
+
+
+@router.get("/modelos-ia/disponiveis")
+def modelos_ia_disponiveis() -> dict:
+    """Identificadores que a chave configurada consegue mesmo usar.
+
+    Serve para preencher o campo do identificador técnico sem obrigar a
+    decorá-lo. Não é a lista de modelos da plataforma — essa é o registo, e
+    esta traz dezenas de entradas que não servem para analisar contabilidade.
+    """
+    from src.services.ia.qa import ErroIA, listar_modelos
+
+    try:
+        return {"modelos": listar_modelos(), "erro": None}
+    except ErroIA as e:
+        # Falha aberta: não poder listar não pode impedir de configurar.
+        return {"modelos": [], "erro": str(e)}
+
+
+@router.post(
+    "/modelos-ia",
+    response_model=ModeloIaPublico,
+    status_code=status.HTTP_201_CREATED,
+)
+def criar_modelo_ia(
+    request: Request, dados: ModeloIaCriar, user: UtilizadorAtual, db: DB
+):
+    from src.services.ia import modelos as svc
+
+    try:
+        m, aviso = svc.criar(
+            db,
+            nome=dados.nome,
+            modelo_id=dados.modelo_id,
+            preco_entrada=dados.preco_entrada,
+            preco_saida=dados.preco_saida,
+            preco_entrada_cache=dados.preco_entrada_cache,
+            nota=dados.nota,
+        )
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
+
+    auditar(
+        db, actor=user, accao="plataforma.modelo_ia_criar", request=request,
+        alvo_tipo="modelo_ia", alvo_id=m.id, alvo_desc=m.modelo_id,
+        detalhes={"nome": m.nome, "entrada": str(m.preco_entrada),
+                  "cache": _legivel(m.preco_entrada_cache),
+                  "saida": str(m.preco_saida), "aviso": aviso},
+    )
+    db.commit()
+    db.refresh(m)
+    r = _modelo_publico(m)
+    if aviso:
+        # Cabeçalho e não corpo: a resposta continua a ser o modelo criado, e a
+        # interface mostra o aviso sem ter de perceber duas formas diferentes.
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content=r.model_dump(mode="json") | {"aviso": aviso},
+        )
+    return r
+
+
+@router.patch("/modelos-ia/{modelo_uuid}", response_model=ModeloIaPublico)
+def actualizar_modelo_ia(
+    request: Request, modelo_uuid: UUID, dados: ModeloIaAtualizar,
+    user: UtilizadorAtual, db: DB,
+) -> ModeloIaPublico:
+    """Corrige preços, nome, nota ou estado.
+
+    Mudar um preço NÃO reescreve o histórico: cada consulta guardou os preços
+    que lhe foram aplicados. É por isso que corrigir um preço errado é seguro.
+    """
+    from src.services.ia import modelos as svc
+
+    pedido = dados.model_dump(exclude_unset=True)
+    if not pedido:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Nada para alterar."
+        )
+    try:
+        antes = svc.obter(db, modelo_uuid)
+        estado_antes = {
+            "nome": antes.nome, "entrada": str(antes.preco_entrada),
+            "cache": _legivel(antes.preco_entrada_cache),
+            "saida": str(antes.preco_saida), "ativo": antes.ativo,
+        }
+        m = svc.actualizar(db, modelo_uuid, pedido)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
+
+    auditar(
+        db, actor=user, accao="plataforma.modelo_ia_alterar", request=request,
+        alvo_tipo="modelo_ia", alvo_id=m.id, alvo_desc=m.modelo_id,
+        detalhes={"antes": estado_antes, "pedido": {k: _legivel(v)
+                                                    for k, v in pedido.items()}},
+    )
+    db.commit()
+    db.refresh(m)
+    return _modelo_publico(m)
+
+
+@router.post("/modelos-ia/{modelo_uuid}/padrao", response_model=ModeloIaPublico)
+def definir_modelo_padrao(
+    request: Request, modelo_uuid: UUID, user: UtilizadorAtual, db: DB
+) -> ModeloIaPublico:
+    """Passa a usar este modelo em todas as gerações, para todas as empresas.
+
+    Vale a partir da pergunta seguinte: o modelo é lido a cada pedido.
+    """
+    from src.services.ia import modelos as svc
+
+    try:
+        m = svc.definir_padrao(db, modelo_uuid)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
+
+    auditar(
+        db, actor=user, accao="plataforma.modelo_ia_padrao", request=request,
+        alvo_tipo="modelo_ia", alvo_id=m.id, alvo_desc=m.modelo_id,
+        detalhes={"modelo": m.modelo_id, "nome": m.nome},
+    )
+    db.commit()
+    db.refresh(m)
+    return _modelo_publico(m)
+
+
+@router.delete("/modelos-ia/{modelo_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_modelo_ia(
+    request: Request, modelo_uuid: UUID, user: UtilizadorAtual, db: DB
+) -> None:
+    from src.services.ia import modelos as svc
+
+    try:
+        nome = svc.eliminar(db, modelo_uuid)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
+
+    auditar(
+        db, actor=user, accao="plataforma.modelo_ia_eliminar", request=request,
+        alvo_tipo="modelo_ia", alvo_desc=nome, detalhes={"modelo": nome},
+    )
+    db.commit()
 
 
 @router.patch("/{licenca_id}", response_model=LicencaPublica)

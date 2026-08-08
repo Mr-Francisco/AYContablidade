@@ -64,9 +64,6 @@ class Settings(BaseSettings):
     SESSAO_SUPERADMIN_HORAS: int = 2
     ACCESS_TOKEN_SUPERADMIN_MINUTOS: int = 15
 
-    # Tabela de preços da API de IA. Vazio usa backend/config/precos_ia.json.
-    # Não é segredo: os preços são públicos e o ficheiro está versionado.
-    PRECOS_IA_FICHEIRO: str | None = None
 
     # Quantas contas de administração da plataforma podem existir ao todo.
     # Três: a inicial e mais duas. Ter só uma é um ponto único de falha — perder

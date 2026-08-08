@@ -49,31 +49,51 @@ def custo_com_precos(
     tokens_entrada: int | None,
     tokens_saida: int | None,
     preco: Preco,
+    tokens_entrada_cache: int | None = 0,
 ) -> Decimal:
     """Custo de uma consulta a preços DADOS, em dólares.
 
     Separado de `custo_de` porque o histórico se recalcula com os preços que
     ficaram gravados na consulta, e não com os que estão em vigor hoje.
+
+    Os tokens de cache estão INCLUÍDOS em `tokens_entrada` — é assim que a API
+    os reporta. Somá-los à parte cobrava-os duas vezes; por isso descontam-se
+    da entrada normal e pagam ao seu preço. Sem preço de cache configurado
+    pagam como entrada normal, que é o valor mais alto: sobrestimar é seguro,
+    subestimar é que deixa passar consumo sem se dar por isso.
     """
-    total = (
-        Decimal(tokens_entrada or 0) * preco.entrada
-        + Decimal(tokens_saida or 0) * preco.saida
-    ) / POR_MILHAO
+    entrada = Decimal(tokens_entrada or 0)
+    cache = Decimal(tokens_entrada_cache or 0)
+    if preco.entrada_cache is None or cache <= 0:
+        parte_entrada = entrada * preco.entrada
+    else:
+        # Nunca negativo, mesmo que a API reporte mais cache do que entrada.
+        normal = max(entrada - cache, Decimal(0))
+        parte_entrada = normal * preco.entrada + cache * preco.entrada_cache
+
+    total = (parte_entrada + Decimal(tokens_saida or 0) * preco.saida) / POR_MILHAO
     return total.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
 def custo_de(
-    modelo: str | None, tokens_entrada: int | None, tokens_saida: int | None
+    db: Session,
+    modelo: str | None,
+    tokens_entrada: int | None,
+    tokens_saida: int | None,
+    tokens_entrada_cache: int | None = 0,
 ) -> tuple[Decimal, Preco]:
     """Custo estimado de uma consulta e os preços que lhe foram aplicados.
 
     Devolve os dois de propósito: quem grava a consulta tem de guardar também
     os preços. Sem eles o custo era um número sem forma de o reconstruir, e
-    bastava a OpenAI mudar a tabela para a facturação histórica deixar de ser
+    bastava mexer na tabela para a facturação histórica deixar de ser
     explicável.
     """
-    preco = preco_de(modelo)
-    return custo_com_precos(tokens_entrada, tokens_saida, preco), preco
+    preco = preco_de(db, modelo)
+    return (
+        custo_com_precos(tokens_entrada, tokens_saida, preco, tokens_entrada_cache),
+        preco,
+    )
 
 
 def _inicio_do_mes(hoje: date | None = None) -> date:

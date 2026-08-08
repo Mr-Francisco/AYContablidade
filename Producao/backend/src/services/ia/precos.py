@@ -1,118 +1,120 @@
-"""Tabela de preços da API da OpenAI, lida de configuração.
+"""Preços da API da OpenAI, geridos pelo superadministrador.
 
-Vive fora do código porque os preços mudam sem aviso e não devem obrigar a um
-deploy. Não é segredo — os preços são públicos — por isso o ficheiro está
-versionado; os segredos continuam a viver só no `.env`.
+Vivem na tabela `ia_modelos` e não no código: os preços mudam sem aviso e
+mudá-los não pode obrigar a um deploy. Não são segredo — são públicos — e por
+isso podem viver na base sem cuidados especiais; a chave da API continua a
+viver só no ambiente.
 
-FALHA ABERTA, ao contrário de quase tudo o resto neste sistema. Se o ficheiro
-não existir ou estiver mal formado, usa-se a tabela embutida e regista-se o
-aviso. É deliberado: um ficheiro de preços partido não pode derrubar o módulo
-de IA, porque o que ele afecta é a ESTIMATIVA de custo — o consumo continua a
+FALHA ABERTA, ao contrário de quase tudo o resto neste sistema. Se a tabela
+estiver vazia ou não puder ser lida, usa-se o recurso embutido e regista-se o
+aviso. É deliberado: uma tabela de preços em falta não pode derrubar o módulo
+de IA, porque o que ela afecta é a ESTIMATIVA de custo — o consumo continua a
 ser medido em tokens, que vêm da resposta da API e são exactos.
 """
 
-import json
 import logging
 from decimal import Decimal
-from pathlib import Path
 from typing import NamedTuple
 
-from src.core.config import get_settings
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 log = logging.getLogger(__name__)
 
 
 class Preco(NamedTuple):
-    """Dólares por 1 000 000 de tokens."""
+    """Dólares por 1 000 000 de tokens.
+
+    `entrada_cache` é o preço da entrada que a API serviu de cache. Nulo quando
+    o modelo não distingue — e aí essa parte paga o preço de entrada normal.
+    """
 
     entrada: Decimal
     saida: Decimal
+    entrada_cache: Decimal | None = None
 
 
-#: Último recurso, se a configuração não puder ser lida. Mantém o sistema a
-#: estimar custos em vez de o deixar sem tabela nenhuma.
+#: Último recurso, se a tabela não puder ser lida. Mantém o sistema a estimar
+#: custos em vez de o deixar sem preços nenhuns. Não é a lista de modelos
+#: disponíveis: essa é a tabela, e só a tabela.
 EMBUTIDOS: dict[str, Preco] = {
-    "gpt-4o": Preco(Decimal("2.50"), Decimal("10.00")),
-    "gpt-4o-mini": Preco(Decimal("0.15"), Decimal("0.60")),
-    "gpt-4.1": Preco(Decimal("2.00"), Decimal("8.00")),
-    "gpt-4.1-mini": Preco(Decimal("0.40"), Decimal("1.60")),
+    "gpt-4o": Preco(Decimal("2.50"), Decimal("10.00"), Decimal("1.25")),
+    "gpt-4o-mini": Preco(Decimal("0.15"), Decimal("0.60"), Decimal("0.075")),
+    "gpt-4.1": Preco(Decimal("2.00"), Decimal("8.00"), Decimal("0.50")),
+    "gpt-4.1-mini": Preco(Decimal("0.40"), Decimal("1.60"), Decimal("0.10")),
 }
 
 #: Usado quando o modelo não está na tabela. Deliberadamente o mais CARO dos
 #: conhecidos: um modelo desconhecido deve sobrestimar o custo, nunca
-#: subestimá-lo — subestimar é que deixa passar consumo a mais sem se dar por isso.
+#: subestimá-lo — subestimar é que deixa passar consumo a mais sem se dar por
+#: isso. `entrada_cache` fica a `None` de propósito: sem saber o preço, a
+#: entrada em cache paga como entrada normal, que é o valor mais alto.
 POR_OMISSAO_EMBUTIDO = Preco(Decimal("2.50"), Decimal("10.00"))
 
 
 class Tabela(NamedTuple):
     modelos: dict[str, Preco]
     por_omissao: Preco
-    #: De onde veio, para a interface poder dizer se está a usar configuração
+    #: De onde veio, para a interface poder dizer se está a usar a configuração
     #: ou o recurso embutido — a diferença importa a quem confere a factura.
     origem: str
-    confirmado_em: str | None
 
 
-def _decimal(valor) -> Decimal:
-    """Aceita texto ou número. Texto é preferível num JSON de preços: `0.1` em
-    vírgula flutuante não é exactamente um décimo, e aqui somam-se dinheiros."""
-    return Decimal(str(valor))
+def tabela(db: Session) -> Tabela:
+    """Preços em vigor, lidos da base a cada chamada.
 
+    Sem cache de propósito. Um preço alterado tem de valer para a consulta
+    seguinte, e guardá-lo em memória faria cada processo servir um valor
+    diferente até reiniciar — precisamente o problema que tirar isto do
+    ficheiro veio resolver. É um SELECT de três linhas antes de uma chamada à
+    API que demora segundos.
 
-def _caminho() -> Path:
-    configurado = (get_settings().PRECOS_IA_FICHEIRO or "").strip()
-    if configurado:
-        return Path(configurado)
-    # backend/src/services/ia/precos.py -> backend/config/precos_ia.json
-    return Path(__file__).resolve().parents[3] / "config" / "precos_ia.json"
+    Inclui os modelos DESACTIVADOS: um modelo desactivado hoje pode ter
+    atendido consultas ontem, e o histórico precisa do preço para se explicar.
+    """
+    from src.db.models.ia import ModeloIA
 
-
-def _ler() -> Tabela:
-    caminho = _caminho()
     try:
-        bruto = json.loads(caminho.read_text(encoding="utf-8"))
-        modelos = {
-            str(nome): Preco(_decimal(p["entrada"]), _decimal(p["saida"]))
-            for nome, p in (bruto.get("modelos") or {}).items()
-        }
-        if not modelos:
-            raise ValueError("a tabela de modelos está vazia")
-        po = bruto.get("por_omissao") or {}
-        por_omissao = (
-            Preco(_decimal(po["entrada"]), _decimal(po["saida"]))
-            if po
-            else POR_OMISSAO_EMBUTIDO
-        )
-        return Tabela(modelos, por_omissao, str(caminho), bruto.get("_confirmado_em"))
+        linhas = db.execute(
+            select(
+                ModeloIA.modelo_id,
+                ModeloIA.preco_entrada,
+                ModeloIA.preco_saida,
+                ModeloIA.preco_entrada_cache,
+            )
+        ).all()
     except Exception as e:  # noqa: BLE001 — ver o cabeçalho: falha aberta.
         log.warning(
-            "Preços de IA: não foi possível ler %s (%s). A usar a tabela "
-            "embutida — a estimativa de custo pode divergir da factura.",
-            caminho,
+            "Preços de IA: não foi possível ler a tabela (%s). A usar os "
+            "valores embutidos — a estimativa de custo pode divergir da "
+            "factura.",
             e,
         )
-        return Tabela(dict(EMBUTIDOS), POR_OMISSAO_EMBUTIDO, "embutida", None)
+        return Tabela(dict(EMBUTIDOS), POR_OMISSAO_EMBUTIDO, "embutida")
+
+    modelos = {
+        str(m): Preco(entrada, saida, cache) for m, entrada, saida, cache in linhas
+    }
+    if not modelos:
+        log.warning(
+            "Preços de IA: a tabela `ia_modelos` está vazia. A usar os valores "
+            "embutidos."
+        )
+        return Tabela(dict(EMBUTIDOS), POR_OMISSAO_EMBUTIDO, "embutida")
+
+    # O de omissão é o MAIS CARO dos configurados, pela mesma razão de sempre:
+    # um modelo que não está na tabela tem de sobrestimar, nunca subestimar.
+    #
+    # E SEM PREÇO DE CACHE, de propósito. Aplicar a um modelo desconhecido o
+    # desconto de cache de outro era descontar às cegas — exactamente o lado
+    # errado do erro. Sem preço de cache, essa parte paga como entrada normal.
+    mais_caro = max(modelos.values(), key=lambda p: p.saida)
+    return Tabela(
+        modelos, Preco(mais_caro.entrada, mais_caro.saida, None), "configuração"
+    )
 
 
-#: Lido uma vez. `recarregar()` existe para quem editar o ficheiro sem querer
-#: reiniciar, e para os testes.
-_tabela: Tabela | None = None
-
-
-def tabela() -> Tabela:
-    global _tabela
-    if _tabela is None:
-        _tabela = _ler()
-    return _tabela
-
-
-def recarregar() -> Tabela:
-    global _tabela
-    _tabela = _ler()
-    return _tabela
-
-
-def preco_de(modelo: str | None) -> Preco:
+def preco_de(db: Session, modelo: str | None) -> Preco:
     """Preço a aplicar a um modelo. Nunca falha: cai no de omissão.
 
     ACEITA SNAPSHOTS DATADOS. A API não devolve `gpt-4o` — devolve
@@ -125,7 +127,11 @@ def preco_de(modelo: str | None) -> Preco:
     O prefixo MAIS LONGO ganha: `gpt-4o-mini-2024-07-18` casa com `gpt-4o-mini`
     e não com `gpt-4o`, que também é prefixo dele.
     """
-    t = tabela()
+    return escolher(tabela(db), modelo)
+
+
+def escolher(t: Tabela, modelo: str | None) -> Preco:
+    """A correspondência, separada da leitura — para quem já tem a tabela."""
     nome = str(modelo or "")
     if nome in t.modelos:
         return t.modelos[nome]

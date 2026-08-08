@@ -8,6 +8,7 @@ import { type FormEvent, Suspense, useState } from "react";
 import { Alerta, Botao, Campo, Entrada } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { ErroApi } from "@/lib/api";
+import type { Utilizador } from "@/types";
 
 export default function PaginaEntrar() {
   return (
@@ -33,11 +34,18 @@ function Formulario() {
   const [desafio, setDesafio] = useState<string | null>(null);
   const [codigo, setCodigo] = useState("");
 
-  function concluir() {
+  function concluir(u: Utilizador) {
     const seguinte = parametros.get("seguinte");
     // Só caminhos internos: um `seguinte` externo seria um redireccionamento
     // aberto, aproveitável para phishing.
-    router.push(seguinte?.startsWith("/") ? seguinte : "/");
+    if (seguinte?.startsWith("/")) {
+      router.push(seguinte);
+      return;
+    }
+    // Uma conta de administração da plataforma não pertence a nenhuma empresa.
+    // Largá-la no painel da contabilidade dava-lhe um ecrã vazio construído a
+    // partir de meia dúzia de pedidos que respondem todos 400.
+    router.push(u.empresa_id ? "/" : "/plataforma");
   }
 
   function falhou(e: unknown) {
@@ -54,8 +62,8 @@ function Formulario() {
     setAEntrar(true);
     try {
       const d = await entrar(email.trim(), password, empresa);
-      if (d) setDesafio(d.desafio);
-      else concluir();
+      if ("requer_2fa" in d) setDesafio(d.desafio);
+      else concluir(d);
     } catch (e2) {
       falhou(e2);
     } finally {
@@ -69,8 +77,7 @@ function Formulario() {
     setErro(null);
     setAEntrar(true);
     try {
-      await entrarCom2Fa(desafio, codigo);
-      concluir();
+      concluir(await entrarCom2Fa(desafio, codigo));
     } catch (e2) {
       // O servidor não distingue palavra-passe errada de código errado — de
       // propósito, para que este ecrã não sirva para confirmar palavras-passe.
