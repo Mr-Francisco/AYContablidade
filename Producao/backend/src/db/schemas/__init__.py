@@ -8,13 +8,9 @@ from src.db.schemas.auth import (
     UtilizadorPublico,
 )
 from src.db.schemas.licenca import (
-    AprovarPedidoLicenca,
     EmpresaPublica,
     LicencaAtualizar,
     LicencaPublica,
-    PedidoLicencaCriar,
-    PedidoLicencaPublico,
-    RecusarPedidoLicenca,
 )
 from src.db.schemas.user import (
     AprovarPedido,
@@ -26,15 +22,11 @@ from src.db.schemas.user import (
 __all__ = [
     "AlterarPasswordPedido",
     "AprovarPedido",
-    "AprovarPedidoLicenca",
     "DefinirPassword",
     "EmpresaPublica",
     "LicencaAtualizar",
     "LicencaPublica",
     "LoginPedido",
-    "PedidoLicencaCriar",
-    "PedidoLicencaPublico",
-    "RecusarPedidoLicenca",
     "RegistoPedido",
     "TokenResposta",
     "UtilizadorAtualizar",

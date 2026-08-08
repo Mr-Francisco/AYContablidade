@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import func, select
 
+from src.api.limites import LIMITE_LOGIN, limiter
 from src.api.deps import DB, UtilizadorAtual, licenca_da_empresa
 from src.auth.permissions import licenca_valida
 from src.auth.security import (
@@ -53,19 +54,64 @@ def _token_para(user: User, expira_absoluto: datetime | None = None) -> TokenRes
     )
 
 
-@router.post("/login", response_model=TokenResposta)
-def login(request: Request, dados: LoginPedido, db: DB) -> TokenResposta:
-    """Inicia sessão.
 
-    A mensagem é deliberadamente igual para e-mail inexistente e palavra-passe
-    errada, para não revelar que contas existem.
+#: Hash de referência para comparar quando o e-mail não existe. Sem isto, um
+#: e-mail inexistente respondia sem correr bcrypt e o tempo de resposta dizia,
+#: por si só, quais as contas que existem.
+_HASH_INEXISTENTE = hash_password("nao-existe-nenhuma-conta-com-esta-palavra-passe")
+
+
+def _empresa_corresponde(db: DB, empresa_id, indicado: str) -> bool:
+    """Confirma que o texto indicado no login identifica a empresa da conta.
+
+    Aceita o código («BE001») ou o nome, ambos sem distinguir maiúsculas nem
+    espaços à volta — quem escreve à mão não acerta na caixa.
+    """
+    empresa = db.get(Empresa, empresa_id)
+    if empresa is None:
+        return False
+    alvo = (indicado or "").strip().casefold()
+    return alvo in {
+        (empresa.codigo or "").casefold(),
+        (empresa.nome or "").casefold(),
+    }
+
+@router.post("/login", response_model=TokenResposta)
+@limiter.limit(LIMITE_LOGIN)
+def login(request: Request, dados: LoginPedido, db: DB) -> TokenResposta:
+    """Inicia sessão com e-mail, palavra-passe e empresa.
+
+    A mensagem é deliberadamente igual para e-mail inexistente, palavra-passe
+    errada e empresa errada. Distingui-las diria a quem tenta qual das três
+    acertou — e a empresa é a mais fácil de adivinhar das três.
+
+    O limite de pedidos é o apertado (`RATE_LIMIT_LOGIN`), e não o geral: 120
+    tentativas por minuto contra um formulário de entrada não é protecção.
     """
     user = db.scalar(select(User).where(func.lower(User.email) == dados.email.lower()))
 
-    if user is None or not verificar_password(dados.password, user.password_hash):
+    # A palavra-passe é verificada SEMPRE, mesmo sem utilizador, para que o
+    # tempo de resposta não denuncie se o e-mail existe.
+    hash_alvo = user.password_hash if user else _HASH_INEXISTENTE
+    password_ok = verificar_password(dados.password, hash_alvo)
+
+    if user is None or not password_ok:
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "E-mail ou palavra-passe inválidos."
+            status.HTTP_401_UNAUTHORIZED, "Credenciais inválidas."
         )
+
+    # A empresa faz parte das credenciais para todos menos o superadministrador
+    # da plataforma, que não pertence a nenhuma.
+    if user.empresa_id is not None:
+        if not (dados.empresa or "").strip():
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                "Indique o código ou o nome da empresa.",
+            )
+        if not _empresa_corresponde(db, user.empresa_id, dados.empresa):
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED, "Credenciais inválidas."
+            )
     if not user.aprovado:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
@@ -123,6 +169,18 @@ def refresh(request: Request, user: UtilizadorAtual, db: DB) -> TokenResposta:
     return _token_para(user, expira_absoluto=expira_absoluto)
 
 
+
+def _empresa_por_identificador(db: DB, indicado: str):
+    """Empresa a partir do código ou do NIF, sem distinguir maiúsculas."""
+    alvo = (indicado or "").strip()
+    if not alvo:
+        return None
+    return db.scalar(
+        select(Empresa).where(
+            (func.upper(Empresa.codigo) == alvo.upper()) | (Empresa.nif == alvo)
+        )
+    )
+
 @router.post("/registar", response_model=UtilizadorPublico, status_code=status.HTTP_201_CREATED)
 def registar(request: Request, dados: RegistoPedido, db: DB) -> UtilizadorPublico:
     """Auto-registo numa empresa existente.
@@ -139,12 +197,12 @@ def registar(request: Request, dados: RegistoPedido, db: DB) -> UtilizadorPublic
             "Perfil não disponível para registo.",
         )
 
-    empresa = db.scalar(select(Empresa).where(Empresa.nif == dados.nif_empresa.strip()))
-    # Mensagem neutra: não confirma que NIFs estão registados na plataforma.
+    empresa = _empresa_por_identificador(db, dados.empresa)
+    # Mensagem neutra: não confirma que empresas estão registadas na plataforma.
     if empresa is None or empresa.estado != EstadoEmpresa.ACTIVA:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
-            "Não foi encontrada nenhuma empresa activa com esse NIF.",
+            "Não foi encontrada nenhuma empresa activa com esse código ou NIF.",
         )
 
     ja_existe = db.scalar(

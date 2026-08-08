@@ -46,7 +46,7 @@ from src.db.models.rh import (
     PagamentoSalarial,
     ProcessamentoSalarial,
 )
-from src.db.models.tenancy import ConfigEmpresa, Empresa, Exercicio, Licenca, PedidoLicenca
+from src.db.models.tenancy import ConfigEmpresa, Empresa, Exercicio, Licenca
 from src.db.models.terceiros import Terceiro
 from src.db.models.user import User
 
@@ -104,7 +104,6 @@ def remover_empresa(db: Session, empresa_id: UUID) -> dict[str, int]:
     _apagar(User, User.empresa_id == empresa_id)
     _apagar(Licenca, Licenca.empresa_id == empresa_id)
     _apagar(ConfigEmpresa, ConfigEmpresa.empresa_id == empresa_id)
-    _apagar(PedidoLicenca, PedidoLicenca.empresa_id == empresa_id)
     _apagar(Empresa, Empresa.id == empresa_id)
 
     db.flush()

@@ -27,6 +27,7 @@ from src.db.models.tenancy import Empresa, Exercicio, Licenca  # noqa: E402
 from src.db.models.terceiros import Terceiro  # noqa: E402
 from src.db.models.user import User  # noqa: E402
 from src.services import comercial as com_svc  # noqa: E402
+from src.services import licenciamento as lic_svc  # noqa: E402
 from src.services import logistica as log_svc  # noqa: E402
 from src.services.contabilidade import postar  # noqa: E402
 from src.services.empresa import remover_empresa  # noqa: E402
@@ -52,7 +53,8 @@ def main(recriar: bool = False) -> None:
             s.commit()
 
         emp = Empresa(
-            nome="Demo Contabilidade, Lda.", nif=NIF, morada="Rua Principal, Luanda",
+            nome="Demo Contabilidade, Lda.", nif=NIF, codigo="DC001",
+            morada="Rua Principal, Luanda",
             localizacao="Luanda — Angola", telefone="+244 900 000 000",
             email="geral@demo.ao", moeda="Kz", regime="geral",
             forma_juridica="lda", estado=EstadoEmpresa.ACTIVA,
@@ -60,11 +62,20 @@ def main(recriar: bool = False) -> None:
         s.add(emp)
         s.flush()
 
+        # Licença já activada. A chave em claro («SGD-DEMO-2026-0001») fica só
+        # aqui, no seed de desenvolvimento: a base guarda o hash, como todas.
         s.add(Licenca(
-            empresa_id=emp.id, chave="SGD-DEMO-2026-0001", titular=emp.nome,
-            plano="Enterprise", validade=date(2027, 12, 31),
+            empresa_id=emp.id,
+            chave_hash=lic_svc.hash_chave("SGD-DEMO-2026-0001"),
+            chave_prefixo="SGD-DEMO",
+            nif_previsto=NIF, nome_previsto=emp.nome, titular=emp.nome,
+            plano="Enterprise", duracao_meses=24,
+            expira_activacao=agora(), activada_em=agora(),
+            validade=date(2027, 12, 31),
             estado=EstadoLicenca.ACTIVA, modulos_incluidos=[],
-            limite_utilizadores=None, aprovada_em=agora(),
+            limite_utilizadores=None,
+            # Limites de IA generosos, para o painel de consumo ter escala.
+            limite_tokens_mes=2_000_000, limite_custo_mes=D("50"),
         ))
 
         print("A criar o plano de contas (1619 contas do Primavera)…")

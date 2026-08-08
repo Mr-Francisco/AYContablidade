@@ -8,9 +8,8 @@ TypeError/ForwardRef com anotações adiadas (ver docs/LESSONS.md).
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
 from src.api.json import RespostaJSON
 from src.core.config import get_settings
@@ -18,7 +17,9 @@ from src.services.contabilidade import ErroContabilistico
 
 settings = get_settings()
 
-limiter = Limiter(key_func=get_remote_address, default_limits=[settings.RATE_LIMIT_GERAL])
+# O limiter vive em `src/api/limites.py` para os routers o poderem importar
+# sem fechar um ciclo — este módulo importa-os a eles.
+from src.api.limites import limiter  # noqa: E402
 
 
 def criar_app() -> FastAPI:

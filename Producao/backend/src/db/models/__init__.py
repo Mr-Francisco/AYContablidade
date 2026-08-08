@@ -43,7 +43,6 @@ from src.db.models.tenancy import (
     Empresa,
     Exercicio,
     Licenca,
-    PedidoLicenca,
 )
 from src.db.models.terceiros import Terceiro
 from src.db.models.user import User
@@ -76,7 +75,6 @@ __all__ = [
     "MovimentoStock",
     "NotaTexto",
     "PagamentoSalarial",
-    "PedidoLicenca",
     "ProcessamentoSalarial",
     "ProcessoAmortizacao",
     "SequenciaDocumento",

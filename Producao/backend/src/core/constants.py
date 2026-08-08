@@ -163,12 +163,6 @@ class EstadoLicenca(StrEnum):
     CANCELADA = "cancelada"
 
 
-class EstadoPedidoLicenca(StrEnum):
-    PENDENTE = "pendente"
-    APROVADO = "aprovado"
-    REJEITADO = "rejeitado"
-
-
 class RegimeIVA(StrEnum):
     """Regimes de IVA de Angola (REGIMES em app.js e fiscalidade.js)."""
 
