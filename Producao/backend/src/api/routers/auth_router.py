@@ -7,7 +7,7 @@ Nota: NÃO usar `from __future__ import annotations` neste ficheiro — o
 `@limiter.limit` do slowapi rebenta com anotações adiadas (docs/LESSONS.md).
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
@@ -191,26 +191,72 @@ def login(request: Request, dados: LoginPedido, db: DB):
     return _concluir_login(db, user)
 
 
+#: Recusa do segundo passo. É SEMPRE esta, seja qual for a causa: código
+#: errado, desafio expirado, desafio-isco, sessão revogada ou conta bloqueada.
+#:
+#: Em especial o BLOQUEIO. Se a conta bloqueada respondesse de forma diferente,
+#: bastavam três tentativas para saber que a palavra-passe estava certa — o
+#: bloqueio só acontece no caminho verdadeiro, porque o isco não é sequer
+#: descodificável. Isso desfazia o trabalho do `criar_desafio_isco`. Por isso a
+#: mesma mensagem cobre os dois casos, e menciona a espera para que quem está
+#: mesmo bloqueado saiba o que fazer sem que isso diga nada a mais a ninguém.
+def _recusa_do_segundo_passo() -> HTTPException:
+    return HTTPException(
+        status.HTTP_401_UNAUTHORIZED,
+        "Não foi possível iniciar sessão. Verifique os dados e o código. Se já "
+        "tentou várias vezes, aguarde alguns minutos antes de repetir.",
+    )
+
+
+def _registar_falha(db: DB, user: User, request: Request) -> None:
+    """Conta a falha na CONTA e bloqueia-a ao fim de N tentativas.
+
+    O limite por IP não chega: seis dígitos são um milhão de combinações, e
+    quem tenha muitos IPs percorre-as sem que a conta se defenda. Esta contagem
+    não depende de onde vem o pedido.
+
+    FAZ COMMIT de propósito. A seguir levanta-se a excepção, e sem commit a
+    contagem morria com a sessão — o bloqueio nunca chegava a acontecer.
+    """
+    s = get_settings()
+    user.totp_falhas = (user.totp_falhas or 0) + 1
+    if user.totp_falhas >= s.TOTP_MAX_TENTATIVAS:
+        user.totp_bloqueado_ate = agora() + timedelta(minutes=s.TOTP_BLOQUEIO_MINUTOS)
+        auditar(
+            db,
+            actor=user,
+            accao="2fa.bloqueio",
+            alvo_tipo="utilizador",
+            alvo_id=user.id,
+            alvo_desc=user.nome,
+            empresa_id=user.empresa_id,
+            detalhes={
+                "tentativas": user.totp_falhas,
+                "minutos": s.TOTP_BLOQUEIO_MINUTOS,
+            },
+            request=request,
+        )
+    db.commit()
+
+
 @router.post("/login/2fa", response_model=TokenResposta)
 @limiter.limit(LIMITE_LOGIN)
 def login_2fa(request: Request, dados: Login2FaPedido, db: DB) -> TokenResposta:
     """Segundo passo: o código da aplicação autenticadora.
 
-    Aceita também um código de recuperação, que é consumido. As recusas dizem
-    todas o mesmo — código errado, desafio expirado, desafio-isco e sessão
-    revogada são indistinguíveis de fora. É o que impede este passo de servir
-    para descobrir se a palavra-passe do primeiro estava certa.
+    Aceita também um código de recuperação, que é consumido. Ao fim de
+    `TOTP_MAX_TENTATIVAS` falhas a conta fica bloqueada por alguns minutos.
+
+    As recusas dizem todas o mesmo — ver `_recusa_do_segundo_passo`.
     """
-    recusa = HTTPException(
-        status.HTTP_401_UNAUTHORIZED,
-        "Não foi possível iniciar sessão. Verifique os dados e o código, e "
-        "tente novamente.",
-    )
+    recusa = _recusa_do_segundo_passo()
 
     try:
         payload = descodificar_desafio(dados.desafio)
         user_id = UUID(str(payload.get("sub")))
     except (TokenInvalido, TypeError, ValueError) as e:
+        # O isco cai aqui: não é descodificável, logo não há conta que contar.
+        # É o que impede alguém de trancar contas alheias só com o e-mail.
         raise recusa from e
 
     user = db.get(User, user_id)
@@ -220,6 +266,18 @@ def login_2fa(request: Request, dados: Login2FaPedido, db: DB) -> TokenResposta:
     # desafio, tal como revoga qualquer sessão aberta.
     if int(payload.get("tv", -1)) != user.token_version:
         raise recusa
+
+    if user.totp_bloqueado_ate:
+        if user.totp_bloqueado_ate > agora():
+            # Não conta esta tentativa nem estende o bloqueio: estendê-lo
+            # entregava a quem soubesse a palavra-passe a chave para manter o
+            # dono de fora indefinidamente.
+            raise recusa
+        # Bloqueio cumprido. O contador recomeça — deixá-lo no máximo fazia a
+        # falha seguinte bloquear logo, e o castigo não teria fim.
+        user.totp_falhas = 0
+        user.totp_bloqueado_ate = None
+        db.commit()
 
     _verificar_conta_e_empresa(db, user)
 
@@ -237,6 +295,7 @@ def login_2fa(request: Request, dados: Login2FaPedido, db: DB) -> TokenResposta:
             segredo, codigo, ultimo_contador=user.totp_ultimo_contador
         )
         if not valido:
+            _registar_falha(db, user, request)
             raise recusa
         # Grava o passo de tempo usado: o mesmo código vale cerca de um minuto,
         # e sem isto quem o intercepte tem uma janela para o repetir.
@@ -244,6 +303,7 @@ def login_2fa(request: Request, dados: Login2FaPedido, db: DB) -> TokenResposta:
     else:
         achou, restantes = consumir_codigo(codigo, user.totp_codigos_recuperacao or [])
         if not achou:
+            _registar_falha(db, user, request)
             raise recusa
         user.totp_codigos_recuperacao = restantes
         auditar(
@@ -257,6 +317,10 @@ def login_2fa(request: Request, dados: Login2FaPedido, db: DB) -> TokenResposta:
             detalhes={"codigos_restantes": len(restantes)},
             request=request,
         )
+
+    # Entrou: a contagem recomeça do zero.
+    user.totp_falhas = 0
+    user.totp_bloqueado_ate = None
 
     return _concluir_login(db, user)
 

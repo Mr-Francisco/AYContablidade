@@ -315,3 +315,114 @@ def test_o_codigo_de_recuperacao_e_de_uso_unico(ambiente):
 def test_codigo_de_recuperacao_inventado(ambiente):
     cliente, _, _, _, _ = ambiente
     assert _passo2(cliente, _passo1(cliente).json()["desafio"], "AAAA-BBBB").status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Bloqueio por conta (etapa 4)
+# ---------------------------------------------------------------------------
+def test_tres_falhas_bloqueiam_a_conta(ambiente):
+    """O limite por IP não chega: seis dígitos são um milhão de combinações e
+    quem tenha muitos IPs percorre-as sem que a conta se defenda."""
+    cliente, user, db, segredo, _ = ambiente
+    for _ in range(3):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "000000")
+
+    assert user.totp_falhas == 3
+    assert user.totp_bloqueado_ate is not None
+    assert "2fa.bloqueio" in db.accoes_auditadas()
+    # Bloqueada, nem o código certo entra.
+    r = _passo2(cliente, _passo1(cliente).json()["desafio"], pyotp.TOTP(segredo).now())
+    assert r.status_code == 401
+
+
+def test_duas_falhas_ainda_deixam_entrar(ambiente):
+    cliente, user, _, segredo, _ = ambiente
+    for _ in range(2):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "000000")
+    assert user.totp_bloqueado_ate is None
+    r = _passo2(cliente, _passo1(cliente).json()["desafio"], pyotp.TOTP(segredo).now())
+    assert r.status_code == 200
+
+
+def test_a_conta_bloqueada_recusa_com_a_mesma_mensagem(ambiente):
+    """REGRESSÃO: uma mensagem própria para o bloqueio desfazia o desafio-isco.
+    O bloqueio só acontece no caminho verdadeiro — o isco nem é descodificável
+    — por isso bastavam três tentativas para saber que a palavra-passe estava
+    certa, que é exactamente o que o isco existe para esconder."""
+    cliente, _, _, segredo, _ = ambiente
+    for _ in range(3):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "000000")
+
+    msg_bloqueada = _passo2(
+        cliente, _passo1(cliente).json()["desafio"], pyotp.TOTP(segredo).now()
+    ).json()["detail"]
+    msg_isco = _passo2(
+        cliente,
+        _passo1(cliente, password="errada").json()["desafio"],
+        pyotp.TOTP(segredo).now(),
+    ).json()["detail"]
+    assert msg_bloqueada == msg_isco
+
+
+def test_o_isco_nao_tranca_a_conta(ambiente):
+    """REGRESSÃO: se as tentativas pelo isco contassem, qualquer pessoa que
+    soubesse um e-mail trancava a conta desse alguém quando lhe apetecesse."""
+    cliente, user, _, segredo, _ = ambiente
+    for _ in range(6):
+        _passo2(
+            cliente, _passo1(cliente, password="errada").json()["desafio"], "000000"
+        )
+
+    assert user.totp_falhas == 0
+    assert user.totp_bloqueado_ate is None
+    assert _passo2(
+        cliente, _passo1(cliente).json()["desafio"], pyotp.TOTP(segredo).now()
+    ).status_code == 200
+
+
+def test_tentar_durante_o_bloqueio_nao_o_estende(ambiente):
+    """Estendê-lo entregava a quem soubesse a palavra-passe a chave para manter
+    o dono da conta de fora indefinidamente."""
+    cliente, user, _, _, _ = ambiente
+    for _ in range(3):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "000000")
+    ate = user.totp_bloqueado_ate
+
+    for _ in range(4):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "000000")
+    assert user.totp_bloqueado_ate == ate
+    assert user.totp_falhas == 3
+
+
+def test_o_bloqueio_cumprido_repoe_o_contador(ambiente):
+    """Deixar o contador no máximo fazia a falha seguinte bloquear logo, e o
+    castigo não tinha fim."""
+    from datetime import timedelta
+
+    from src.db.base import agora
+
+    cliente, user, _, segredo, _ = ambiente
+    for _ in range(3):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "000000")
+
+    user.totp_bloqueado_ate = agora() - timedelta(seconds=1)
+    assert _passo2(cliente, _passo1(cliente).json()["desafio"], "000000").status_code == 401
+    assert user.totp_falhas == 1  # recomeçou, não ficou nos 3
+
+
+def test_entrar_repoe_a_contagem(ambiente):
+    cliente, user, _, segredo, _ = ambiente
+    for _ in range(2):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "000000")
+    assert user.totp_falhas == 2
+
+    _passo2(cliente, _passo1(cliente).json()["desafio"], pyotp.TOTP(segredo).now())
+    assert user.totp_falhas == 0
+    assert user.totp_bloqueado_ate is None
+
+
+def test_o_codigo_de_recuperacao_errado_tambem_conta(ambiente):
+    cliente, user, _, _, _ = ambiente
+    for _ in range(3):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "AAAA-BBBB")
+    assert user.totp_bloqueado_ate is not None
