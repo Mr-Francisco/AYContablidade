@@ -57,3 +57,8 @@
 - Não reutilizar o esquema do pedido principal numa pré-visualização: o `/contexto` herdava `pergunta: min_length=1` e obrigava a escrever a pergunta para poder ver o que sairia — contrariando a garantia que a própria página faz.
 - Antes de acrescentar uma interface aos tipos, procurar se já existe: acrescentei `CentroCusto`, `AchadoDiagnostico` e `Diagnostico` duplicados, todos divergentes do original. O `tsc` apanha, mas só depois de escrever a página inteira.
 - `Selo` tem `whitespace-nowrap` — é o correcto para um distintivo, mas usá-lo para frases inteiras empurra a página a 375px. Texto de comprimento variável quer lista, não chip.
+- Testar rotas com `curl` sem cookie dá 307 em todas — é o guarda a funcionar, não uma falha. Passar `Cookie: aycontab_access_token=<jwt>` para distinguir «protegida» de «partida».
+- Varrer TODAS as rotas do menu no fim de cada módulo, e não só as do módulo em causa: foi assim que apareceu o `/perfil` a dar 404 com um link no menu do utilizador a apontar-lhe desde o início.
+- Uma lista vazia raramente significa «nenhum»: `licenca.modulos_incluidos` vazia quer dizer TODOS no `modulo_ativo` do backend, e tratá-la como lista normal punha um plano Enterprise a mostrar todos os módulos como «não incluídos».
+- Rótulos, cores e capacidades de perfis vivem no backend e devem ser servidos por um endpoint de metadados — duplicá-los no frontend garante que divergem, e a interface passa a prometer acessos que a API recusa.
+- Rota estática tem de vir ANTES da paramétrica no mesmo router: `/api/users/metadados` declarado depois de `/api/users/{user_id}` seria apanhado como um id.

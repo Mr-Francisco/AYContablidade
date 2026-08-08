@@ -21,7 +21,15 @@ from src.api.deps import (
     licenca_da_empresa,
 )
 from src.auth.security import hash_password, validar_forca_password
-from src.core.constants import Perfil
+from src.core.constants import (
+    CAPS,
+    MODULO_LABEL,
+    PERFIL_COR,
+    PERFIL_LABEL,
+    Accao,
+    Modulo,
+    Perfil,
+)
 from src.db.base import agora
 from src.db.models.user import User
 from src.db.schemas.auth import UtilizadorPublico
@@ -64,6 +72,33 @@ def listar(empresa: EmpresaAtual, db: DB) -> list[UtilizadorPublico]:
     ).all()
     return [UtilizadorPublico.model_validate(u) for u in users]
 
+
+
+@router.get("/metadados")
+def metadados() -> dict:
+    """Perfis, módulos e capacidades, com os rótulos e cores do sistema.
+
+    Existe para a interface não os duplicar. Os perfis, as suas capacidades e as
+    cores estão em `core/constants.py` porque é o backend que decide quem pode o
+    quê — uma segunda cópia no frontend divergiria na primeira alteração, e a
+    interface passaria a prometer acessos que a API recusa.
+    """
+    return {
+        "perfis": [
+            {
+                "id": str(p),
+                "nome": PERFIL_LABEL[p],
+                "cor": PERFIL_COR[p],
+                "atribuivel": p is not Perfil.SUPERADMIN,
+                "capacidades": list(CAPS.get(p, ())),
+            }
+            for p in Perfil
+        ],
+        "modulos": [
+            {"id": str(m), "nome": MODULO_LABEL[m]} for m in Modulo
+        ],
+        "accoes": [str(a) for a in Accao],
+    }
 
 @router.get("/pendentes", response_model=list[UtilizadorPublico])
 def pendentes(empresa: EmpresaAtual, db: DB) -> list[UtilizadorPublico]:

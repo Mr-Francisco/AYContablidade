@@ -491,7 +491,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     filhos: [
       {
         href: "/gestao/utilizadores",
-        pendente: true,
         rotulo: "Utilizadores",
         seccao: "Sistema",
         perfis: ["admin"],
@@ -504,7 +503,6 @@ const NAV_COMPLETO: GrupoNav[] = [
     rotulo: "Configurações",
     href: "/configuracoes",
     perfis: ["admin"],
-    pendente: true,
   },
 ];
 

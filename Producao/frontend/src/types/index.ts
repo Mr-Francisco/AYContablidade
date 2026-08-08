@@ -746,3 +746,23 @@ export interface PreviaContexto {
   entidades_pseudonimizadas: number;
   identificadores_detectados: string[];
 }
+
+export interface PerfilMeta {
+  id: string;
+  nome: string;
+  cor: string;
+  atribuivel: boolean;
+  capacidades: string[];
+}
+
+export interface MetadadosAcesso {
+  perfis: PerfilMeta[];
+  modulos: { id: string; nome: string }[];
+  accoes: string[];
+}
+
+export interface ConfigEmpresa {
+  modulos: Record<string, boolean>;
+  parametrizacoes: Record<string, unknown>;
+  agt: Record<string, unknown>;
+}
