@@ -286,7 +286,19 @@ def exercicio_efetivo(
     mas continua a aceitar movimentos, e ninguém dá por isso.
     """
     if exercicio_id is not None:
-        return exercicio_id
+        # O id vem do cliente e TEM de ser confirmado contra a empresa. Sem
+        # isto, um id de outra empresa passava adiante e um id inventado também
+        # — e nesse caso a verificação de diário fechado não encontrava fecho
+        # nenhum, deixando lançar dentro de um período fechado. O `contab.fechar`
+        # de nada valia contra quem escrevesse o pedido à mão.
+        confirmado = db.scalar(
+            select(Exercicio.id).where(
+                Exercicio.id == exercicio_id, Exercicio.empresa_id == empresa_id
+            )
+        )
+        if confirmado is None:
+            raise ErroContabilistico("O exercício indicado não existe nesta empresa.")
+        return confirmado
     return db.scalar(
         select(Exercicio.id)
         .where(Exercicio.empresa_id == empresa_id, Exercicio.ativo.is_(True))
@@ -331,7 +343,13 @@ def postar(
     exercicio_id = exercicio_efetivo(db, empresa_id, exercicio_id)
 
     if exercicio_id is not None:
-        ex = db.get(Exercicio, exercicio_id)
+        # Filtrado pela empresa: sem isso, o nome de um exercício de outra
+        # empresa aparecia no texto do erro devolvido ao cliente.
+        ex = db.scalar(
+            select(Exercicio).where(
+                Exercicio.id == exercicio_id, Exercicio.empresa_id == empresa_id
+            )
+        )
         if ex is not None and ex.estado == "fechado":
             raise ErroContabilistico(
                 f"O exercício {ex.nome} está fechado — reabre-o em Configurações "

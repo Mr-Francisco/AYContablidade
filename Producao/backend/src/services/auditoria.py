@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.db.models.auditoria import RegistoAuditoria
+from src.core.rede import ip_do_pedido
 from src.db.models.user import User
 
 #: Chaves que nunca entram nos detalhes, mesmo que venham no que se passa. A
@@ -77,18 +78,13 @@ def auditar(
 
 
 def _ip(request: Request | None) -> str | None:
-    """IP de quem fez o pedido, respeitando o proxy à frente da aplicação.
+    """De onde veio o pedido. Ver `core/rede.py`.
 
-    O `X-Forwarded-For` traz a cadeia toda; o primeiro é o cliente original.
-    Sem isto, todos os registos ficariam com o IP do proxy.
+    O `X-Forwarded-For` só é lido quando a ligação vem de um proxy declarado —
+    senão quem atacasse escolhia o IP que fica gravado aqui, e apagava o rasto
+    da origem das suas próprias acções.
     """
-    if request is None:
-        return None
-    encaminhado = request.headers.get("x-forwarded-for")
-    if encaminhado:
-        return encaminhado.split(",")[0].strip()[:64]
-    return request.client.host[:64] if request.client else None
-
+    return ip_do_pedido(request)
 
 def listar(
     db: Session,

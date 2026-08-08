@@ -15,14 +15,16 @@ decoradas por `@limiter.limit` — o slowapi rebenta com ForwardRef
 """
 
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from src.core.config import get_settings
+from src.core.rede import chave_de_limite
 
 settings = get_settings()
 
 limiter = Limiter(
-    key_func=get_remote_address,
+    # A MESMA origem que a auditoria. Se o limitador contasse por um IP e a
+    # auditoria gravasse outro, não havia forma de ligar um bloqueio ao autor.
+    key_func=chave_de_limite,
     default_limits=[settings.RATE_LIMIT_GERAL],
 )
 

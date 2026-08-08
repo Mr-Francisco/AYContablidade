@@ -181,3 +181,63 @@ def test_cada_capacidade_conhece_o_seu_modulo():
         assert modulo_da_capacidade(cap) is not None, cap
     # As transversais não pertencem a módulo nenhum e não devem ser filtradas.
     assert modulo_da_capacidade("empresa.ver") is None
+
+
+# ---------------------------------------------------------------------------
+# permissoes_accao aplicada no servidor
+# ---------------------------------------------------------------------------
+def test_so_ver_bloqueia_a_escrita(ambiente):
+    """REGRESSÃO: `permissoes_accao` era gravada, devolvida pela API e editável
+    na interface sem que nada a lesse. Dar `{"comercial": ["ver"]}` a alguém
+    para o tornar só de leitura não impedia nada — a matriz CAPS é indexada por
+    perfil e nunca subtrai."""
+    cliente, user, _ = ambiente
+    from src.core.constants import Perfil
+
+    user.perfil = Perfil.COMERCIAL
+    user.permissoes_accao = {"comercial": ["ver"]}
+
+    assert cliente.get("/api/comercial/vendas").status_code == 200
+    r = cliente.post("/api/comercial/vendas", json={"data": "2026-08-01", "linhas": []})
+    assert r.status_code == 403
+
+
+def test_com_escrita_explicita_volta_a_poder(ambiente):
+    """Verificado na própria decisão e não pela rota: com a autorização
+    concedida, a rota entra no corpo e falha noutro sítio por causa do duplo de
+    sessão — o que se quer medir aqui é a decisão, não o resto do caminho."""
+    from src.auth.permissions import pode_capacidade
+    from src.core.constants import Perfil
+
+    _, user, _ = ambiente
+    user.perfil = Perfil.COMERCIAL
+
+    user.permissoes_accao = {"comercial": ["ver"]}
+    assert pode_capacidade(user, "comercial.gerir") is False
+
+    user.permissoes_accao = {"comercial": ["ver", "criar"]}
+    assert pode_capacidade(user, "comercial.gerir") is True
+    assert pode_capacidade(user, "comercial.ver") is True
+
+
+def test_sem_permissoes_accao_nada_muda(ambiente):
+    """Um mapa vazio não é restrição nenhuma — deriva-se da matriz por perfil,
+    como sempre. Tratá-lo como «nenhuma acção» trancaria toda a gente."""
+    cliente, user, _ = ambiente
+    from src.core.constants import Perfil
+
+    user.perfil = Perfil.COMERCIAL
+    user.permissoes_accao = {}
+    assert cliente.get("/api/comercial/vendas").status_code == 200
+
+
+def test_a_restricao_e_por_modulo(ambiente):
+    """Restringir um módulo não pode restringir os outros."""
+    cliente, user, _ = ambiente
+    from src.core.constants import Perfil
+
+    user.perfil = Perfil.ADMIN
+    user.permissoes_accao = {"comercial": ["ver"]}
+    # O admin passa em tudo por `eh_admin`; o que aqui se fixa é que a leitura
+    # de outro módulo não é afectada pela restrição declarada no comercial.
+    assert cliente.get("/api/rh/colaboradores").status_code == 200

@@ -376,7 +376,18 @@ def construir(
     ps = Pseudonimizador()
     _registar_entidades(db, empresa_id, ps)
     empresa = db.get(Empresa, empresa_id)
-    ex = db.get(Exercicio, exercicio_id) if exercicio_id else None
+    # Filtrado pela empresa: o nome e as datas deste exercício entram no
+    # pacote que vai para a OpenAI, e um id de outra empresa punha lá dados
+    # que não são desta.
+    ex = (
+        db.scalar(
+            select(Exercicio).where(
+                Exercicio.id == exercicio_id, Exercicio.empresa_id == empresa_id
+            )
+        )
+        if exercicio_id
+        else None
+    )
 
     pacote: dict = {
         # A empresa em si não é dado pessoal e o nome é preciso para a resposta

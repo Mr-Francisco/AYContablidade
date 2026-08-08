@@ -57,7 +57,15 @@ def diagnosticar(
     achados: list[dict] = []
     quer = lambda m: modulos is None or m in modulos  # noqa: E731
 
-    ex = db.get(Exercicio, exercicio_id) if exercicio_id else None
+    ex = (
+        db.scalar(
+            select(Exercicio).where(
+                Exercicio.id == exercicio_id, Exercicio.empresa_id == empresa_id
+            )
+        )
+        if exercicio_id
+        else None
+    )
 
     # ---------------- Contabilidade ----------------
     if quer("contabilidade"):

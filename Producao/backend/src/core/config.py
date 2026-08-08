@@ -75,6 +75,12 @@ class Settings(BaseSettings):
     MAX_SUPERADMINS: int = 3
     RATE_LIMIT_GERAL: str = "120/minute"
 
+    # Proxies em cujo `X-Forwarded-For` se pode confiar. Vazio = não há proxy à
+    # frente e o cabeçalho é sempre ignorado, que é o comportamento seguro:
+    # qualquer cliente o pode forjar. Aceita endereços e blocos CIDR.
+    #   PROXIES_CONFIAVEIS=10.0.0.0/8,172.18.0.1
+    PROXIES_CONFIAVEIS: Annotated[list[str], NoDecode] = Field(default_factory=list)
+
     # ---------- CORS ----------
     # NoDecode é obrigatório: sem ele o pydantic-settings tenta json.loads() no valor
     # do .env antes de qualquer validador correr, e "http://localhost:3000" rebenta
@@ -109,6 +115,13 @@ class Settings(BaseSettings):
                 "JWT_SECRET_KEY tem de ter pelo menos 32 caracteres. "
                 'Gerar com: python -c "import secrets; print(secrets.token_urlsafe(48))"'
             )
+        return v
+
+    @field_validator("PROXIES_CONFIAVEIS", mode="before")
+    @classmethod
+    def _proxies_de_string(cls, v: object) -> object:
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
         return v
 
     @field_validator("CORS_ORIGINS", mode="before")

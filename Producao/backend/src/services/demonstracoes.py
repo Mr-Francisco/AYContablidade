@@ -552,7 +552,11 @@ def notas(
     moeda = (emp.moeda if emp else None) or "Kz"
     ano = ""
     if exercicio_id is not None:
-        ex = db.get(Exercicio, exercicio_id)
+        ex = db.scalar(
+            select(Exercicio).where(
+                Exercicio.id == exercicio_id, Exercicio.empresa_id == empresa_id
+            )
+        )
         if ex is not None:
             ano = str(ex.inicio.year)
 

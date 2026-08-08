@@ -77,7 +77,11 @@ def _mes_e_exercicio(
 
     if mes and len(str(mes).strip()) == 7 and ex is not None:
         ano = str(mes).strip()[:4]
-        exercicio = db.get(Exercicio, ex)
+        exercicio = db.scalar(
+            select(Exercicio).where(
+                Exercicio.id == ex, Exercicio.empresa_id == empresa_id
+            )
+        )
         if exercicio is not None and not (
             exercicio.inicio.year <= int(ano) <= exercicio.fim.year
         ):

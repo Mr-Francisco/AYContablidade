@@ -116,6 +116,42 @@ def modulo_da_capacidade(acao: str) -> Modulo | None:
     return MODULO_DA_CAPACIDADE.get(str(acao).split(".", 1)[0])
 
 
+#: Acções que alteram dados. Uma rota que declare `gerir` (ou `lancar`, `plano`,
+#: `fechar`) não diz QUAL das três faz — declara que escreve. Basta ter uma.
+ACCOES_DE_ESCRITA = (Accao.CRIAR, Accao.EDITAR, Accao.ELIMINAR)
+
+
+def pode_capacidade(user: User, acao: str) -> bool:
+    """A capacidade da matriz CAPS **e** as acções explícitas do utilizador.
+
+    A matriz CAPS é indexada por PERFIL e nunca subtrai nada: um perfil
+    comercial tem `comercial.gerir` e pronto. `permissoes_accao` existe
+    justamente para restringir abaixo disso — dar `{"comercial": ["ver"]}` a
+    alguém devia torná-lo só de leitura. Sem esta função, essa lista era
+    gravada, devolvida pela API e editável na interface sem que nada a lesse, e
+    a pessoa continuava a emitir facturas.
+
+    A tradução é grosseira de propósito: as rotas declaram `ver` ou `gerir`, não
+    `criar`/`editar`/`eliminar` em separado. Uma rota de escrita pergunta se a
+    pessoa pode escrever ALGUMA COISA naquele módulo. Ser mais fino obrigaria a
+    mudar a declaração de todas as rotas, e o que interessa — que uma lista só
+    com `ver` bloqueie a escrita — fica garantido na mesma.
+    """
+    if not pode(user, acao):
+        return False
+
+    modulo = modulo_da_capacidade(acao)
+    if modulo is None:
+        # Capacidade transversal (`empresa.ver`): não pertence a módulo nenhum
+        # e não há acções por módulo que a possam restringir.
+        return True
+
+    _, _, sufixo = str(acao).partition(".")
+    if sufixo == Accao.VER:
+        return pode_accao(user, modulo, Accao.VER)
+    return any(pode_accao(user, modulo, a) for a in ACCOES_DE_ESCRITA)
+
+
 def pode_accao(user: User, modulo: Modulo | str, accao: Accao | str) -> bool:
     """Permissão por módulo e acção (ver/criar/editar/eliminar/exportar).
 

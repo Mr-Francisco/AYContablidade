@@ -44,7 +44,7 @@ config.ini (gitignored, copiar de config.ini.example) → paths, monitor de fich
 ```bash
 docker compose up -d                       # Stack completa (precisa de .env com JWT_SECRET_KEY)
 cd frontend && npm run dev                 # Frontend dev (3000, Turbopack)
-cd backend && uvicorn main:app --port 8001 # Backend dev
+cd backend && uvicorn main:app --port 8001 --no-proxy-headers  # Backend dev
 cd frontend && npm run lint                # Biome + TypeScript
 cd frontend && npm run build               # Build produção
 cd backend && pytest                       # Testes backend

@@ -23,6 +23,7 @@ from src.auth.permissions import (
     modulo_da_capacidade,
     pode,
     pode_accao,
+    pode_capacidade,
 )
 from src.core.config import get_settings
 from src.auth.security import (
@@ -190,7 +191,7 @@ def exigir_cap(acao: str):
     modulo = modulo_da_capacidade(acao)
 
     def _verificar(user: UtilizadorAtual, db: DB) -> User:
-        if not pode(user, acao):
+        if not pode_capacidade(user, acao):
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN,
                 f"Sem permissão para esta operação ({acao}).",
