@@ -20,12 +20,14 @@ from src.api.routers import (
     logistica_router,
     relatorios_router,
     rh_router,
+    totp_router,
     user_router,
 )
 
 # Ordem de registo na aplicação.
 ROUTERS = (
     auth_router.router,
+    totp_router.router,
     user_router.router,
     empresa_router.router,
     licenca_router.router_publico,
@@ -57,5 +59,6 @@ __all__ = [
     "logistica_router",
     "relatorios_router",
     "rh_router",
+    "totp_router",
     "user_router",
 ]

@@ -3,7 +3,7 @@
 import { KeyRound } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import useSWR from "swr";
-
+import { SegundoFactor } from "@/components/perfil/SegundoFactor";
 import {
   ACarregar,
   Alerta,
@@ -127,6 +127,7 @@ export default function Perfil() {
             )}
           </Cartao>
 
+          <SegundoFactor />
           <AlterarPassword aoTerminar={sair} />
         </div>
       </div>

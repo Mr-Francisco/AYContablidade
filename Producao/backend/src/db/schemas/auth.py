@@ -68,6 +68,9 @@ class UtilizadorPublico(BaseModel):
     permissoes_extra: list[str]
     permissoes_accao: dict[str, list[str]]
     ultimo_login: datetime | None
+    # Se a conta tem segundo factor. Não é segredo — a interface precisa de
+    # saber o estado para o mostrar. O segredo em si nunca sai daqui.
+    totp_ativo: bool = False
 
 
 class TokenResposta(BaseModel):
@@ -76,3 +79,51 @@ class TokenResposta(BaseModel):
     # Fim absoluto da sessão: a interface sabe quando o refresh deixa de servir.
     expira_absoluto: datetime
     utilizador: UtilizadorPublico
+
+
+# ---------------------------------------------------------------------------
+# Segundo factor (TOTP)
+# ---------------------------------------------------------------------------
+class TotpEstado(BaseModel):
+    """Estado do 2FA da própria conta."""
+
+    ativo: bool
+    ativado_em: datetime | None = None
+    codigos_por_usar: int = 0
+    #: Verdadeiro quando o perfil obriga a ter 2FA. A interface usa isto para
+    #: não oferecer um botão de desactivar que o servidor vai recusar.
+    obrigatorio: bool = False
+
+
+class TotpInicioResposta(BaseModel):
+    """Material de configuração. Só se mostra UMA vez, antes de confirmar."""
+
+    qr_svg: str
+    #: O segredo em texto, para quem não consegue ler o QR (introdução manual).
+    #: Depois de o 2FA estar confirmado, nenhuma rota volta a devolvê-lo.
+    segredo: str
+    uri: str
+
+
+class TotpConfirmarPedido(BaseModel):
+    codigo: str = Field(min_length=6, max_length=16)
+
+
+class TotpConfirmarResposta(BaseModel):
+    """Os códigos de recuperação, mostrados uma única vez.
+
+    Ficam guardados em hash: nem o servidor os consegue mostrar outra vez. Se o
+    utilizador não os guardar agora, tem de gerar códigos novos.
+    """
+
+    codigos_recuperacao: list[str]
+
+
+class TotpDesactivarPedido(BaseModel):
+    """Desactivar exige a palavra-passe.
+
+    Um ecrã deixado aberto não pode servir para retirar o segundo factor — é
+    exactamente o cenário contra o qual o 2FA existe.
+    """
+
+    password: str = Field(min_length=1)

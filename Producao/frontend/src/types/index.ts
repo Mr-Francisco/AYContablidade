@@ -38,6 +38,23 @@ export interface Utilizador {
   permissoes_extra: string[];
   permissoes_accao: Record<string, string[]>;
   ultimo_login: string | null;
+  totp_ativo: boolean;
+}
+
+/** Estado do segundo factor da própria conta. Nunca traz o segredo. */
+export interface EstadoTotp {
+  ativo: boolean;
+  ativado_em: string | null;
+  codigos_por_usar: number;
+  /** Perfis de administração da plataforma não o podem desligar. */
+  obrigatorio: boolean;
+}
+
+/** Material de configuração. Só existe entre iniciar e confirmar. */
+export interface InicioTotp {
+  qr_svg: string;
+  segredo: string;
+  uri: string;
 }
 
 export interface RespostaLogin {
