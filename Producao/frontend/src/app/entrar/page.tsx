@@ -21,6 +21,7 @@ function Formulario() {
   const parametros = useSearchParams();
   const { entrar } = useAuth();
 
+  const [empresa, setEmpresa] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -31,7 +32,7 @@ function Formulario() {
     setErro(null);
     setAEntrar(true);
     try {
-      await entrar(email.trim(), password);
+      await entrar(email.trim(), password, empresa);
       const seguinte = parametros.get("seguinte");
       // Só caminhos internos: um `seguinte` externo seria um redireccionamento
       // aberto, aproveitável para phishing.
@@ -76,6 +77,25 @@ function Formulario() {
           </p>
 
           <form onSubmit={submeter} className="flex flex-col gap-4">
+            {/* Sem `required`: o superadministrador da plataforma não pertence
+                a nenhuma empresa e não teria o que escrever aqui. Marcá-lo como
+                obrigatório impedia-o de entrar — o browser bloqueava a
+                submissão antes de o servidor sequer ser contactado. É o backend
+                que decide se falta, porque só ele sabe de que conta se trata. */}
+            <Campo
+              rotulo="Empresa"
+              dica="Código (ex.: BE001) ou nome. Contas da plataforma deixam em branco."
+            >
+              <Entrada
+                value={empresa}
+                onChange={(e) => setEmpresa(e.target.value)}
+                autoComplete="organization"
+                autoFocus
+                placeholder="BE001"
+                className="uppercase placeholder:normal-case"
+              />
+            </Campo>
+
             <Campo rotulo="E-mail">
               <Entrada
                 type="email"
@@ -83,7 +103,6 @@ function Formulario() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="username"
                 required
-                autoFocus
                 placeholder="nome@empresa.ao"
               />
             </Campo>
@@ -119,14 +138,14 @@ function Formulario() {
             href="/registar"
             className="font-semibold text-marca hover:underline"
           >
-            Registar
+            Registar numa empresa
           </a>
           {" · "}
           <a
-            href="/pedir-licenca"
+            href="/activar"
             className="font-semibold text-marca hover:underline"
           >
-            Pedir licença
+            Activar licença
           </a>
         </p>
       </motion.div>

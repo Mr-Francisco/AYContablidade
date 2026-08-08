@@ -496,6 +496,51 @@ const NAV_COMPLETO: GrupoNav[] = [
         perfis: ["admin"],
         icone: "users",
       },
+      {
+        href: "/gestao/auditoria",
+        rotulo: "Auditoria",
+        seccao: "Sistema",
+        perfis: ["admin"],
+        icone: "shield",
+      },
+    ],
+  },
+
+  // Área da PLATAFORMA, não de uma empresa. Só o superadministrador a vê, e é
+  // por isso que `perfis` traz apenas «superadmin»: o filtro do cabeçalho deixa
+  // o superadmin passar onde diga «admin», mas o inverso não acontece — um
+  // administrador de empresa nunca vê isto.
+  {
+    rotulo: "Plataforma",
+    filhos: [
+      {
+        href: "/plataforma",
+        rotulo: "Empresas",
+        seccao: "Plataforma",
+        perfis: ["superadmin"],
+        icone: "empresa",
+      },
+      {
+        href: "/plataforma/licencas",
+        rotulo: "Licenças",
+        seccao: "Plataforma",
+        perfis: ["superadmin"],
+        icone: "award",
+      },
+      {
+        href: "/plataforma/consumo-ia",
+        rotulo: "Consumo de IA",
+        seccao: "Plataforma",
+        perfis: ["superadmin"],
+        icone: "sparkles",
+      },
+      {
+        href: "/plataforma/auditoria",
+        rotulo: "Auditoria",
+        seccao: "Plataforma",
+        perfis: ["superadmin"],
+        icone: "shield",
+      },
     ],
   },
 

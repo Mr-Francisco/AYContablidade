@@ -766,3 +766,95 @@ export interface ConfigEmpresa {
   parametrizacoes: Record<string, unknown>;
   agt: Record<string, unknown>;
 }
+
+export interface LicencaPlataforma {
+  id: string;
+  empresa_id: string | null;
+  chave_prefixo: string;
+  nif_previsto: string;
+  nome_previsto: string;
+  titular: string;
+  plano: string;
+  duracao_meses: number | null;
+  expira_activacao: string;
+  activada_em: string | null;
+  validade: string | null;
+  estado: string;
+  modulos_incluidos: string[];
+  limite_utilizadores: number | null;
+  limite_tokens_mes: number | null;
+  limite_custo_mes: string | null;
+  notas: string | null;
+}
+
+export interface LicencaGerada {
+  id: string;
+  chave: string;
+  chave_prefixo: string;
+  nif_previsto: string;
+  nome_previsto: string;
+  plano: string;
+  expira_activacao: string;
+  dias_para_activar: number;
+}
+
+export interface EmpresaPlataforma {
+  id: string;
+  nome: string;
+  nif: string;
+  codigo: string;
+  morada: string | null;
+  localizacao: string | null;
+  telefone: string | null;
+  email: string | null;
+  moeda: string;
+  regime: string;
+  forma_juridica: string | null;
+  estado: string;
+  criado_em: string;
+}
+
+export interface ConsumoIa {
+  mes: string;
+  tokens_entrada: number;
+  tokens_saida: number;
+  tokens: number;
+  custo: string;
+  consultas: number;
+  plano: string | null;
+  limite_tokens: number | null;
+  limite_custo: string | null;
+  percentagem: number | null;
+  sem_limite: boolean;
+  excedido: boolean;
+  a_avisar: boolean;
+  motivo: string | null;
+}
+
+export interface ConsumoEmpresa {
+  empresa_id: string;
+  empresa: string;
+  codigo: string;
+  tokens: number;
+  custo: string;
+  consultas: number;
+  plano: string | null;
+  limite_tokens: number | null;
+  limite_custo: string | null;
+  percentagem: number | null;
+  excedido: boolean;
+}
+
+export interface RegistoAuditoria {
+  id: string;
+  criado_em: string;
+  accao: string;
+  actor_nome: string | null;
+  actor_email: string | null;
+  actor_perfil: string | null;
+  alvo_tipo: string | null;
+  alvo_desc: string | null;
+  empresa_id?: string | null;
+  detalhes: Record<string, unknown>;
+  ip: string | null;
+}

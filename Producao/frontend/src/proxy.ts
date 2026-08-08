@@ -13,7 +13,16 @@ import { type NextRequest, NextResponse } from "next/server";
 const COOKIE = "aycontab_access_token";
 
 /** Rotas acessíveis sem sessão. */
-const PUBLICAS = ["/entrar", "/registar", "/pedir-licenca"];
+const PUBLICAS = ["/entrar", "/registar", "/activar"];
+
+/** Das públicas, aquelas de onde se deve tirar quem JÁ tem sessão.
+ *
+ *  «Acessível sem sessão» e «só faz sentido sem sessão» não são a mesma coisa.
+ *  Entrar e registar pertencem ao segundo grupo — quem já entrou não tem nada
+ *  a fazer lá. Activar uma licença não: cria uma empresa NOVA e nada tem que
+ *  ver com a sessão aberta, e quem gere várias empresas precisa de lá chegar
+ *  sem ter de sair primeiro. */
+const SO_SEM_SESSAO = ["/entrar", "/registar"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -31,7 +40,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (temSessao && ehPublica) {
+  const soSemSessao = SO_SEM_SESSAO.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+  if (temSessao && soSemSessao) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";

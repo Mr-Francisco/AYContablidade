@@ -62,7 +62,7 @@ interface AuthContexto {
   utilizador: Utilizador | null;
   empresa: Empresa | null;
   aCarregar: boolean;
-  entrar: (email: string, password: string) => Promise<void>;
+  entrar: (email: string, password: string, empresa?: string) => Promise<void>;
   sair: () => void;
   /** Capacidade da matriz CAPS, ex.: `pode("contab.lancar")`. */
   pode: (acao: string) => boolean;
@@ -113,22 +113,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const entrar = useCallback(async (email: string, password: string) => {
-    const r = await api.post<RespostaLogin>(
-      "/api/auth/login",
-      { email, password },
-      { publico: true },
-    );
-    guardarToken(r.access_token, r.expira_absoluto);
-    setUtilizador(r.utilizador);
-    if (r.utilizador.empresa_id) {
-      try {
-        setEmpresa(await api.get<Empresa>("/api/empresa"));
-      } catch {
-        /* sem acesso à ficha da empresa — não impede entrar */
+  // `empresa` é o código («BE001») ou o nome. Obrigatório para todos menos o
+  // superadministrador da plataforma, que não pertence a nenhuma — por isso
+  // vai opcional e é o backend que decide se falta.
+  const entrar = useCallback(
+    async (email: string, password: string, empresa?: string) => {
+      const r = await api.post<RespostaLogin>(
+        "/api/auth/login",
+        { email, password, empresa: empresa?.trim() || null },
+        { publico: true },
+      );
+      guardarToken(r.access_token, r.expira_absoluto);
+      setUtilizador(r.utilizador);
+      if (r.utilizador.empresa_id) {
+        try {
+          setEmpresa(await api.get<Empresa>("/api/empresa"));
+        } catch {
+          /* sem acesso à ficha da empresa — não impede entrar */
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   const sair = useCallback(() => {
     limparSessao();
