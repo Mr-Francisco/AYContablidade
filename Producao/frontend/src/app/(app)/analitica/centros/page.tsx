@@ -1,13 +1,19 @@
 "use client";
 
+import { Plus } from "lucide-react";
+import { type FormEvent, useState } from "react";
 import useSWR from "swr";
 
 import {
   ACarregar,
   Alerta,
+  Botao,
   CabecalhoPagina,
+  Campo,
   Cartao,
+  Entrada,
   EnvolveTabela,
+  Selector,
   Selo,
   Tabela,
   Td,
@@ -15,21 +21,56 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import {
+  AccoesDaLinha,
+  ConfirmarEliminar,
+  DialogoMestre,
+} from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
-import { buscador } from "@/lib/api";
+import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
 import type { CentroCusto, MapaAnalitico } from "@/types";
 
+const ROTA = "/api/contabilidade/centros";
+
 export default function Centros() {
-  const { empresa } = useAuth();
+  const { empresa, pode } = useAuth();
   const moeda = empresa?.moeda ?? "Kz";
   const { activo } = useExercicios();
 
-  const { data: centros, isLoading } = useSWR<CentroCusto[]>(
-    "/api/contabilidade/centros",
-    buscador,
-  );
+  const {
+    data: centros,
+    isLoading,
+    mutate,
+  } = useSWR<CentroCusto[]>(ROTA, buscador);
+
+  const [emEdicao, setEmEdicao] = useState<CentroCusto | null>(null);
+  const [aCriar, setACriar] = useState(false);
+  const [aApagar, setAApagar] = useState<CentroCusto | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const podeGerir = pode("contab.plano");
+
+  async function eliminar() {
+    if (!aApagar) return;
+    setErro(null);
+    setOcupado(true);
+    try {
+      await api.delete(`${ROTA}/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApagar(null);
+    }
+  }
   const { data: mapa } = useSWR<MapaAnalitico>(
     `/api/contabilidade/analitica${activo?.id ? `?exercicio_id=${activo.id}` : ""}`,
     buscador,
@@ -46,7 +87,21 @@ export default function Centros() {
       <CabecalhoPagina
         titulo="Centros de Custo"
         descricao="Ficha dos centros e o movimento que cada um acumulou no exercício."
+        accoes={
+          podeGerir && (
+            <Botao variante="primario" onClick={() => setACriar(true)}>
+              <Plus size={16} />
+              Novo centro
+            </Botao>
+          )
+        }
       />
+
+      {erro && (
+        <div className="mb-4">
+          <Alerta tipo="erro">{erro}</Alerta>
+        </div>
+      )}
 
       <Cartao className="p-0">
         {isLoading ? (
@@ -69,6 +124,7 @@ export default function Centros() {
                   <Th numerico>Custos</Th>
                   <Th numerico>Proveitos</Th>
                   <Th>Estado</Th>
+                  {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
@@ -104,6 +160,21 @@ export default function Centros() {
                           {c.estado === "activo" ? "Activo" : "Inactivo"}
                         </Selo>
                       </Td>
+                      {podeGerir && (
+                        <Td>
+                          <AccoesDaLinha
+                            nome={`centro ${c.codigo}`}
+                            aoEditar={() => setEmEdicao(c)}
+                            aoApagar={() => setAApagar(c)}
+                            desactivado={ocupado}
+                            motivoNaoApagar={
+                              m
+                                ? "Tem custos imputados — mude-o para inactivo"
+                                : undefined
+                            }
+                          />
+                        </Td>
+                      )}
                     </Tr>
                   );
                 })}
@@ -119,6 +190,157 @@ export default function Centros() {
         e que uma linha sem centro atribuído continua a ser um lançamento
         válido, só não entra na análise por centro.
       </Alerta>
+
+      {(aCriar || emEdicao) && (
+        <FormularioCentro
+          centro={emEdicao}
+          aoFechar={() => {
+            setACriar(false);
+            setEmEdicao(null);
+          }}
+          aoGravar={() => {
+            mutate();
+            setACriar(false);
+            setEmEdicao(null);
+          }}
+        />
+      )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar o centro ${aApagar?.codigo ?? ""}?`}
+        aoConfirmar={eliminar}
+        ocupado={ocupado}
+      >
+        Um centro <b>com custos já imputados não pode ser eliminado</b> — o mapa
+        de custos passaria a somar menos do que a contabilidade. Nesse caso o
+        servidor recusa, e a alternativa é pô-lo inactivo.
+      </ConfirmarEliminar>
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+const TIPOS = [
+  { valor: "custo", rotulo: "Custo" },
+  { valor: "proveito", rotulo: "Proveito" },
+  { valor: "misto", rotulo: "Misto" },
+];
+
+function FormularioCentro({
+  centro,
+  aoFechar,
+  aoGravar,
+}: {
+  centro: CentroCusto | null;
+  aoFechar: () => void;
+  aoGravar: () => void;
+}) {
+  const novo = centro === null;
+  const [campos, setCampos] = useState({
+    codigo: centro?.codigo ?? "",
+    nome: centro?.nome ?? "",
+    tipo: centro?.tipo || "custo",
+    responsavel: centro?.responsavel ?? "",
+    estado: centro?.estado || "activo",
+  });
+  const [erro, setErro] = useState<string | null>(null);
+  const [aGravar, setAGravar] = useState(false);
+
+  function alterar(campo: string, valor: string) {
+    setCampos((c) => ({ ...c, [campo]: valor }));
+  }
+
+  async function submeter(e: FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    setAGravar(true);
+    const corpo = {
+      nome: campos.nome,
+      tipo: campos.tipo,
+      responsavel: campos.responsavel || null,
+      estado: campos.estado,
+    };
+    try {
+      if (novo) {
+        await api.post(ROTA, { ...corpo, codigo: campos.codigo });
+      } else {
+        await api.patch(`${ROTA}/${centro.id}`, corpo);
+      }
+      aoGravar();
+    } catch (e2) {
+      setErro(
+        e2 instanceof ErroApi
+          ? e2.mensagemUtilizador
+          : "Não foi possível gravar.",
+      );
+    } finally {
+      setAGravar(false);
+    }
+  }
+
+  return (
+    <DialogoMestre
+      titulo={novo ? "Novo centro de custo" : `Alterar centro ${centro.codigo}`}
+      aoFechar={aoFechar}
+      aoSubmeter={submeter}
+      aGravar={aGravar}
+      erro={erro}
+    >
+      <Campo
+        rotulo="Código"
+        dica={
+          novo
+            ? "É o que fica gravado em cada linha de lançamento."
+            : "Não se altera: as linhas de lançamento guardam-no."
+        }
+      >
+        <Entrada
+          value={campos.codigo}
+          onChange={(e) => alterar("codigo", e.target.value)}
+          disabled={!novo}
+          required
+          maxLength={20}
+          className="tabular"
+        />
+      </Campo>
+
+      <Campo rotulo="Nome">
+        <Entrada
+          value={campos.nome}
+          onChange={(e) => alterar("nome", e.target.value)}
+          required
+          maxLength={120}
+        />
+      </Campo>
+
+      <Campo rotulo="Tipo">
+        <Selector
+          valor={campos.tipo}
+          aoMudar={(v) => alterar("tipo", v)}
+          opcoes={TIPOS}
+        />
+      </Campo>
+
+      <Campo rotulo="Estado">
+        <Selector
+          valor={campos.estado}
+          aoMudar={(v) => alterar("estado", v)}
+          opcoes={[
+            { valor: "activo", rotulo: "Activo" },
+            { valor: "inactivo", rotulo: "Inactivo" },
+          ]}
+        />
+      </Campo>
+
+      <Campo rotulo="Responsável" dica="Opcional." className="sm:col-span-2">
+        <Entrada
+          value={campos.responsavel}
+          onChange={(e) => alterar("responsavel", e.target.value)}
+          maxLength={120}
+        />
+      </Campo>
+    </DialogoMestre>
   );
 }

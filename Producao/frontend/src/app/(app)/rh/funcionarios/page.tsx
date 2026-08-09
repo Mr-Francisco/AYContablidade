@@ -24,6 +24,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
@@ -39,6 +40,31 @@ export default function Funcionarios() {
   const [procura, setProcura] = useState("");
   const [estado, setEstado] = useState("todos");
   const [novoAberto, setNovoAberto] = useState(false);
+  const [emEdicao, setEmEdicao] = useState<Colaborador | null>(null);
+  const [aApagar, setAApagar] = useState<Colaborador | null>(null);
+  const [erroAccao, setErroAccao] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const podeGerir = pode("rh.gerir");
+
+  async function eliminarColaborador() {
+    if (!aApagar) return;
+    setErroAccao(null);
+    setOcupado(true);
+    try {
+      await api.delete(`/api/rh/colaboradores/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErroAccao(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApagar(null);
+    }
+  }
 
   const { data, isLoading, mutate } = useSWR<Colaborador[]>(
     "/api/rh/colaboradores",
@@ -157,6 +183,7 @@ export default function Funcionarios() {
                   <Th>Admissão</Th>
                   <Th>Nº Seg. Social</Th>
                   <Th>Estado</Th>
+                  {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
@@ -180,6 +207,16 @@ export default function Funcionarios() {
                         {c.estado === "activo" ? "Activo" : "Inactivo"}
                       </Selo>
                     </Td>
+                    {podeGerir && (
+                      <Td>
+                        <AccoesDaLinha
+                          nome={`funcionário ${c.nome}`}
+                          aoEditar={() => setEmEdicao(c)}
+                          aoApagar={() => setAApagar(c)}
+                          desactivado={ocupado}
+                        />
+                      </Td>
+                    )}
                   </Tr>
                 ))}
               </tbody>
@@ -188,26 +225,52 @@ export default function Funcionarios() {
         )}
       </Cartao>
 
-      {novoAberto && (
+      {(novoAberto || emEdicao) && (
         <FormularioColaborador
-          aoFechar={() => setNovoAberto(false)}
+          colaborador={emEdicao}
+          aoFechar={() => {
+            setNovoAberto(false);
+            setEmEdicao(null);
+          }}
           aoGravar={() => {
             setNovoAberto(false);
+            setEmEdicao(null);
             mutate();
           }}
         />
       )}
+
+      {erroAccao && (
+        <div className="mt-4">
+          <Alerta tipo="erro">{erroAccao}</Alerta>
+        </div>
+      )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar ${aApagar?.nome ?? ""}?`}
+        aoConfirmar={eliminarColaborador}
+        ocupado={ocupado}
+      >
+        A ficha desaparece. Os recibos e as folhas já processadas guardam os
+        valores calculados e não se perdem, mas deixam de poder ser ligados à
+        ficha. Para o tirar do processamento sem apagar, ponha-o inactivo.
+      </ConfirmarEliminar>
     </>
   );
 }
 
 function FormularioColaborador({
+  colaborador,
   aoFechar,
   aoGravar,
 }: {
+  colaborador: Colaborador | null;
   aoFechar: () => void;
   aoGravar: () => void;
 }) {
+  const novo = colaborador === null;
   const { data: provincias } = useSWR<string[]>(
     "/api/comercial/provincias",
     buscador,
@@ -215,21 +278,22 @@ function FormularioColaborador({
   );
 
   const [campos, setCampos] = useState({
-    numero: "",
-    nome: "",
-    categoria: "",
-    salario_base: "0",
-    subsidios: "0",
-    subsidio_ferias: "0",
-    subsidio_natal: "0",
-    subs_nao_sujeitos: "0",
-    data_admissao: new Date().toISOString().slice(0, 10),
-    nif: "",
-    num_ss: "",
-    iban: "",
-    provincia: "Luanda",
-    municipio: "",
-    estado: "activo",
+    numero: colaborador?.numero ?? "",
+    nome: colaborador?.nome ?? "",
+    categoria: colaborador?.categoria ?? "",
+    salario_base: colaborador?.salario_base ?? "0",
+    subsidios: colaborador?.subsidios ?? "0",
+    subsidio_ferias: colaborador?.subsidio_ferias ?? "0",
+    subsidio_natal: colaborador?.subsidio_natal ?? "0",
+    subs_nao_sujeitos: colaborador?.subs_nao_sujeitos ?? "0",
+    data_admissao:
+      colaborador?.data_admissao ?? new Date().toISOString().slice(0, 10),
+    nif: colaborador?.nif ?? "",
+    num_ss: colaborador?.num_ss ?? "",
+    iban: colaborador?.iban ?? "",
+    provincia: colaborador?.provincia ?? "Luanda",
+    municipio: colaborador?.municipio ?? "",
+    estado: colaborador?.estado ?? "activo",
   });
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
@@ -244,9 +308,8 @@ function FormularioColaborador({
     if (!campos.nome.trim()) return setErro("Indique o nome.");
     setAGravar(true);
     try {
-      await api.post("/api/rh/colaboradores", {
+      const corpo = {
         ...campos,
-        numero: campos.numero.trim() || null,
         nome: campos.nome.trim(),
         categoria: campos.categoria.trim() || null,
         nif: campos.nif.trim() || null,
@@ -254,7 +317,18 @@ function FormularioColaborador({
         iban: campos.iban.trim() || null,
         municipio: campos.municipio.trim() || null,
         data_admissao: campos.data_admissao || null,
-      });
+      };
+      if (novo) {
+        await api.post("/api/rh/colaboradores", {
+          ...corpo,
+          numero: campos.numero.trim() || null,
+        });
+      } else {
+        // O número fica de fora: é o que identifica o colaborador na folha e
+        // nos recibos já processados.
+        const { numero: _numero, ...semNumero } = corpo;
+        await api.patch(`/api/rh/colaboradores/${colaborador.id}`, semNumero);
+      }
       aoGravar();
     } catch (e2) {
       setErro(
@@ -274,7 +348,7 @@ function FormularioColaborador({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(760px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
-              Novo funcionário
+              {novo ? "Novo funcionário" : `Alterar ${colaborador.nome}`}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button

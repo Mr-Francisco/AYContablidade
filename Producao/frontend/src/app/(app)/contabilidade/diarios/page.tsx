@@ -1,12 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Plus } from "lucide-react";
+import { type FormEvent, useMemo, useState } from "react";
 
 import {
   ACarregar,
+  Alerta,
   BarraFiltros,
+  Botao,
   CabecalhoPagina,
+  Campo,
   Cartao,
+  Entrada,
   EnvolveTabela,
   Selector,
   Selo,
@@ -16,7 +21,15 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import {
+  AccoesDaLinha,
+  ConfirmarEliminar,
+  DialogoMestre,
+} from "@/components/ui/CrudMestre";
+import { useAuth } from "@/contexts/AuthContext";
+import { api, ErroApi } from "@/lib/api";
 import { useDiarios } from "@/lib/hooks";
+import type { Diario } from "@/types";
 
 const CATEGORIAS: Record<string, { rotulo: string; cor: string }> = {
   compras: { rotulo: "Compras", cor: "#d68910" },
@@ -27,9 +40,19 @@ const CATEGORIAS: Record<string, { rotulo: string; cor: string }> = {
   outros: { rotulo: "Outros", cor: "#62657a" },
 };
 
+const ROTA = "/api/contabilidade/diarios";
+
 export default function Diarios() {
-  const { diarios, isLoading } = useDiarios();
+  const { diarios, isLoading, mutate } = useDiarios();
+  const { pode } = useAuth();
   const [categoria, setCategoria] = useState("todas");
+  const [emEdicao, setEmEdicao] = useState<Diario | null>(null);
+  const [aCriar, setACriar] = useState(false);
+  const [aApagar, setAApagar] = useState<Diario | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const podeGerir = pode("contab.plano");
 
   const filtrados = useMemo(
     () =>
@@ -39,12 +62,42 @@ export default function Diarios() {
     [diarios, categoria],
   );
 
+  async function eliminar() {
+    if (!aApagar) return;
+    setErro(null);
+    setOcupado(true);
+    try {
+      await api.delete(`${ROTA}/${aApagar.id}`);
+      mutate();
+      setAApagar(null);
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+      setAApagar(null);
+    } finally {
+      setOcupado(false);
+    }
+  }
+
   return (
     <>
       <CabecalhoPagina
         titulo="Diários"
         descricao="Diários contabilísticos. A categoria determina em que módulos o diário é oferecido."
-        accoes={<Selo cor="#3d7fe0">{diarios.length} diários</Selo>}
+        accoes={
+          <div className="flex items-center gap-3">
+            <Selo cor="#3d7fe0">{diarios.length} diários</Selo>
+            {podeGerir && (
+              <Botao variante="primario" onClick={() => setACriar(true)}>
+                <Plus size={16} />
+                Novo diário
+              </Botao>
+            )}
+          </div>
+        }
       />
 
       <BarraFiltros className="mb-4">
@@ -63,6 +116,12 @@ export default function Diarios() {
         />
       </BarraFiltros>
 
+      {erro && (
+        <div className="mb-4">
+          <Alerta tipo="erro">{erro}</Alerta>
+        </div>
+      )}
+
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
@@ -77,6 +136,7 @@ export default function Diarios() {
                   <Th>Designação</Th>
                   <Th>Categoria</Th>
                   <Th>Estado</Th>
+                  {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
@@ -97,6 +157,16 @@ export default function Diarios() {
                           {d.ativo ? "Activo" : "Inactivo"}
                         </Selo>
                       </Td>
+                      {podeGerir && (
+                        <Td>
+                          <AccoesDaLinha
+                            nome={`diário ${d.codigo}`}
+                            aoEditar={() => setEmEdicao(d)}
+                            aoApagar={() => setAApagar(d)}
+                            desactivado={ocupado}
+                          />
+                        </Td>
+                      )}
                     </Tr>
                   );
                 })}
@@ -105,6 +175,150 @@ export default function Diarios() {
           </EnvolveTabela>
         )}
       </Cartao>
+
+      {(aCriar || emEdicao) && (
+        <FormularioDiario
+          diario={emEdicao}
+          aoFechar={() => {
+            setACriar(false);
+            setEmEdicao(null);
+          }}
+          aoGravar={() => {
+            mutate();
+            setACriar(false);
+            setEmEdicao(null);
+          }}
+        />
+      )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar o diário ${aApagar?.codigo ?? ""}?`}
+        aoConfirmar={eliminar}
+        ocupado={ocupado}
+      >
+        Um diário{" "}
+        <b>
+          com movimentos ou com documentos associados não pode ser eliminado
+        </b>{" "}
+        — nesse caso o servidor recusa e a alternativa é desactivá-lo, que o
+        tira das escolhas sem tocar no histórico.
+      </ConfirmarEliminar>
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+function FormularioDiario({
+  diario,
+  aoFechar,
+  aoGravar,
+}: {
+  diario: Diario | null;
+  aoFechar: () => void;
+  aoGravar: () => void;
+}) {
+  const novo = diario === null;
+  const [campos, setCampos] = useState({
+    codigo: diario?.codigo ?? "",
+    nome: diario?.nome ?? "",
+    categoria: diario?.categoria ?? "outros",
+    ativo: diario?.ativo ?? true,
+  });
+  const [erro, setErro] = useState<string | null>(null);
+  const [aGravar, setAGravar] = useState(false);
+
+  async function submeter(e: FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    setAGravar(true);
+    try {
+      if (novo) {
+        await api.post(ROTA, campos);
+      } else {
+        // O código fica de fora: os lançamentos e os fechos guardam-no, e
+        // mudá-lo deixava-os a apontar para um diário que já não existe.
+        await api.patch(`${ROTA}/${diario.id}`, {
+          nome: campos.nome,
+          categoria: campos.categoria,
+          ativo: campos.ativo,
+        });
+      }
+      aoGravar();
+    } catch (e2) {
+      setErro(
+        e2 instanceof ErroApi
+          ? e2.mensagemUtilizador
+          : "Não foi possível gravar.",
+      );
+    } finally {
+      setAGravar(false);
+    }
+  }
+
+  return (
+    <DialogoMestre
+      titulo={novo ? "Novo diário" : `Alterar diário ${diario.codigo}`}
+      aoFechar={aoFechar}
+      aoSubmeter={submeter}
+      aGravar={aGravar}
+      erro={erro}
+    >
+      <Campo
+        rotulo="Código"
+        dica={
+          novo
+            ? "Curto e estável — é o que fica gravado em cada movimento."
+            : "Não se altera: os movimentos e os fechos guardam-no."
+        }
+      >
+        <Entrada
+          value={campos.codigo}
+          onChange={(e) => setCampos((c) => ({ ...c, codigo: e.target.value }))}
+          disabled={!novo}
+          required
+          maxLength={10}
+          className="tabular"
+        />
+      </Campo>
+
+      <Campo rotulo="Designação">
+        <Entrada
+          value={campos.nome}
+          onChange={(e) => setCampos((c) => ({ ...c, nome: e.target.value }))}
+          required
+          maxLength={120}
+        />
+      </Campo>
+
+      <Campo
+        rotulo="Categoria"
+        dica="Determina em que módulos o diário é oferecido."
+        className="sm:col-span-2"
+      >
+        <Selector
+          valor={campos.categoria}
+          aoMudar={(v) => setCampos((c) => ({ ...c, categoria: v }))}
+          opcoes={Object.entries(CATEGORIAS).map(([k, v]) => ({
+            valor: k,
+            rotulo: v.rotulo,
+          }))}
+        />
+      </Campo>
+
+      <label className="flex cursor-pointer items-center gap-2 text-sm sm:col-span-2">
+        <input
+          type="checkbox"
+          checked={campos.ativo}
+          onChange={(e) =>
+            setCampos((c) => ({ ...c, ativo: e.target.checked }))
+          }
+          className="size-4 accent-[var(--color-marca)]"
+        />
+        Activo — um diário inactivo deixa de ser oferecido em movimentos novos,
+        e o histórico continua a ler-se.
+      </label>
+    </DialogoMestre>
   );
 }

@@ -23,6 +23,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import type { Terceiro } from "@/types";
@@ -39,6 +40,31 @@ export default function Clientes() {
   const { pode } = useAuth();
   const [procura, setProcura] = useState("");
   const [novoAberto, setNovoAberto] = useState(false);
+  const [emEdicao, setEmEdicao] = useState<Terceiro | null>(null);
+  const [aApagar, setAApagar] = useState<Terceiro | null>(null);
+  const [erroAccao, setErroAccao] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const podeGerir = pode("comercial.gerir");
+
+  async function eliminarRegisto() {
+    if (!aApagar) return;
+    setErroAccao(null);
+    setOcupado(true);
+    try {
+      await api.delete(`/api/comercial/clientes/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErroAccao(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApagar(null);
+    }
+  }
 
   const chave = `/api/comercial/clientes${procura.trim() ? `?procura=${encodeURIComponent(procura.trim())}` : ""}`;
   const { data, isLoading, mutate } = useSWR<Terceiro[]>(chave, buscador);
@@ -98,6 +124,7 @@ export default function Clientes() {
                   <Th>Telefone</Th>
                   <Th>Conta corrente</Th>
                   <Th>Estado</Th>
+                  {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
@@ -129,6 +156,16 @@ export default function Clientes() {
                         {c.estado === "activo" ? "Activo" : "Inactivo"}
                       </Selo>
                     </Td>
+                    {podeGerir && (
+                      <Td>
+                        <AccoesDaLinha
+                          nome={`cliente ${c.numero}`}
+                          aoEditar={() => setEmEdicao(c)}
+                          aoApagar={() => setAApagar(c)}
+                          desactivado={ocupado}
+                        />
+                      </Td>
+                    )}
                   </Tr>
                 ))}
               </tbody>
@@ -137,26 +174,51 @@ export default function Clientes() {
         )}
       </Cartao>
 
-      {novoAberto && (
+      {(novoAberto || emEdicao) && (
         <FormularioCliente
-          aoFechar={() => setNovoAberto(false)}
+          registo={emEdicao}
+          aoFechar={() => {
+            setNovoAberto(false);
+            setEmEdicao(null);
+          }}
           aoGravar={() => {
             setNovoAberto(false);
+            setEmEdicao(null);
             mutate();
           }}
         />
       )}
+
+      {erroAccao && (
+        <div className="mt-4">
+          <Alerta tipo="erro">{erroAccao}</Alerta>
+        </div>
+      )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar cliente ${aApagar?.nome ?? ""}?`}
+        aoConfirmar={eliminarRegisto}
+        ocupado={ocupado}
+      >
+        Um cliente <b>com documentos de venda não pode ser eliminado</b> — as
+        facturas emitidas ficariam sem titular. Nesse caso o servidor recusa.
+      </ConfirmarEliminar>
     </>
   );
 }
 
 function FormularioCliente({
+  registo,
   aoFechar,
   aoGravar,
 }: {
+  registo: Terceiro | null;
   aoFechar: () => void;
   aoGravar: () => void;
 }) {
+  const novo = registo === null;
   const { data: provincias } = useSWR<string[]>(
     "/api/comercial/provincias",
     buscador,
@@ -164,13 +226,13 @@ function FormularioCliente({
   );
 
   const [campos, setCampos] = useState({
-    nome: "",
-    nif: "",
-    morada: "",
-    localidade: "",
-    provincia: "Luanda",
-    telefone: "",
-    email: "",
+    nome: registo?.nome ?? "",
+    nif: registo?.nif ?? "",
+    morada: registo?.morada ?? "",
+    localidade: registo?.localidade ?? "",
+    provincia: registo?.provincia ?? "Luanda",
+    telefone: registo?.telefone ?? "",
+    email: registo?.email ?? "",
     condicoes_pagamento: "30 dias",
     dias_credito: "30",
     limite_credito: "0",
@@ -187,12 +249,27 @@ function FormularioCliente({
     setErro(null);
     setAGravar(true);
     try {
-      await api.post("/api/comercial/clientes", {
+      const corpo = {
         ...campos,
         nif: campos.nif || null,
         dias_credito: Number(campos.dias_credito) || 30,
         limite_credito: campos.limite_credito || "0",
-      });
+      };
+      if (novo) {
+        await api.post("/api/comercial/clientes", corpo);
+      } else {
+        // O número fica de fora: identifica o registo nos documentos já
+        // emitidos e é o que forma a conta corrente.
+        await api.patch(`/api/comercial/clientes/${registo.id}`, {
+          nome: corpo.nome,
+          nif: corpo.nif,
+          morada: corpo.morada,
+          localidade: corpo.localidade,
+          provincia: corpo.provincia,
+          telefone: corpo.telefone,
+          email: corpo.email,
+        });
+      }
       aoGravar();
     } catch (e2) {
       setErro(
@@ -212,7 +289,7 @@ function FormularioCliente({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(720px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
-              Novo cliente
+              {novo ? "Novo cliente" : `Alterar ${registo.nome}`}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button

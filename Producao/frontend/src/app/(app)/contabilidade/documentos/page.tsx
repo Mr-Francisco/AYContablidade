@@ -1,11 +1,13 @@
 "use client";
 
-import { Search } from "lucide-react";
-import { useDeferredValue, useMemo, useState } from "react";
+import { Plus, Search } from "lucide-react";
+import { type FormEvent, useDeferredValue, useMemo, useState } from "react";
 
 import {
   ACarregar,
+  Alerta,
   BarraFiltros,
+  Botao,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -19,14 +21,53 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import {
+  AccoesDaLinha,
+  ConfirmarEliminar,
+  DialogoMestre,
+} from "@/components/ui/CrudMestre";
+import { useAuth } from "@/contexts/AuthContext";
+import { api, ErroApi } from "@/lib/api";
 import { useDiarios, useDocumentos } from "@/lib/hooks";
+import type { DocumentoContabilistico } from "@/types";
+
+const ROTA = "/api/contabilidade/documentos";
 
 export default function Documentos() {
   const { diarios } = useDiarios();
-  const { documentos, isLoading } = useDocumentos();
+  const { documentos, isLoading, mutate } = useDocumentos();
+  const { pode } = useAuth();
   const [diario, setDiario] = useState("todos");
   const [procura, setProcura] = useState("");
   const procuraAdiada = useDeferredValue(procura);
+  const [emEdicao, setEmEdicao] = useState<DocumentoContabilistico | null>(
+    null,
+  );
+  const [aCriar, setACriar] = useState(false);
+  const [aApagar, setAApagar] = useState<DocumentoContabilistico | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const podeGerir = pode("contab.plano");
+
+  async function eliminar() {
+    if (!aApagar) return;
+    setErro(null);
+    setOcupado(true);
+    try {
+      await api.delete(`${ROTA}/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApagar(null);
+    }
+  }
 
   const nomeDiario = useMemo(() => {
     const m = new Map<string, string>();
@@ -51,7 +92,17 @@ export default function Documentos() {
       <CabecalhoPagina
         titulo="Documentos"
         descricao="Documentos afectos a cada diário, com as contas de débito e crédito por omissão."
-        accoes={<Selo cor="#3d7fe0">{documentos.length} documentos</Selo>}
+        accoes={
+          <div className="flex items-center gap-3">
+            <Selo cor="#3d7fe0">{documentos.length} documentos</Selo>
+            {podeGerir && (
+              <Botao variante="primario" onClick={() => setACriar(true)}>
+                <Plus size={16} />
+                Novo documento
+              </Botao>
+            )}
+          </div>
+        }
       />
 
       <BarraFiltros className="mb-4">
@@ -86,6 +137,12 @@ export default function Documentos() {
         </Campo>
       </BarraFiltros>
 
+      {erro && (
+        <div className="mb-4">
+          <Alerta tipo="erro">{erro}</Alerta>
+        </div>
+      )}
+
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
@@ -103,6 +160,7 @@ export default function Documentos() {
                   <Th>Conta crédito</Th>
                   <Th>Retenção</Th>
                   <Th>Estado</Th>
+                  {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
@@ -132,6 +190,16 @@ export default function Documentos() {
                         {d.ativo ? "Activo" : "Inactivo"}
                       </Selo>
                     </Td>
+                    {podeGerir && (
+                      <Td>
+                        <AccoesDaLinha
+                          nome={`documento ${d.codigo}`}
+                          aoEditar={() => setEmEdicao(d)}
+                          aoApagar={() => setAApagar(d)}
+                          desactivado={ocupado}
+                        />
+                      </Td>
+                    )}
                   </Tr>
                 ))}
               </tbody>
@@ -139,6 +207,184 @@ export default function Documentos() {
           </EnvolveTabela>
         )}
       </Cartao>
+
+      {(aCriar || emEdicao) && (
+        <FormularioDocumento
+          documento={emEdicao}
+          diarios={diarios}
+          aoFechar={() => {
+            setACriar(false);
+            setEmEdicao(null);
+          }}
+          aoGravar={() => {
+            mutate();
+            setACriar(false);
+            setEmEdicao(null);
+          }}
+        />
+      )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar o documento ${aApagar?.codigo ?? ""}?`}
+        aoConfirmar={eliminar}
+        ocupado={ocupado}
+      >
+        Um documento <b>com movimentos não pode ser eliminado</b> — nesse caso o
+        servidor recusa e a alternativa é desactivá-lo, que o tira das escolhas
+        sem tocar no histórico.
+      </ConfirmarEliminar>
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+function FormularioDocumento({
+  documento,
+  diarios,
+  aoFechar,
+  aoGravar,
+}: {
+  documento: DocumentoContabilistico | null;
+  diarios: { codigo: string; nome: string }[];
+  aoFechar: () => void;
+  aoGravar: () => void;
+}) {
+  const novo = documento === null;
+  const [campos, setCampos] = useState({
+    codigo: documento?.codigo ?? "",
+    descricao: documento?.descricao ?? "",
+    diario_codigo: documento?.diario_codigo ?? diarios[0]?.codigo ?? "",
+    conta_debito: documento?.conta_debito ?? "",
+    conta_credito: documento?.conta_credito ?? "",
+    retencao: documento?.retencao ?? false,
+    ativo: documento?.ativo ?? true,
+  });
+  const [erro, setErro] = useState<string | null>(null);
+  const [aGravar, setAGravar] = useState(false);
+
+  function alterar(campo: string, valor: string | boolean) {
+    setCampos((c) => ({ ...c, [campo]: valor }));
+  }
+
+  async function submeter(e: FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    setAGravar(true);
+    const corpo = {
+      descricao: campos.descricao,
+      diario_codigo: campos.diario_codigo,
+      conta_debito: campos.conta_debito || null,
+      conta_credito: campos.conta_credito || null,
+      retencao: campos.retencao,
+      ativo: campos.ativo,
+    };
+    try {
+      if (novo) {
+        await api.post(ROTA, { ...corpo, codigo: campos.codigo });
+      } else {
+        await api.patch(`${ROTA}/${documento.id}`, corpo);
+      }
+      aoGravar();
+    } catch (e2) {
+      setErro(
+        e2 instanceof ErroApi
+          ? e2.mensagemUtilizador
+          : "Não foi possível gravar.",
+      );
+    } finally {
+      setAGravar(false);
+    }
+  }
+
+  return (
+    <DialogoMestre
+      titulo={novo ? "Novo documento" : `Alterar documento ${documento.codigo}`}
+      aoFechar={aoFechar}
+      aoSubmeter={submeter}
+      aGravar={aGravar}
+      erro={erro}
+    >
+      <Campo
+        rotulo="Código"
+        dica={
+          novo
+            ? "Entra no nº de operação de cada movimento."
+            : "Não se altera: os movimentos guardam-no."
+        }
+      >
+        <Entrada
+          value={campos.codigo}
+          onChange={(e) => alterar("codigo", e.target.value)}
+          disabled={!novo}
+          required
+          maxLength={10}
+          className="tabular"
+        />
+      </Campo>
+
+      <Campo rotulo="Descrição">
+        <Entrada
+          value={campos.descricao}
+          onChange={(e) => alterar("descricao", e.target.value)}
+          required
+          maxLength={120}
+        />
+      </Campo>
+
+      <Campo rotulo="Diário" className="sm:col-span-2">
+        <Selector
+          valor={campos.diario_codigo}
+          aoMudar={(v) => alterar("diario_codigo", v)}
+          opcoes={diarios.map((d) => ({
+            valor: d.codigo,
+            rotulo: `${d.codigo} — ${d.nome}`,
+          }))}
+        />
+      </Campo>
+
+      <Campo
+        rotulo="Conta de débito"
+        dica="Opcional. Sugerida ao lançar com este documento."
+      >
+        <Entrada
+          value={campos.conta_debito}
+          onChange={(e) => alterar("conta_debito", e.target.value)}
+          maxLength={20}
+          className="tabular"
+        />
+      </Campo>
+
+      <Campo rotulo="Conta de crédito" dica="Opcional.">
+        <Entrada
+          value={campos.conta_credito}
+          onChange={(e) => alterar("conta_credito", e.target.value)}
+          maxLength={20}
+          className="tabular"
+        />
+      </Campo>
+
+      <label className="flex cursor-pointer items-center gap-2 text-sm sm:col-span-2">
+        <input
+          type="checkbox"
+          checked={campos.retencao}
+          onChange={(e) => alterar("retencao", e.target.checked)}
+          className="size-4 accent-[var(--color-marca)]"
+        />
+        Sujeito a retenção na fonte
+      </label>
+
+      <label className="flex cursor-pointer items-center gap-2 text-sm sm:col-span-2">
+        <input
+          type="checkbox"
+          checked={campos.ativo}
+          onChange={(e) => alterar("ativo", e.target.checked)}
+          className="size-4 accent-[var(--color-marca)]"
+        />
+        Activo — um documento inactivo deixa de ser oferecido em movimentos
+        novos, e o histórico continua a ler-se.
+      </label>
+    </DialogoMestre>
   );
 }

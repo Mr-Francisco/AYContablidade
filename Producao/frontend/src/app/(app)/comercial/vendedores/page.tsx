@@ -23,6 +23,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -32,6 +33,31 @@ export default function Vendedores() {
   const { empresa, pode } = useAuth();
   const moeda = empresa?.moeda ?? "Kz";
   const [novoAberto, setNovoAberto] = useState(false);
+  const [emEdicao, setEmEdicao] = useState<Vendedor | null>(null);
+  const [aApagar, setAApagar] = useState<Vendedor | null>(null);
+  const [erroAccao, setErroAccao] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const podeGerir = pode("comercial.gerir");
+
+  async function eliminarVendedor() {
+    if (!aApagar) return;
+    setErroAccao(null);
+    setOcupado(true);
+    try {
+      await api.delete(`/api/comercial/vendedores/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErroAccao(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApagar(null);
+    }
+  }
 
   const {
     data: vendedores,
@@ -74,6 +100,7 @@ export default function Vendedores() {
                     <Th>Tipo de comissão</Th>
                     <Th numerico>Valor</Th>
                     <Th>Estado</Th>
+                    {podeGerir && <Th> </Th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -99,6 +126,16 @@ export default function Vendedores() {
                           {v.estado === "activo" ? "Activo" : "Inactivo"}
                         </Selo>
                       </Td>
+                      {podeGerir && (
+                        <Td>
+                          <AccoesDaLinha
+                            nome={`vendedor ${v.nome}`}
+                            aoEditar={() => setEmEdicao(v)}
+                            aoApagar={() => setAApagar(v)}
+                            desactivado={ocupado}
+                          />
+                        </Td>
+                      )}
                     </Tr>
                   ))}
                 </tbody>
@@ -147,30 +184,58 @@ export default function Vendedores() {
         </Cartao>
       </div>
 
-      {novoAberto && (
+      {(novoAberto || emEdicao) && (
         <FormularioVendedor
-          aoFechar={() => setNovoAberto(false)}
+          vendedor={emEdicao}
+          aoFechar={() => {
+            setNovoAberto(false);
+            setEmEdicao(null);
+          }}
           aoGravar={() => {
             setNovoAberto(false);
+            setEmEdicao(null);
             mutate();
             mutateComissoes();
           }}
         />
       )}
+
+      {erroAccao && (
+        <div className="mt-4">
+          <Alerta tipo="erro">{erroAccao}</Alerta>
+        </div>
+      )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar o vendedor ${aApagar?.nome ?? ""}?`}
+        aoConfirmar={eliminarVendedor}
+        ocupado={ocupado}
+      >
+        Um vendedor <b>com vendas associadas não pode ser eliminado</b> — as
+        comissões já calculadas ficariam sem destinatário. Nesse caso o servidor
+        recusa, e a alternativa é pô-lo inactivo.
+      </ConfirmarEliminar>
     </>
   );
 }
 
 function FormularioVendedor({
+  vendedor,
   aoFechar,
   aoGravar,
 }: {
+  vendedor: Vendedor | null;
   aoFechar: () => void;
   aoGravar: () => void;
 }) {
-  const [nome, setNome] = useState("");
-  const [tipoComissao, setTipoComissao] = useState("percentagem");
-  const [valor, setValor] = useState("3");
+  const novo = vendedor === null;
+  const [nome, setNome] = useState(vendedor?.nome ?? "");
+  const [tipoComissao, setTipoComissao] = useState<string>(
+    vendedor?.tipo_comissao ?? "percentagem",
+  );
+  const [valor, setValor] = useState(vendedor?.comissao_perc ?? "3");
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
 
@@ -179,11 +244,16 @@ function FormularioVendedor({
     setErro(null);
     setAGravar(true);
     try {
-      await api.post("/api/comercial/vendedores", {
+      const corpo = {
         nome: nome.trim(),
         tipo_comissao: tipoComissao,
         comissao_perc: valor || "0",
-      });
+      };
+      if (novo) {
+        await api.post("/api/comercial/vendedores", corpo);
+      } else {
+        await api.patch(`/api/comercial/vendedores/${vendedor.id}`, corpo);
+      }
       aoGravar();
     } catch (e2) {
       setErro(
@@ -203,7 +273,7 @@ function FormularioVendedor({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(500px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
-              Novo vendedor
+              {novo ? "Novo vendedor" : `Alterar ${vendedor.nome}`}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button

@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.api.deps import DB, EmpresaAtual, exigir_cap
 from src.db.models.comercial import TIPOS_DOC, Venda, VendaLinha, Vendedor
 from src.db.models.terceiros import PROVINCIAS, Terceiro
@@ -120,7 +121,10 @@ def listar_clientes(empresa: EmpresaAtual, db: DB, procura: str | None = None) -
     return [
         {"id": c.id, "numero": c.numero, "nome": c.nome, "nif": c.nif,
          "localidade": c.localidade, "telefone": c.telefone, "conta": c.conta,
-         "estado": c.estado}
+         "estado": c.estado,
+         # Acrescentados para o formulário de alteração poder vir preenchido.
+         # Aditivo: quem já consumia a rota não nota diferença.
+         "morada": c.morada, "provincia": c.provincia, "email": c.email}
         for c in db.scalars(q.order_by(Terceiro.numero)).all()
     ]
 
@@ -160,6 +164,90 @@ def criar_vendedor(
     db.commit()
     db.refresh(v)
     return {"id": v.id, "nome": v.nome}
+
+
+class TerceiroAtualizar(BaseModel):
+    """O NÚMERO não se altera: é o que identifica o cliente nos documentos já
+    emitidos e o que forma a conta corrente."""
+
+    nome: str | None = Field(default=None, min_length=1, max_length=200)
+    nif: str | None = None
+    morada: str | None = None
+    localidade: str | None = None
+    provincia: str | None = None
+    pais: str | None = None
+    telefone: str | None = None
+    email: str | None = None
+    conta: str | None = None
+    estado: str | None = None
+
+
+class VendedorAtualizar(BaseModel):
+    nome: str | None = Field(default=None, min_length=1, max_length=200)
+    tipo_comissao: str | None = None
+    comissao_perc: Decimal | None = None
+    estado: str | None = None
+
+
+@router.patch("/clientes/{cliente_id}", dependencies=[GERIR])
+def actualizar_cliente(
+    request: Request, cliente_id: UUID, dados: TerceiroAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    c = obter_da_empresa(db, Terceiro, cliente_id, empresa.id, nome="Cliente")
+    if c.tipo != "cliente":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente não encontrado.")
+    aplicar(c, dados)
+    db.commit()
+    db.refresh(c)
+    return {"id": c.id, "numero": c.numero, "nome": c.nome, "estado": c.estado}
+
+
+@router.delete("/clientes/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[GERIR])
+def remover_cliente(cliente_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Um cliente com documentos não se apaga.
+
+    A factura guarda o id do cliente e a conta corrente é construída a partir
+    dele. Apagar a ficha deixava documentos emitidos sem titular.
+    """
+    c = obter_da_empresa(db, Terceiro, cliente_id, empresa.id, nome="Cliente")
+    if c.tipo != "cliente":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente não encontrado.")
+    recusar_se_usado(
+        db,
+        [(select(Venda.id).where(Venda.cliente_id == c.id), "documentos de venda")],
+        o_que=f"O cliente {c.numero}",
+    )
+    db.delete(c)
+    db.commit()
+
+
+@router.patch("/vendedores/{vendedor_id}", dependencies=[GERIR])
+def actualizar_vendedor(
+    request: Request, vendedor_id: UUID, dados: VendedorAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    v = obter_da_empresa(db, Vendedor, vendedor_id, empresa.id, nome="Vendedor")
+    aplicar(v, dados)
+    db.commit()
+    db.refresh(v)
+    return {"id": v.id, "nome": v.nome, "estado": v.estado}
+
+
+@router.delete("/vendedores/{vendedor_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[GERIR])
+def remover_vendedor(vendedor_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Um vendedor com vendas não se apaga — as comissões já calculadas
+    deixariam de ter a quem ser atribuídas."""
+    v = obter_da_empresa(db, Vendedor, vendedor_id, empresa.id, nome="Vendedor")
+    recusar_se_usado(
+        db,
+        [(select(Venda.id).where(Venda.vendedor_id == v.id), "vendas associadas")],
+        o_que=f"O vendedor {v.nome}",
+    )
+    db.delete(v)
+    db.commit()
 
 
 # ---------------------------------------------------------------------------

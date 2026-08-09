@@ -23,6 +23,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import type { Terceiro } from "@/types";
@@ -39,6 +40,31 @@ export default function Fornecedores() {
   const { pode } = useAuth();
   const [procura, setProcura] = useState("");
   const [novoAberto, setNovoAberto] = useState(false);
+  const [emEdicao, setEmEdicao] = useState<Terceiro | null>(null);
+  const [aApagar, setAApagar] = useState<Terceiro | null>(null);
+  const [erroAccao, setErroAccao] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const podeGerir = pode("logistica.gerir");
+
+  async function eliminarRegisto() {
+    if (!aApagar) return;
+    setErroAccao(null);
+    setOcupado(true);
+    try {
+      await api.delete(`/api/compras/fornecedores/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErroAccao(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApagar(null);
+    }
+  }
 
   const chave = `/api/compras/fornecedores${procura.trim() ? `?procura=${encodeURIComponent(procura.trim())}` : ""}`;
   const { data, isLoading, mutate } = useSWR<Terceiro[]>(chave, buscador);
@@ -98,6 +124,7 @@ export default function Fornecedores() {
                   <Th>Telefone</Th>
                   <Th>Conta corrente</Th>
                   <Th>Estado</Th>
+                  {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
@@ -129,6 +156,16 @@ export default function Fornecedores() {
                         {f.estado === "activo" ? "Activo" : "Inactivo"}
                       </Selo>
                     </Td>
+                    {podeGerir && (
+                      <Td>
+                        <AccoesDaLinha
+                          nome={`fornecedor ${f.numero}`}
+                          aoEditar={() => setEmEdicao(f)}
+                          aoApagar={() => setAApagar(f)}
+                          desactivado={ocupado}
+                        />
+                      </Td>
+                    )}
                   </Tr>
                 ))}
               </tbody>
@@ -137,32 +174,57 @@ export default function Fornecedores() {
         )}
       </Cartao>
 
-      {novoAberto && (
+      {(novoAberto || emEdicao) && (
         <FormularioFornecedor
-          aoFechar={() => setNovoAberto(false)}
+          registo={emEdicao}
+          aoFechar={() => {
+            setNovoAberto(false);
+            setEmEdicao(null);
+          }}
           aoGravar={() => {
             setNovoAberto(false);
+            setEmEdicao(null);
             mutate();
           }}
         />
       )}
+
+      {erroAccao && (
+        <div className="mt-4">
+          <Alerta tipo="erro">{erroAccao}</Alerta>
+        </div>
+      )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar fornecedor ${aApagar?.nome ?? ""}?`}
+        aoConfirmar={eliminarRegisto}
+        ocupado={ocupado}
+      >
+        Um fornecedor <b>com documentos de compra não pode ser eliminado</b>.
+        Nesse caso o servidor recusa.
+      </ConfirmarEliminar>
     </>
   );
 }
 
 function FormularioFornecedor({
+  registo,
   aoFechar,
   aoGravar,
 }: {
+  registo: Terceiro | null;
   aoFechar: () => void;
   aoGravar: () => void;
 }) {
+  const novo = registo === null;
   const [campos, setCampos] = useState({
-    nome: "",
-    nif: "",
-    localidade: "",
-    telefone: "",
-    email: "",
+    nome: registo?.nome ?? "",
+    nif: registo?.nif ?? "",
+    localidade: registo?.localidade ?? "",
+    telefone: registo?.telefone ?? "",
+    email: registo?.email ?? "",
     condicoes_pagamento: "30 dias",
   });
   const [erro, setErro] = useState<string | null>(null);
@@ -177,11 +239,24 @@ function FormularioFornecedor({
     setErro(null);
     setAGravar(true);
     try {
-      await api.post("/api/compras/fornecedores", {
+      const corpo = {
         ...campos,
         nome: campos.nome.trim(),
         nif: campos.nif.trim() || null,
-      });
+      };
+      if (novo) {
+        await api.post("/api/compras/fornecedores", corpo);
+      } else {
+        // O número fica de fora: identifica o fornecedor nos documentos já
+        // registados e é o que forma a conta corrente.
+        await api.patch(`/api/compras/fornecedores/${registo.id}`, {
+          nome: corpo.nome,
+          nif: corpo.nif,
+          localidade: corpo.localidade,
+          telefone: corpo.telefone,
+          email: corpo.email,
+        });
+      }
       aoGravar();
     } catch (e2) {
       setErro(
@@ -201,7 +276,7 @@ function FormularioFornecedor({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(620px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
-              Novo fornecedor
+              {novo ? "Novo fornecedor" : `Alterar ${registo.nome}`}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button

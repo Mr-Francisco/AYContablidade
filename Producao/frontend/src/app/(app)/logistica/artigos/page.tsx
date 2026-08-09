@@ -23,6 +23,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -39,6 +40,31 @@ export default function Artigos() {
   const [procura, setProcura] = useState("");
   const [vista, setVista] = useState("familia");
   const [novoAberto, setNovoAberto] = useState(false);
+  const [emEdicao, setEmEdicao] = useState<Artigo | null>(null);
+  const [aApagar, setAApagar] = useState<Artigo | null>(null);
+  const [erroAccao, setErroAccao] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  const podeGerir = pode("logistica.gerir");
+
+  async function eliminarArtigo() {
+    if (!aApagar) return;
+    setErroAccao(null);
+    setOcupado(true);
+    try {
+      await api.delete(`/api/logistica/artigos/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErroAccao(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApagar(null);
+    }
+  }
 
   const { data, isLoading, mutate } = useSWR<Artigo[]>(
     "/api/logistica/artigos",
@@ -127,7 +153,15 @@ export default function Artigos() {
         </Cartao>
       ) : vista === "lista" ? (
         <Cartao className="p-0">
-          <TabelaArtigos artigos={filtrados} moeda={moeda} />
+          <TabelaArtigos
+            artigos={filtrados}
+            moeda={moeda}
+            accoes={
+              podeGerir
+                ? { editar: setEmEdicao, apagar: setAApagar, ocupado }
+                : undefined
+            }
+          />
         </Cartao>
       ) : (
         <div className="flex flex-col gap-4">
@@ -139,21 +173,53 @@ export default function Artigos() {
                   {artigos.length} {artigos.length === 1 ? "artigo" : "artigos"}
                 </span>
               </div>
-              <TabelaArtigos artigos={artigos} moeda={moeda} />
+              <TabelaArtigos
+                artigos={artigos}
+                moeda={moeda}
+                accoes={
+                  podeGerir
+                    ? { editar: setEmEdicao, apagar: setAApagar, ocupado }
+                    : undefined
+                }
+              />
             </Cartao>
           ))}
         </div>
       )}
 
-      {novoAberto && (
+      {(novoAberto || emEdicao) && (
         <FormularioArtigo
-          aoFechar={() => setNovoAberto(false)}
+          artigo={emEdicao}
+          aoFechar={() => {
+            setNovoAberto(false);
+            setEmEdicao(null);
+          }}
           aoGravar={() => {
             setNovoAberto(false);
+            setEmEdicao(null);
             mutate();
           }}
         />
       )}
+
+      {erroAccao && (
+        <div className="mt-4">
+          <Alerta tipo="erro">{erroAccao}</Alerta>
+        </div>
+      )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar o artigo ${aApagar?.codigo ?? ""}?`}
+        aoConfirmar={eliminarArtigo}
+        ocupado={ocupado}
+      >
+        Um artigo{" "}
+        <b>com movimentos de stock ou em documentos não pode ser eliminado</b> —
+        as existências ficariam sem ficha. Nesse caso o servidor recusa, e a
+        alternativa é pô-lo inactivo.
+      </ConfirmarEliminar>
     </>
   );
 }
@@ -161,9 +227,16 @@ export default function Artigos() {
 function TabelaArtigos({
   artigos,
   moeda,
+  accoes,
 }: {
   artigos: Artigo[];
   moeda: string;
+  /** Ausente para quem não pode gerir — a coluna nem aparece. */
+  accoes?: {
+    editar: (a: Artigo) => void;
+    apagar: (a: Artigo) => void;
+    ocupado: boolean;
+  };
 }) {
   return (
     <EnvolveTabela className="rounded-none border-0">
@@ -179,6 +252,7 @@ function TabelaArtigos({
             <Th numerico>IVA</Th>
             <Th numerico>Stock mín.</Th>
             <Th>Estado</Th>
+            {accoes && <Th> </Th>}
           </tr>
         </thead>
         <tbody>
@@ -199,6 +273,16 @@ function TabelaArtigos({
                   {a.estado === "activo" ? "Activo" : "Inactivo"}
                 </Selo>
               </Td>
+              {accoes && (
+                <Td>
+                  <AccoesDaLinha
+                    nome={`artigo ${a.codigo}`}
+                    aoEditar={() => accoes.editar(a)}
+                    aoApagar={() => accoes.apagar(a)}
+                    desactivado={accoes.ocupado}
+                  />
+                </Td>
+              )}
             </Tr>
           ))}
         </tbody>
@@ -211,12 +295,15 @@ const SEPARADOR =
   "rounded-lg px-3 py-1.5 text-sm font-semibold text-texto-suave data-[state=active]:bg-superficie data-[state=active]:text-texto data-[state=active]:shadow-suave";
 
 function FormularioArtigo({
+  artigo,
   aoFechar,
   aoGravar,
 }: {
+  artigo: Artigo | null;
   aoFechar: () => void;
   aoGravar: () => void;
 }) {
+  const novo = artigo === null;
   const { contas } = useContas({ soMovimento: true });
   // Mesma chave da listagem: o SWR devolve da cache, não repete o pedido.
   const { data: existentes } = useSWR<Artigo[]>(
@@ -231,21 +318,21 @@ function FormularioArtigo({
   }, [existentes]);
 
   const [campos, setCampos] = useState({
-    codigo: "",
-    descricao: "",
-    tipo_artigo: "Mercadoria",
-    familia: "",
-    subfamilia: "",
-    unidade: "Un",
-    cod_barras: "",
-    estado: "activo",
-    preco_venda: "0",
-    preco_compra: "0",
-    taxa_iva: "14",
-    stock_min: "0",
-    conta_existencia: "",
-    conta_custo: "",
-    conta_proveito: "",
+    codigo: artigo?.codigo ?? "",
+    descricao: artigo?.descricao ?? "",
+    tipo_artigo: artigo?.tipo_artigo ?? "Mercadoria",
+    familia: artigo?.familia ?? "",
+    subfamilia: artigo?.subfamilia ?? "",
+    unidade: artigo?.unidade ?? "Un",
+    cod_barras: artigo?.cod_barras ?? "",
+    estado: artigo?.estado ?? "activo",
+    preco_venda: artigo?.preco_venda ?? "0",
+    preco_compra: artigo?.preco_compra ?? "0",
+    taxa_iva: artigo?.taxa_iva ?? "14",
+    stock_min: artigo?.stock_min ?? "0",
+    conta_existencia: artigo?.conta_existencia ?? "",
+    conta_custo: artigo?.conta_custo ?? "",
+    conta_proveito: artigo?.conta_proveito ?? "",
   });
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
@@ -269,11 +356,20 @@ function FormularioArtigo({
     if (!campos.descricao.trim()) return setErro("Indique a descrição.");
     setAGravar(true);
     try {
-      await api.post("/api/logistica/artigos", {
+      const corpo = {
         ...campos,
-        codigo: campos.codigo.trim() || null,
         descricao: campos.descricao.trim(),
-      });
+      };
+      if (novo) {
+        await api.post("/api/logistica/artigos", {
+          ...corpo,
+          codigo: campos.codigo.trim() || null,
+        });
+      } else {
+        // O código fica de fora: é o que aparece nos documentos já emitidos.
+        const { codigo: _codigo, ...semCodigo } = corpo;
+        await api.patch(`/api/logistica/artigos/${artigo.id}`, semCodigo);
+      }
       aoGravar();
     } catch (e2) {
       setErro(
@@ -298,7 +394,7 @@ function FormularioArtigo({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(760px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
-              Novo artigo
+              {novo ? "Novo artigo" : `Alterar ${artigo.codigo}`}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button

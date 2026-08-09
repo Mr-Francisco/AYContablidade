@@ -298,6 +298,10 @@ export interface Terceiro {
   telefone: string | null;
   conta: string | null;
   estado: string;
+  /** Só na listagem, para o formulário de alteração vir preenchido. */
+  morada?: string | null;
+  provincia?: string | null;
+  email?: string | null;
 }
 
 export interface Vendedor {
@@ -372,6 +376,11 @@ export interface Artigo {
   taxa_iva: string;
   stock_min: string;
   estado: string;
+  /** Contas por omissão. A API já as devolvia; declaradas aqui para o
+   *  formulário de alteração as poder preencher. */
+  conta_existencia: string | null;
+  conta_custo: string | null;
+  conta_proveito: string | null;
 }
 
 export interface Armazem {

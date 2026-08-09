@@ -20,18 +20,43 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import type { Armazem } from "@/types";
 
+const ROTA = "/api/logistica/armazens";
+
 export default function Armazens() {
   const { pode } = useAuth();
   const [novoAberto, setNovoAberto] = useState(false);
+  const [emEdicao, setEmEdicao] = useState<Armazem | null>(null);
+  const [aApagar, setAApagar] = useState<Armazem | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
 
-  const { data, isLoading, mutate } = useSWR<Armazem[]>(
-    "/api/logistica/armazens",
-    buscador,
-  );
+  const podeGerir = pode("logistica.gerir");
+
+  const { data, isLoading, mutate } = useSWR<Armazem[]>(ROTA, buscador);
+
+  async function eliminar() {
+    if (!aApagar) return;
+    setErro(null);
+    setOcupado(true);
+    try {
+      await api.delete(`${ROTA}/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApagar(null);
+    }
+  }
 
   return (
     <>
@@ -48,6 +73,12 @@ export default function Armazens() {
         }
       />
 
+      {erro && (
+        <div className="mb-4">
+          <Alerta tipo="erro">{erro}</Alerta>
+        </div>
+      )}
+
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
@@ -61,6 +92,7 @@ export default function Armazens() {
                   <Th>Código</Th>
                   <Th>Nome</Th>
                   <Th>Localização</Th>
+                  {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
@@ -69,6 +101,16 @@ export default function Armazens() {
                     <Td className="tabular font-bold">{a.codigo}</Td>
                     <Td className="font-semibold">{a.nome}</Td>
                     <Td className="text-texto-suave">{a.localizacao || "—"}</Td>
+                    {podeGerir && (
+                      <Td>
+                        <AccoesDaLinha
+                          nome={`armazém ${a.codigo}`}
+                          aoEditar={() => setEmEdicao(a)}
+                          aoApagar={() => setAApagar(a)}
+                          desactivado={ocupado}
+                        />
+                      </Td>
+                    )}
                   </Tr>
                 ))}
               </tbody>
@@ -77,29 +119,49 @@ export default function Armazens() {
         )}
       </Cartao>
 
-      {novoAberto && (
+      {(novoAberto || emEdicao) && (
         <FormularioArmazem
-          aoFechar={() => setNovoAberto(false)}
+          armazem={emEdicao}
+          aoFechar={() => {
+            setNovoAberto(false);
+            setEmEdicao(null);
+          }}
           aoGravar={() => {
             setNovoAberto(false);
+            setEmEdicao(null);
             mutate();
           }}
         />
       )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar o armazém ${aApagar?.codigo ?? ""}?`}
+        aoConfirmar={eliminar}
+        ocupado={ocupado}
+      >
+        Um armazém <b>com movimentos de stock não pode ser eliminado</b> — as
+        existências ficariam atribuídas a um destino que já não existe. Nesse
+        caso o servidor recusa.
+      </ConfirmarEliminar>
     </>
   );
 }
 
 function FormularioArmazem({
+  armazem,
   aoFechar,
   aoGravar,
 }: {
+  armazem: Armazem | null;
   aoFechar: () => void;
   aoGravar: () => void;
 }) {
-  const [codigo, setCodigo] = useState("");
-  const [nome, setNome] = useState("");
-  const [localizacao, setLocalizacao] = useState("");
+  const novo = armazem === null;
+  const [codigo, setCodigo] = useState(armazem?.codigo ?? "");
+  const [nome, setNome] = useState(armazem?.nome ?? "");
+  const [localizacao, setLocalizacao] = useState(armazem?.localizacao ?? "");
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
 
@@ -108,11 +170,20 @@ function FormularioArmazem({
     setErro(null);
     setAGravar(true);
     try {
-      await api.post("/api/logistica/armazens", {
-        codigo: codigo.trim(),
-        nome: nome.trim(),
-        localizacao: localizacao.trim() || null,
-      });
+      if (novo) {
+        await api.post(ROTA, {
+          codigo: codigo.trim(),
+          nome: nome.trim(),
+          localizacao: localizacao.trim() || null,
+        });
+      } else {
+        // O código fica de fora: é o que identifica o armazém nos movimentos
+        // já registados.
+        await api.patch(`${ROTA}/${armazem.id}`, {
+          nome: nome.trim(),
+          localizacao: localizacao.trim() || null,
+        });
+      }
       aoGravar();
     } catch (e2) {
       setErro(
@@ -132,7 +203,7 @@ function FormularioArmazem({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(480px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
-              Novo armazém
+              {novo ? "Novo armazém" : `Alterar armazém ${armazem.codigo}`}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
@@ -146,12 +217,18 @@ function FormularioArmazem({
           </div>
 
           <form onSubmit={submeter} className="flex flex-col gap-3 p-5">
-            <Campo rotulo="Código">
+            <Campo
+              rotulo="Código"
+              dica={
+                novo ? undefined : "Não se altera: os movimentos guardam-no."
+              }
+            >
               <Entrada
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
                 required
-                autoFocus
+                disabled={!novo}
+                autoFocus={novo}
                 className="tabular"
               />
             </Campo>

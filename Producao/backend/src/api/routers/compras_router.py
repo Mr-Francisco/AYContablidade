@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.api.deps import DB, EmpresaAtual, exigir_cap
 from src.db.models.comercial import Compra, CompraLinha
 from src.db.models.terceiros import Terceiro
@@ -81,7 +82,9 @@ def listar_fornecedores(
     return [
         {"id": f.id, "numero": f.numero, "nome": f.nome, "nif": f.nif,
          "localidade": f.localidade, "telefone": f.telefone, "conta": f.conta,
-         "estado": f.estado}
+         "estado": f.estado,
+         # Acrescentados para o formulário de alteração poder vir preenchido.
+         "morada": f.morada, "provincia": f.provincia, "email": f.email}
         for f in db.scalars(q.order_by(Terceiro.numero)).all()
     ]
 
@@ -104,6 +107,57 @@ def criar_fornecedor(
     db.commit()
     db.refresh(f)
     return {"id": f.id, "numero": f.numero, "nome": f.nome}
+
+
+class FornecedorAtualizar(BaseModel):
+    """O NÚMERO não se altera: identifica o fornecedor nos documentos já
+    registados e forma a conta corrente."""
+
+    nome: str | None = Field(default=None, min_length=1, max_length=200)
+    nif: str | None = None
+    morada: str | None = None
+    localidade: str | None = None
+    provincia: str | None = None
+    pais: str | None = None
+    telefone: str | None = None
+    email: str | None = None
+    conta: str | None = None
+    estado: str | None = None
+
+
+@router.patch("/fornecedores/{fornecedor_id}", dependencies=[GERIR])
+def actualizar_fornecedor(
+    request: Request, fornecedor_id: UUID, dados: FornecedorAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    f = obter_da_empresa(db, Terceiro, fornecedor_id, empresa.id,
+                         nome="Fornecedor")
+    if f.tipo != "fornecedor":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Fornecedor não encontrado.")
+    aplicar(f, dados)
+    db.commit()
+    db.refresh(f)
+    return {"id": f.id, "numero": f.numero, "nome": f.nome, "estado": f.estado}
+
+
+@router.delete("/fornecedores/{fornecedor_id}",
+               status_code=status.HTTP_204_NO_CONTENT, dependencies=[GERIR])
+def remover_fornecedor(fornecedor_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Um fornecedor com compras não se apaga."""
+    from src.db.models.comercial import Compra
+
+    f = obter_da_empresa(db, Terceiro, fornecedor_id, empresa.id,
+                         nome="Fornecedor")
+    if f.tipo != "fornecedor":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Fornecedor não encontrado.")
+    recusar_se_usado(
+        db,
+        [(select(Compra.id).where(Compra.fornecedor_id == f.id),
+          "documentos de compra")],
+        o_que=f"O fornecedor {f.numero}",
+    )
+    db.delete(f)
+    db.commit()
 
 
 @router.get("/documentos")

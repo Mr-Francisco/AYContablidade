@@ -1,12 +1,13 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
-import { Dialog } from "radix-ui";
+import { CircleAlert, Plus, Trash2, X } from "lucide-react";
+import { AlertDialog, Dialog } from "radix-ui";
 import { useState } from "react";
 import useSWR from "swr";
 
 import {
   ACarregar,
+  Alerta,
   BarraFiltros,
   Botao,
   CabecalhoPagina,
@@ -23,7 +24,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
-import { buscador } from "@/lib/api";
+import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
 import { useDiarios, useExercicios } from "@/lib/hooks";
 import type { Lancamento } from "@/types";
@@ -219,6 +220,7 @@ export default function Movimentos() {
           id={detalhe}
           moeda={moeda}
           aoFechar={() => setDetalhe(null)}
+          aoMudar={mutate}
         />
       )}
     </>
@@ -229,15 +231,60 @@ function DetalheLancamento({
   id,
   moeda,
   aoFechar,
+  aoMudar,
 }: {
   id: string;
   moeda: string;
   aoFechar: () => void;
+  aoMudar: () => void;
 }) {
-  const { data, isLoading } = useSWR<Lancamento>(
+  const { pode } = useAuth();
+  const { data, isLoading, mutate } = useSWR<Lancamento>(
     `/api/contabilidade/lancamentos/${id}`,
     buscador,
   );
+
+  const [erro, setErro] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [aApagar, setAApagar] = useState(false);
+
+  const podeLancar = pode("contab.lancar");
+
+  async function integrar() {
+    setErro(null);
+    setOcupado(true);
+    try {
+      await api.post(`/api/contabilidade/lancamentos/${id}/integrar`, {});
+      mutate();
+      aoMudar();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível integrar.",
+      );
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function eliminar() {
+    setErro(null);
+    setOcupado(true);
+    try {
+      await api.delete(`/api/contabilidade/lancamentos/${id}`);
+      aoMudar();
+      aoFechar();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+      setOcupado(false);
+      setAApagar(false);
+    }
+  }
 
   return (
     <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
@@ -283,6 +330,37 @@ function DetalheLancamento({
                   <p className="mb-4 text-sm text-texto-suave">
                     {data.descricao}
                   </p>
+                )}
+
+                {/* Um movimento diferido não conta em lado nenhum — nem no
+                    balancete, nem no razão, nem nos apuramentos — enquanto não
+                    for integrado. Sem esta acção ficava preso, e o utilizador
+                    via um estado que não conseguia mudar. */}
+                {data.diferido && podeLancar && (
+                  <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--color-aviso)]/40 bg-[var(--color-aviso)]/8 px-4 py-3">
+                    <CircleAlert
+                      size={17}
+                      className="shrink-0 text-[var(--color-aviso)]"
+                    />
+                    <p className="min-w-0 flex-1 text-sm leading-relaxed">
+                      <b>Pendente de integração.</b> Não entra no balancete, no
+                      razão, no extracto nem nos apuramentos até ser integrado.
+                    </p>
+                    <Botao
+                      variante="primario"
+                      tamanho="pequeno"
+                      onClick={integrar}
+                      disabled={ocupado}
+                    >
+                      {ocupado ? "A integrar…" : "Integrar"}
+                    </Botao>
+                  </div>
+                )}
+
+                {erro && (
+                  <div className="mb-4">
+                    <Alerta tipo="erro">{erro}</Alerta>
+                  </div>
                 )}
 
                 <EnvolveTabela>
@@ -334,6 +412,60 @@ function DetalheLancamento({
               </>
             )}
           </div>
+
+          {podeLancar && data && (
+            <div className="flex justify-between gap-2 border-t border-borda px-5 py-3.5">
+              <Botao
+                variante="perigo"
+                tamanho="pequeno"
+                onClick={() => setAApagar(true)}
+                disabled={ocupado}
+              >
+                <Trash2 size={14} />
+                Eliminar
+              </Botao>
+              <Dialog.Close asChild>
+                <Botao variante="neutro" tamanho="pequeno">
+                  Fechar
+                </Botao>
+              </Dialog.Close>
+            </div>
+          )}
+
+          <AlertDialog.Root open={aApagar} onOpenChange={setAApagar}>
+            <AlertDialog.Portal>
+              <AlertDialog.Overlay className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" />
+              <AlertDialog.Content className="fixed left-1/2 top-1/2 z-[60] w-[min(28rem,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-borda bg-superficie p-6 shadow-forte">
+                <AlertDialog.Title className="text-lg font-semibold">
+                  Eliminar o movimento {data?.numero_op ?? ""}?
+                </AlertDialog.Title>
+                <AlertDialog.Description className="mt-2 text-sm leading-relaxed text-texto-suave">
+                  As linhas desaparecem com ele e os mapas passam a ser
+                  calculados sem este movimento.
+                  {data && !data.diferido && (
+                    <>
+                      {" "}
+                      <b>Este já está integrado</b> — o balancete, o razão e os
+                      apuramentos vão mudar.
+                    </>
+                  )}{" "}
+                  Não há como desfazer.
+                </AlertDialog.Description>
+                <div className="mt-5 flex justify-end gap-2">
+                  <AlertDialog.Cancel asChild>
+                    <Botao variante="neutro">Manter</Botao>
+                  </AlertDialog.Cancel>
+                  <Botao
+                    variante="perigo"
+                    onClick={eliminar}
+                    disabled={ocupado}
+                  >
+                    {ocupado ? "A eliminar…" : "Eliminar"}
+                  </Botao>
+                </div>
+              </AlertDialog.Content>
+            </AlertDialog.Portal>
+          </AlertDialog.Root>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

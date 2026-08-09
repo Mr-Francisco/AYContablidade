@@ -21,6 +21,7 @@ from src.db.models.contabilidade import (
     DocumentoContabilistico,
     Fluxo,
     Lancamento,
+    LancamentoLinha,
 )
 from src.services import contabilidade as svc
 from src.services.seed import importar_plano
@@ -72,9 +73,67 @@ class ContaCriar(BaseModel):
     classe_iva: str | None = None
 
 
+class ContaAtualizar(BaseModel):
+    """O CÓDIGO NÃO SE ALTERA. Os lançamentos guardam o código da conta, não a
+    sua chave interna — mudá-lo aqui deixava os movimentos antigos a apontar
+    para uma conta que já não existe. Para outro código, cria-se outra conta."""
+
+    nome: str | None = Field(default=None, min_length=1, max_length=200)
+    natureza: str | None = Field(default=None, max_length=1)
+    classe_iva: str | None = None
+    ativa: bool | None = None
+
+
 class ImportarPlanoPedido(BaseModel):
     linhas: list[dict]
     substituir: bool = False
+
+
+class DiarioPedido(BaseModel):
+    codigo: str = Field(min_length=1, max_length=10)
+    nome: str = Field(min_length=1, max_length=120)
+    categoria: str = Field(min_length=1, max_length=30)
+    ativo: bool = True
+
+
+class DiarioAtualizar(BaseModel):
+    nome: str | None = Field(default=None, min_length=1, max_length=120)
+    categoria: str | None = Field(default=None, max_length=30)
+    ativo: bool | None = None
+
+
+class DocumentoPedido(BaseModel):
+    codigo: str = Field(min_length=1, max_length=10)
+    descricao: str = Field(min_length=1, max_length=120)
+    diario_codigo: str = Field(min_length=1, max_length=10)
+    conta_debito: str | None = Field(default=None, max_length=20)
+    conta_credito: str | None = Field(default=None, max_length=20)
+    retencao: bool = False
+    ativo: bool = True
+
+
+class DocumentoAtualizar(BaseModel):
+    descricao: str | None = Field(default=None, min_length=1, max_length=120)
+    diario_codigo: str | None = Field(default=None, max_length=10)
+    conta_debito: str | None = Field(default=None, max_length=20)
+    conta_credito: str | None = Field(default=None, max_length=20)
+    retencao: bool | None = None
+    ativo: bool | None = None
+
+
+class CentroPedido(BaseModel):
+    codigo: str = Field(min_length=1, max_length=20)
+    nome: str = Field(min_length=1, max_length=120)
+    tipo: str = Field(default="custo", max_length=20)
+    responsavel: str | None = Field(default=None, max_length=120)
+    estado: str = Field(default="activo", max_length=20)
+
+
+class CentroAtualizar(BaseModel):
+    nome: str | None = Field(default=None, min_length=1, max_length=120)
+    tipo: str | None = Field(default=None, max_length=20)
+    responsavel: str | None = Field(default=None, max_length=120)
+    estado: str | None = Field(default=None, max_length=20)
 
 
 class FechoPedido(BaseModel):
@@ -162,6 +221,69 @@ def criar_conta(
     return {"id": c.id, "codigo": c.codigo, "nome": c.nome}
 
 
+@router.patch("/contas/{conta_id}", dependencies=[PLANO])
+def actualizar_conta(
+    request: Request, conta_id: UUID, dados: ContaAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    """Altera o nome, a natureza, a classe de IVA ou o estado de uma conta.
+
+    O código fica de fora de propósito — ver `ContaAtualizar`.
+    """
+    c = db.scalar(
+        select(Conta).where(Conta.id == conta_id, Conta.empresa_id == empresa.id)
+    )
+    if c is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Conta não encontrada.")
+
+    pedido = dados.model_dump(exclude_unset=True)
+    if not pedido:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Nada para alterar.")
+    for campo, valor in pedido.items():
+        setattr(c, campo, valor)
+    db.commit()
+    db.refresh(c)
+    return {"id": c.id, "codigo": c.codigo, "nome": c.nome, "ativa": c.ativa}
+
+
+@router.delete("/contas/{conta_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[PLANO])
+def remover_conta(conta_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Elimina uma conta que nunca foi usada.
+
+    UMA CONTA COM MOVIMENTOS NÃO SE APAGA. Os lançamentos guardam o código, não
+    a chave: apagar a conta deixava o balancete com linhas sem designação e o
+    razão a referir uma conta inexistente. Para a tirar de uso, desactive-a —
+    deixa de aparecer nas escolhas e o histórico continua a ler-se.
+
+    É mais restritivo do que o Piloto, que apagava sempre. A justificação é
+    esta: lá, a mesma operação partia os movimentos antigos em silêncio.
+    """
+    c = db.scalar(
+        select(Conta).where(Conta.id == conta_id, Conta.empresa_id == empresa.id)
+    )
+    if c is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Conta não encontrada.")
+
+    usada = db.scalar(
+        select(LancamentoLinha.id)
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(
+            Lancamento.empresa_id == empresa.id,
+            LancamentoLinha.conta_codigo == c.codigo,
+        )
+        .limit(1)
+    )
+    if usada is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"A conta {c.codigo} tem movimentos e não pode ser eliminada. "
+            "Desactive-a para deixar de a usar sem perder o histórico.",
+        )
+    db.delete(c)
+    db.commit()
+
+
 @router.get("/contas/{codigo}/proxima-subconta", dependencies=[VER])
 def proxima_subconta(codigo: str, empresa: EmpresaAtual, db: DB) -> dict:
     return {"codigo": svc.proxima_subconta(db, empresa.id, codigo)}
@@ -194,6 +316,99 @@ def categorias_diario() -> list[dict]:
     return [{"codigo": c, "nome": n} for c, n in CATEGORIAS_DIARIO]
 
 
+def _diario_publico(d: Diario) -> dict:
+    return {"id": d.id, "codigo": d.codigo, "nome": d.nome,
+            "categoria": d.categoria, "ativo": d.ativo}
+
+
+@router.post("/diarios", status_code=status.HTTP_201_CREATED, dependencies=[PLANO])
+def criar_diario(
+    request: Request, dados: DiarioPedido, empresa: EmpresaAtual, db: DB
+) -> dict:
+    ja = db.scalar(
+        select(Diario.id).where(
+            Diario.empresa_id == empresa.id, Diario.codigo == dados.codigo
+        )
+    )
+    if ja is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"Já existe o diário {dados.codigo}."
+        )
+    d = Diario(empresa_id=empresa.id, **dados.model_dump())
+    db.add(d)
+    db.commit()
+    db.refresh(d)
+    return _diario_publico(d)
+
+
+@router.patch("/diarios/{diario_id}", dependencies=[PLANO])
+def actualizar_diario(
+    request: Request, diario_id: UUID, dados: DiarioAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    """O CÓDIGO NÃO SE ALTERA: os lançamentos e os fechos guardam-no."""
+    d = db.scalar(
+        select(Diario).where(Diario.id == diario_id, Diario.empresa_id == empresa.id)
+    )
+    if d is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Diário não encontrado.")
+    pedido = dados.model_dump(exclude_unset=True)
+    if not pedido:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Nada para alterar.")
+    for campo, valor in pedido.items():
+        setattr(d, campo, valor)
+    db.commit()
+    db.refresh(d)
+    return _diario_publico(d)
+
+
+@router.delete("/diarios/{diario_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[PLANO])
+def remover_diario(diario_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Um diário com movimentos ou com documentos associados não se apaga.
+
+    Pela mesma razão das contas: os lançamentos guardam o CÓDIGO do diário, e
+    apagá-lo deixava-os a apontar para nada. Desactivar tira-o das escolhas
+    novas sem tocar no que já foi lançado.
+    """
+    d = db.scalar(
+        select(Diario).where(Diario.id == diario_id, Diario.empresa_id == empresa.id)
+    )
+    if d is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Diário não encontrado.")
+
+    com_movimentos = db.scalar(
+        select(Lancamento.id)
+        .where(
+            Lancamento.empresa_id == empresa.id,
+            Lancamento.diario_codigo == d.codigo,
+        )
+        .limit(1)
+    )
+    if com_movimentos is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"O diário {d.codigo} tem movimentos e não pode ser eliminado. "
+            "Desactive-o para deixar de o usar sem perder o histórico.",
+        )
+    com_documentos = db.scalar(
+        select(DocumentoContabilistico.id)
+        .where(
+            DocumentoContabilistico.empresa_id == empresa.id,
+            DocumentoContabilistico.diario_codigo == d.codigo,
+        )
+        .limit(1)
+    )
+    if com_documentos is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"O diário {d.codigo} tem documentos associados. Elimine-os ou "
+            "mude-os de diário primeiro.",
+        )
+    db.delete(d)
+    db.commit()
+
+
 @router.get("/documentos", dependencies=[VER])
 def listar_documentos(
     empresa: EmpresaAtual, db: DB, diario: str | None = None
@@ -216,6 +431,105 @@ def listar_documentos(
     ]
 
 
+def _documento_publico(d: DocumentoContabilistico) -> dict:
+    return {"id": d.id, "codigo": d.codigo, "descricao": d.descricao,
+            "diario_codigo": d.diario_codigo, "conta_debito": d.conta_debito,
+            "conta_credito": d.conta_credito, "retencao": d.retencao,
+            "ativo": d.ativo}
+
+
+def _exigir_diario(db: DB, empresa_id: UUID, codigo: str) -> None:
+    """Um documento aponta para um diário pelo código. Se o diário não existir,
+    o documento fica inutilizável e só se descobre ao tentar lançar."""
+    existe = db.scalar(
+        select(Diario.id).where(
+            Diario.empresa_id == empresa_id, Diario.codigo == codigo
+        )
+    )
+    if existe is None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"O diário {codigo} não existe nesta empresa.",
+        )
+
+
+@router.post("/documentos", status_code=status.HTTP_201_CREATED, dependencies=[PLANO])
+def criar_documento(
+    request: Request, dados: DocumentoPedido, empresa: EmpresaAtual, db: DB
+) -> dict:
+    ja = db.scalar(
+        select(DocumentoContabilistico.id).where(
+            DocumentoContabilistico.empresa_id == empresa.id,
+            DocumentoContabilistico.codigo == dados.codigo,
+        )
+    )
+    if ja is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"Já existe o documento {dados.codigo}."
+        )
+    _exigir_diario(db, empresa.id, dados.diario_codigo)
+    d = DocumentoContabilistico(empresa_id=empresa.id, **dados.model_dump())
+    db.add(d)
+    db.commit()
+    db.refresh(d)
+    return _documento_publico(d)
+
+
+@router.patch("/documentos/{documento_id}", dependencies=[PLANO])
+def actualizar_documento(
+    request: Request, documento_id: UUID, dados: DocumentoAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    d = db.scalar(
+        select(DocumentoContabilistico).where(
+            DocumentoContabilistico.id == documento_id,
+            DocumentoContabilistico.empresa_id == empresa.id,
+        )
+    )
+    if d is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Documento não encontrado.")
+    pedido = dados.model_dump(exclude_unset=True)
+    if not pedido:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Nada para alterar.")
+    if pedido.get("diario_codigo"):
+        _exigir_diario(db, empresa.id, pedido["diario_codigo"])
+    for campo, valor in pedido.items():
+        setattr(d, campo, valor)
+    db.commit()
+    db.refresh(d)
+    return _documento_publico(d)
+
+
+@router.delete("/documentos/{documento_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[PLANO])
+def remover_documento(documento_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Um documento com movimentos não se apaga — desactiva-se."""
+    d = db.scalar(
+        select(DocumentoContabilistico).where(
+            DocumentoContabilistico.id == documento_id,
+            DocumentoContabilistico.empresa_id == empresa.id,
+        )
+    )
+    if d is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Documento não encontrado.")
+    usado = db.scalar(
+        select(Lancamento.id)
+        .where(
+            Lancamento.empresa_id == empresa.id,
+            Lancamento.documento_codigo == d.codigo,
+        )
+        .limit(1)
+    )
+    if usado is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"O documento {d.codigo} tem movimentos e não pode ser eliminado. "
+            "Desactive-o para deixar de o usar sem perder o histórico.",
+        )
+    db.delete(d)
+    db.commit()
+
+
 @router.get("/centros", dependencies=[VER])
 def listar_centros(empresa: EmpresaAtual, db: DB) -> list[dict]:
     centros = db.scalars(
@@ -228,6 +542,88 @@ def listar_centros(empresa: EmpresaAtual, db: DB) -> list[dict]:
          "responsavel": c.responsavel, "estado": c.estado}
         for c in centros
     ]
+
+
+def _centro_publico(c: CentroCusto) -> dict:
+    return {"id": c.id, "codigo": c.codigo, "nome": c.nome, "tipo": c.tipo,
+            "responsavel": c.responsavel, "estado": c.estado}
+
+
+@router.post("/centros", status_code=status.HTTP_201_CREATED, dependencies=[PLANO])
+def criar_centro(
+    request: Request, dados: CentroPedido, empresa: EmpresaAtual, db: DB
+) -> dict:
+    ja = db.scalar(
+        select(CentroCusto.id).where(
+            CentroCusto.empresa_id == empresa.id, CentroCusto.codigo == dados.codigo
+        )
+    )
+    if ja is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"Já existe o centro {dados.codigo}."
+        )
+    c = CentroCusto(empresa_id=empresa.id, **dados.model_dump())
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return _centro_publico(c)
+
+
+@router.patch("/centros/{centro_id}", dependencies=[PLANO])
+def actualizar_centro(
+    request: Request, centro_id: UUID, dados: CentroAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    c = db.scalar(
+        select(CentroCusto).where(
+            CentroCusto.id == centro_id, CentroCusto.empresa_id == empresa.id
+        )
+    )
+    if c is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Centro não encontrado.")
+    pedido = dados.model_dump(exclude_unset=True)
+    if not pedido:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Nada para alterar.")
+    for campo, valor in pedido.items():
+        setattr(c, campo, valor)
+    db.commit()
+    db.refresh(c)
+    return _centro_publico(c)
+
+
+@router.delete("/centros/{centro_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[PLANO])
+def remover_centro(centro_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Um centro já usado em linhas de lançamento não se apaga.
+
+    O mapa de custos é construído a partir do código do centro guardado na
+    linha. Apagá-lo transformava custos imputados em custos órfãos, e o mapa
+    passava a somar menos do que a contabilidade.
+    """
+    c = db.scalar(
+        select(CentroCusto).where(
+            CentroCusto.id == centro_id, CentroCusto.empresa_id == empresa.id
+        )
+    )
+    if c is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Centro não encontrado.")
+    usado = db.scalar(
+        select(LancamentoLinha.id)
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(
+            Lancamento.empresa_id == empresa.id,
+            LancamentoLinha.centro_codigo == c.codigo,
+        )
+        .limit(1)
+    )
+    if usado is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"O centro {c.codigo} tem custos imputados e não pode ser "
+            "eliminado. Mude-o para inactivo.",
+        )
+    db.delete(c)
+    db.commit()
 
 
 @router.get("/fluxos", dependencies=[VER])

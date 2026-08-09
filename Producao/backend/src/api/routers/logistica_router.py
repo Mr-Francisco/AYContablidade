@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from src.api.deps import DB, EmpresaAtual, exigir_cap
+from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.db.models.logistica import Armazem, Artigo, MovimentoStock
 from src.services import logistica as svc
 
@@ -114,6 +115,108 @@ def criar_armazem(
     db.commit()
     db.refresh(w)
     return {"id": w.id, "codigo": w.codigo, "nome": w.nome}
+
+
+class ArtigoAtualizar(BaseModel):
+    """O CÓDIGO não se altera: os movimentos de stock e as linhas de documento
+    referem o artigo pela chave, mas o código é o que aparece impresso e o que
+    as pessoas usam para o encontrar. Mudá-lo torna ilegível o que já foi
+    emitido."""
+
+    descricao: str | None = Field(default=None, min_length=1, max_length=300)
+    familia: str | None = None
+    subfamilia: str | None = None
+    unidade: str | None = None
+    cod_barras: str | None = None
+    tipo_artigo: str | None = None
+    preco_venda: Decimal | None = None
+    preco_compra: Decimal | None = None
+    taxa_iva: Decimal | None = None
+    stock_min: Decimal | None = None
+    conta_existencia: str | None = None
+    conta_custo: str | None = None
+    conta_proveito: str | None = None
+    estado: str | None = None
+
+
+class ArmazemAtualizar(BaseModel):
+    nome: str | None = Field(default=None, min_length=1, max_length=200)
+    localizacao: str | None = None
+
+
+@router.patch("/artigos/{artigo_id}", dependencies=[GERIR])
+def actualizar_artigo(
+    request: Request, artigo_id: UUID, dados: ArtigoAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    a = obter_da_empresa(db, Artigo, artigo_id, empresa.id, nome="Artigo")
+    aplicar(a, dados)
+    db.commit()
+    db.refresh(a)
+    return {"id": a.id, "codigo": a.codigo, "descricao": a.descricao,
+            "estado": a.estado}
+
+
+@router.delete("/artigos/{artigo_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[GERIR])
+def remover_artigo(artigo_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Um artigo com movimentos de stock ou em documentos não se apaga."""
+    from src.db.models.comercial import CompraLinha, VendaLinha
+
+    a = obter_da_empresa(db, Artigo, artigo_id, empresa.id, nome="Artigo")
+    recusar_se_usado(
+        db,
+        [
+            (select(MovimentoStock.id).where(MovimentoStock.artigo_id == a.id),
+             "movimentos de stock"),
+            (select(VendaLinha.id).where(VendaLinha.artigo_id == a.id),
+             "linhas em documentos de venda"),
+            (select(CompraLinha.id).where(CompraLinha.artigo_id == a.id),
+             "linhas em documentos de compra"),
+        ],
+        o_que=f"O artigo {a.codigo}",
+    )
+    db.delete(a)
+    db.commit()
+
+
+@router.patch("/armazens/{armazem_id}", dependencies=[GERIR])
+def actualizar_armazem(
+    request: Request, armazem_id: UUID, dados: ArmazemAtualizar,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    w = obter_da_empresa(db, Armazem, armazem_id, empresa.id, nome="Armazém")
+    aplicar(w, dados)
+    db.commit()
+    db.refresh(w)
+    return {"id": w.id, "codigo": w.codigo, "nome": w.nome,
+            "localizacao": w.localizacao}
+
+
+@router.delete("/armazens/{armazem_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[GERIR])
+def remover_armazem(armazem_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
+    """Um armazém com movimentos não se apaga.
+
+    O stock por armazém é reconstruído a partir dos movimentos: apagar o
+    armazém deixava existências atribuídas a um destino que já não existe.
+    """
+    w = obter_da_empresa(db, Armazem, armazem_id, empresa.id, nome="Armazém")
+    recusar_se_usado(
+        db,
+        [
+            (
+                select(MovimentoStock.id).where(
+                    (MovimentoStock.armazem_id == w.id)
+                    | (MovimentoStock.armazem_destino_id == w.id)
+                ),
+                "movimentos de stock",
+            )
+        ],
+        o_que=f"O armazém {w.codigo}",
+    )
+    db.delete(w)
+    db.commit()
 
 
 @router.get("/movimentos")

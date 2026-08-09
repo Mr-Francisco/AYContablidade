@@ -38,7 +38,7 @@ export function useContas(opcoes?: { soMovimento?: boolean }) {
   const chave = opcoes?.soMovimento
     ? "/api/contabilidade/contas?limite=5000&so_movimento=true"
     : "/api/contabilidade/contas?limite=5000";
-  const { data, isLoading } = useSWR<Conta[]>(chave, buscador, {
+  const { data, isLoading, mutate } = useSWR<Conta[]>(chave, buscador, {
     revalidateOnFocus: false,
   });
 
@@ -48,38 +48,38 @@ export function useContas(opcoes?: { soMovimento?: boolean }) {
     return m;
   }, [data]);
 
-  return { contas: data ?? [], porCodigo, isLoading };
+  return { contas: data ?? [], porCodigo, isLoading, mutate };
 }
 
 export function useDiarios() {
-  const { data, isLoading } = useSWR<Diario[]>(
+  const { data, isLoading, mutate } = useSWR<Diario[]>(
     "/api/contabilidade/diarios",
     buscador,
     { revalidateOnFocus: false },
   );
-  return { diarios: data ?? [], isLoading };
+  return { diarios: data ?? [], isLoading, mutate };
 }
 
 export function useDocumentos(diario?: string) {
-  const { data, isLoading } = useSWR<DocumentoContabilistico[]>(
+  const { data, isLoading, mutate } = useSWR<DocumentoContabilistico[]>(
     diario
       ? `/api/contabilidade/documentos?diario=${diario}`
       : "/api/contabilidade/documentos",
     buscador,
     { revalidateOnFocus: false },
   );
-  return { documentos: data ?? [], isLoading };
+  return { documentos: data ?? [], isLoading, mutate };
 }
 
 export function useCentros() {
-  const { data } = useSWR<CentroCusto[]>(
+  const { data, isLoading, mutate } = useSWR<CentroCusto[]>(
     "/api/contabilidade/centros",
     buscador,
     {
       revalidateOnFocus: false,
     },
   );
-  return { centros: data ?? [] };
+  return { centros: data ?? [], isLoading, mutate };
 }
 
 export function usePeriodos() {

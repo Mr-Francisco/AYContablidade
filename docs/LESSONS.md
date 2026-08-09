@@ -87,3 +87,7 @@
 - `pydantic-settings` lê o `.env` do disco além da environment: remover uma variável do `os.environ` num teste não a remove da configuração. Passar `""` explicitamente, ou construir as `Settings` com todos os campos.
 - Dois ficheiros de compose (dev e produção) e não um com condições lá dentro — um ficheiro único acaba sempre por ser copiado com a condição mal resolvida.
 - Tudo o que comece por `NEXT_PUBLIC_` é embutido no build e legível no browser: entra como `ARG` do Dockerfile, não como variável de ambiente do contentor, senão não tem efeito nenhum.
+- Um endpoint sem botão é uma funcionalidade que não existe: `integrar` estava feito e testado no servidor, e um lançamento diferido criado na aplicação ficava preso para sempre. Verificar sempre se o que o backend oferece tem caminho na interface.
+- Uma rota que faz `db.commit()` não é revertida pelo `rollback` da fixture do teste: os dados ficam na base e colidem na corrida seguinte. Ou se limpa por prefixo antes e depois, ou se testa o serviço em vez da rota.
+- Ao acrescentar `PATCH` a um mestre, o identificador visível (código/número) fica FORA dos campos alteráveis: é o que aparece nos documentos já emitidos e o que os movimentos guardam.
+- `exclude_unset` e não `exclude_none` num PATCH: um campo enviado a `null` é uma ordem para limpar e tem de chegar; só os que não vieram é que ficam como estavam.
