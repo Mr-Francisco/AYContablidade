@@ -21,6 +21,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -59,6 +60,8 @@ export default function ConsultaFaturas() {
       );
     });
   }, [vendas, procuraAdiada, tipo]);
+
+  const historico = useHistorico(filtradas);
 
   return (
     <>
@@ -110,54 +113,57 @@ export default function ConsultaFaturas() {
               : "Ainda não há documentos emitidos."}
           </Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Número</Th>
-                  <Th>Tipo</Th>
-                  <Th>Data</Th>
-                  <Th>Cliente</Th>
-                  <Th numerico>Total</Th>
-                  <Th>Cód. validação</Th>
-                  <Th>Nº Operação</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtradas.map((v) => (
-                  <Tr
-                    key={v.id}
-                    className="cursor-pointer"
-                    onClick={() => setDetalhe(v.id)}
-                  >
-                    <Td className="tabular font-bold">{v.numero}</Td>
-                    <Td>
-                      <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>
-                    </Td>
-                    <Td className="tabular">
-                      {new Date(v.data).toLocaleDateString("pt-PT")}
-                    </Td>
-                    <Td className="max-w-[240px] truncate">
-                      {v.cliente_nome || (
-                        <span className="text-texto-suave">
-                          Consumidor final
-                        </span>
-                      )}
-                    </Td>
-                    <Td numerico className="font-semibold">
-                      {formataMoeda(v.total, moeda)}
-                    </Td>
-                    <Td className="tabular text-texto-suave">
-                      {v.codigo_validacao ?? "—"}
-                    </Td>
-                    <Td className="tabular text-texto-suave">
-                      {v.numero_op ?? "—"}
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <>
+            <EnvolveTabela className="rounded-none border-0">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Número</Th>
+                    <Th>Tipo</Th>
+                    <Th>Data</Th>
+                    <Th>Cliente</Th>
+                    <Th numerico>Total</Th>
+                    <Th>Cód. validação</Th>
+                    <Th>Nº Operação</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historico.visiveis.map((v) => (
+                    <Tr
+                      key={v.id}
+                      className="cursor-pointer"
+                      onClick={() => setDetalhe(v.id)}
+                    >
+                      <Td className="tabular font-bold">{v.numero}</Td>
+                      <Td>
+                        <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>
+                      </Td>
+                      <Td className="tabular">
+                        {new Date(v.data).toLocaleDateString("pt-PT")}
+                      </Td>
+                      <Td className="max-w-[240px] truncate">
+                        {v.cliente_nome || (
+                          <span className="text-texto-suave">
+                            Consumidor final
+                          </span>
+                        )}
+                      </Td>
+                      <Td numerico className="font-semibold">
+                        {formataMoeda(v.total, moeda)}
+                      </Td>
+                      <Td className="tabular text-texto-suave">
+                        {v.codigo_validacao ?? "—"}
+                      </Td>
+                      <Td className="tabular text-texto-suave">
+                        {v.numero_op ?? "—"}
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+            <RodapeHistorico {...historico} nome="facturas" />
+          </>
         )}
       </Cartao>
 

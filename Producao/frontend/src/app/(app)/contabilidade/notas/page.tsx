@@ -15,6 +15,8 @@ import {
   Selector,
   Selo,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -64,7 +66,12 @@ export default function Notas() {
       <CabecalhoPagina
         titulo="Notas às Contas"
         descricao="Composição de cada rubrica do Balanço e da Demonstração de Resultados."
-        accoes={data && <Selo cor="#3d7fe0">{data.length} notas</Selo>}
+        accoes={
+          <div className="flex flex-wrap items-center gap-3">
+            {data && <Selo cor="#3d7fe0">{data.length} notas</Selo>}
+            <AccoesDoMapa />
+          </div>
+        }
       />
 
       <BarraFiltros className="mb-4">
@@ -132,6 +139,8 @@ function ItemNota({
   const [texto, setTexto] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  // Repor descarta o texto que alguém escreveu, e não há como o recuperar.
+  const [aRepor, setARepor] = useState(false);
 
   const conteudo = nota.narrativa ? nota.texto : nota.analise;
   const q = exercicioId ? `?exercicio_id=${exercicioId}` : "";
@@ -264,6 +273,20 @@ function ItemNota({
                 className="w-full min-w-0 rounded-[10px] border border-borda bg-superficie px-3 py-2.5 text-sm text-texto focus:border-acento focus:outline-none focus:ring-2 focus:ring-acento/25"
               />
               {erro && <Alerta tipo="erro">{erro}</Alerta>}
+
+              <ConfirmarEliminar
+                aberto={aRepor}
+                aoMudar={setARepor}
+                titulo="Repor o texto automático?"
+                aoConfirmar={() => {
+                  setARepor(false);
+                  repor();
+                }}
+                ocupado={ocupado}
+              >
+                O texto que escreveu nesta nota é <b>descartado</b> e volta o
+                que o sistema gera a partir dos dados. Não há como o recuperar.
+              </ConfirmarEliminar>
               <div className="flex flex-wrap gap-2">
                 <Botao
                   variante="primario"
@@ -305,7 +328,11 @@ function ItemNota({
                   {/* Só faz sentido repor quando há um texto manual a
                       substituir o automático. */}
                   {nota.editada && (
-                    <Botao tamanho="pequeno" onClick={repor} disabled={ocupado}>
+                    <Botao
+                      tamanho="pequeno"
+                      onClick={() => setARepor(true)}
+                      disabled={ocupado}
+                    >
                       <RotateCcw size={13} />
                       Repor automático
                     </Botao>

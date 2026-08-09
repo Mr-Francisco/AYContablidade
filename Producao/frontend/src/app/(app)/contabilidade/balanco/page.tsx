@@ -13,6 +13,7 @@ import {
   Selector,
   Selo,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda, subtrai } from "@/lib/dinheiro";
@@ -44,11 +45,14 @@ export default function PaginaBalanco() {
         titulo="Balanço"
         descricao="Posição financeira à data — PGC-AR."
         accoes={
-          data && (
-            <Selo cor={data.equilibrado ? "#1a9c5f" : "#e0284f"}>
-              {data.equilibrado ? "Equilibrado" : "NÃO equilibra"}
-            </Selo>
-          )
+          <div className="flex flex-wrap items-center gap-3">
+            {data && (
+              <Selo cor={data.equilibrado ? "#1a9c5f" : "#e0284f"}>
+                {data.equilibrado ? "Equilibrado" : "NÃO equilibra"}
+              </Selo>
+            )}
+            <AccoesDoMapa />
+          </div>
         }
       />
 

@@ -24,6 +24,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { big, formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -113,14 +114,16 @@ export default function ApuramentoIva() {
         titulo="Apuramento do IVA"
         descricao="IVA liquidado menos dedutível, por período. Declaração mensal até ao último dia útil do mês seguinte."
         accoes={
-          ap &&
-          !semMovimento && (
-            <Selo cor={big(ap.resultado).gt(0) ? "#e0284f" : "#1a9c5f"}>
-              {big(ap.resultado).gt(0)
-                ? `A pagar: ${formataMoeda(ap.a_pagar, moeda)}`
-                : `A recuperar: ${formataMoeda(ap.a_recuperar, moeda)}`}
-            </Selo>
-          )
+          <div className="flex flex-wrap items-center gap-3">
+            {ap && !semMovimento && (
+              <Selo cor={big(ap.resultado).gt(0) ? "#e0284f" : "#1a9c5f"}>
+                {big(ap.resultado).gt(0)
+                  ? `A pagar: ${formataMoeda(ap.a_pagar, moeda)}`
+                  : `A recuperar: ${formataMoeda(ap.a_recuperar, moeda)}`}
+              </Selo>
+            )}
+            <AccoesDoMapa />
+          </div>
         }
       />
 

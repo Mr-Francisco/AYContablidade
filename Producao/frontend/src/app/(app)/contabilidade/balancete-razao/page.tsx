@@ -18,6 +18,7 @@ import {
   Th,
   Tr,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -78,6 +79,7 @@ export default function BalanceteRazao() {
       <CabecalhoPagina
         titulo="Balancete do Razão"
         descricao="Contas do razão (2 dígitos) agrupadas por classe, com saldo anterior, do período e acumulado."
+        accoes={<AccoesDoMapa />}
       />
 
       <BarraFiltros className="mb-4">

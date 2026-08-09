@@ -20,6 +20,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -56,6 +57,7 @@ export default function MapaCustos() {
       <CabecalhoPagina
         titulo="Mapa de Custos"
         descricao="Custos e proveitos por centro de custo. Só entram as contas das classes 6 e 7."
+        accoes={<AccoesDoMapa />}
       />
 
       {data && (

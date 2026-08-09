@@ -159,3 +159,102 @@ def test_existe_caminho_para_criar_a_primeira_conta_real():
     # na lista de processos, onde outra sessão a lê.
     assert "getpass" in fonte
     assert "sys.argv" not in fonte
+
+
+# ---------------------------------------------------------------------------
+# Regra dos históricos
+# ---------------------------------------------------------------------------
+LISTAS_CRONOLOGICAS = [
+    "contabilidade/movimentos",
+    "contabilidade/razao",
+    "contabilidade/extrato",
+    "contabilidade/retencoes",
+    "comercial/vendas",
+    "comercial/consulta-faturas",
+    "logistica/compras",
+    "plataforma/licencas",
+    "rh/independentes",
+    "rh/processamento",
+    "rh/pagamentos",
+    "imobilizados/amortizacoes",
+]
+
+
+@pytest.mark.parametrize("pagina", LISTAS_CRONOLOGICAS)
+def test_nenhuma_lista_cronologica_se_desenha_inteira(pagina):
+    """REGRESSÃO: um exercício com milhares de lançamentos dava milhares de
+    linhas de HTML e uma página de dezenas de milhares de píxeis.
+
+    A regra é a mesma em todas: mostra-se uma primeira leva, diz-se quantos
+    são ao todo, e quem precisa de mais carrega uma vez. Ver
+    `components/ui/Historico.tsx` para o porquê de não ser `overflow-y`.
+    """
+    from pathlib import Path
+
+    fonte = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "app" / "(app)" / pagina / "page.tsx"
+    ).read_text(encoding="utf-8")
+
+    assert "useHistorico" in fonte, f"{pagina} não limita o que desenha"
+    assert "historico.visiveis.map" in fonte, f"{pagina} desenha a lista toda"
+    assert "RodapeHistorico" in fonte, f"{pagina} não diz quantos registos há"
+
+
+def test_a_auditoria_partilhada_tambem_limita():
+    """Cobre `/plataforma/auditoria` e `/gestao/auditoria` de uma vez."""
+    from pathlib import Path
+
+    fonte = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "components" / "auditoria" / "TabelaAuditoria.tsx"
+    ).read_text(encoding="utf-8")
+    assert "useHistorico" in fonte
+    assert "RodapeHistorico" in fonte
+
+
+def test_o_corte_do_servidor_e_visivel():
+    """REGRESSÃO: as rotas cortam a resposta por omissão e a interface mostrava
+    o que veio como se fosse o total. «810 movimentos» quando são 4 000 é pior
+    do que não dizer nada."""
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[2] / "frontend" / "src" / "app" / "(app)"
+    for pagina in ["contabilidade/movimentos", "comercial/vendas", "logistica/compras"]:
+        fonte = (base / pagina / "page.tsx").read_text(encoding="utf-8")
+        assert "LIMITE_PEDIDO" in fonte, f"{pagina} não pede um limite explícito"
+        assert "truncadoNoServidor" in fonte, f"{pagina} não avisa do corte"
+
+
+def test_o_assistente_desenha_o_markdown():
+    """REGRESSÃO: o modelo responde em Markdown e a resposta era mostrada em
+    texto simples — o utilizador via `**IVA por Apurar**` com os asteriscos."""
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[2] / "frontend" / "src"
+    pagina = (base / "app" / "(app)" / "assistente" / "page.tsx").read_text(
+        encoding="utf-8"
+    )
+    assert "<Markdown>" in pagina
+
+    leitor = (base / "components" / "ui" / "Markdown.tsx").read_text(encoding="utf-8")
+    # Constrói elementos React; nunca injecta HTML. Procura-se a UTILIZAÇÃO
+    # (o atributo seguido de `=`), não a palavra — que aparece no comentário a
+    # explicar precisamente que não se usa.
+    assert "dangerouslySetInnerHTML=" not in leitor
+
+
+def test_os_mapas_imprimem_e_exportam():
+    """O Piloto imprimia dezasseis páginas; aqui só três tinham botão."""
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[2] / "frontend" / "src"
+    quantas = len(
+        [p for p in base.rglob("*.tsx") if "AccoesDoMapa" in p.read_text(encoding="utf-8")]
+    )
+    assert quantas >= 15, f"só {quantas} ficheiros com acções de mapa"
+
+    # E as regras de impressão existem, senão o botão imprime o ecrã todo.
+    css = (base / "app" / "globals.css").read_text(encoding="utf-8")
+    assert "@media print" in css
+    assert ".sem-imprimir" in css

@@ -22,6 +22,8 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -97,17 +99,23 @@ function Conteudo() {
     buscador,
   );
 
+  // A lista cresce com o exercício; o rodapé diz quantos são.
+  const historico = useHistorico(data?.linhas);
+
   return (
     <>
       <CabecalhoPagina
         titulo="Razão"
         descricao="Movimentos de uma conta, com saldo corrido."
         accoes={
-          data && (
-            <Selo cor={data.natureza === "D" ? "#1e5fcc" : "#7a3aab"}>
-              Conta {data.natureza === "D" ? "devedora" : "credora"}
-            </Selo>
-          )
+          <div className="flex flex-wrap items-center gap-3">
+            {data && (
+              <Selo cor={data.natureza === "D" ? "#1e5fcc" : "#7a3aab"}>
+                Conta {data.natureza === "D" ? "devedora" : "credora"}
+              </Selo>
+            )}
+            <AccoesDoMapa />
+          </div>
         }
       />
 
@@ -193,74 +201,85 @@ function Conteudo() {
             {data.linhas.length === 0 ? (
               <Vazio>Esta conta não tem movimentos no período.</Vazio>
             ) : (
-              <EnvolveTabela className="rounded-none border-0">
-                <Tabela>
-                  <thead>
-                    <tr>
-                      <Th>Data</Th>
-                      <Th>Nº Operação</Th>
-                      <Th>Dia.</Th>
-                      <Th>Doc.</Th>
-                      <Th>Referência</Th>
-                      <Th>Descrição</Th>
-                      <Th>Entidade</Th>
-                      <Th>Contrapartida</Th>
-                      <Th numerico>Débito</Th>
-                      <Th numerico>Crédito</Th>
-                      <Th numerico>Saldo</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.linhas.map((l) => (
-                      <Tr key={`${l.lancamento_id}-${l.numero_op}-${l.saldo}`}>
-                        <Td className="tabular">
-                          {new Date(l.data).toLocaleDateString("pt-PT")}
-                        </Td>
-                        <Td className="tabular font-semibold">{l.numero_op}</Td>
-                        <Td className="tabular">{l.diario}</Td>
-                        <Td className="tabular">{l.documento}</Td>
-                        <Td className="text-texto-suave">
-                          {l.documento_ref || "—"}
-                        </Td>
-                        <Td className="max-w-[260px] truncate">
-                          <span title={l.descricao ?? ""}>
-                            {l.descricao || "—"}
-                          </span>
-                        </Td>
-                        <Td className="max-w-[160px] truncate">
-                          {l.entidade || "—"}
-                        </Td>
-                        <Td className="tabular text-texto-suave">
-                          {l.contraparte || "—"}
+              <>
+                <EnvolveTabela className="rounded-none border-0">
+                  <Tabela>
+                    <thead>
+                      <tr>
+                        <Th>Data</Th>
+                        <Th>Nº Operação</Th>
+                        <Th>Dia.</Th>
+                        <Th>Doc.</Th>
+                        <Th>Referência</Th>
+                        <Th>Descrição</Th>
+                        <Th>Entidade</Th>
+                        <Th>Contrapartida</Th>
+                        <Th numerico>Débito</Th>
+                        <Th numerico>Crédito</Th>
+                        <Th numerico>Saldo</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historico.visiveis.map((l) => (
+                        <Tr
+                          key={`${l.lancamento_id}-${l.numero_op}-${l.saldo}`}
+                        >
+                          <Td className="tabular">
+                            {new Date(l.data).toLocaleDateString("pt-PT")}
+                          </Td>
+                          <Td className="tabular font-semibold">
+                            {l.numero_op}
+                          </Td>
+                          <Td className="tabular">{l.diario}</Td>
+                          <Td className="tabular">{l.documento}</Td>
+                          <Td className="text-texto-suave">
+                            {l.documento_ref || "—"}
+                          </Td>
+                          <Td className="max-w-[260px] truncate">
+                            <span title={l.descricao ?? ""}>
+                              {l.descricao || "—"}
+                            </span>
+                          </Td>
+                          <Td className="max-w-[160px] truncate">
+                            {l.entidade || "—"}
+                          </Td>
+                          <Td className="tabular text-texto-suave">
+                            {l.contraparte || "—"}
+                          </Td>
+                          <Td numerico>
+                            {l.debito === "0.00"
+                              ? ""
+                              : formataMoeda(l.debito, moeda)}
+                          </Td>
+                          <Td numerico>
+                            {l.credito === "0.00"
+                              ? ""
+                              : formataMoeda(l.credito, moeda)}
+                          </Td>
+                          <Td numerico className="font-semibold">
+                            {formataMoeda(l.saldo, moeda)}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-superficie-2 font-extrabold">
+                        <Td colSpan={8}>TOTAIS</Td>
+                        <Td numerico>
+                          {formataMoeda(data.total_debito, moeda)}
                         </Td>
                         <Td numerico>
-                          {l.debito === "0.00"
-                            ? ""
-                            : formataMoeda(l.debito, moeda)}
+                          {formataMoeda(data.total_credito, moeda)}
                         </Td>
                         <Td numerico>
-                          {l.credito === "0.00"
-                            ? ""
-                            : formataMoeda(l.credito, moeda)}
+                          {formataMoeda(data.saldo_final, moeda)}
                         </Td>
-                        <Td numerico className="font-semibold">
-                          {formataMoeda(l.saldo, moeda)}
-                        </Td>
-                      </Tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-superficie-2 font-extrabold">
-                      <Td colSpan={8}>TOTAIS</Td>
-                      <Td numerico>{formataMoeda(data.total_debito, moeda)}</Td>
-                      <Td numerico>
-                        {formataMoeda(data.total_credito, moeda)}
-                      </Td>
-                      <Td numerico>{formataMoeda(data.saldo_final, moeda)}</Td>
-                    </tr>
-                  </tfoot>
-                </Tabela>
-              </EnvolveTabela>
+                      </tr>
+                    </tfoot>
+                  </Tabela>
+                </EnvolveTabela>
+                <RodapeHistorico {...historico} nome="movimentos" />
+              </>
             )}
           </Cartao>
         </>

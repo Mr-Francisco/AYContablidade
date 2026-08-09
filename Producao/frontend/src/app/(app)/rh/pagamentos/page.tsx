@@ -27,6 +27,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -93,6 +94,8 @@ export default function Pagamentos() {
       setConfirmar(false);
     }
   }
+
+  const historico = useHistorico(pagamentos);
 
   return (
     <>
@@ -163,38 +166,41 @@ export default function Pagamentos() {
         {!pagamentos?.length ? (
           <Vazio>Ainda não há pagamentos registados.</Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0 border-t">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Mês</Th>
-                  <Th numerico>Valor</Th>
-                  <Th>Conta</Th>
-                  <Th>Lançado</Th>
-                  <Th>Nº Operação</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagamentos.map((p) => (
-                  <Tr key={p.id}>
-                    <Td className="font-semibold">{mesPorExtenso(p.mes)}</Td>
-                    <Td numerico className="font-semibold">
-                      {formataMoeda(p.valor, moeda)}
-                    </Td>
-                    <Td className="tabular">{p.conta || "—"}</Td>
-                    <Td>
-                      <Selo cor={p.lancado ? "#1a9c5f" : "#c98a10"}>
-                        {p.lancado ? "Sim" : "Não"}
-                      </Selo>
-                    </Td>
-                    <Td className="tabular text-texto-suave">
-                      {p.numero_op || "—"}
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <>
+            <EnvolveTabela className="rounded-none border-0 border-t">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Mês</Th>
+                    <Th numerico>Valor</Th>
+                    <Th>Conta</Th>
+                    <Th>Lançado</Th>
+                    <Th>Nº Operação</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historico.visiveis.map((p) => (
+                    <Tr key={p.id}>
+                      <Td className="font-semibold">{mesPorExtenso(p.mes)}</Td>
+                      <Td numerico className="font-semibold">
+                        {formataMoeda(p.valor, moeda)}
+                      </Td>
+                      <Td className="tabular">{p.conta || "—"}</Td>
+                      <Td>
+                        <Selo cor={p.lancado ? "#1a9c5f" : "#c98a10"}>
+                          {p.lancado ? "Sim" : "Não"}
+                        </Selo>
+                      </Td>
+                      <Td className="tabular text-texto-suave">
+                        {p.numero_op || "—"}
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+            <RodapeHistorico {...historico} nome="pagamentos" />
+          </>
         )}
       </Cartao>
 

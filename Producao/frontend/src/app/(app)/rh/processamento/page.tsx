@@ -30,6 +30,8 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
@@ -90,22 +92,27 @@ export default function ProcessamentoPagina() {
     }
   }
 
+  const historico = useHistorico(processamentos);
+
   return (
     <>
       <CabecalhoPagina
         titulo="Processamento"
         descricao="Processa a folha do mês e lança-a na contabilidade."
         accoes={
-          pode("rh.gerir") && (
-            <Botao
-              variante="primario"
-              disabled={jaProcessado || !folha?.linhas.length}
-              onClick={() => setConfirmar(true)}
-            >
-              <PlayCircle size={16} />
-              Processar {mesPorExtenso(mes)}
-            </Botao>
-          )
+          <div className="flex flex-wrap items-center gap-3">
+            {pode("rh.gerir") && (
+              <Botao
+                variante="primario"
+                disabled={jaProcessado || !folha?.linhas.length}
+                onClick={() => setConfirmar(true)}
+              >
+                <PlayCircle size={16} />
+                Processar {mesPorExtenso(mes)}
+              </Botao>
+            )}
+            <AccoesDoMapa />
+          </div>
         }
       />
 
@@ -197,44 +204,47 @@ export default function ProcessamentoPagina() {
         {!processamentos?.length ? (
           <Vazio>Ainda não foi processado nenhum mês.</Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0 border-t">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Mês</Th>
-                  <Th numerico>Bruto</Th>
-                  <Th numerico>INSS</Th>
-                  <Th numerico>IRT</Th>
-                  <Th numerico>Líquido</Th>
-                  <Th>Lançado</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {processamentos.map((p) => (
-                  <Tr key={p.id}>
-                    <Td className="font-semibold">{mesPorExtenso(p.mes)}</Td>
-                    <Td numerico>
-                      {formataMoeda(p.totais?.bruto ?? "0", moeda)}
-                    </Td>
-                    <Td numerico>
-                      {formataMoeda(p.totais?.inss ?? "0", moeda)}
-                    </Td>
-                    <Td numerico>
-                      {formataMoeda(p.totais?.irt ?? "0", moeda)}
-                    </Td>
-                    <Td numerico className="font-semibold">
-                      {formataMoeda(p.totais?.liquido ?? "0", moeda)}
-                    </Td>
-                    <Td>
-                      <Selo cor={p.lancado ? "#1a9c5f" : "#c98a10"}>
-                        {p.lancado ? "Sim" : "Não"}
-                      </Selo>
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <>
+            <EnvolveTabela className="rounded-none border-0 border-t">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Mês</Th>
+                    <Th numerico>Bruto</Th>
+                    <Th numerico>INSS</Th>
+                    <Th numerico>IRT</Th>
+                    <Th numerico>Líquido</Th>
+                    <Th>Lançado</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historico.visiveis.map((p) => (
+                    <Tr key={p.id}>
+                      <Td className="font-semibold">{mesPorExtenso(p.mes)}</Td>
+                      <Td numerico>
+                        {formataMoeda(p.totais?.bruto ?? "0", moeda)}
+                      </Td>
+                      <Td numerico>
+                        {formataMoeda(p.totais?.inss ?? "0", moeda)}
+                      </Td>
+                      <Td numerico>
+                        {formataMoeda(p.totais?.irt ?? "0", moeda)}
+                      </Td>
+                      <Td numerico className="font-semibold">
+                        {formataMoeda(p.totais?.liquido ?? "0", moeda)}
+                      </Td>
+                      <Td>
+                        <Selo cor={p.lancado ? "#1a9c5f" : "#c98a10"}>
+                          {p.lancado ? "Sim" : "Não"}
+                        </Selo>
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+            <RodapeHistorico {...historico} nome="meses processados" />
+          </>
         )}
       </Cartao>
 

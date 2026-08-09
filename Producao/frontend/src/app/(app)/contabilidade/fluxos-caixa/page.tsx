@@ -21,6 +21,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
@@ -82,6 +83,7 @@ export default function FluxosCaixa() {
       <CabecalhoPagina
         titulo="Fluxos de Caixa"
         descricao="Movimentos de caixa e bancos, categorizados pela contrapartida."
+        accoes={<AccoesDoMapa />}
       />
 
       <BarraFiltros className="mb-4">

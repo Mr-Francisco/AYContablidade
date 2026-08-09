@@ -23,6 +23,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -39,6 +40,11 @@ const ORIGENS: Record<string, { rotulo: string; cor: string }> = {
   imobilizado: { rotulo: "Imobilizado", cor: "#7a3aab" },
   apuramento: { rotulo: "Apuramento", cor: "#e6007e" },
 };
+
+/** O que se pede ao servidor. Quando a resposta vem com este tamanho
+ *  exacto, é sinal de que foi cortada — e o rodapé diz que pode haver mais,
+ *  em vez de apresentar um total que não é o total. */
+const LIMITE_PEDIDO = 1000;
 
 export default function Movimentos() {
   const { pode, empresa } = useAuth();
@@ -62,6 +68,7 @@ export default function Movimentos() {
   if (de) parametros.set("de", de);
   if (ate) parametros.set("ate", ate);
   if (incluirDiferidos) parametros.set("incluir_diferidos", "true");
+  parametros.set("limite", String(LIMITE_PEDIDO));
 
   const chave = `/api/contabilidade/lancamentos?${parametros}`;
   const {
@@ -69,6 +76,8 @@ export default function Movimentos() {
     isLoading,
     mutate,
   } = useSWR<Lancamento[]>(chave, buscador);
+
+  const historico = useHistorico(lancamentos);
 
   return (
     <>
@@ -140,67 +149,74 @@ export default function Movimentos() {
         ) : !lancamentos?.length ? (
           <Vazio>Sem movimentos no período seleccionado.</Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Nº Operação</Th>
-                  <Th>Data</Th>
-                  <Th>Per.</Th>
-                  <Th>Diário</Th>
-                  <Th>Doc.</Th>
-                  <Th>Descrição</Th>
-                  <Th>Referência</Th>
-                  <Th>Origem</Th>
-                  <Th numerico>Valor</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {lancamentos.map((l) => {
-                  const o = ORIGENS[l.origem] ?? {
-                    rotulo: l.origem,
-                    cor: "#62657a",
-                  };
-                  return (
-                    <Tr
-                      key={l.id}
-                      onClick={() => setDetalhe(l.id)}
-                      className="cursor-pointer"
-                    >
-                      <Td className="font-bold tabular">
-                        {l.numero_op ?? l.numero}
-                        {l.diferido && (
-                          <Selo cor="#c98a10" className="ml-2">
-                            Diferido
-                          </Selo>
-                        )}
-                      </Td>
-                      <Td className="tabular">
-                        {new Date(l.data).toLocaleDateString("pt-PT")}
-                      </Td>
-                      <Td className="tabular text-texto-suave">{l.mes}</Td>
-                      <Td className="tabular">{l.diario_codigo}</Td>
-                      <Td className="tabular">{l.documento_codigo}</Td>
-                      <Td className="max-w-[300px] truncate">
-                        <span title={l.descricao ?? ""}>
-                          {l.descricao ?? "—"}
-                        </span>
-                      </Td>
-                      <Td className="text-texto-suave">
-                        {l.documento_ref ?? "—"}
-                      </Td>
-                      <Td>
-                        <Selo cor={o.cor}>{o.rotulo}</Selo>
-                      </Td>
-                      <Td numerico className="font-semibold">
-                        {formataMoeda(l.total, moeda)}
-                      </Td>
-                    </Tr>
-                  );
-                })}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <>
+            <EnvolveTabela className="rounded-none border-0">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Nº Operação</Th>
+                    <Th>Data</Th>
+                    <Th>Per.</Th>
+                    <Th>Diário</Th>
+                    <Th>Doc.</Th>
+                    <Th>Descrição</Th>
+                    <Th>Referência</Th>
+                    <Th>Origem</Th>
+                    <Th numerico>Valor</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historico.visiveis.map((l) => {
+                    const o = ORIGENS[l.origem] ?? {
+                      rotulo: l.origem,
+                      cor: "#62657a",
+                    };
+                    return (
+                      <Tr
+                        key={l.id}
+                        onClick={() => setDetalhe(l.id)}
+                        className="cursor-pointer"
+                      >
+                        <Td className="font-bold tabular">
+                          {l.numero_op ?? l.numero}
+                          {l.diferido && (
+                            <Selo cor="#c98a10" className="ml-2">
+                              Diferido
+                            </Selo>
+                          )}
+                        </Td>
+                        <Td className="tabular">
+                          {new Date(l.data).toLocaleDateString("pt-PT")}
+                        </Td>
+                        <Td className="tabular text-texto-suave">{l.mes}</Td>
+                        <Td className="tabular">{l.diario_codigo}</Td>
+                        <Td className="tabular">{l.documento_codigo}</Td>
+                        <Td className="max-w-[300px] truncate">
+                          <span title={l.descricao ?? ""}>
+                            {l.descricao ?? "—"}
+                          </span>
+                        </Td>
+                        <Td className="text-texto-suave">
+                          {l.documento_ref ?? "—"}
+                        </Td>
+                        <Td>
+                          <Selo cor={o.cor}>{o.rotulo}</Selo>
+                        </Td>
+                        <Td numerico className="font-semibold">
+                          {formataMoeda(l.total, moeda)}
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+            <RodapeHistorico
+              {...historico}
+              truncadoNoServidor={(lancamentos?.length ?? 0) >= LIMITE_PEDIDO}
+              nome="movimentos"
+            />
+          </>
         )}
       </Cartao>
 

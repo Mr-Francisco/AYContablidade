@@ -22,6 +22,8 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -99,11 +101,15 @@ function Conteudo() {
     buscador,
   );
 
+  // A lista cresce com o exercício; o rodapé diz quantos são.
+  const historico = useHistorico(data?.linhas);
+
   return (
     <>
       <CabecalhoPagina
         titulo="Extratos"
         descricao="Movimentos de uma conta e das suas subcontas, com filtro por entidade."
+        accoes={<AccoesDoMapa />}
       />
 
       <BarraFiltros className="mb-4">
@@ -206,72 +212,83 @@ function Conteudo() {
                   : "Sem movimentos no período."}
               </Vazio>
             ) : (
-              <EnvolveTabela className="rounded-none border-0">
-                <Tabela>
-                  <thead>
-                    <tr>
-                      <Th>Data</Th>
-                      <Th>Nº Operação</Th>
-                      <Th>Doc.</Th>
-                      <Th>Referência</Th>
-                      <Th>Entidade</Th>
-                      <Th>Descrição</Th>
-                      <Th>Contrapartida</Th>
-                      <Th numerico>Débito</Th>
-                      <Th numerico>Crédito</Th>
-                      <Th numerico>Saldo</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.linhas.map((l) => (
-                      <Tr key={`${l.lancamento_id}-${l.numero_op}-${l.saldo}`}>
-                        <Td className="tabular">
-                          {new Date(l.data).toLocaleDateString("pt-PT")}
-                        </Td>
-                        <Td className="tabular font-semibold">{l.numero_op}</Td>
-                        <Td className="tabular">{l.documento}</Td>
-                        <Td className="text-texto-suave">
-                          {l.documento_ref || "—"}
-                        </Td>
-                        <Td className="max-w-[180px] truncate font-semibold">
-                          {l.entidade || "—"}
-                        </Td>
-                        <Td className="max-w-[240px] truncate">
-                          <span title={l.descricao ?? ""}>
-                            {l.descricao || "—"}
-                          </span>
-                        </Td>
-                        <Td className="tabular text-texto-suave">
-                          {l.contraparte || "—"}
+              <>
+                <EnvolveTabela className="rounded-none border-0">
+                  <Tabela>
+                    <thead>
+                      <tr>
+                        <Th>Data</Th>
+                        <Th>Nº Operação</Th>
+                        <Th>Doc.</Th>
+                        <Th>Referência</Th>
+                        <Th>Entidade</Th>
+                        <Th>Descrição</Th>
+                        <Th>Contrapartida</Th>
+                        <Th numerico>Débito</Th>
+                        <Th numerico>Crédito</Th>
+                        <Th numerico>Saldo</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historico.visiveis.map((l) => (
+                        <Tr
+                          key={`${l.lancamento_id}-${l.numero_op}-${l.saldo}`}
+                        >
+                          <Td className="tabular">
+                            {new Date(l.data).toLocaleDateString("pt-PT")}
+                          </Td>
+                          <Td className="tabular font-semibold">
+                            {l.numero_op}
+                          </Td>
+                          <Td className="tabular">{l.documento}</Td>
+                          <Td className="text-texto-suave">
+                            {l.documento_ref || "—"}
+                          </Td>
+                          <Td className="max-w-[180px] truncate font-semibold">
+                            {l.entidade || "—"}
+                          </Td>
+                          <Td className="max-w-[240px] truncate">
+                            <span title={l.descricao ?? ""}>
+                              {l.descricao || "—"}
+                            </span>
+                          </Td>
+                          <Td className="tabular text-texto-suave">
+                            {l.contraparte || "—"}
+                          </Td>
+                          <Td numerico>
+                            {l.debito === "0.00"
+                              ? ""
+                              : formataMoeda(l.debito, moeda)}
+                          </Td>
+                          <Td numerico>
+                            {l.credito === "0.00"
+                              ? ""
+                              : formataMoeda(l.credito, moeda)}
+                          </Td>
+                          <Td numerico className="font-semibold">
+                            {formataMoeda(l.saldo, moeda)}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-superficie-2 font-extrabold">
+                        <Td colSpan={7}>TOTAIS</Td>
+                        <Td numerico>
+                          {formataMoeda(data.total_debito, moeda)}
                         </Td>
                         <Td numerico>
-                          {l.debito === "0.00"
-                            ? ""
-                            : formataMoeda(l.debito, moeda)}
+                          {formataMoeda(data.total_credito, moeda)}
                         </Td>
                         <Td numerico>
-                          {l.credito === "0.00"
-                            ? ""
-                            : formataMoeda(l.credito, moeda)}
+                          {formataMoeda(data.saldo_final, moeda)}
                         </Td>
-                        <Td numerico className="font-semibold">
-                          {formataMoeda(l.saldo, moeda)}
-                        </Td>
-                      </Tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-superficie-2 font-extrabold">
-                      <Td colSpan={7}>TOTAIS</Td>
-                      <Td numerico>{formataMoeda(data.total_debito, moeda)}</Td>
-                      <Td numerico>
-                        {formataMoeda(data.total_credito, moeda)}
-                      </Td>
-                      <Td numerico>{formataMoeda(data.saldo_final, moeda)}</Td>
-                    </tr>
-                  </tfoot>
-                </Tabela>
-              </EnvolveTabela>
+                      </tr>
+                    </tfoot>
+                  </Tabela>
+                </EnvolveTabela>
+                <RodapeHistorico {...historico} nome="movimentos" />
+              </>
             )}
           </Cartao>
         </>

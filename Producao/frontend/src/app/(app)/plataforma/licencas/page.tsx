@@ -24,6 +24,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { plural } from "@/lib/texto";
 import type { LicencaGerada, LicencaPlataforma } from "@/types";
@@ -70,6 +71,8 @@ export default function Licencas() {
       setARevogar(null);
     }
   }
+
+  const historico = useHistorico(todas);
 
   return (
     <>
@@ -143,70 +146,75 @@ export default function Licencas() {
         ) : !todas.length ? (
           <Vazio>Ainda não foi gerada nenhuma licença.</Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Chave</Th>
-                  <Th>Empresa</Th>
-                  <Th>NIF</Th>
-                  <Th>Plano</Th>
-                  <Th>Estado</Th>
-                  <Th>Prazo / Validade</Th>
-                  <Th numerico>Utilizadores</Th>
-                  <Th numerico>Tokens/mês</Th>
-                  <Th />
-                </tr>
-              </thead>
-              <tbody>
-                {todas.map((l) => (
-                  <Tr key={l.id}>
-                    <Td className="tabular font-bold">{l.chave_prefixo}…</Td>
-                    <Td className="max-w-[220px] truncate font-semibold">
-                      {l.nome_previsto}
-                    </Td>
-                    <Td className="tabular">{l.nif_previsto}</Td>
-                    <Td>{l.plano}</Td>
-                    <Td>
-                      <Selo cor={CORES[l.estado] ?? "#62657a"}>{l.estado}</Selo>
-                    </Td>
-                    <Td className="tabular text-texto-suave">
-                      {l.activada_em
-                        ? l.validade
-                          ? `até ${new Date(l.validade).toLocaleDateString("pt-PT")}`
-                          : "sem termo"
-                        : `activar até ${new Date(l.expira_activacao).toLocaleDateString("pt-PT")}`}
-                    </Td>
-                    <Td numerico>{l.limite_utilizadores ?? "—"}</Td>
-                    <Td numerico>
-                      {l.limite_tokens_mes
-                        ? l.limite_tokens_mes.toLocaleString("pt-PT")
-                        : "—"}
-                    </Td>
-                    <Td numerico>
-                      <div className="flex justify-end gap-1.5">
-                        <Botao
-                          tamanho="pequeno"
-                          onClick={() => setAEditar(l)}
-                          aria-label={`Editar licença de ${l.nome_previsto}`}
-                        >
-                          <Pencil size={13} />
-                        </Botao>
-                        <Botao
-                          tamanho="pequeno"
-                          variante="perigo"
-                          onClick={() => setARevogar(l)}
-                          aria-label={`Revogar licença de ${l.nome_previsto}`}
-                        >
-                          <Ban size={13} />
-                        </Botao>
-                      </div>
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <>
+            <EnvolveTabela className="rounded-none border-0">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Chave</Th>
+                    <Th>Empresa</Th>
+                    <Th>NIF</Th>
+                    <Th>Plano</Th>
+                    <Th>Estado</Th>
+                    <Th>Prazo / Validade</Th>
+                    <Th numerico>Utilizadores</Th>
+                    <Th numerico>Tokens/mês</Th>
+                    <Th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {historico.visiveis.map((l) => (
+                    <Tr key={l.id}>
+                      <Td className="tabular font-bold">{l.chave_prefixo}…</Td>
+                      <Td className="max-w-[220px] truncate font-semibold">
+                        {l.nome_previsto}
+                      </Td>
+                      <Td className="tabular">{l.nif_previsto}</Td>
+                      <Td>{l.plano}</Td>
+                      <Td>
+                        <Selo cor={CORES[l.estado] ?? "#62657a"}>
+                          {l.estado}
+                        </Selo>
+                      </Td>
+                      <Td className="tabular text-texto-suave">
+                        {l.activada_em
+                          ? l.validade
+                            ? `até ${new Date(l.validade).toLocaleDateString("pt-PT")}`
+                            : "sem termo"
+                          : `activar até ${new Date(l.expira_activacao).toLocaleDateString("pt-PT")}`}
+                      </Td>
+                      <Td numerico>{l.limite_utilizadores ?? "—"}</Td>
+                      <Td numerico>
+                        {l.limite_tokens_mes
+                          ? l.limite_tokens_mes.toLocaleString("pt-PT")
+                          : "—"}
+                      </Td>
+                      <Td numerico>
+                        <div className="flex justify-end gap-1.5">
+                          <Botao
+                            tamanho="pequeno"
+                            onClick={() => setAEditar(l)}
+                            aria-label={`Editar licença de ${l.nome_previsto}`}
+                          >
+                            <Pencil size={13} />
+                          </Botao>
+                          <Botao
+                            tamanho="pequeno"
+                            variante="perigo"
+                            onClick={() => setARevogar(l)}
+                            aria-label={`Revogar licença de ${l.nome_previsto}`}
+                          >
+                            <Ban size={13} />
+                          </Botao>
+                        </div>
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+            <RodapeHistorico {...historico} nome="licenças" />
+          </>
         )}
       </Cartao>
 

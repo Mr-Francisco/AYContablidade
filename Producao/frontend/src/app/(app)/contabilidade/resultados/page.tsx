@@ -24,6 +24,7 @@ import {
   Selo,
   TituloCartao,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import {
@@ -77,11 +78,14 @@ export default function Resultados() {
         titulo="Demonstração de Resultados"
         descricao="Resultados por naturezas — PGC-AR."
         accoes={
-          data && (
-            <Selo cor={big(data.liquido).gte(0) ? "#1a9c5f" : "#e0284f"}>
-              Resultado líquido: {formataMoeda(data.liquido, moeda)}
-            </Selo>
-          )
+          <div className="flex flex-wrap items-center gap-3">
+            {data && (
+              <Selo cor={big(data.liquido).gte(0) ? "#1a9c5f" : "#e0284f"}>
+                Resultado líquido: {formataMoeda(data.liquido, moeda)}
+              </Selo>
+            )}
+            <AccoesDoMapa />
+          </div>
         }
       />
 

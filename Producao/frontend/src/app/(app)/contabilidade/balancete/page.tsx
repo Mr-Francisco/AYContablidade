@@ -21,6 +21,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda, subtrai } from "@/lib/dinheiro";
@@ -70,6 +71,7 @@ export default function PaginaBalancete() {
       <CabecalhoPagina
         titulo="Balancete Geral"
         descricao="Débito, crédito e saldo por conta de movimento."
+        accoes={<AccoesDoMapa />}
       />
 
       <BarraFiltros className="mb-4">

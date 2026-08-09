@@ -19,6 +19,8 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -67,6 +69,9 @@ export default function Retencoes() {
     buscador,
   );
 
+  // A lista cresce com o exercício; o rodapé diz quantos são.
+  const historico = useHistorico(data?.linhas);
+
   const tipos = Object.entries(data?.por_tipo ?? {});
 
   return (
@@ -75,9 +80,14 @@ export default function Retencoes() {
         titulo="Retenções na Fonte"
         descricao="Impostos retidos no período, a entregar ao Estado até ao fim do mês seguinte."
         accoes={
-          data && (
-            <Selo cor="#e6007e">Total: {formataMoeda(data.total, moeda)}</Selo>
-          )
+          <div className="flex flex-wrap items-center gap-3">
+            {data && (
+              <Selo cor="#e6007e">
+                Total: {formataMoeda(data.total, moeda)}
+              </Selo>
+            )}
+            <AccoesDoMapa />
+          </div>
         }
       />
 
@@ -133,54 +143,59 @@ export default function Retencoes() {
             {data.linhas.length === 0 ? (
               <Vazio>Sem retenções.</Vazio>
             ) : (
-              <EnvolveTabela className="rounded-none border-0">
-                <Tabela>
-                  <thead>
-                    <tr>
-                      <Th>Data</Th>
-                      <Th>Nº Operação</Th>
-                      <Th>Imposto</Th>
-                      <Th>Conta</Th>
-                      <Th>Entidade</Th>
-                      <Th>Descrição</Th>
-                      <Th numerico>Valor retido</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.linhas.map((l) => (
-                      <Tr key={`${l.lancamento_id}-${l.conta}-${l.valor}`}>
-                        <Td className="tabular">
-                          {new Date(l.data).toLocaleDateString("pt-PT")}
-                        </Td>
-                        <Td className="tabular font-semibold">{l.numero_op}</Td>
-                        <Td>
-                          <Selo cor={CORES_TIPO[l.tipo] ?? "#62657a"}>
-                            {l.tipo}
-                          </Selo>
-                        </Td>
-                        <Td className="tabular">{l.conta}</Td>
-                        <Td className="max-w-[180px] truncate">
-                          {l.entidade || "—"}
-                        </Td>
-                        <Td className="max-w-[280px] truncate">
-                          <span title={l.descricao ?? ""}>
-                            {l.descricao || "—"}
-                          </span>
-                        </Td>
-                        <Td numerico className="font-semibold">
-                          {formataMoeda(l.valor, moeda)}
-                        </Td>
-                      </Tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-superficie-2 font-extrabold">
-                      <Td colSpan={6}>TOTAL RETIDO</Td>
-                      <Td numerico>{formataMoeda(data.total, moeda)}</Td>
-                    </tr>
-                  </tfoot>
-                </Tabela>
-              </EnvolveTabela>
+              <>
+                <EnvolveTabela className="rounded-none border-0">
+                  <Tabela>
+                    <thead>
+                      <tr>
+                        <Th>Data</Th>
+                        <Th>Nº Operação</Th>
+                        <Th>Imposto</Th>
+                        <Th>Conta</Th>
+                        <Th>Entidade</Th>
+                        <Th>Descrição</Th>
+                        <Th numerico>Valor retido</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historico.visiveis.map((l) => (
+                        <Tr key={`${l.lancamento_id}-${l.conta}-${l.valor}`}>
+                          <Td className="tabular">
+                            {new Date(l.data).toLocaleDateString("pt-PT")}
+                          </Td>
+                          <Td className="tabular font-semibold">
+                            {l.numero_op}
+                          </Td>
+                          <Td>
+                            <Selo cor={CORES_TIPO[l.tipo] ?? "#62657a"}>
+                              {l.tipo}
+                            </Selo>
+                          </Td>
+                          <Td className="tabular">{l.conta}</Td>
+                          <Td className="max-w-[180px] truncate">
+                            {l.entidade || "—"}
+                          </Td>
+                          <Td className="max-w-[280px] truncate">
+                            <span title={l.descricao ?? ""}>
+                              {l.descricao || "—"}
+                            </span>
+                          </Td>
+                          <Td numerico className="font-semibold">
+                            {formataMoeda(l.valor, moeda)}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-superficie-2 font-extrabold">
+                        <Td colSpan={6}>TOTAL RETIDO</Td>
+                        <Td numerico>{formataMoeda(data.total, moeda)}</Td>
+                      </tr>
+                    </tfoot>
+                  </Tabela>
+                </EnvolveTabela>
+                <RodapeHistorico {...historico} nome="retenções" />
+              </>
             )}
           </Cartao>
         </>

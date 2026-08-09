@@ -12,6 +12,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import type { RegistoAuditoria } from "@/types";
 
 /** Cor por família de acção, para se perceber a natureza de relance. */
@@ -78,6 +79,8 @@ export function TabelaAuditoria({
   mostrarIp?: boolean;
 }) {
   const [aberto, setAberto] = useState<string | null>(null);
+  // A auditoria cresce para sempre e é das listas mais longas do sistema.
+  const historico = useHistorico(registos);
 
   if (aCarregar) return <ACarregar />;
   if (!registos?.length) {
@@ -103,7 +106,7 @@ export function TabelaAuditoria({
           </tr>
         </thead>
         <tbody>
-          {registos.map((r) => {
+          {historico.visiveis.map((r) => {
             const familia = r.accao.split(".")[0];
             const temDetalhes = Object.keys(r.detalhes ?? {}).length > 0;
             return (
@@ -157,6 +160,8 @@ export function TabelaAuditoria({
           })}
         </tbody>
       </Tabela>
+
+      <RodapeHistorico {...historico} nome="registos" />
 
       {aberto && (
         <div className="border-t border-borda bg-fundo p-4">

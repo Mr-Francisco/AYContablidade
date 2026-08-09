@@ -29,6 +29,7 @@ import {
   Selector,
   Selo,
 } from "@/components/ui";
+import { Markdown } from "@/components/ui/Markdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { useExercicios } from "@/lib/hooks";
@@ -548,8 +549,10 @@ function TrocaNaConversa({
             <Alerta tipo="erro">{troca.erro}</Alerta>
           ) : (
             <>
-              <div className="whitespace-pre-wrap break-words rounded-2xl rounded-tl-md border border-borda bg-superficie px-4 py-3 text-sm leading-relaxed">
-                {troca.resposta}
+              {/* O modelo responde em Markdown. Sem isto, o utilizador via os
+                  asteriscos: `1. **IVA por Apurar**: há um aviso...`. */}
+              <div className="break-words rounded-2xl rounded-tl-md border border-borda bg-superficie px-4 py-3">
+                <Markdown>{troca.resposta ?? ""}</Markdown>
               </div>
               <Rodape troca={troca} />
             </>

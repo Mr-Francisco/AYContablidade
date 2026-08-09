@@ -23,11 +23,17 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
 import type { Compra, ResumoCompras } from "@/types";
+
+/** O que se pede ao servidor. Quando a resposta vem com este tamanho
+ *  exacto, é sinal de que foi cortada — e o rodapé diz que pode haver mais,
+ *  em vez de apresentar um total que não é o total. */
+const LIMITE_PEDIDO = 1000;
 
 export default function Compras() {
   const { empresa, pode } = useAuth();
@@ -47,7 +53,9 @@ export default function Compras() {
     isLoading,
     mutate,
   } = useSWR<Compra[]>(
-    `/api/compras${estado !== "todos" ? `?estado=${estado}` : ""}`,
+    `/api/compras?limite=${LIMITE_PEDIDO}${
+      estado !== "todos" ? `&estado=${estado}` : ""
+    }`,
     buscador,
   );
   const { data: resumo, mutate: mutateResumo } = useSWR<ResumoCompras>(
@@ -99,6 +107,8 @@ export default function Compras() {
       setAEliminar(null);
     }
   }
+
+  const historico = useHistorico(compras);
 
   return (
     <>
@@ -175,79 +185,86 @@ export default function Compras() {
         ) : !compras?.length ? (
           <Vazio>Sem documentos de compra.</Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Número</Th>
-                  <Th>Documento</Th>
-                  <Th>Data</Th>
-                  <Th>Fornecedor</Th>
-                  <Th numerico>Subtotal</Th>
-                  <Th numerico>IVA</Th>
-                  <Th numerico>Total</Th>
-                  <Th>Estado</Th>
-                  <Th />
-                </tr>
-              </thead>
-              <tbody>
-                {compras.map((c) => (
-                  <Tr key={c.id}>
-                    <Td className="tabular font-bold">
-                      {c.numero ?? (
-                        <span className="font-normal italic text-texto-suave">
-                          por emitir
-                        </span>
-                      )}
-                    </Td>
-                    <Td>
-                      <Selo cor="#3d7fe0">{c.documento_codigo}</Selo>
-                    </Td>
-                    <Td className="tabular">
-                      {new Date(c.data).toLocaleDateString("pt-PT")}
-                    </Td>
-                    <Td className="max-w-[220px] truncate">
-                      {c.fornecedor_nome || "—"}
-                    </Td>
-                    <Td numerico>{formataMoeda(c.subtotal, moeda)}</Td>
-                    <Td numerico>{formataMoeda(c.iva, moeda)}</Td>
-                    <Td numerico className="font-semibold">
-                      {formataMoeda(c.total, moeda)}
-                    </Td>
-                    <Td>
-                      <Selo
-                        cor={c.estado === "emitida" ? "#1a9c5f" : "#c98a10"}
-                      >
-                        {c.estado === "emitida" ? "Emitido" : "Rascunho"}
-                      </Selo>
-                    </Td>
-                    <Td numerico>
-                      {c.estado === "rascunho" && pode("logistica.gerir") && (
-                        <div className="flex justify-end gap-1.5">
-                          <Botao
-                            tamanho="pequeno"
-                            variante="primario"
-                            onClick={() => setAEmitir(c)}
-                          >
-                            <CheckCircle2 size={13} />
-                            Emitir
-                          </Botao>
-                          <Botao
-                            tamanho="pequeno"
-                            variante="perigo"
-                            onClick={() => setAEliminar(c)}
-                            aria-label="Eliminar rascunho"
-                          >
-                            <Trash2 size={13} />
-                          </Botao>
-                        </div>
-                      )}
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <>
+            <EnvolveTabela className="rounded-none border-0">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Número</Th>
+                    <Th>Documento</Th>
+                    <Th>Data</Th>
+                    <Th>Fornecedor</Th>
+                    <Th numerico>Subtotal</Th>
+                    <Th numerico>IVA</Th>
+                    <Th numerico>Total</Th>
+                    <Th>Estado</Th>
+                    <Th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {historico.visiveis.map((c) => (
+                    <Tr key={c.id}>
+                      <Td className="tabular font-bold">
+                        {c.numero ?? (
+                          <span className="font-normal italic text-texto-suave">
+                            por emitir
+                          </span>
+                        )}
+                      </Td>
+                      <Td>
+                        <Selo cor="#3d7fe0">{c.documento_codigo}</Selo>
+                      </Td>
+                      <Td className="tabular">
+                        {new Date(c.data).toLocaleDateString("pt-PT")}
+                      </Td>
+                      <Td className="max-w-[220px] truncate">
+                        {c.fornecedor_nome || "—"}
+                      </Td>
+                      <Td numerico>{formataMoeda(c.subtotal, moeda)}</Td>
+                      <Td numerico>{formataMoeda(c.iva, moeda)}</Td>
+                      <Td numerico className="font-semibold">
+                        {formataMoeda(c.total, moeda)}
+                      </Td>
+                      <Td>
+                        <Selo
+                          cor={c.estado === "emitida" ? "#1a9c5f" : "#c98a10"}
+                        >
+                          {c.estado === "emitida" ? "Emitido" : "Rascunho"}
+                        </Selo>
+                      </Td>
+                      <Td numerico>
+                        {c.estado === "rascunho" && pode("logistica.gerir") && (
+                          <div className="flex justify-end gap-1.5">
+                            <Botao
+                              tamanho="pequeno"
+                              variante="primario"
+                              onClick={() => setAEmitir(c)}
+                            >
+                              <CheckCircle2 size={13} />
+                              Emitir
+                            </Botao>
+                            <Botao
+                              tamanho="pequeno"
+                              variante="perigo"
+                              onClick={() => setAEliminar(c)}
+                              aria-label="Eliminar rascunho"
+                            >
+                              <Trash2 size={13} />
+                            </Botao>
+                          </div>
+                        )}
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+            <RodapeHistorico
+              {...historico}
+              truncadoNoServidor={(compras?.length ?? 0) >= LIMITE_PEDIDO}
+              nome="documentos"
+            />
+          </>
         )}
       </Cartao>
 

@@ -23,6 +23,8 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -133,31 +135,35 @@ export default function Amortizacoes() {
     }
   }
 
+  const historico = useHistorico(processos);
+
   return (
     <>
       <CabecalhoPagina
         titulo="Amortizações"
         descricao="Processamento das quotas do período e mapa anual do imobilizado."
         accoes={
-          pode("imob.gerir") &&
-          exId && (
-            <div className="flex gap-2">
-              {jaProcessado && (
-                <Botao onClick={() => setReabrir(true)}>
-                  <RotateCcw size={16} />
-                  Reabrir
+          <div className="flex flex-wrap items-center gap-3">
+            {pode("imob.gerir") && exId && (
+              <div className="flex gap-2">
+                {jaProcessado && (
+                  <Botao onClick={() => setReabrir(true)}>
+                    <RotateCcw size={16} />
+                    Reabrir
+                  </Botao>
+                )}
+                <Botao
+                  variante="primario"
+                  disabled={jaProcessado || ehAbertura}
+                  onClick={() => setConfirmar(true)}
+                >
+                  <PlayCircle size={16} />
+                  Processar {nomePeriodo}
                 </Botao>
-              )}
-              <Botao
-                variante="primario"
-                disabled={jaProcessado || ehAbertura}
-                onClick={() => setConfirmar(true)}
-              >
-                <PlayCircle size={16} />
-                Processar {nomePeriodo}
-              </Botao>
-            </div>
-          )
+              </div>
+            )}
+            <AccoesDoMapa />
+          </div>
         }
       />
 
@@ -270,63 +276,67 @@ export default function Amortizacoes() {
                   : "Escolha um exercício."}
               </Vazio>
             ) : (
-              <EnvolveTabela className="rounded-none border-0 border-t">
-                <Tabela>
-                  <thead>
-                    <tr>
-                      <Th>Código</Th>
-                      <Th>Designação</Th>
-                      <Th>Conta</Th>
-                      <Th numerico>Valor bruto</Th>
-                      <Th numerico>Acum. actual</Th>
-                      <Th numerico>Líquido actual</Th>
-                      <Th numerico>Quota do período</Th>
-                      <Th>Lançado</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mapaPeriodo.linhas.map((l) => (
-                      <Tr key={l.id}>
-                        <Td className="tabular font-bold">{l.codigo}</Td>
-                        <Td className="max-w-[240px] truncate font-semibold">
-                          {l.designacao}
-                        </Td>
-                        <Td className="tabular text-texto-suave">
-                          {l.conta || "—"}
-                        </Td>
-                        <Td numerico>{formataMoeda(l.valor_bruto, moeda)}</Td>
+              <>
+                <EnvolveTabela className="rounded-none border-0 border-t">
+                  <Tabela>
+                    <thead>
+                      <tr>
+                        <Th>Código</Th>
+                        <Th>Designação</Th>
+                        <Th>Conta</Th>
+                        <Th numerico>Valor bruto</Th>
+                        <Th numerico>Acum. actual</Th>
+                        <Th numerico>Líquido actual</Th>
+                        <Th numerico>Quota do período</Th>
+                        <Th>Lançado</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mapaPeriodo.linhas.map((l) => (
+                        <Tr key={l.id}>
+                          <Td className="tabular font-bold">{l.codigo}</Td>
+                          <Td className="max-w-[240px] truncate font-semibold">
+                            {l.designacao}
+                          </Td>
+                          <Td className="tabular text-texto-suave">
+                            {l.conta || "—"}
+                          </Td>
+                          <Td numerico>{formataMoeda(l.valor_bruto, moeda)}</Td>
+                          <Td numerico>
+                            {formataMoeda(l.amort_acumulada_atual, moeda)}
+                          </Td>
+                          <Td numerico>
+                            {formataMoeda(l.valor_liquido_atual, moeda)}
+                          </Td>
+                          <Td numerico className="font-semibold">
+                            {formataMoeda(l.valor_periodo, moeda)}
+                          </Td>
+                          <Td>
+                            {l.ja_processado ? (
+                              <Selo
+                                cor={l.lancamento_id ? "#1a9c5f" : "#c98a10"}
+                              >
+                                {l.lancamento_id ? "Sim" : "Só na ficha"}
+                              </Selo>
+                            ) : (
+                              <span className="text-texto-suave">—</span>
+                            )}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-borda font-bold">
+                        <Td colSpan={6}>Total do período</Td>
                         <Td numerico>
-                          {formataMoeda(l.amort_acumulada_atual, moeda)}
+                          {formataMoeda(mapaPeriodo.total_periodo, moeda)}
                         </Td>
-                        <Td numerico>
-                          {formataMoeda(l.valor_liquido_atual, moeda)}
-                        </Td>
-                        <Td numerico className="font-semibold">
-                          {formataMoeda(l.valor_periodo, moeda)}
-                        </Td>
-                        <Td>
-                          {l.ja_processado ? (
-                            <Selo cor={l.lancamento_id ? "#1a9c5f" : "#c98a10"}>
-                              {l.lancamento_id ? "Sim" : "Só na ficha"}
-                            </Selo>
-                          ) : (
-                            <span className="text-texto-suave">—</span>
-                          )}
-                        </Td>
-                      </Tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-borda font-bold">
-                      <Td colSpan={6}>Total do período</Td>
-                      <Td numerico>
-                        {formataMoeda(mapaPeriodo.total_periodo, moeda)}
-                      </Td>
-                      <Td />
-                    </tr>
-                  </tfoot>
-                </Tabela>
-              </EnvolveTabela>
+                        <Td />
+                      </tr>
+                    </tfoot>
+                  </Tabela>
+                </EnvolveTabela>
+              </>
             )}
           </Cartao>
         </Tabs.Content>
@@ -440,7 +450,7 @@ export default function Amortizacoes() {
                     </tr>
                   </thead>
                   <tbody>
-                    {processos.map((p) => (
+                    {historico.visiveis.map((p) => (
                       <Tr key={p.id}>
                         <Td className="font-semibold">
                           {p.mes} —{" "}
@@ -458,6 +468,7 @@ export default function Amortizacoes() {
                     ))}
                   </tbody>
                 </Tabela>
+                <RodapeHistorico {...historico} nome="períodos" />
               </EnvolveTabela>
             )}
           </Cartao>

@@ -22,6 +22,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -34,6 +35,11 @@ const CORES_ESTADO: Record<string, string> = {
   rascunho: "#c98a10",
   emitida: "#1a9c5f",
 };
+
+/** O que se pede ao servidor. Quando a resposta vem com este tamanho
+ *  exacto, é sinal de que foi cortada — e o rodapé diz que pode haver mais,
+ *  em vez de apresentar um total que não é o total. */
+const LIMITE_PEDIDO = 1000;
 
 export default function Vendas() {
   const { empresa, pode } = useAuth();
@@ -48,7 +54,9 @@ export default function Vendas() {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
-  const chave = `/api/comercial/vendas${estado !== "todos" ? `?estado=${estado}` : ""}`;
+  const chave = `/api/comercial/vendas?limite=${LIMITE_PEDIDO}${
+    estado !== "todos" ? `&estado=${estado}` : ""
+  }`;
   const { data: vendas, isLoading, mutate } = useSWR<Venda[]>(chave, buscador);
   const { data: resumo, mutate: mutateResumo } = useSWR<ResumoComercial>(
     "/api/comercial/resumo",
@@ -106,6 +114,8 @@ export default function Vendas() {
       setAEliminar(null);
     }
   }
+
+  const historico = useHistorico(vendas);
 
   return (
     <>
@@ -182,85 +192,92 @@ export default function Vendas() {
         ) : !vendas?.length ? (
           <Vazio>Sem documentos de venda.</Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Número</Th>
-                  <Th>Tipo</Th>
-                  <Th>Data</Th>
-                  <Th>Cliente</Th>
-                  <Th numerico>Subtotal</Th>
-                  <Th numerico>IVA</Th>
-                  <Th numerico>Total</Th>
-                  <Th>Estado</Th>
-                  <Th>Nº Operação</Th>
-                  <Th />
-                </tr>
-              </thead>
-              <tbody>
-                {vendas.map((v) => (
-                  <Tr key={v.id}>
-                    <Td className="tabular font-bold">
-                      {v.numero ?? (
-                        <span className="font-normal italic text-texto-suave">
-                          por emitir
-                        </span>
-                      )}
-                    </Td>
-                    <Td>
-                      <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>
-                    </Td>
-                    <Td className="tabular">
-                      {new Date(v.data).toLocaleDateString("pt-PT")}
-                    </Td>
-                    <Td className="max-w-[220px] truncate">
-                      {v.cliente_nome || (
-                        <span className="text-texto-suave">
-                          Consumidor final
-                        </span>
-                      )}
-                    </Td>
-                    <Td numerico>{formataMoeda(v.subtotal, moeda)}</Td>
-                    <Td numerico>{formataMoeda(v.iva, moeda)}</Td>
-                    <Td numerico className="font-semibold">
-                      {formataMoeda(v.total, moeda)}
-                    </Td>
-                    <Td>
-                      <Selo cor={CORES_ESTADO[v.estado] ?? "#62657a"}>
-                        {v.estado === "emitida" ? "Emitido" : "Rascunho"}
-                      </Selo>
-                    </Td>
-                    <Td className="tabular text-texto-suave">
-                      {v.numero_op ?? "—"}
-                    </Td>
-                    <Td numerico>
-                      {v.estado === "rascunho" && pode("comercial.gerir") && (
-                        <div className="flex justify-end gap-1.5">
-                          <Botao
-                            tamanho="pequeno"
-                            variante="primario"
-                            onClick={() => setAEmitir(v)}
-                          >
-                            <CheckCircle2 size={13} />
-                            Emitir
-                          </Botao>
-                          <Botao
-                            tamanho="pequeno"
-                            variante="perigo"
-                            onClick={() => setAEliminar(v)}
-                            aria-label="Eliminar rascunho"
-                          >
-                            <Trash2 size={13} />
-                          </Botao>
-                        </div>
-                      )}
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <>
+            <EnvolveTabela className="rounded-none border-0">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Número</Th>
+                    <Th>Tipo</Th>
+                    <Th>Data</Th>
+                    <Th>Cliente</Th>
+                    <Th numerico>Subtotal</Th>
+                    <Th numerico>IVA</Th>
+                    <Th numerico>Total</Th>
+                    <Th>Estado</Th>
+                    <Th>Nº Operação</Th>
+                    <Th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {historico.visiveis.map((v) => (
+                    <Tr key={v.id}>
+                      <Td className="tabular font-bold">
+                        {v.numero ?? (
+                          <span className="font-normal italic text-texto-suave">
+                            por emitir
+                          </span>
+                        )}
+                      </Td>
+                      <Td>
+                        <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>
+                      </Td>
+                      <Td className="tabular">
+                        {new Date(v.data).toLocaleDateString("pt-PT")}
+                      </Td>
+                      <Td className="max-w-[220px] truncate">
+                        {v.cliente_nome || (
+                          <span className="text-texto-suave">
+                            Consumidor final
+                          </span>
+                        )}
+                      </Td>
+                      <Td numerico>{formataMoeda(v.subtotal, moeda)}</Td>
+                      <Td numerico>{formataMoeda(v.iva, moeda)}</Td>
+                      <Td numerico className="font-semibold">
+                        {formataMoeda(v.total, moeda)}
+                      </Td>
+                      <Td>
+                        <Selo cor={CORES_ESTADO[v.estado] ?? "#62657a"}>
+                          {v.estado === "emitida" ? "Emitido" : "Rascunho"}
+                        </Selo>
+                      </Td>
+                      <Td className="tabular text-texto-suave">
+                        {v.numero_op ?? "—"}
+                      </Td>
+                      <Td numerico>
+                        {v.estado === "rascunho" && pode("comercial.gerir") && (
+                          <div className="flex justify-end gap-1.5">
+                            <Botao
+                              tamanho="pequeno"
+                              variante="primario"
+                              onClick={() => setAEmitir(v)}
+                            >
+                              <CheckCircle2 size={13} />
+                              Emitir
+                            </Botao>
+                            <Botao
+                              tamanho="pequeno"
+                              variante="perigo"
+                              onClick={() => setAEliminar(v)}
+                              aria-label="Eliminar rascunho"
+                            >
+                              <Trash2 size={13} />
+                            </Botao>
+                          </div>
+                        )}
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+            <RodapeHistorico
+              {...historico}
+              truncadoNoServidor={(vendas?.length ?? 0) >= LIMITE_PEDIDO}
+              nome="documentos"
+            />
+          </>
         )}
       </Cartao>
 

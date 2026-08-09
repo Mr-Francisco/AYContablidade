@@ -21,6 +21,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { compara, formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -103,7 +104,11 @@ export function PaginaContasCorrentes({
 
   return (
     <>
-      <CabecalhoPagina titulo={config.titulo} descricao={config.descricao} />
+      <CabecalhoPagina
+        titulo={config.titulo}
+        descricao={config.descricao}
+        accoes={<AccoesDoMapa />}
+      />
 
       {data && (
         <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">

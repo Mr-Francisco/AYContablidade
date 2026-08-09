@@ -31,6 +31,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import type { ContaPlataforma, ContaPlataformaCriada } from "@/types";
@@ -45,6 +46,13 @@ export default function ContasDaPlataforma() {
   );
 
   const [aCriar, setACriar] = useState(false);
+  // Duas acções desta página valiam um clique só, e são das mais sérias do
+  // sistema: remover quem administra a plataforma, e tirar o segundo factor a
+  // outra pessoa. Passam a pedir confirmação.
+  const [aRemover, setARemover] = useState<ContaPlataforma | null>(null);
+  const [aReporFactor, setAReporFactor] = useState<ContaPlataforma | null>(
+    null,
+  );
   const [criada, setCriada] = useState<ContaPlataformaCriada | null>(null);
   const [segredo, setSegredo] = useState<{
     conta: string;
@@ -229,7 +237,7 @@ export default function ContasDaPlataforma() {
                             {c.totp_ativo && (
                               <Accao
                                 titulo="Repor a verificação em dois passos"
-                                onClick={() => reporFactor(c)}
+                                onClick={() => setAReporFactor(c)}
                               >
                                 <ShieldOff size={13} />
                               </Accao>
@@ -243,7 +251,7 @@ export default function ContasDaPlataforma() {
                             <Accao
                               titulo="Remover"
                               perigo
-                              onClick={() => remover(c)}
+                              onClick={() => setARemover(c)}
                             >
                               <Trash2 size={13} />
                             </Accao>
@@ -287,6 +295,40 @@ export default function ContasDaPlataforma() {
           aoFechar={() => setSegredo(null)}
         />
       )}
+      <ConfirmarEliminar
+        aberto={aRemover !== null}
+        aoMudar={(a) => !a && setARemover(null)}
+        titulo={`Remover ${aRemover?.nome ?? ""}?`}
+        aoConfirmar={() => {
+          const alvo = aRemover;
+          setARemover(null);
+          if (alvo) remover(alvo);
+        }}
+      >
+        Esta conta administra a plataforma inteira: licenças, empresas,
+        auditoria e configurações. Removê-la <b>não se desfaz</b>, e a
+        plataforma fica com menos um operador. Se o objectivo é só tirar-lhe o
+        acesso por agora, <b>desactive-a</b>.
+      </ConfirmarEliminar>
+
+      <ConfirmarEliminar
+        aberto={aReporFactor !== null}
+        aoMudar={(a) => !a && setAReporFactor(null)}
+        titulo={`Repor o segundo factor de ${aReporFactor?.nome ?? ""}?`}
+        aoConfirmar={() => {
+          const alvo = aReporFactor;
+          setAReporFactor(null);
+          if (alvo) reporFactor(alvo);
+        }}
+      >
+        A verificação em dois passos desta conta é desligada e a pessoa terá de
+        a configurar outra vez ao entrar. Faça-o quando alguém perdeu o
+        telemóvel e os códigos de recuperação —{" "}
+        <b>
+          enquanto estiver reposta, a conta fica protegida só pela palavra-passe
+        </b>
+        .
+      </ConfirmarEliminar>
     </>
   );
 }

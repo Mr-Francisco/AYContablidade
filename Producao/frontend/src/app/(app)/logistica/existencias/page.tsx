@@ -19,6 +19,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -55,6 +56,7 @@ export default function ExistenciasPagina() {
       <CabecalhoPagina
         titulo="Existências"
         descricao="Stock e valorização ao Custo Médio Ponderado, calculado a partir dos movimentos."
+        accoes={<AccoesDoMapa />}
       />
 
       {data && (

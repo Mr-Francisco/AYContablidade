@@ -91,3 +91,8 @@
 - Uma rota que faz `db.commit()` não é revertida pelo `rollback` da fixture do teste: os dados ficam na base e colidem na corrida seguinte. Ou se limpa por prefixo antes e depois, ou se testa o serviço em vez da rota.
 - Ao acrescentar `PATCH` a um mestre, o identificador visível (código/número) fica FORA dos campos alteráveis: é o que aparece nos documentos já emitidos e o que os movimentos guardam.
 - `exclude_unset` e não `exclude_none` num PATCH: um campo enviado a `null` é uma ordem para limpar e tem de chegar; só os que não vieram é que ficam como estavam.
+- Um leitor de Markdown feito à mão constrói elementos React e nunca `dangerouslySetInnerHTML`: com texto vindo de uma API externa, a injecção passa a ser impossível por construção em vez de depender de sanitização.
+- Regra dos históricos: nenhuma lista cronológica se desenha inteira. Mostra-se uma primeira leva, diz-se quantos são ao todo, e há «Mostrar mais». `overflow-y: scroll` não resolve — o browser continua a desenhar tudo, e uma barra dentro de outra é intragável no telemóvel.
+- Uma rota que corta a resposta por omissão faz a interface mentir: mostra 200 registos como se fossem o total. Pedir o limite explicitamente e comparar o tamanho da resposta com o pedido é o que permite dizer «pode haver mais».
+- Ao aplicar uma alteração mecânica a várias páginas, verificar que a âncora usada é a CERTA em cada uma: o rodapé foi parar à tabela de activos em vez da do histórico, em duas páginas que tinham duas tabelas.
+- `accoes={X}` tem X como expressão: envolver em `<>X</>` transforma-a em texto literal. O certo é `<>{X}</>`.
