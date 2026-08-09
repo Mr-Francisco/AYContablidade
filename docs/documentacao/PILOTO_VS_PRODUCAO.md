@@ -34,7 +34,7 @@ que aguenta muitas empresas, muitos utilizadores e dinheiro real.
 | Autenticação | PyJWT, bcrypt, pyotp, cryptography (Fernet) |
 | Limites | SlowAPI |
 | IA | OpenAI, só o assistente |
-| Testes | pytest — 359 |
+| Testes | pytest — 389 |
 | Qualidade | Biome, TypeScript strict |
 
 ---
@@ -239,7 +239,7 @@ não ainda todas as operações de negócio.
 | | Piloto | Produção |
 |---|---|---|
 | Tipos | JavaScript sem tipos | TypeScript strict + Pydantic |
-| Testes | Nenhum | 359 |
+| Testes | Nenhum | 389 |
 | Lint | Nenhum | Biome |
 | Migrações | — | Alembic |
 | Documentação da API | — | OpenAPI (fechada em produção) |
@@ -338,7 +338,7 @@ vírgula flutuante; sem testes.
 
 **A favor:** dados num servidor com transacções e cópias; palavras-passe
 cifradas e 2FA; autorização verificada no servidor; muitas empresas isoladas;
-trabalho em equipa; auditoria; dinheiro exacto; 359 testes; assistente de IA
+trabalho em equipa; auditoria; dinheiro exacto; 389 testes; assistente de IA
 com custos controlados; página pública indexável; guardas que impedem uma
 instalação mal configurada de arrancar.
 
@@ -354,19 +354,45 @@ Estado real, verificado no código:
 
 | O que | Situação |
 |---|---|
-| Recuperação de palavra-passe por e-mail | Falta SMTP |
-| Interface de exercícios (criar/fechar/reabrir) | Backend só tem `GET` |
-| Interface de fechos de período | `POST`/`DELETE` existem, sem botão |
-| Documento legal de venda (A4 + talão POS 80 mm, QR) | Não migrado |
-| Separadores de `empresa.html` | 6 dos 9 sem equivalente: facturação e comunicação (SAF-T), integração AGT, tesouraria, CMVMC, séries, políticas |
+| Recuperação de palavra-passe por e-mail | Falta SMTP — ver `PENDENCIAS_PRIORITARIAS.md` §4 |
+| Documento legal de venda (A4 + talão POS 80 mm, QR) | Não migrado — ver `PENDENCIAS_PRIORITARIAS.md` §1 |
+| Separadores de `empresa.html` | 5 dos 9 sem equivalente — ver `PENDENCIAS_PRIORITARIAS.md` §3 |
 | Exportar CSV em vários mapas | Parcial |
 | Drill-down do balancete | Não migrado |
 | Picker de contas com F4 | Não migrado |
 | Auditoria das operações de negócio | Só administração |
 
 **Já concluído nesta ronda:** integração de lançamentos diferidos, CRUD do
-plano de contas, diários, documentos e centros de custo, e editar/eliminar em
-artigos, armazéns, clientes, fornecedores, vendedores e colaboradores.
+plano de contas, diários, documentos e centros de custo, editar/eliminar em
+artigos, armazéns, clientes, fornecedores, vendedores e colaboradores, e
+**exercícios económicos e fechos de período** (§16.1).
+
+### 16.1 Exercícios e fechos de período — FEITO
+
+Os dois travões do lançamento, um grosso e um fino:
+
+| | Onde | Efeito |
+|---|---|---|
+| Exercício fechado | Contabilidade → **Exercícios** | Nenhum diário aceita lançamentos nesse exercício |
+| Período fechado | Contabilidade → **Diários** → «Gerir fechos» | Só aquele diário, só aquele mês |
+
+Ambos reversíveis a qualquer momento, como no Piloto. Fechar pede confirmação;
+reabrir não — só fechar é que tira capacidade a alguém.
+
+A regra **não mudou**: quem recusa o lançamento continua a ser
+`services/contabilidade.py::postar`, que já lia `Exercicio.estado` e
+`DiarioFecho`. O que passou a existir foram as rotas de escrita dos exercícios
+(`POST` e `PATCH /api/contabilidade/exercicios`, ambas com `contab.fechar`) e a
+interface para as duas coisas.
+
+Diferenças deliberadas face ao Piloto, com justificação:
+
+| Piloto | Produção | Porquê |
+|---|---|---|
+| Exercícios em `empresa.html` (Configurações) | Contabilidade → Exercícios | `/configuracoes` é página de administrador; `contab.fechar` é do contabilista |
+| Nome e datas editáveis depois de criado | Fixos | Os lançamentos guardam o **id** do exercício. Mover as datas mudava o período a que pertencem sem lhes tocar |
+| Eliminar exercício | Não existe | Fora do âmbito pedido. Um exercício com lançamentos não se deve apagar; a alternativa é fechá-lo |
+| Podia criar-se já fechado | Nasce sempre aberto | `estado` não é campo do pedido: criar fechado seria bloquear lançamentos em silêncio |
 
 ---
 
@@ -389,7 +415,7 @@ Os problemas do Piloto que ficam resolvidos:
 6. **Sem rasto** → auditoria com antes e depois.
 7. **Fecho de período contornável** → imposto no servidor.
 8. **Apagar sem consequências** → o que tem histórico não se apaga.
-9. **Sem testes** → 359, a fixar as regressões que já aconteceram.
+9. **Sem testes** → 389, a fixar as regressões que já aconteceram.
 
 E o que é novo: multiempresa com licenciamento, verificação em dois passos,
 assistente de IA com pseudonimização e custos controlados, e uma página pública

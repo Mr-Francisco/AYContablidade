@@ -3,8 +3,8 @@
 Descreve o sistema **como ele está**, não como se gostaria que estivesse. O que
 não está feito aparece marcado **[PENDENTE]**.
 
-Levantado em 2026-08-09, contra o código: 140 rotas de API, 39 tabelas, 66
-páginas, 359 testes.
+Levantado em 2026-08-09, contra o código: 141 rotas de API, 39 tabelas, 67
+páginas, 389 testes.
 
 ---
 
@@ -83,7 +83,7 @@ frontend/src/
 │   ├── page.tsx              → apresentação PÚBLICA (SEO, sem JS de cliente)
 │   ├── sitemap.ts, robots.ts → SEO técnico
 │   ├── entrar/ registar/ activar/  → públicas
-│   └── (app)/                → aplicação, 66 páginas, exige sessão
+│   └── (app)/                → aplicação, 67 páginas, exige sessão
 │       ├── painel/ contabilidade/ analitica/ contas-correntes/
 │       ├── comercial/ logistica/ imobilizados/ rh/ fiscalidade/
 │       ├── assistente/ gestao/ configuracoes/ perfil/
@@ -149,16 +149,16 @@ backend/
 ├── scripts/
 │   │   criar_demo.py         → dados de demonstração (RECUSA em produção)
 │   └── criar_superadmin.py   → primeira conta real
-└── tests/                    → 359 testes
+└── tests/                    → 389 testes
 ```
 
 ### Rotas
 
-140 no total. Por área:
+141 no total. Por área:
 
 | Prefixo | Nº | O que faz |
 |---|---:|---|
-| `/api/contabilidade` | 22 | Contas, diários, documentos, centros, lançamentos, fechos |
+| `/api/contabilidade` | 23 | Contas, diários, documentos, centros, lançamentos, exercícios, fechos |
 | `/api/licencas` | 21 | Licenças, empresas, contas da plataforma, auditoria, IA |
 | `/api/rh` | 14 | Colaboradores, processamento, pagamentos, recibos, tabelas |
 | `/api/comercial` | 12 | Clientes, vendedores, vendas, comissões |
@@ -355,8 +355,18 @@ Um exercício tem nome, início, fim, estado e a marca de activo. **Vários pode
 estar activos ao mesmo tempo** (transição de ano) — `ativo` é um interruptor,
 não uma escolha exclusiva.
 
-**[PENDENTE]** Não há interface para criar, fechar ou reabrir exercícios; a
-rota `GET /api/contabilidade/exercicios` existe, as de escrita não.
+Gerem-se em **Contabilidade → Exercícios** (`contab.ver` para ver,
+`contab.fechar` para alterar): criar, fechar, reabrir, activar e desactivar.
+Um exercício **fechado não aceita lançamentos em nenhum diário**, e reabre-se a
+qualquer momento.
+
+Nasce sempre aberto — `estado` não é campo do pedido de criação. O nome e as
+datas não se alteram depois de criado: os lançamentos guardam o **id** do
+exercício, e mover as datas por baixo deles mudava o período a que pertencem
+sem lhes tocar.
+
+Não há rota para **eliminar** um exercício. É deliberado: um exercício com
+lançamentos não se deve apagar, e a alternativa é fechá-lo.
 
 ### Diários e fechos
 
@@ -364,6 +374,11 @@ Cada diário tem código, nome e categoria (a categoria determina em que módulo
 é oferecido). O **fecho é por diário e mês**, como no Piloto: fechado o diário
 10 para Agosto, nenhum lançamento novo entra nesse par. Reabrir é `DELETE` do
 fecho.
+
+A gestão faz-se na página dos Diários: escolhe-se o exercício na barra de
+filtros, e cada linha mostra quantos períodos estão fechados e abre a janela
+«Gerir fechos» com os 16 períodos do PGC-AR (00 abertura, 01–12 meses, 13–15
+rectificação e apuramento).
 
 CRUD completo, com uma regra: **um diário com movimentos ou documentos não se
 apaga** — desactiva-se.
@@ -606,11 +621,9 @@ tokens, retenção, limites por empresa, módulos, utilizadores e permissões.
 
 | O que | Onde |
 |---|---|
-| Recuperação de palavra-passe por e-mail | Precisa de SMTP |
-| Interface de exercícios (criar/fechar/reabrir) | Backend só tem `GET` |
-| Interface de fechos de período | `POST`/`DELETE` existem |
-| Documento legal de venda (A4 + talão POS, QR) | `fatura-doc.js` do Piloto |
-| Separadores de `empresa.html` | 6 dos 9 sem equivalente |
+| Recuperação de palavra-passe por e-mail | `PENDENCIAS_PRIORITARIAS.md` §4 |
+| Documento legal de venda (A4 + talão POS, QR) | `PENDENCIAS_PRIORITARIAS.md` §1 |
+| Separadores de `empresa.html` | 5 dos 9 — `PENDENCIAS_PRIORITARIAS.md` §3 |
 | Exportar CSV em vários mapas | |
 | Drill-down do balancete | |
 | Picker de contas com F4 | |

@@ -63,14 +63,25 @@ export function AccoesDaLinha({
   );
 }
 
-/** Confirmação antes de apagar. Nunca se apaga a um clique só. */
-export function ConfirmarEliminar({
+/**
+ * Confirmação antes de uma acção que custa a desfazer.
+ *
+ * A caixa é a mesma para todas — eliminar um mestre, fechar um período, fechar
+ * um exercício. Só mudam as palavras dos botões: quem já reconheceu o diálogo
+ * numa página reconhece-o na seguinte, e uma acção séria nunca acontece a um
+ * clique só.
+ */
+export function Confirmar({
   aberto,
   aoMudar,
   titulo,
   children,
   aoConfirmar,
   ocupado,
+  rotuloConfirmar,
+  rotuloOcupado,
+  rotuloCancelar = "Manter",
+  variante = "perigo",
 }: {
   aberto: boolean;
   aoMudar: (a: boolean) => void;
@@ -78,6 +89,10 @@ export function ConfirmarEliminar({
   children: ReactNode;
   aoConfirmar: () => void;
   ocupado?: boolean;
+  rotuloConfirmar: string;
+  rotuloOcupado: string;
+  rotuloCancelar?: string;
+  variante?: "perigo" | "primario";
 }) {
   return (
     <AlertDialog.Root open={aberto} onOpenChange={aoMudar}>
@@ -94,15 +109,32 @@ export function ConfirmarEliminar({
           </AlertDialog.Description>
           <div className="mt-5 flex justify-end gap-2">
             <AlertDialog.Cancel asChild>
-              <Botao variante="neutro">Manter</Botao>
+              <Botao variante="neutro">{rotuloCancelar}</Botao>
             </AlertDialog.Cancel>
-            <Botao variante="perigo" onClick={aoConfirmar} disabled={ocupado}>
-              {ocupado ? "A eliminar…" : "Eliminar"}
+            <Botao variante={variante} onClick={aoConfirmar} disabled={ocupado}>
+              {ocupado ? rotuloOcupado : rotuloConfirmar}
             </Botao>
           </div>
         </AlertDialog.Content>
       </AlertDialog.Portal>
     </AlertDialog.Root>
+  );
+}
+
+/** Confirmação antes de apagar. Nunca se apaga a um clique só. */
+export function ConfirmarEliminar(
+  props: Omit<
+    Parameters<typeof Confirmar>[0],
+    "rotuloConfirmar" | "rotuloOcupado" | "variante"
+  >,
+) {
+  return (
+    <Confirmar
+      {...props}
+      rotuloConfirmar="Eliminar"
+      rotuloOcupado="A eliminar…"
+      variante="perigo"
+    />
   );
 }
 

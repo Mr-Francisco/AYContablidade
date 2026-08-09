@@ -2,7 +2,10 @@
 
 import { Plus } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
-
+import {
+  DialogoFechos,
+  useFechos,
+} from "@/components/contabilidade/FechosDoDiario";
 import {
   ACarregar,
   Alerta,
@@ -28,7 +31,7 @@ import {
 } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ErroApi } from "@/lib/api";
-import { useDiarios } from "@/lib/hooks";
+import { useDiarios, useExercicios } from "@/lib/hooks";
 import type { Diario } from "@/types";
 
 const CATEGORIAS: Record<string, { rotulo: string; cor: string }> = {
@@ -44,15 +47,30 @@ const ROTA = "/api/contabilidade/diarios";
 
 export default function Diarios() {
   const { diarios, isLoading, mutate } = useDiarios();
+  const { exercicios, activo } = useExercicios();
   const { pode } = useAuth();
   const [categoria, setCategoria] = useState("todas");
   const [emEdicao, setEmEdicao] = useState<Diario | null>(null);
   const [aCriar, setACriar] = useState(false);
   const [aApagar, setAApagar] = useState<Diario | null>(null);
+  const [aGerirFechos, setAGerirFechos] = useState<Diario | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
   const podeGerir = pode("contab.plano");
+  const podeFechar = pode("contab.fechar");
+
+  // Exercício escolhido para a coluna de fechos. Começa no activo, porque é
+  // esse em que se está a trabalhar; `""` só acontece se a empresa não tiver
+  // exercício nenhum.
+  const [exercicioId, setExercicioId] = useState("");
+  const exercicio =
+    exercicios.find((e) => e.id === exercicioId) ?? activo ?? null;
+
+  // Um pedido só, para todos os diários: os fechos deste exercício vêm todos
+  // juntos e contam-se por diário em memória. Um pedido por linha seriam
+  // quinze pedidos para desenhar uma coluna.
+  const { fechos } = useFechos(exercicio?.id);
 
   const filtrados = useMemo(
     () =>
@@ -114,7 +132,29 @@ export default function Diarios() {
           ]}
           larguraMinima="15rem"
         />
+        {exercicios.length > 0 && (
+          <Selector
+            rotulo="Exercício (fechos)"
+            valor={exercicio?.id ?? ""}
+            aoMudar={setExercicioId}
+            opcoes={exercicios.map((e) => ({
+              valor: e.id,
+              rotulo: e.estado === "fechado" ? `${e.nome} (fechado)` : e.nome,
+            }))}
+            larguraMinima="15rem"
+          />
+        )}
       </BarraFiltros>
+
+      {exercicio?.estado === "fechado" && (
+        <div className="mb-4">
+          <Alerta tipo="info">
+            O <b>{exercicio.nome}</b> está fechado por inteiro — nenhum diário
+            aceita lançamentos, independentemente destes fechos mensais.
+            Reabre-se em Contabilidade → Exercícios.
+          </Alerta>
+        </div>
+      )}
 
       {erro && (
         <div className="mb-4">
@@ -136,6 +176,7 @@ export default function Diarios() {
                   <Th>Designação</Th>
                   <Th>Categoria</Th>
                   <Th>Estado</Th>
+                  <Th>Fechos {exercicio ? `(${exercicio.nome})` : ""}</Th>
                   {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
@@ -145,6 +186,9 @@ export default function Diarios() {
                     rotulo: d.categoria,
                     cor: "#62657a",
                   };
+                  const nFechos = fechos.filter(
+                    (f) => f.diario_codigo === d.codigo,
+                  ).length;
                   return (
                     <Tr key={d.id}>
                       <Td className="font-bold tabular">{d.codigo}</Td>
@@ -156,6 +200,28 @@ export default function Diarios() {
                         <Selo cor={d.ativo ? "#1a9c5f" : "#8a8a8a"}>
                           {d.ativo ? "Activo" : "Inactivo"}
                         </Selo>
+                      </Td>
+                      <Td>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Selo cor={nFechos ? "#8a8a8a" : "#1a9c5f"}>
+                            {nFechos
+                              ? `${nFechos} ${nFechos === 1 ? "período fechado" : "períodos fechados"}`
+                              : "Tudo aberto"}
+                          </Selo>
+                          <Botao
+                            variante="neutro"
+                            tamanho="pequeno"
+                            disabled={!exercicio}
+                            title={
+                              exercicio
+                                ? undefined
+                                : "Crie um exercício em Contabilidade → Exercícios"
+                            }
+                            onClick={() => setAGerirFechos(d)}
+                          >
+                            {podeFechar ? "Gerir fechos" : "Ver fechos"}
+                          </Botao>
+                        </div>
                       </Td>
                       {podeGerir && (
                         <Td>
@@ -175,6 +241,15 @@ export default function Diarios() {
           </EnvolveTabela>
         )}
       </Cartao>
+
+      {aGerirFechos && exercicio && (
+        <DialogoFechos
+          diario={aGerirFechos}
+          exercicio={exercicio}
+          podeFechar={podeFechar}
+          aoFechar={() => setAGerirFechos(null)}
+        />
+      )}
 
       {(aCriar || emEdicao) && (
         <FormularioDiario

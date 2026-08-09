@@ -96,3 +96,10 @@
 - Uma rota que corta a resposta por omissão faz a interface mentir: mostra 200 registos como se fossem o total. Pedir o limite explicitamente e comparar o tamanho da resposta com o pedido é o que permite dizer «pode haver mais».
 - Ao aplicar uma alteração mecânica a várias páginas, verificar que a âncora usada é a CERTA em cada uma: o rodapé foi parar à tabela de activos em vez da do histórico, em duas páginas que tinham duas tabelas.
 - `accoes={X}` tem X como expressão: envolver em `<>X</>` transforma-a em texto literal. O certo é `<>{X}</>`.
+- Antes de escolher onde vive um ecrã novo, confirmar QUEM tem a capacidade que ele usa: o painel de exercícios ia para Configurações (como no Piloto) e Configurações é `perfis: ["admin"]`, enquanto `contab.fechar` é do contabilista — o dono da capacidade ficava sem ecrã.
+- Uma mensagem de erro que aponta para um ecrã («reabre-o em Configurações») é contrato com o utilizador: mudar o ecrã de sítio obriga a actualizar a mensagem, senão manda-se a pessoa para um beco.
+- Quando um teste de integração falha, ler a mensagem antes de suspeitar do código: `11` e `12` são contas integradoras, e a recusa era do meu payload, não da aplicação. As validações de exercício e período correm ANTES da resolução de contas, e foi isso que mascarou o erro.
+- Verificar o nome real da função antes de a chamar num teste: era `postar`, não `gravar_lancamento`, e já existia `eh_movimento` para o que eu estava a reimplementar à mão.
+- O `uvicorn` sem `--reload` não apanha alterações: rotas novas não apareciam no `openapi.json` e a causa era o processo antigo, não o código.
+- Antes de escrever em tabelas da base de dados numa sessão partilhada, perguntar se o utilizador está a testar em paralelo — quase apaguei um 2FA que ele tinha acabado de configurar.
+- Não copiar do Piloto o que ele simula: o QR da factura é `pseudoQR()` (rectângulos de um hash), o «código de validação AGT» é um hash local truncado e o SAF-T é um CSV com «(demonstração)» no cabeçalho. Transpor isto produziria um documento que aparenta certificação inexistente.

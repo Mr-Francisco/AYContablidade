@@ -407,7 +407,7 @@ continua a funcionar** — corre inteiramente no servidor, por regras.
 ```bash
 cd C:/GitHub/AYContablidade/Producao/backend
 .venv/Scripts/python.exe -m pytest -q
-# 359 passed
+# 389 passed
 ```
 
 Um ficheiro só:

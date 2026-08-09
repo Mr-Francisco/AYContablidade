@@ -352,8 +352,8 @@ def postar(
         )
         if ex is not None and ex.estado == "fechado":
             raise ErroContabilistico(
-                f"O exercício {ex.nome} está fechado — reabre-o em Configurações "
-                "antes de lançar."
+                f"O exercício {ex.nome} está fechado — reabre-o em "
+                "Contabilidade → Exercícios antes de lançar."
             )
 
     # --- Diário fechado para o período ---

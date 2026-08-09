@@ -151,6 +151,13 @@ const NAV_COMPLETO: GrupoNav[] = [
         cap: "contab.ver",
         icone: "documentos",
       },
+      {
+        href: "/contabilidade/exercicios",
+        rotulo: "Exercícios",
+        seccao: "Tabelas",
+        cap: "contab.ver",
+        icone: "calendario",
+      },
     ],
   },
 

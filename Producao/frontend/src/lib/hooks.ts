@@ -20,12 +20,12 @@ import type {
  * por omissão é o activo mais recente, como no Piloto.
  */
 export function useExercicios() {
-  const { data, isLoading, error } = useSWR<Exercicio[]>(
+  const { data, isLoading, error, mutate } = useSWR<Exercicio[]>(
     "/api/contabilidade/exercicios",
     buscador,
   );
   const activo = useMemo(() => data?.find((e) => e.ativo) ?? data?.[0], [data]);
-  return { exercicios: data ?? [], activo, isLoading, error };
+  return { exercicios: data ?? [], activo, isLoading, error, mutate };
 }
 
 /**

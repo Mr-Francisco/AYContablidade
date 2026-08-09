@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
+from src.api.mestres import aplicar, obter_da_empresa
 from src.core.pgc import CATEGORIAS_DIARIO, PERIODOS
 from src.db.models.contabilidade import (
     CentroCusto,
@@ -23,6 +24,7 @@ from src.db.models.contabilidade import (
     Lancamento,
     LancamentoLinha,
 )
+from src.db.models.tenancy import Exercicio
 from src.services import contabilidade as svc
 from src.services.seed import importar_plano
 
@@ -142,6 +144,27 @@ class FechoPedido(BaseModel):
     exercicio_id: UUID | None = None
 
 
+class ExercicioPedido(BaseModel):
+    nome: str = Field(min_length=1, max_length=80)
+    inicio: Date
+    fim: Date
+    ativo: bool = True
+
+
+class ExercicioAtualizar(BaseModel):
+    """Só o estado e o interruptor de activo.
+
+    O nome e as datas ficam DE FORA de propósito: os lançamentos guardam o id
+    do exercício, não as suas datas. Mover as datas por baixo deles mudava o
+    período a que pertencem sem lhes tocar — um balancete pedido pelo exercício
+    passava a trazer movimentos que nunca lá estiveram, e ninguém dava por isso
+    porque o lançamento continuava igual.
+    """
+
+    estado: str | None = Field(default=None, pattern="^(aberto|fechado)$")
+    ativo: bool | None = None
+
+
 # ---------------------------------------------------------------------------
 # Tabelas base
 # ---------------------------------------------------------------------------
@@ -151,6 +174,11 @@ def periodos() -> list[dict]:
     return [{"codigo": c, "nome": n} for c, n in PERIODOS]
 
 
+def _exercicio_publico(e: Exercicio) -> dict:
+    return {"id": e.id, "nome": e.nome, "inicio": e.inicio, "fim": e.fim,
+            "estado": e.estado, "ativo": e.ativo, "apuramento": e.apuramento}
+
+
 @router.get("/exercicios", dependencies=[VER])
 def listar_exercicios(empresa: EmpresaAtual, db: DB) -> list[dict]:
     """Exercícios económicos da empresa, mais recente primeiro.
@@ -158,18 +186,58 @@ def listar_exercicios(empresa: EmpresaAtual, db: DB) -> list[dict]:
     Vários podem estar activos em simultâneo (transição de ano) — `ativo` é um
     interruptor independente, não uma escolha exclusiva, como no Piloto.
     """
-    from src.db.models.tenancy import Exercicio
-
     exs = db.scalars(
         select(Exercicio)
         .where(Exercicio.empresa_id == empresa.id)
         .order_by(Exercicio.inicio.desc())
     ).all()
-    return [
-        {"id": e.id, "nome": e.nome, "inicio": e.inicio, "fim": e.fim,
-         "estado": e.estado, "ativo": e.ativo, "apuramento": e.apuramento}
-        for e in exs
-    ]
+    return [_exercicio_publico(e) for e in exs]
+
+
+@router.post("/exercicios", status_code=status.HTTP_201_CREATED,
+             dependencies=[FECHAR])
+def criar_exercicio(dados: ExercicioPedido, empresa: EmpresaAtual, db: DB) -> dict:
+    """Abre um exercício novo. Nasce SEMPRE aberto.
+
+    `estado` não vem no pedido: criar um exercício já fechado não serve para
+    nada e seria uma forma silenciosa de bloquear lançamentos.
+    """
+    if dados.fim <= dados.inicio:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "O fim do exercício tem de ser depois do início.",
+        )
+    ja = db.scalar(
+        select(Exercicio.id).where(
+            Exercicio.empresa_id == empresa.id, Exercicio.nome == dados.nome
+        )
+    )
+    if ja is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"Já existe o exercício «{dados.nome}»."
+        )
+    e = Exercicio(empresa_id=empresa.id, estado="aberto", **dados.model_dump())
+    db.add(e)
+    db.commit()
+    db.refresh(e)
+    return _exercicio_publico(e)
+
+
+@router.patch("/exercicios/{exercicio_id}", dependencies=[FECHAR])
+def actualizar_exercicio(
+    exercicio_id: UUID, dados: ExercicioAtualizar, empresa: EmpresaAtual, db: DB
+) -> dict:
+    """Fecha, reabre, activa ou desactiva.
+
+    Fechar e reabrir é reversível a qualquer momento, como no Piloto. Quem
+    barra o lançamento é `svc.gravar_lancamento`, que lê este `estado` — esta
+    rota não repete a regra, só lhe muda o valor.
+    """
+    e = obter_da_empresa(db, Exercicio, exercicio_id, empresa.id, nome="Exercício")
+    aplicar(e, dados)
+    db.commit()
+    db.refresh(e)
+    return _exercicio_publico(e)
 
 
 @router.get("/contas", dependencies=[VER])

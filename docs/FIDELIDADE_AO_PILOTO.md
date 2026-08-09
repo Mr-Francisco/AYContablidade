@@ -135,8 +135,6 @@ início quando se elimina; integrar duas vezes não duplica.
 
 O que ainda falta ligar:
 
-- `POST` e `DELETE /api/contabilidade/fechos` — fechar e reabrir período por
-  diário e mês. O fecho funciona (é verificado ao lançar), mas faz-se pela API.
 - `POST /api/contabilidade/plano/importar`
 - `PUT /api/rh/config` (taxas de INSS), `PUT /api/logistica/config`,
   `PUT /api/comercial/config`
@@ -148,8 +146,17 @@ lado nenhum: Facturação e Comunicação (incluindo exportar SAF-T), integraç�
 AGT para consulta de NIF, Tesouraria (bancos e caixa), parametrizações de
 CMVMC, séries de documentos, e políticas de permissões.
 
-Também não há interface para **criar, fechar ou reabrir exercícios** — a rota
-de leitura existe, as de escrita não.
+**Exercícios e fechos — FEITO.** Criar, fechar e reabrir exercícios está em
+Contabilidade → Exercícios; os fechos mensais por diário estão na página dos
+Diários. Ver `documentacao/PILOTO_VS_PRODUCAO.md`.
+
+Nota de localização: no Piloto os exercícios viviam em `empresa.html`
+(«Configurações»). Na Produção estão em Contabilidade porque `/configuracoes`
+é uma página de administrador (`perfis: ["admin"]`) e quem tem `contab.fechar`
+é o contabilista — deixá-los lá punha o ecrã fora do alcance de quem tem a
+capacidade. A mensagem de erro do servidor foi alinhada com a nova localização.
+
+O que resta deste separador está em `documentacao/PENDENCIAS_PRIORITARIAS.md`.
 
 ### 2.5 Impressão — RESOLVIDO NA BASE
 
