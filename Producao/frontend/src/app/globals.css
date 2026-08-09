@@ -179,3 +179,118 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Impressão.
+
+   Um balancete impresso com o cabeçalho, a barra de navegação e os botões da
+   aplicação à volta não serve para entregar a ninguém. O Piloto imprimia 16
+   páginas; sem estas regras, o que sai do browser é a fotografia do ecrã.
+
+   O que fica: o conteúdo. O que sai: navegação, botões, filtros e tudo o que
+   for marcado `sem-imprimir`. As cores voltam a preto sobre branco porque o
+   tema escuro num papel gasta tinta e perde legibilidade.
+--------------------------------------------------------------------------- */
+@media print {
+  /* Cor real, e não a aproximação que o browser inventa para poupar tinta. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Papel: preto sobre branco, seja qual for o tema escolhido no ecrã. */
+  :root,
+  [data-theme="dark"] {
+    --color-fundo: #ffffff;
+    --color-superficie: #ffffff;
+    --color-superficie-2: #ffffff;
+    --color-texto: #000000;
+    --color-texto-suave: #333333;
+    --color-borda: #999999;
+    --shadow-suave: none;
+    --shadow-forte: none;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+
+  /* A moldura da aplicação não pertence ao documento impresso. */
+  header,
+  nav,
+  footer,
+  aside,
+  .sem-imprimir,
+  [data-sem-imprimir] {
+    display: none !important;
+  }
+
+  /* Nem os botões e campos: num papel não se clica nem se escreve. */
+  button,
+  input,
+  select,
+  textarea,
+  [role="tablist"],
+  [role="dialog"] > button {
+    display: none !important;
+  }
+
+  /* Marcado à mão quando um controlo TEM de aparecer (uma opção escolhida que
+     explica o mapa, por exemplo). */
+  .imprimir,
+  [data-imprimir] {
+    display: revert !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Os cartões deixam de ser cartões: sem sombra, sem fundo, sem canto. */
+  [class*="rounded-"],
+  [class*="shadow-"] {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Uma linha de tabela não se parte a meio entre duas folhas, e o cabeçalho
+     repete-se em todas — sem isso, a segunda página de um balancete são
+     números sem colunas. */
+  table {
+    width: 100% !important;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr,
+  img {
+    page-break-inside: avoid;
+  }
+  th,
+  td {
+    border: 1px solid #999 !important;
+    padding: 3px 6px !important;
+  }
+
+  h1,
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  /* Um endereço interno impresso não leva ninguém a lado nenhum. */
+  a[href]::after {
+    content: "";
+  }
+
+  @page {
+    margin: 14mm 12mm;
+  }
+}

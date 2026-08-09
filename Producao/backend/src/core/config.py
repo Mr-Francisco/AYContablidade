@@ -7,7 +7,7 @@ Todos os segredos vêm de variáveis de ambiente / `.env` — nunca do código n
 from functools import lru_cache
 from typing import Annotated, Literal
 
-from pydantic import Field, PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -129,7 +129,79 @@ class Settings(BaseSettings):
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
 
+    @model_validator(mode="after")
+    def _producao_nao_arranca_com_definicoes_de_desenvolvimento(self) -> "Settings":
+        """Em `AMBIENTE=producao`, recusa arrancar com o que serve para dev.
+
+        UMA LISTA NUM DOCUMENTO NÃO É UMA GARANTIA. Cada uma destas condições
+        já causou incidentes em sistemas reais, e todas têm a mesma forma: a
+        instalação foi feita a copiar o `.env` de desenvolvimento e ninguém
+        reparou. Falhar no arranque, com a razão escrita, é a única maneira de
+        isto não passar despercebido.
+
+        Não vale a pena tentar contornar mudando o `AMBIENTE` para `dev` numa
+        máquina de produção: perde-se o resto — a documentação da API fica
+        aberta, o SQL passa a ser escrito no log — e o problema fica pior.
+        """
+        if self.AMBIENTE != "producao":
+            return self
+
+        problemas: list[str] = []
+
+        locais = [o for o in self.CORS_ORIGINS if "localhost" in o or "127.0.0.1" in o]
+        if locais:
+            problemas.append(
+                f"CORS_ORIGINS ainda aponta para a máquina local ({', '.join(locais)}). "
+                "Ponha aqui o endereço público do frontend."
+            )
+        if not self.CORS_ORIGINS:
+            problemas.append(
+                "CORS_ORIGINS está vazio: nenhum browser conseguirá falar com a API."
+            )
+        inseguras = [o for o in self.CORS_ORIGINS if o.startswith("http://")]
+        if inseguras:
+            problemas.append(
+                f"CORS_ORIGINS em http:// sem TLS ({', '.join(inseguras)}). "
+                "O token de sessão viaja em claro."
+            )
+
+        if not self.TOTP_CHAVE_CIFRA:
+            # Não é um aviso: as contas de plataforma EXIGEM segundo factor, e
+            # sem esta chave ninguém o consegue activar. A área de
+            # administração ficaria inacessível a partir do primeiro login.
+            problemas.append(
+                "TOTP_CHAVE_CIFRA não está definida. Sem ela não se activa o "
+                "segundo factor, e as contas de administração da plataforma "
+                "exigem-no — a plataforma ficaria sem operador."
+            )
+
+        if self.DATABASE_URL and "localhost" in str(self.DATABASE_URL):
+            problemas.append(
+                "DATABASE_URL aponta para localhost. Confirme que é mesmo a "
+                "base de produção e não a de desenvolvimento."
+            )
+
+        if self.PASSWORD_MIN_CARACTERES < 8:
+            problemas.append(
+                f"PASSWORD_MIN_CARACTERES={self.PASSWORD_MIN_CARACTERES} é "
+                "demasiado baixo para produção (mínimo 8)."
+            )
+
+        if problemas:
+            lista = "\n".join(f"  - {p}" for p in problemas)
+            raise ValueError(
+                "A aplicação não arranca em AMBIENTE=producao com estas "
+                f"definições:\n{lista}\n"
+                "Ver Producao/backend/.env.producao.example."
+            )
+        return self
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()  # type: ignore[call-arg]
+
+
+def em_producao() -> bool:
+    """Atalho para quem só precisa de saber se está em produção."""
+    return get_settings().AMBIENTE == "producao"

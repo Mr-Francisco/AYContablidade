@@ -92,7 +92,7 @@
       prazo: "Anual — Modelo 1 em Maio; Modelo 2 até Abril; liquidação provisória em Julho/Agosto", retencao: "Retenção de 6,5% sobre prestações de serviços (a contribuintes sem contabilidade adequada)." },
     { sigla: "IRT", nome: "Imposto sobre os Rendimentos do Trabalho", categoria: "Rendimento",
       incidencia: "Rendimentos do trabalho por conta de outrem (Grupo A), independente (Grupo B) e comercial/industrial (Grupo C).",
-      taxa: "Tabela progressiva (isenção até 100.000 Kz) · Grupo B/C: 6,5% ou 10% sobre a faturação",
+      taxa: "Tabela progressiva (isenção até 150.000 Kz) · Grupo B/C: 6,5% ou 10% sobre a faturação",
       calculo: "Grupo A: tabela progressiva sobre a matéria coletável (bruto − INSS − subsídios isentos). Retenção na fonte pela entidade patronal.",
       modelos: ["Mapa de Remunerações — Modelo IRT A2.1 (mensal)", "Declaração anual de rendimentos"],
       prazo: "Retenção entregue até ao fim do mês seguinte; mapa mensal", retencao: "Retenção na fonte pela entidade empregadora / pagadora." },

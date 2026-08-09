@@ -39,7 +39,27 @@ PASSWORD = "demo12345"
 SUPER = "super@plataforma.ao"
 
 
+def _recusar_em_producao() -> None:
+    """Este script cria contas com palavras-passe conhecidas.
+
+    `super@plataforma.ao` / `demo12345` numa instalação real é a porta aberta
+    mais larga que se pode deixar. Não basta escrever «não correr em produção»
+    num documento: basta um `python scripts/criar_demo.py` distraído na consola
+    errada. Por isso o script recusa-se.
+    """
+    from src.core.config import get_settings
+
+    if get_settings().AMBIENTE == "producao":
+        sys.exit(
+            "RECUSADO: este script cria contas de demonstração com "
+            "palavras-passe conhecidas e o AMBIENTE é «producao».\n"
+            "Para criar a primeira conta real use:\n"
+            "    python scripts/criar_superadmin.py"
+        )
+
+
 def main(recriar: bool = False) -> None:
+    _recusar_em_producao()
     s = SessionLocal()
     try:
         existente = s.scalar(select(Empresa).where(Empresa.nif == NIF))

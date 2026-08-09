@@ -1,0 +1,56 @@
+# AYContabilidade — DESENVOLVIMENTO.
+#
+#     docker compose -f docker-compose.dev.yml up -d
+#
+# Diferenças em relação ao de produção, e todas deliberadas:
+#
+#   - a base de dados EXPÕE a porta 5432, para se poder ligar um cliente SQL;
+#   - o código é montado da máquina, e o backend recarrega ao gravar;
+#   - as credenciais têm valores por omissão, porque aqui não protegem nada.
+#
+# Nada disto pode existir em produção, e é por isso que são dois ficheiros e
+# não um com condições lá dentro: um ficheiro com `if producao` acaba sempre
+# por ser copiado com o `if` mal resolvido.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: aycontabilidade
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      LANG: pt_PT.utf8
+    ports:
+      - "5432:5432"
+    volumes:
+      - dados_postgres_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./Producao/backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./Producao/backend/.env
+    environment:
+      AMBIENTE: dev
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/aycontabilidade
+    # `--reload` e `--no-proxy-headers`: o segundo não é opcional, ver
+    # `backend/main.py`. Sem ele, o uvicorn reescreve a origem do pedido a
+    # partir de um cabeçalho que qualquer cliente forja.
+    command: >
+      python -m uvicorn main:app --host 0.0.0.0 --port 8001
+      --reload --no-proxy-headers
+    volumes:
+      - ./Producao/backend:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  dados_postgres_dev:

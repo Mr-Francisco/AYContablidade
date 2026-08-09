@@ -34,21 +34,38 @@ backend/
     └── tests/          # Testes
 backend/scripts/automation/                         
 backend/tests/                                      → pytest (auth, JWT, users)
-docker-compose.yml                                  → postgres,
- backend (8001), frontend (3000)(Ainda nao estou a usar o Docker mais sera usado posteriormente)
-config.ini (gitignored, copiar de config.ini.example) → paths, monitor de ficheiros, porta API
+docker-compose.yml                                  → PRODUÇÃO: postgres (sem porta exposta),
+                                                       backend (8001), frontend (3000)
+docker-compose.dev.yml                              → DESENVOLVIMENTO: postgres em 5432,
+                                                       código montado, recarga ao gravar
+backend/.env  /  .env.example  /  .env.producao.example
+frontend/.env.local  /  .env.example  /  .env.producao.example
 ```
+
+Dois ficheiros de compose e não um com condições: um ficheiro único acaba por
+ser copiado com a condição mal resolvida. Ver `docs/PRODUCAO.md`.
 
 ## Comandos
 
 ```bash
-docker compose up -d                       # Stack completa (precisa de .env com JWT_SECRET_KEY)
+# --- Desenvolvimento ---
 cd frontend && npm run dev                 # Frontend dev (3000, Turbopack)
 cd backend && uvicorn main:app --port 8001 --no-proxy-headers  # Backend dev
 cd frontend && npm run lint                # Biome + TypeScript
-cd frontend && npm run build               # Build produção
 cd backend && pytest                       # Testes backend
+python scripts/criar_demo.py               # Dados de demonstração (recusa-se em produção)
+docker compose -f docker-compose.dev.yml up -d
+
+# --- Produção (ver docs/PRODUCAO.md) ---
+alembic upgrade head                       # Migrações
+python scripts/criar_superadmin.py         # Primeira conta, sem valores por omissão
+cd frontend && npm run build               # Build (output standalone)
+docker compose up -d --build
 ```
+
+Com `AMBIENTE=producao` o backend RECUSA ARRANCAR se o CORS apontar para
+localhost ou http, se faltar `TOTP_CHAVE_CIFRA`, ou se a política de
+palavras-passe estiver abaixo do mínimo. A mensagem diz qual.
 
 
 ## Regras Obrigatórias

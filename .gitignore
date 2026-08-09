@@ -407,7 +407,10 @@ FodyWeavers.xsd
 # Segredos — NUNCA versionar (Regra 6: segredos só em .env / variáveis de ambiente)
 .env
 .env.*
+# Os modelos são o contrário: têm de ir para o repositório, porque é deles que
+# se copia. Nunca levam valores reais — só nomes de variáveis e exemplos.
 !.env.example
+!.env.producao.example
 config.ini
 !config.ini.example
 

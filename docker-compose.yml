@@ -1,0 +1,83 @@
+# AYContabilidade — PRODUÇÃO.
+#
+#     docker compose up -d --build
+#
+# Precisa de dois ficheiros que NÃO estão no repositório:
+#   Producao/backend/.env    (copiar de .env.producao.example)
+#   Producao/frontend/.env.production.local  (copiar de .env.producao.example)
+#
+# Para desenvolvimento use `docker-compose.dev.yml`, que expõe a base de dados,
+# monta o código e recarrega ao gravar.
+#
+# O QUE ESTE FICHEIRO NÃO FAZ: terminar o TLS. Ponha um nginx, um Caddy ou um
+# balanceador à frente, com o certificado, e aponte-lhe estes dois serviços. A
+# aplicação recusa arrancar com CORS em http:// precisamente para isto não
+# passar despercebido.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aycontabilidade}
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env da raiz}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env da raiz}
+      # As datas e a ordenação seguem a instalação, não a máquina que a corre.
+      LANG: pt_PT.utf8
+    volumes:
+      - dados_postgres:/var/lib/postgresql/data
+    # SEM `ports:` de propósito. A base não se expõe à máquina anfitriã em
+    # produção — só o backend, que está na mesma rede, lhe chega.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [interna]
+
+  backend:
+    build:
+      context: ./Producao/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./Producao/backend/.env
+    environment:
+      # Dentro da rede do compose, a base chama-se `postgres`. Isto vence o que
+      # estiver no .env, para não haver duas verdades sobre o mesmo endereço.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aycontabilidade}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Só ao proxy, não ao mundo.
+    ports:
+      - "127.0.0.1:8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8001/api/health', timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks: [interna]
+
+  frontend:
+    build:
+      context: ./Producao/frontend
+      dockerfile: Dockerfile
+      args:
+        # O Next embute estes valores no BUILD, não no arranque — por isso
+        # entram como argumentos de construção e não como ambiente.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?defina NEXT_PUBLIC_API_URL no .env da raiz}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?defina NEXT_PUBLIC_SITE_URL no .env da raiz}
+    restart: unless-stopped
+    depends_on: [backend]
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks: [interna]
+
+volumes:
+  dados_postgres:
+
+networks:
+  interna:
