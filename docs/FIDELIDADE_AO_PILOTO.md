@@ -85,62 +85,89 @@ mesmas contas 3413/3431/3432/3471, esse está transposto e fiel.
 
 ## 2. Funcionalidades em falta
 
-Estas são as lacunas reais face ao Piloto. Nenhuma impede o sistema de
-funcionar, mas todas são coisas que o Piloto faz e a Produção ainda não.
+O que se segue é o levantamento face ao Piloto, com o que já foi implementado
+marcado como tal. Nenhuma das que restam impede o sistema de funcionar.
 
-### 2.1 Mestres sem editar nem eliminar
+### 2.1 Mestres — FEITO
 
-O Piloto permite editar e apagar; a Produção só criar.
+O Piloto permite editar e apagar; a Produção só criava. Estado em 2026-08-09, depois da ronda de implementação.
 
-| Mestre | Falta no backend | Falta no frontend |
-|---|---|---|
-| Colaboradores | — (`PATCH` e `DELETE` já existem) | ligar os botões |
-| Artigos | `PATCH`, `DELETE` | tudo |
-| Armazéns | `PATCH`, `DELETE` | tudo |
-| Clientes | `PATCH`, `DELETE` | tudo |
-| Fornecedores | `PATCH`, `DELETE` | tudo |
-| Vendedores | `PATCH`, `DELETE` | tudo |
-| Centros de custo | `POST`, `PATCH`, `DELETE` | tudo |
-| Plano de contas | — (`POST` já existe) | criar/editar conta, subconta, importar |
-| Diários | `POST`, `PATCH`, `DELETE` | tudo |
-| Documentos contabilísticos | `POST`, `PATCH`, `DELETE` | tudo |
+| Mestre | Criar | Alterar | Eliminar |
+|---|:---:|:---:|:---:|
+| Colaboradores | ✅ | ✅ | ✅ |
+| Artigos | ✅ | ✅ | ✅ |
+| Armazéns | ✅ | ✅ | ✅ |
+| Clientes | ✅ | ✅ | ✅ |
+| Fornecedores | ✅ | ✅ | ✅ |
+| Vendedores | ✅ | ✅ | ✅ |
+| Centros de custo | ✅ | ✅ | ✅ |
+| Plano de contas | ✅ (+ subcontas) | ✅ | ✅ |
+| Diários | ✅ | ✅ | ✅ |
+| Documentos contabilísticos | ✅ | ✅ | ✅ |
 
-### 2.2 Endpoints prontos sem interface
+**Com uma regra nova, e é a única em que a Produção fica mais restritiva do que
+o Piloto: o que já foi usado não se apaga.** Uma conta com movimentos, um
+diário com lançamentos, um artigo com stock, um cliente com facturas — o
+servidor recusa com 409 e diz que a alternativa é desactivar. No Piloto a mesma
+operação passava e deixava o balancete com linhas sem designação e existências
+atribuídas a fichas inexistentes.
 
-O trabalho de servidor está feito; falta o botão. São os ganhos mais baratos.
+Pela mesma razão, o identificador visível — código da conta, do diário, do
+artigo, número do cliente — não é alterável: é o que aparece nos documentos já
+emitidos e o que os movimentos guardam.
 
-- `POST /api/contabilidade/lancamentos/{id}/integrar` — **um lançamento
-  diferido fica preso sem isto.** É a lacuna mais importante da lista.
-- `DELETE /api/contabilidade/lancamentos/{id}`
-- `POST /api/contabilidade/contas` e `POST /api/contabilidade/plano/importar`
-- `POST` e `DELETE /api/contabilidade/fechos` (fechar e reabrir período)
+**A importação de plano de contas** (`POST /plano/importar`) continua sem
+interface — o endpoint existe.
+
+### 2.2 Lançamentos diferidos — FEITO
+
+Era a lacuna mais séria: o endpoint de integrar existia e não estava ligado a
+botão nenhum, pelo que um diferido criado na aplicação ficava preso fora do
+balancete, do razão e dos apuramentos, sem forma de lá entrar.
+
+O detalhe do movimento passa a explicar o estado e a oferecer **Integrar**, e
+ganha também **Eliminar** com confirmação que distingue apagar um pendente de
+apagar um já integrado. Provado contra o servidor: o balancete não mexe com o
+diferido por integrar, sobe exactamente o valor quando se integra, e volta ao
+início quando se elimina; integrar duas vezes não duplica.
+
+### 2.3 Endpoints prontos sem interface
+
+O que ainda falta ligar:
+
+- `POST` e `DELETE /api/contabilidade/fechos` — fechar e reabrir período por
+  diário e mês. O fecho funciona (é verificado ao lançar), mas faz-se pela API.
+- `POST /api/contabilidade/plano/importar`
 - `PUT /api/rh/config` (taxas de INSS), `PUT /api/logistica/config`,
   `PUT /api/comercial/config`
 
-### 2.3 Configurações da empresa
+### 2.4 Configurações da empresa
 
 `empresa.html` tem 9 separadores; `/configuracoes` tem 3. Sem equivalente em
 lado nenhum: Facturação e Comunicação (incluindo exportar SAF-T), integração
 AGT para consulta de NIF, Tesouraria (bancos e caixa), parametrizações de
 CMVMC, séries de documentos, e políticas de permissões.
 
-### 2.4 Impressão
+Também não há interface para **criar, fechar ou reabrir exercícios** — a rota
+de leitura existe, as de escrita não.
+
+### 2.5 Impressão — RESOLVIDO NA BASE
 
 O Piloto imprime 16 páginas; a Produção tinha três botões e **nenhuma regra de
 impressão** — o que saía do browser era a fotografia do ecrã, com cabeçalho,
 navegação e botões à volta.
 
-**Resolvido:** `globals.css` passou a ter um bloco `@media print` que esconde a
-moldura da aplicação, força preto sobre branco, repete o cabeçalho das tabelas
-em todas as folhas e impede que uma linha se parta entre páginas. Falta apenas
-acrescentar o botão nas restantes páginas.
+`globals.css` passou a ter um bloco `@media print` que esconde a moldura da
+aplicação, força preto sobre branco, repete o cabeçalho das tabelas em todas as
+folhas e impede que uma linha se parta entre páginas. Falta acrescentar o botão
+nas restantes páginas.
 
-### 2.5 Documento legal de venda
+### 2.6 Documento legal de venda
 
 `fatura-doc.js` produz a factura em A4 e o talão POS de 80 mm, com QR, valor
 por extenso e impressão. A Produção mostra um modal de detalhe genérico.
 
-### 2.6 Pormenores de utilização
+### 2.7 Pormenores de utilização
 
 - Exportar CSV em balancete, mapa de custos, existências, amortizações e folha.
 - Drill-down do balancete (duplo clique na linha → extracto da conta).
@@ -164,10 +191,18 @@ pseudonimização e quotas por empresa, e a página pública de apresentação.
 
 ## 4. Veredicto
 
-**As regras de negócio podem ir para produção.** Os números que a aplicação
-calcula são os mesmos do Piloto, e as diferenças que existem são correcções.
+**As regras de negócio estão fiéis e podem ir para produção.** Os números que a
+aplicação calcula são os mesmos do Piloto, verificados valor a valor, e as seis
+diferenças de comportamento são correcções com justificação escrita.
 
-**As funcionalidades ainda não são uma réplica completa.** A lista de 2.1 a 2.6
-é o que falta para a Regra 9 estar cumprida. A mais urgente é a integração de
-lançamentos diferidos (2.2): sem ela, um diferido criado na Produção não tem
-como ser integrado.
+**As funcionalidades estão quase lá.** O que impedia um contabilista de concluir
+uma operação real — o lançamento diferido sem forma de ser integrado — está
+resolvido, e as dez tabelas mestras passaram a ser editáveis.
+
+O que falta (2.3 a 2.7) é utilizável sem: fechos de período fazem-se pela API,
+os exercícios criam-se por migração ou API, o documento legal de venda não
+existe mas a factura é emitida e lançada na mesma, e os mapas mostram-se no ecrã
+e imprimem-se — só não exportam para CSV.
+
+**A decisão de avançar para um servidor de teste não está bloqueada por nada
+desta lista.**
