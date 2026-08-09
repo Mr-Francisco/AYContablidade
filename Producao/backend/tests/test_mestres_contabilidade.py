@@ -21,6 +21,7 @@ from src.db.models.contabilidade import (
     Conta,
     Diario,
     DocumentoContabilistico,
+    LancamentoLinha,
 )
 from src.db.models.tenancy import Empresa
 from src.services import contabilidade as svc
@@ -310,3 +311,98 @@ def test_as_paginas_deixaram_de_ser_so_de_leitura(pagina, rota):
     assert "api.delete" in fonte, f"{pagina} não elimina"
     # E só a quem tem a capacidade.
     assert 'pode("contab.plano")' in fonte
+
+
+# ---------------------------------------------------------------------------
+# Criar uma conta segue a regra do Piloto
+# ---------------------------------------------------------------------------
+def test_criar_subconta_transforma_a_mae_e_migra_os_movimentos(base, empresa_id):
+    """REGRESSÃO: a rota inseria a linha e mais nada.
+
+    No Piloto, criar `X001` a partir de uma conta de MOVIMENTO `X` que já tem
+    lançamentos faz duas coisas: `X` passa a integradora e os movimentos dela
+    MIGRAM para `X001`. A rota da Produção ignorava `svc.criar_conta`, e o que
+    ficava era uma integradora COM movimentos — o estado que `postar` recusa, e
+    que faz o balancete somar o valor duas vezes (na mãe e na agregação dos
+    filhos).
+    """
+    from src.api.routers import contabilidade_router as r
+
+    # A mãe é `ZZ1` e a contrapartida `ZZ2`: códigos que NÃO se estendem um ao
+    # outro. Com a contrapartida a chamar-se `ZZ19`, o serviço via-a como filha
+    # da mãe, dava a mãe por já-integradora e não migrava nada — o teste
+    # falhava por defeito do teste, não do código.
+    marca = "ZZ"
+    # A rota faz `commit`, por isso o rollback do fixture não limpa o que ela
+    # gravou. Limpa-se por prefixo, antes e depois.
+    _limpar_marca(base, marca)
+
+    mae = Conta(empresa_id=empresa_id, codigo="ZZ1", nome="Mãe de teste",
+                tipo="M", natureza="D", ativa=True)
+    contraparte = Conta(empresa_id=empresa_id, codigo="ZZ2", nome="Contrapartida",
+                        tipo="M", natureza="C", ativa=True)
+    diario = Diario(empresa_id=empresa_id, codigo="ZZD", nome="Teste",
+                    categoria="outros", ativo=True)
+    doc = DocumentoContabilistico(empresa_id=empresa_id, codigo="ZZO",
+                                  descricao="Teste", diario_codigo="ZZD", ativo=True)
+    base.add_all([mae, contraparte, diario, doc])
+    base.flush()
+
+    svc.postar(
+        base, empresa_id=empresa_id, data=date(2026, 3, 1), mes="03",
+        diario_codigo="ZZD", documento_codigo="ZZO", descricao="prova",
+        linhas=[
+            {"conta_codigo": "ZZ1", "debito": 100, "credito": 0},
+            {"conta_codigo": "ZZ2", "debito": 0, "credito": 100},
+        ],
+    )
+    base.flush()
+
+    class _Empresa:
+        id = empresa_id
+
+    resposta = r.criar_conta(
+        None, r.ContaCriar(codigo="ZZ1001", nome="Subconta"), _Empresa(), base
+    )
+
+    base.refresh(mae)
+    assert mae.tipo == "I", "a mãe devia passar a integradora"
+    assert resposta["tornou_integradora"] is True
+    assert resposta["movidos"] == 1, "o movimento devia migrar para a subconta"
+
+    restantes = base.scalars(
+        select(LancamentoLinha).where(LancamentoLinha.conta_codigo == "ZZ1")
+    ).all()
+    assert restantes == [], "a integradora não pode ficar com movimentos"
+
+    base.rollback()
+    _limpar_marca(base, marca)
+
+
+def _limpar_marca(db, marca: str) -> None:
+    """Apaga tudo o que o teste cria, pela ordem que as chaves estrangeiras
+    permitem: linhas, lançamentos, documento, diário e contas."""
+    from src.db.models.contabilidade import Lancamento
+
+    db.rollback()
+    lancs = db.scalars(
+        select(Lancamento).where(Lancamento.diario_codigo == "ZZD")
+    ).all()
+    for l in lancs:
+        for linha in db.scalars(
+            select(LancamentoLinha).where(LancamentoLinha.lancamento_id == l.id)
+        ):
+            db.delete(linha)
+        db.delete(l)
+    db.flush()
+    for modelo, campo in (
+        (DocumentoContabilistico, "codigo"),
+        (Diario, "codigo"),
+    ):
+        for obj in db.scalars(
+            select(modelo).where(getattr(modelo, campo).like(f"{marca}%"))
+        ):
+            db.delete(obj)
+    for c in db.scalars(select(Conta).where(Conta.codigo.like(f"{marca}%"))):
+        db.delete(c)
+    db.commit()

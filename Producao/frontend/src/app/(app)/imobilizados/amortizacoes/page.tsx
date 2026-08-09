@@ -276,67 +276,63 @@ export default function Amortizacoes() {
                   : "Escolha um exercício."}
               </Vazio>
             ) : (
-              <>
-                <EnvolveTabela className="rounded-none border-0 border-t">
-                  <Tabela>
-                    <thead>
-                      <tr>
-                        <Th>Código</Th>
-                        <Th>Designação</Th>
-                        <Th>Conta</Th>
-                        <Th numerico>Valor bruto</Th>
-                        <Th numerico>Acum. actual</Th>
-                        <Th numerico>Líquido actual</Th>
-                        <Th numerico>Quota do período</Th>
-                        <Th>Lançado</Th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mapaPeriodo.linhas.map((l) => (
-                        <Tr key={l.id}>
-                          <Td className="tabular font-bold">{l.codigo}</Td>
-                          <Td className="max-w-[240px] truncate font-semibold">
-                            {l.designacao}
-                          </Td>
-                          <Td className="tabular text-texto-suave">
-                            {l.conta || "—"}
-                          </Td>
-                          <Td numerico>{formataMoeda(l.valor_bruto, moeda)}</Td>
-                          <Td numerico>
-                            {formataMoeda(l.amort_acumulada_atual, moeda)}
-                          </Td>
-                          <Td numerico>
-                            {formataMoeda(l.valor_liquido_atual, moeda)}
-                          </Td>
-                          <Td numerico className="font-semibold">
-                            {formataMoeda(l.valor_periodo, moeda)}
-                          </Td>
-                          <Td>
-                            {l.ja_processado ? (
-                              <Selo
-                                cor={l.lancamento_id ? "#1a9c5f" : "#c98a10"}
-                              >
-                                {l.lancamento_id ? "Sim" : "Só na ficha"}
-                              </Selo>
-                            ) : (
-                              <span className="text-texto-suave">—</span>
-                            )}
-                          </Td>
-                        </Tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t-2 border-borda font-bold">
-                        <Td colSpan={6}>Total do período</Td>
-                        <Td numerico>
-                          {formataMoeda(mapaPeriodo.total_periodo, moeda)}
+              <EnvolveTabela className="rounded-none border-0 border-t">
+                <Tabela>
+                  <thead>
+                    <tr>
+                      <Th>Código</Th>
+                      <Th>Designação</Th>
+                      <Th>Conta</Th>
+                      <Th numerico>Valor bruto</Th>
+                      <Th numerico>Acum. actual</Th>
+                      <Th numerico>Líquido actual</Th>
+                      <Th numerico>Quota do período</Th>
+                      <Th>Lançado</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mapaPeriodo.linhas.map((l) => (
+                      <Tr key={l.id}>
+                        <Td className="tabular font-bold">{l.codigo}</Td>
+                        <Td className="max-w-[240px] truncate font-semibold">
+                          {l.designacao}
                         </Td>
-                        <Td />
-                      </tr>
-                    </tfoot>
-                  </Tabela>
-                </EnvolveTabela>
-              </>
+                        <Td className="tabular text-texto-suave">
+                          {l.conta || "—"}
+                        </Td>
+                        <Td numerico>{formataMoeda(l.valor_bruto, moeda)}</Td>
+                        <Td numerico>
+                          {formataMoeda(l.amort_acumulada_atual, moeda)}
+                        </Td>
+                        <Td numerico>
+                          {formataMoeda(l.valor_liquido_atual, moeda)}
+                        </Td>
+                        <Td numerico className="font-semibold">
+                          {formataMoeda(l.valor_periodo, moeda)}
+                        </Td>
+                        <Td>
+                          {l.ja_processado ? (
+                            <Selo cor={l.lancamento_id ? "#1a9c5f" : "#c98a10"}>
+                              {l.lancamento_id ? "Sim" : "Só na ficha"}
+                            </Selo>
+                          ) : (
+                            <span className="text-texto-suave">—</span>
+                          )}
+                        </Td>
+                      </Tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-borda font-bold">
+                      <Td colSpan={6}>Total do período</Td>
+                      <Td numerico>
+                        {formataMoeda(mapaPeriodo.total_periodo, moeda)}
+                      </Td>
+                      <Td />
+                    </tr>
+                  </tfoot>
+                </Tabela>
+              </EnvolveTabela>
             )}
           </Cartao>
         </Tabs.Content>

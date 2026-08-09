@@ -1,8 +1,8 @@
 "use client";
 
 import type {
+  ComponentPropsWithRef,
   HTMLAttributes,
-  InputHTMLAttributes,
   ReactNode,
   TdHTMLAttributes,
   ThHTMLAttributes,
@@ -279,10 +279,12 @@ export function Campo({
   );
 }
 
+/** `ComponentPropsWithRef` e não `InputHTMLAttributes`: sem isto o `ref` não
+ *  passa, e há campos que precisam de receber o foco ao abrir o diálogo. */
 export function Entrada({
   className,
   ...props
-}: InputHTMLAttributes<HTMLInputElement>) {
+}: ComponentPropsWithRef<"input">) {
   return (
     <input
       className={cn(

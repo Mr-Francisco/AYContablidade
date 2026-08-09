@@ -103,3 +103,7 @@
 - O `uvicorn` sem `--reload` não apanha alterações: rotas novas não apareciam no `openapi.json` e a causa era o processo antigo, não o código.
 - Antes de escrever em tabelas da base de dados numa sessão partilhada, perguntar se o utilizador está a testar em paralelo — quase apaguei um 2FA que ele tinha acabado de configurar.
 - Não copiar do Piloto o que ele simula: o QR da factura é `pseudoQR()` (rectângulos de um hash), o «código de validação AGT» é um hash local truncado e o SAF-T é um CSV com «(demonstração)» no cabeçalho. Transpor isto produziria um documento que aparenta certificação inexistente.
+- O vocabulário de teclado do Piloto é pequeno e fechado: **F4** (selector de contas), **Escape** (fecha), **Enter** (escolhe o primeiro) e **duplo clique** (abre selector ou extracto). Não há F2, nem Ctrl/Alt/Shift, nem setas — confirmado por varrimento a todo o `Piloto/`.
+- Eventos de teclado sintéticos (`new KeyboardEvent`) não accionam os handlers do React nesta app; para provar um atalho é preciso uma tecla real do browser.
+- O Radix devolve o foco ao fechar um diálogo DEPOIS do nosso `fechar()` — devolver o foco ao campo exige `requestAnimationFrame`, senão é desfeito logo a seguir.
+- Ao criar dados de teste com códigos de conta, não usar códigos que se estendam uns aos outros: `T79` era lido como filha de `T7` e falseava a regra da subconta.

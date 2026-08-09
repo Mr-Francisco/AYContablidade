@@ -25,6 +25,17 @@
       ],
       "cwd": "Producao/frontend",
       "port": 3000
+    },
+    {
+      "name": "piloto",
+      "runtimeExecutable": "C:/GitHub/AYContablidade/Producao/backend/.venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4173"
+      ],
+      "cwd": "Piloto",
+      "port": 4173
     }
   ]
 }

@@ -4,6 +4,8 @@ import { Plus, Trash2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useMemo, useState } from "react";
 
+import { CampoConta } from "@/components/contabilidade/CampoConta";
+import { CriarContaEmFalta } from "@/components/contabilidade/CriarContaEmFalta";
 import {
   Alerta,
   Botao,
@@ -20,7 +22,6 @@ import { api, ErroApi } from "@/lib/api";
 import { big, formataMoeda, paraApi, soma, subtrai } from "@/lib/dinheiro";
 import {
   useCentros,
-  useContas,
   useDiarios,
   useDocumentos,
   usePeriodos,
@@ -65,7 +66,6 @@ export function FormularioLancamento({
   const { empresa } = useAuth();
   const moeda = empresa?.moeda ?? "Kz";
 
-  const { contas } = useContas();
   const { diarios } = useDiarios();
   const { centros } = useCentros();
   const { periodos } = usePeriodos();
@@ -83,16 +83,8 @@ export function FormularioLancamento({
 
   const { documentos } = useDocumentos(diario || undefined);
 
-  // Só contas de movimento: uma integradora é recusada pelo servidor, e mais
-  // vale não a oferecer do que deixar o utilizador descobrir ao gravar.
-  const opcoesConta = useMemo(
-    () =>
-      contas
-        .filter((c) => c.tipo === "M" && c.ativa)
-        .slice(0, 2000)
-        .map((c) => ({ valor: c.codigo, rotulo: `${c.codigo} — ${c.nome}` })),
-    [contas],
-  );
+  /** Código que se escreveu e não existe — abre o diálogo de criação. */
+  const [aCriarConta, setACriarConta] = useState<string | null>(null);
 
   const totais = useMemo(() => {
     const d = soma(...linhas.map((l) => l.debito));
@@ -273,12 +265,11 @@ export function FormularioLancamento({
                       className="border-b border-borda last:border-b-0"
                     >
                       <Td className="p-2">
-                        <Selector
+                        <CampoConta
                           valor={l.conta_codigo}
                           aoMudar={(v) => alterar(i, "conta_codigo", v)}
-                          opcoes={opcoesConta}
-                          placeholder="Conta…"
-                          larguraMinima="14rem"
+                          aoPedirCriacao={setACriarConta}
+                          className="w-[15rem]"
                         />
                       </Td>
                       <Td className="p-2">
@@ -415,6 +406,14 @@ export function FormularioLancamento({
           </div>
         </Dialog.Content>
       </Dialog.Portal>
+
+      {aCriarConta && (
+        <CriarContaEmFalta
+          codigo={aCriarConta}
+          aoFechar={() => setACriarConta(null)}
+          aoCriar={() => setACriarConta(null)}
+        />
+      )}
     </Dialog.Root>
   );
 }

@@ -271,22 +271,47 @@ def listar_contas(
 def criar_conta(
     request: Request, dados: ContaCriar, empresa: EmpresaAtual, db: DB
 ) -> dict:
-    from src.core.pgc import natureza_conta
+    """Cria uma conta pela regra do Piloto (`criarConta` / `criarSubconta`).
 
-    ja = db.scalar(
-        select(Conta.id).where(Conta.empresa_id == empresa.id, Conta.codigo == dados.codigo)
+    REGRESSÃO CORRIGIDA: esta rota inseria a linha e mais nada. Criar `2611001`
+    a partir de `2611`, que tinha cinco linhas de lançamento, deixava `2611`
+    como conta de MOVIMENTO com movimentos **e** com uma filha — o estado que
+    `postar` recusa («a conta é integradora») e que faz o balancete somar o
+    valor duas vezes, na mãe e na agregação dos filhos.
+
+    `svc.criar_conta` é quem sabe fazer isto: quando o código estende uma conta
+    de movimento, a mãe passa a integradora e os movimentos dela MIGRAM para a
+    subconta nova. O serviço já existia e nenhuma rota o usava.
+    """
+    resultado = svc.criar_conta(
+        db,
+        empresa.id,
+        codigo=dados.codigo,
+        nome=dados.nome,
+        natureza=dados.natureza,
     )
-    if ja is not None:
-        raise HTTPException(status.HTTP_409_CONFLICT, f"Já existe a conta {dados.codigo}.")
-    c = Conta(
-        empresa_id=empresa.id, codigo=dados.codigo, nome=dados.nome, tipo=dados.tipo,
-        natureza=dados.natureza or natureza_conta(dados.codigo),
-        classe_iva=dados.classe_iva, ativa=True,
-    )
-    db.add(c)
+    if dados.classe_iva is not None:
+        criada = db.scalar(
+            select(Conta).where(
+                Conta.empresa_id == empresa.id, Conta.codigo == resultado["criada"]
+            )
+        )
+        if criada is not None:
+            criada.classe_iva = dados.classe_iva
     db.commit()
-    db.refresh(c)
-    return {"id": c.id, "codigo": c.codigo, "nome": c.nome}
+
+    c = db.scalar(
+        select(Conta).where(
+            Conta.empresa_id == empresa.id, Conta.codigo == resultado["criada"]
+        )
+    )
+    return {
+        "id": c.id, "codigo": c.codigo, "nome": c.nome,
+        # Quem chama precisa de saber que a mãe mudou de natureza, para o dizer
+        # a quem carregou no botão em vez de o descobrir mais tarde num mapa.
+        "tornou_integradora": resultado["tornou_integradora"],
+        "movidos": resultado["movidos"],
+    }
 
 
 @router.patch("/contas/{conta_id}", dependencies=[PLANO])

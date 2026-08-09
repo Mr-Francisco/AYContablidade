@@ -144,42 +144,38 @@ export default function Independentes() {
           {!independentes?.length ? (
             <Vazio>Ainda não há independentes registados.</Vazio>
           ) : (
-            <>
-              <EnvolveTabela className="rounded-none border-0 border-t">
-                <Tabela>
-                  <thead>
-                    <tr>
-                      <Th>Nome</Th>
-                      <Th>NIF</Th>
-                      <Th>Actividade</Th>
-                      <Th numerico>Retenção</Th>
-                      <Th>Estado</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {independentes.map((i) => (
-                      <Tr key={i.id}>
-                        <Td className="max-w-[180px] truncate font-semibold">
-                          {i.nome}
-                        </Td>
-                        <Td className="tabular">{i.nif || "—"}</Td>
-                        <Td className="text-texto-suave">
-                          {i.atividade || "—"}
-                        </Td>
-                        <Td numerico>{i.taxa_ret} %</Td>
-                        <Td>
-                          <Selo
-                            cor={i.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}
-                          >
-                            {i.estado === "activo" ? "Activo" : "Inactivo"}
-                          </Selo>
-                        </Td>
-                      </Tr>
-                    ))}
-                  </tbody>
-                </Tabela>
-              </EnvolveTabela>
-            </>
+            <EnvolveTabela className="rounded-none border-0 border-t">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Nome</Th>
+                    <Th>NIF</Th>
+                    <Th>Actividade</Th>
+                    <Th numerico>Retenção</Th>
+                    <Th>Estado</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {independentes.map((i) => (
+                    <Tr key={i.id}>
+                      <Td className="max-w-[180px] truncate font-semibold">
+                        {i.nome}
+                      </Td>
+                      <Td className="tabular">{i.nif || "—"}</Td>
+                      <Td className="text-texto-suave">{i.atividade || "—"}</Td>
+                      <Td numerico>{i.taxa_ret} %</Td>
+                      <Td>
+                        <Selo
+                          cor={i.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}
+                        >
+                          {i.estado === "activo" ? "Activo" : "Inactivo"}
+                        </Selo>
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
           )}
         </Cartao>
 

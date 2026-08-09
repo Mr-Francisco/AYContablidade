@@ -16,7 +16,7 @@ Precisa de **duas consolas** — uma para o backend, outra para o frontend.
 
 ```bash
 cd C:/GitHub/AYContablidade/Producao/backend
-.venv/Scripts/python.exe -m uvicorn main:app --port 8001 --no-proxy-headers
+.venv/Scripts/python.exe -m uvicorn main:app --port 8001 --no-proxy-headers --reload
 ```
 
 > **`--no-proxy-headers` não é opcional.** Sem ele, o uvicorn reescreve a origem
