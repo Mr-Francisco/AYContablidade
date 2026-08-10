@@ -310,38 +310,20 @@ def exercicio_efetivo(
 # ---------------------------------------------------------------------------
 # Postar
 # ---------------------------------------------------------------------------
-def postar(
+def verificar_periodo_aberto(
     db: Session,
-    *,
     empresa_id: UUID,
-    data: Date,
+    *,
+    exercicio_id: UUID | None,
     diario_codigo: str,
-    documento_codigo: str,
-    linhas: list[dict],
-    mes: str | None = None,
-    descricao: str | None = None,
-    documento_ref: str | None = None,
-    origem: str = "manual",
-    exercicio_id: UUID | None = None,
-    diferido: bool = False,
-    criado_por: str | None = None,
-) -> Lancamento:
-    """Grava um lançamento em partidas dobradas.
+    mes: str,
+) -> None:
+    """Os dois travões do lançamento: exercício fechado e diário fechado no mês.
 
-    Cada linha é um dict com pelo menos `conta_codigo` e `debito`/`credito`.
-    Aceita ainda descricao, entidade, centro_codigo, fluxo_codigo, iva_perc.
-
-    Levanta ErroContabilistico se violar qualquer regra do Piloto.
+    Extraído de `postar` sem mudar nada, para que ACTUALIZAR um lançamento os
+    encontre também — mexer num movimento de um período já fechado é a mesma
+    coisa que lançar nele.
     """
-    if not diario_codigo:
-        raise ErroContabilistico("Indica o diário do movimento.")
-    if not documento_codigo:
-        raise ErroContabilistico("Indica o documento do movimento.")
-
-    mes = mes or (f"{data.month:02d}" if data else "00")
-
-    exercicio_id = exercicio_efetivo(db, empresa_id, exercicio_id)
-
     if exercicio_id is not None:
         # Filtrado pela empresa: sem isso, o nome de um exercício de outra
         # empresa aparecia no texto do erro devolvido ao cliente.
@@ -356,7 +338,6 @@ def postar(
                 "Contabilidade → Exercícios antes de lançar."
             )
 
-    # --- Diário fechado para o período ---
     fechado = db.scalar(
         select(DiarioFecho.id).where(
             DiarioFecho.empresa_id == empresa_id,
@@ -371,7 +352,16 @@ def postar(
             f"({periodo_label(mes)}) — reabre-o em Diários antes de lançar."
         )
 
-    # --- Resolver contas e construir as linhas ---
+
+def construir_linhas(
+    db: Session, empresa_id: UUID, linhas: list[dict]
+) -> list[LancamentoLinha]:
+    """Resolve as contas, valida-as e devolve as linhas prontas.
+
+    Extraído de `postar` sem alterar uma regra, para que ACTUALIZAR um
+    lançamento passe exactamente pelas mesmas verificações que criá-lo. Duas
+    cópias divergiriam, e a que divergisse seria a que deixava entrar o erro.
+    """
     codigos = [str(l.get("conta_codigo") or "").strip() for l in linhas]
     contas = {
         c.codigo: c
@@ -435,6 +425,46 @@ def postar(
             f"Lançamento não equilibrado: débito {d:,.2f} ≠ crédito {c:,.2f}."
         )
 
+    return objs
+
+
+def postar(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    data: Date,
+    diario_codigo: str,
+    documento_codigo: str,
+    linhas: list[dict],
+    mes: str | None = None,
+    descricao: str | None = None,
+    documento_ref: str | None = None,
+    origem: str = "manual",
+    exercicio_id: UUID | None = None,
+    diferido: bool = False,
+    criado_por: str | None = None,
+) -> Lancamento:
+    """Grava um lançamento em partidas dobradas.
+
+    Cada linha é um dict com pelo menos `conta_codigo` e `debito`/`credito`.
+    Aceita ainda descricao, entidade, centro_codigo, fluxo_codigo, iva_perc.
+
+    Levanta ErroContabilistico se violar qualquer regra do Piloto.
+    """
+    if not diario_codigo:
+        raise ErroContabilistico("Indica o diário do movimento.")
+    if not documento_codigo:
+        raise ErroContabilistico("Indica o documento do movimento.")
+
+    mes = mes or (f"{data.month:02d}" if data else "00")
+
+    exercicio_id = exercicio_efetivo(db, empresa_id, exercicio_id)
+    verificar_periodo_aberto(
+        db, empresa_id, exercicio_id=exercicio_id, diario_codigo=diario_codigo, mes=mes
+    )
+
+    objs = construir_linhas(db, empresa_id, linhas)
+
     seq = proximo_numero_doc(db, empresa_id, documento_codigo, exercicio_id)
 
     lanc = Lancamento(
@@ -457,6 +487,77 @@ def postar(
     db.add(lanc)
     db.flush()
     return lanc
+
+
+def actualizar(
+    db: Session,
+    lancamento: Lancamento,
+    *,
+    data: Date,
+    diario_codigo: str,
+    documento_codigo: str,
+    linhas: list[dict],
+    mes: str | None = None,
+    descricao: str | None = None,
+    documento_ref: str | None = None,
+    diferido: bool = False,
+) -> Lancamento:
+    """Substitui o conteúdo de um lançamento existente, no lugar.
+
+    O Piloto edita movimentos (`saveLancamento` com `editId`) e a Produção só
+    sabia criar e eliminar. Daí esta função.
+
+    NÃO SE APAGA E RECRIA, embora fosse mais simples: em Produção há tabelas que
+    guardam o id do lançamento — vendas, compras, processamentos de salários,
+    amortizações. Um id novo deixava essas ligações a apontar para nada, e o
+    documento de origem passava a discordar da contabilidade.
+
+    O NÚMERO e o NÚMERO DE OPERAÇÃO não mudam: são a identidade do movimento
+    perante quem o consultou antes, e a sequência do documento não se reutiliza.
+
+    Verifica-se o período de ORIGEM e o de DESTINO. Mexer num movimento que está
+    num mês já fechado é a mesma coisa que lançar nele; e mudá-lo PARA um mês
+    fechado seria contornar o fecho pela porta das traseiras.
+    """
+    if not diario_codigo:
+        raise ErroContabilistico("Indica o diário do movimento.")
+    if not documento_codigo:
+        raise ErroContabilistico("Indica o documento do movimento.")
+
+    mes = mes or (f"{data.month:02d}" if data else "00")
+    empresa_id = lancamento.empresa_id
+
+    verificar_periodo_aberto(
+        db,
+        empresa_id,
+        exercicio_id=lancamento.exercicio_id,
+        diario_codigo=lancamento.diario_codigo,
+        mes=lancamento.mes,
+    )
+    verificar_periodo_aberto(
+        db,
+        empresa_id,
+        exercicio_id=lancamento.exercicio_id,
+        diario_codigo=diario_codigo,
+        mes=mes,
+    )
+
+    objs = construir_linhas(db, empresa_id, linhas)
+
+    # As linhas antigas saem primeiro: `delete-orphan` na relação trata do resto.
+    lancamento.linhas.clear()
+    db.flush()
+    lancamento.linhas.extend(objs)
+
+    lancamento.data = data
+    lancamento.mes = mes
+    lancamento.diario_codigo = diario_codigo
+    lancamento.documento_codigo = documento_codigo
+    lancamento.descricao = descricao
+    lancamento.documento_ref = documento_ref or documento_codigo
+    lancamento.diferido = diferido
+    db.flush()
+    return lancamento
 
 
 def integrar(db: Session, lancamento: Lancamento, por: str | None = None) -> Lancamento:

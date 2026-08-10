@@ -796,6 +796,12 @@ def obter_lancamento(lancamento_id: UUID, empresa: EmpresaAtual, db: DB) -> dict
                 "debito": x.debito, "credito": x.credito, "entidade": x.entidade,
                 "iva_perc": x.iva_perc, "centro_codigo": x.centro_codigo,
                 "fluxo_codigo": x.fluxo_codigo, "moeda": x.moeda, "cambio": x.cambio,
+                # REGRESSÃO: os três seguintes existem no modelo e não vinham na
+                # resposta. Carregar um movimento no editor perdia-os em
+                # silêncio, e gravar de volta escrevia zeros por cima.
+                "tipo_entidade": x.tipo_entidade,
+                "perc_nao_ded": x.perc_nao_ded,
+                "iva_autoliq": x.iva_autoliq,
             }
             for x in l.linhas
         ],
@@ -829,6 +835,73 @@ def criar_lancamento(
     )
     db.commit()
     return {"id": lanc.id, "numero": lanc.numero, "numero_op": lanc.numero_op}
+
+
+#: De onde vem um movimento que NÃO foi lançado à mão, e onde se altera.
+#: Editar aqui um lançamento gerado por outro módulo deixaria o documento de
+#: origem a discordar da contabilidade — a venda a dizer um valor e o razão
+#: outro. No Piloto o problema não existe porque lá não há essa ligação.
+ONDE_SE_ALTERA = {
+    "venda": "no documento de venda que o gerou",
+    "compra": "no documento de compra que o gerou",
+    "rh": "no processamento de salários que o gerou",
+    "salarios": "no processamento de salários que o gerou",
+    "logistica": "no movimento de stock que o gerou",
+    "imobilizado": "no processamento de amortizações que o gerou",
+    "amortizacao": "no processamento de amortizações que o gerou",
+    "apuramento": "reabrindo o apuramento que o gerou",
+}
+
+
+@router.put("/lancamentos/{lancamento_id}", dependencies=[LANCAR])
+def actualizar_lancamento(
+    request: Request,
+    lancamento_id: UUID,
+    dados: LancamentoCriar,
+    empresa: EmpresaAtual,
+    db: DB,
+) -> dict:
+    """Altera um movimento já gravado, como o Piloto faz.
+
+    SÓ MOVIMENTOS MANUAIS. É a única diferença deliberada face ao Piloto neste
+    ecrã, e a razão só existe na Produção: aqui as vendas, compras,
+    processamentos de salários e amortizações guardam o `lancamento_id`. Editar
+    à mão o lançamento de um recibo de vencimento deixava o recibo a dizer uma
+    coisa e a contabilidade outra, sem nada a assinalar a divergência.
+
+    A mensagem diz ONDE se altera, para não ser um «não pode» sem saída.
+    """
+    l = db.scalar(
+        select(Lancamento).where(
+            Lancamento.id == lancamento_id, Lancamento.empresa_id == empresa.id
+        )
+    )
+    if l is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Movimento não encontrado.")
+
+    if l.origem != "manual":
+        onde = ONDE_SE_ALTERA.get(l.origem, f"no módulo que o gerou ({l.origem})")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Este movimento foi gerado automaticamente e altera-se {onde} — "
+            "não aqui. Assim a contabilidade e o documento de origem não se "
+            "contradizem.",
+        )
+
+    svc.actualizar(
+        db,
+        l,
+        data=dados.data,
+        diario_codigo=dados.diario_codigo,
+        documento_codigo=dados.documento_codigo,
+        linhas=[x.model_dump() for x in dados.linhas],
+        mes=dados.mes,
+        descricao=dados.descricao,
+        documento_ref=dados.documento_ref,
+        diferido=dados.diferido,
+    )
+    db.commit()
+    return {"id": l.id, "numero": l.numero, "numero_op": l.numero_op}
 
 
 @router.post("/lancamentos/{lancamento_id}/integrar", dependencies=[LANCAR])

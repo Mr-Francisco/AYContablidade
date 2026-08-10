@@ -26,13 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, formataCompacto, formataMoeda } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
-import type { Balanco } from "@/types";
-
-interface Resumo {
-  custos: string;
-  proveitos: string;
-  resultado: string;
-}
+import type { Balanco, Resumo } from "@/types";
 
 const ATALHOS = [
   {

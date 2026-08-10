@@ -68,6 +68,13 @@ const NAV_COMPLETO: GrupoNav[] = [
         icone: "plano",
       },
       {
+        href: "/contabilidade/explorador",
+        rotulo: "Explorador",
+        seccao: "Contabilidade",
+        cap: "contab.ver",
+        icone: "explorador",
+      },
+      {
         href: "/contabilidade/balancete",
         rotulo: "Balancete Geral",
         seccao: "Balancetes",

@@ -29,6 +29,7 @@ export function CampoConta({
   placeholder = "Conta (F4)",
   className,
   disabled,
+  semBotao,
 }: {
   valor: string;
   aoMudar: (codigo: string) => void;
@@ -37,6 +38,9 @@ export function CampoConta({
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  /** Esconde o botão «F4». Na grelha do lançamento não há espaço para ele e o
+   *  Piloto também não o mostra ali — a tecla e o duplo clique bastam. */
+  semBotao?: boolean;
 }) {
   const { contas } = useContas();
   const idLista = useId();
@@ -78,15 +82,17 @@ export function CampoConta({
           )}
           {...props}
         />
-        <button
-          type="button"
-          onClick={abrir}
-          disabled={disabled}
-          title="Procurar no plano de contas (F4)"
-          className="shrink-0 rounded-lg border border-borda px-2 py-2 text-[11px] font-bold text-texto-suave hover:border-marca hover:text-marca"
-        >
-          F4
-        </button>
+        {!semBotao && (
+          <button
+            type="button"
+            onClick={abrir}
+            disabled={disabled}
+            title="Procurar no plano de contas (F4)"
+            className="shrink-0 rounded-lg border border-borda px-2 py-2 text-[11px] font-bold text-texto-suave hover:border-marca hover:text-marca"
+          >
+            F4
+          </button>
+        )}
       </div>
 
       {estado && (

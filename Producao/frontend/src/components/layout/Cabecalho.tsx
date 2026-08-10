@@ -4,8 +4,9 @@ import { Menu, Moon, Sun, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog, DropdownMenu } from "radix-ui";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
+import { iconeNav } from "@/components/layout/iconesNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTema } from "@/contexts/TemaContext";
 import {
@@ -311,38 +312,70 @@ function Ribbon({
   }
 
   return (
-    <div className="border-t border-borda bg-superficie-2/60">
-      <div className="mx-auto max-w-[1400px] overflow-x-auto px-5">
-        <div className="flex min-w-max items-stretch gap-1 py-2">
-          {seccoes.map((s, i) => (
-            <div key={s.nome} className="flex items-stretch">
-              {i > 0 && (
-                <span aria-hidden className="mx-2 w-px self-stretch bg-borda" />
-              )}
-              <div className="flex flex-col gap-1">
-                <div className="flex gap-1">
-                  {s.itens.map((item) => (
+    <div className="sem-imprimir border-t border-borda bg-superficie-2 overflow-x-auto">
+      <div className="mx-auto flex min-w-max max-w-[1400px] items-stretch whitespace-nowrap px-4 pb-0.5 pt-1.5">
+        {seccoes.map((s, i) => (
+          <Fragment key={s.nome}>
+            {i > 0 && (
+              <span aria-hidden className="mx-0.5 mb-5 mt-1 w-px bg-borda" />
+            )}
+            {/* Coluna por secção: os botões em cima, o rótulo da secção por
+                baixo com um traço a separar — a forma do ribbon do Piloto. */}
+            <div className="flex flex-col items-center px-1.5">
+              <div className="flex flex-1 items-start gap-0.5">
+                {s.itens.map((item) => {
+                  const activo = itemActivo(caminho, item.href);
+                  const traco = iconeNav(item.icone);
+                  return (
                     <Link
                       key={item.href}
                       href={item.href}
+                      title={item.rotulo}
                       className={cn(
-                        "rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors",
-                        itemActivo(caminho, item.href)
-                          ? "bg-marca text-white"
-                          : "text-texto-suave hover:bg-superficie hover:text-marca",
+                        "flex w-[74px] shrink-0 flex-col items-center justify-start gap-[3px] rounded-lg px-1 py-1.5 text-center transition-colors",
+                        activo
+                          ? "gradiente-marca text-white"
+                          : "hover:bg-superficie",
                       )}
                     >
-                      {item.rotulo}
+                      <span
+                        className={cn(
+                          "flex h-6 items-center justify-center",
+                          activo
+                            ? "text-white"
+                            : "text-texto-suave group-hover:text-acento",
+                        )}
+                      >
+                        {traco ? (
+                          <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                            className="size-[22px] fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
+                            // biome-ignore lint/security/noDangerouslySetInnerHtml: traçado SVG constante do nosso próprio iconesNav.ts — não há entrada de utilizador neste caminho.
+                            dangerouslySetInnerHTML={{ __html: traco }}
+                          />
+                        ) : (
+                          <span className="size-[22px]" />
+                        )}
+                      </span>
+                      <span
+                        className={cn(
+                          "max-w-[70px] whitespace-normal text-[11px] font-semibold leading-[1.15]",
+                          activo ? "text-white" : "text-texto-suave",
+                        )}
+                      >
+                        {item.rotulo}
+                      </span>
                     </Link>
-                  ))}
-                </div>
-                <div className="px-1 text-[10px] font-bold uppercase tracking-[0.5px] text-texto-suave/70">
-                  {s.nome}
-                </div>
+                  );
+                })}
+              </div>
+              <div className="mt-0.5 w-full border-t border-borda pb-0.5 pt-[3px] text-center text-[9.5px] font-bold uppercase tracking-[0.6px] text-texto-suave">
+                {s.nome}
               </div>
             </div>
-          ))}
-        </div>
+          </Fragment>
+        ))}
       </div>
     </div>
   );

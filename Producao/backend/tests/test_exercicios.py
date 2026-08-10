@@ -311,3 +311,78 @@ def _duas_contas_de_movimento(db, empresa_id) -> tuple[str, str]:
     movimento = [c.codigo for c in todas if svc.eh_movimento(c, todas)]
     assert len(movimento) >= 2, "a base de demonstração precisa de contas de movimento"
     return movimento[0], movimento[1]
+
+
+# ---------------------------------------------------------------------------
+# Editar um movimento
+# ---------------------------------------------------------------------------
+def test_a_rota_de_editar_existe_e_exige_lancar():
+    """REGRESSÃO: o Piloto edita movimentos e a Produção só sabia criar e
+    eliminar. Quem se enganava numa linha tinha de apagar e refazer."""
+    import inspect
+
+    from src.api.main import app
+    from src.api.routers import contabilidade_router as r
+
+    assert "put" in app.openapi()["paths"]["/api/contabilidade/lancamentos/{lancamento_id}"]
+    fonte = inspect.getsource(r)
+    decorador = fonte.split("def actualizar_lancamento(")[0].rsplit("@router.", 1)[-1]
+    assert "dependencies=[LANCAR]" in decorador
+
+
+def test_so_se_edita_o_que_foi_lancado_a_mao():
+    """A única diferença deliberada face ao Piloto neste ecrã.
+
+    Na Produção há tabelas — vendas, compras, processamentos, amortizações —
+    que guardam o `lancamento_id`. Editar à mão o lançamento de um recibo de
+    vencimento deixava o recibo a dizer uma coisa e o razão outra, sem nada a
+    assinalar a divergência. No Piloto o problema não existe porque lá não há
+    essa ligação.
+    """
+    import inspect
+
+    from src.api.routers import contabilidade_router as r
+
+    fonte = inspect.getsource(r.actualizar_lancamento)
+    assert 'l.origem != "manual"' in fonte
+    # E a recusa diz ONDE se altera, em vez de um «não pode» sem saída.
+    assert "ONDE_SE_ALTERA" in fonte
+    for origem in ("venda", "compra", "rh", "logistica", "imobilizado"):
+        assert origem in r.ONDE_SE_ALTERA, f"falta dizer onde se altera «{origem}»"
+
+
+def test_editar_passa_pelas_mesmas_validacoes_de_criar():
+    """REGRESSÃO: uma segunda cópia das regras seria a que deixava passar o
+    erro. `actualizar` chama os mesmos dois helpers que `postar`."""
+    import inspect
+
+    fonte = inspect.getsource(svc.actualizar)
+    assert "construir_linhas" in fonte, "não valida contas nem equilíbrio"
+    assert fonte.count("verificar_periodo_aberto") == 2, (
+        "tem de verificar o período de ORIGEM e o de DESTINO — mexer num "
+        "movimento de um mês fechado é lançar nele, e movê-lo PARA um mês "
+        "fechado contorna o fecho"
+    )
+
+
+def test_editar_nao_muda_o_numero_nem_o_id():
+    """O número de operação é a identidade do movimento perante quem já o
+    consultou, e o id é o que as vendas e os processamentos guardam."""
+    import inspect
+
+    fonte = inspect.getsource(svc.actualizar)
+    for campo in ("numero", "numero_op", "doc_num"):
+        assert f"lancamento.{campo} =" not in fonte, f"{campo} não se altera"
+
+
+def test_a_resposta_traz_os_campos_que_o_editor_precisa():
+    """REGRESSÃO: `tipo_entidade`, `perc_nao_ded` e `iva_autoliq` existem no
+    modelo e não vinham no GET. Carregar o movimento no editor perdia-os, e
+    gravar de volta escrevia zeros por cima."""
+    import inspect
+
+    from src.api.routers import contabilidade_router as r
+
+    fonte = inspect.getsource(r.obter_lancamento)
+    for campo in ("tipo_entidade", "perc_nao_ded", "iva_autoliq"):
+        assert f'"{campo}"' in fonte, f"o GET não devolve {campo}"

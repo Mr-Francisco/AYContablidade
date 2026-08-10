@@ -206,6 +206,13 @@ export interface LinhaBalancete {
   natureza: string;
 }
 
+/** Custos, proveitos e resultado — o resumo do painel e do explorador. */
+export interface Resumo {
+  custos: string;
+  proveitos: string;
+  resultado: string;
+}
+
 export interface Balancete {
   linhas: LinhaBalancete[];
   totais: {
