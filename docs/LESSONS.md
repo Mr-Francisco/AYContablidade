@@ -107,3 +107,6 @@
 - Eventos de teclado sintéticos (`new KeyboardEvent`) não accionam os handlers do React nesta app; para provar um atalho é preciso uma tecla real do browser.
 - O Radix devolve o foco ao fechar um diálogo DEPOIS do nosso `fechar()` — devolver o foco ao campo exige `requestAnimationFrame`, senão é desfeito logo a seguir.
 - Ao criar dados de teste com códigos de conta, não usar códigos que se estendam uns aos outros: `T79` era lido como filha de `T7` e falseava a regra da subconta.
+- Ler o DOM logo a seguir a disparar um evento no React dá o estado ANTES do redesenho: duas vezes julguei que o auto-equilíbrio tinha falhado quando tinha funcionado. Ler numa chamada separada.
+- As teclas reais do `computer` só chegam à página se o painel do browser estiver visível; escondido, nem o `document` recebe `keydown`. Um atalho que «não funciona» pode ser o painel, não o código.
+- Um editor de lançamento não é uma lista com um modal: a lista à esquerda e o editor à direita são o que permite carregar um movimento, corrigi-lo e gravar sem perder o contexto — e é isso que o Piloto faz.

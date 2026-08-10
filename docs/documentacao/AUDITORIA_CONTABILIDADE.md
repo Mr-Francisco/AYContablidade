@@ -42,31 +42,31 @@ fica livre para ser o Painel Contabilístico.
 
 ---
 
-## 2. Movimentos 🔧
+## 2. Movimentos ✅
 
 `movimentos.html` — a página mais usada do sistema.
 
 | Elemento | Piloto | Produção |
 |---|---|---|
-| Estrutura | **Editor em página**: barra de acções + lista à esquerda + editor à direita | Lista + **modal** |
-| Barra | `Gravar` `Novo` `Eliminar` `Integrar` (só em diferidos) + **selo de estado** à direita | Só «Novo movimento» |
-| Selo de estado | Por ordem: `⚠ Indica o diário` → `⚠ Indica o documento` → `⚠ Indica o fluxo da conta X` → `vazio` → `✓ equilibrado` → `✗ diferença N` | Não existe |
-| Gravar desactivado | Sim, com `title` a dizer porquê | Não |
-| Lista | Filtro diário + pesquisa + «Só diferidos»; item com nºOp, data, diário, descrição, valor | ✅ construída |
-| Data | Ano + **grelha Mês 0–15 / Dia 1–31** | `<input type="date">` |
-| Campo Lançamento | Nº de operação, ou `(automático)` | Não existe |
-| Diário | Código + nome ao lado | Dropdown |
-| Separadores | **Geral · Centros de Custo · Fluxos Caixa** | Não existem |
-| Colunas da grelha | Conta, Débito, Crédito, **IVA %**, **% n/Ded.**, **IVA Autoliq.**, **T. Entidade**, Entidade, **Moeda**, **Câmbio**, Descrição, ✕ | Conta, Descrição, Entidade, Centro, Débito, Crédito |
+| Estrutura | **Editor em página**: barra de acções + lista à esquerda + editor à direita | ✅ |
+| Barra | `Gravar` `Novo` `Eliminar` `Integrar` (só em diferidos) + **selo de estado** à direita | ✅ |
+| Selo de estado | Por ordem: `⚠ Indica o diário` → `⚠ Indica o documento` → `⚠ Indica o fluxo da conta X` → `vazio` → `✓ equilibrado` → `✗ diferença N` | ✅ verificado degrau a degrau |
+| Gravar desactivado | Sim, com `title` a dizer porquê | ✅ |
+| Lista | Filtro diário + pesquisa + «Só diferidos»; item com nºOp, data, diário, descrição, valor | ✅ |
+| Data | Ano + **grelha Mês 0–15 / Dia 1–31** | ✅ |
+| Campo Lançamento | Nº de operação, ou `(automático)` | ✅ |
+| Diário | Código escrito + nome ao lado + sugestões | ✅ |
+| Separadores | **Geral · Centros de Custo · Fluxos Caixa** | ✅ |
+| Colunas da grelha | Conta, Débito, Crédito, **IVA %**, **% n/Ded.**, **IVA Autoliq.**, **T. Entidade**, Entidade, **Moeda**, **Câmbio**, Descrição, ✕ | ✅ 11 colunas, aspecto de folha de cálculo |
 | Totais / Diferença | Duas linhas no rodapé da grelha | Existe |
-| `Enter` na grelha | Avança de célula; no fim cria linha e foca a conta | Não |
-| Auto-equilíbrio | Ao chegar a uma célula de valor vazia, preenche o que falta | Não |
-| Documento pré-preenche | Contas débito/crédito por omissão + descrição | Não |
-| Conta inexistente ao gravar | Abre o diálogo de criação e **retoma a gravação** | ✅ diálogo (falta retomar) |
-| Fluxo obrigatório 43/45 | Bloqueia a gravação | Não |
+| `Enter` na grelha | Avança de célula; no fim cria linha e foca a conta | ✅ |
+| Auto-equilíbrio | Ao chegar a uma célula de valor vazia, preenche o que falta | ✅ verificado: 500 → 500 |
+| Documento pré-preenche | Contas débito/crédito por omissão + descrição | ✅ verificado: 7111 / 2611 |
+| Conta inexistente ao gravar | Abre o diálogo de criação e **retoma a gravação** | 🔧 diálogo feito; falta retomar a gravação |
+| Fluxo obrigatório 43/45 | Bloqueia a gravação | ✅ (no cliente, como no Piloto) |
 | Sugestão de imobilizado | Débito em 11x/12x oferece abrir a Ficha de Activos | Não |
-| Editar movimento | Sim, qualquer um | **Não havia rota.** Criada `actualizar` |
-| Novo() preserva | Diário e documento do anterior | — |
+| Editar movimento | Sim, qualquer um | ✅ só `origem == "manual"` — ver decisão abaixo |
+| Novo() preserva | Diário e documento do anterior | ✅ |
 
 **Decisão aprovada:** editar só `origem == "manual"`. Nos outros o botão fica
 visível e desactivado, a dizer de onde vem o movimento — na Produção há tabelas
@@ -162,7 +162,7 @@ Falta o **F4** nos campos Conta Débito / Conta Crédito.
 
 **Grande (serviço + interface):**
 1. Balancete Modelo Primavera — 3 grupos de colunas, subtotais, intervalos.
-2. Movimentos — editor em página, 11 colunas, 3 separadores, `Enter`, auto-equilíbrio.
+2. ~~Movimentos~~ — **feito**.
 3. Plano de Contas em árvore.
 4. Painel Contabilístico.
 

@@ -30,6 +30,7 @@ export function CampoConta({
   className,
   disabled,
   semBotao,
+  emGrelha,
 }: {
   valor: string;
   aoMudar: (codigo: string) => void;
@@ -41,6 +42,10 @@ export function CampoConta({
   /** Esconde o botão «F4». Na grelha do lançamento não há espaço para ele e o
    *  Piloto também não o mostra ali — a tecla e o duplo clique bastam. */
   semBotao?: boolean;
+  /** Aspecto de célula de folha de cálculo: sem moldura, a preencher a célula.
+   *  Só a validação muda de cor — a moldura permanente é ruído numa grelha com
+   *  onze colunas. */
+  emGrelha?: boolean;
 }) {
   const { contas } = useContas();
   const idLista = useId();
@@ -73,12 +78,17 @@ export function CampoConta({
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
-            "tabular min-w-0 flex-1 rounded-lg border bg-fundo px-2.5 py-2 text-sm outline-none focus:border-marca",
-            estado?.tipo === "inexistente"
-              ? "border-perigo"
-              : estado?.tipo === "integradora"
-                ? "border-[var(--color-aviso)]"
-                : "border-borda",
+            "tabular min-w-0 flex-1 text-sm outline-none",
+            emGrelha
+              ? "border-0 bg-transparent px-2 py-1.5 focus:bg-marca/8 focus:outline-2 focus:-outline-offset-2 focus:outline-marca"
+              : cn(
+                  "rounded-lg border bg-fundo px-2.5 py-2 focus:border-marca",
+                  estado?.tipo === "inexistente"
+                    ? "border-perigo"
+                    : estado?.tipo === "integradora"
+                      ? "border-[var(--color-aviso)]"
+                      : "border-borda",
+                ),
           )}
           {...props}
         />
@@ -96,7 +106,12 @@ export function CampoConta({
       </div>
 
       {estado && (
-        <p className="mt-1 truncate text-[12px] leading-tight">
+        <p
+          className={cn(
+            "truncate text-[11.5px] leading-tight",
+            emGrelha ? "px-2 pb-0.5" : "mt-1",
+          )}
+        >
           {estado.tipo === "ok" && (
             <span className="text-sucesso">✓ {estado.nome}</span>
           )}

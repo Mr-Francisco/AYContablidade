@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { usePeriodos } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 
-const DIAS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+const DIAS = Array.from({ length: 31 }, (_, i) =>
+  String(i + 1).padStart(2, "0"),
+);
 
 /**
  * Selector de mês e dia do movimento — o `dpPicker` do Piloto.
@@ -41,16 +43,16 @@ export function SelectorData({
     function fora(e: MouseEvent) {
       if (!caixa.current?.contains(e.target as Node)) setAberto(false);
     }
-    function escape(e: KeyboardEvent) {
+    function aoEscapar(e: KeyboardEvent) {
       if (e.key === "Escape") setAberto(false);
     }
     // `capture`: o mesmo do Piloto. Sem isto, um clique num botão que pára a
     // propagação deixava o selector aberto por cima do resto.
     document.addEventListener("mousedown", fora, true);
-    document.addEventListener("keydown", escape, true);
+    document.addEventListener("keydown", aoEscapar, true);
     return () => {
       document.removeEventListener("mousedown", fora, true);
-      document.removeEventListener("keydown", escape, true);
+      document.removeEventListener("keydown", aoEscapar, true);
     };
   }, [aberto]);
 

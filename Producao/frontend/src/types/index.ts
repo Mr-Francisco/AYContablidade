@@ -172,7 +172,13 @@ export interface LinhaLancamento {
   debito: string;
   credito: string;
   entidade: string | null;
+  /** Cliente, Fornecedor, Estado ou Outro — as opções do Piloto. */
+  tipo_entidade: string | null;
   iva_perc: string;
+  /** Percentagem de IVA não dedutível. */
+  perc_nao_ded: string;
+  /** IVA de autoliquidação. */
+  iva_autoliq: string;
   centro_codigo: string | null;
   fluxo_codigo: string | null;
   moeda: string;

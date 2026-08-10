@@ -1,278 +1,286 @@
 "use client";
 
-import { CircleAlert, Plus, Trash2, X } from "lucide-react";
-import { AlertDialog, Dialog } from "radix-ui";
-import { useState } from "react";
+import { CheckCircle2, FilePlus2, Save, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 
-import {
-  ACarregar,
-  Alerta,
-  BarraFiltros,
-  Botao,
-  CabecalhoPagina,
-  Campo,
-  Cartao,
-  Entrada,
-  EnvolveTabela,
-  Selector,
-  Selo,
-  Tabela,
-  Td,
-  Th,
-  Tr,
-  Vazio,
-} from "@/components/ui";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import { CriarContaEmFalta } from "@/components/contabilidade/CriarContaEmFalta";
+import { Botao, CabecalhoPagina, Selector } from "@/components/ui";
+import { Confirmar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
-import { formataMoeda } from "@/lib/dinheiro";
-import { useDiarios, useExercicios } from "@/lib/hooks";
+import { big, formataMoeda, paraApi, soma, subtrai } from "@/lib/dinheiro";
+import { useDiarios, useDocumentos, useExercicios } from "@/lib/hooks";
 import type { Lancamento } from "@/types";
 
-import { FormularioLancamento } from "./FormularioLancamento";
+import {
+  CONTA_MONETARIA,
+  EditorLancamento,
+  SeloEstado,
+} from "./EditorLancamento";
+import { linhaPreenchida } from "./GrelhaGeral";
+import { ListaLancamentos } from "./ListaLancamentos";
+import { type EstadoEditor, estadoDe, estadoNovo, linhaVazia } from "./tipos";
 
-const ORIGENS: Record<string, { rotulo: string; cor: string }> = {
-  manual: { rotulo: "Manual", cor: "#62657a" },
-  comercial: { rotulo: "Comercial", cor: "#2980b9" },
-  logistica: { rotulo: "Logística", cor: "#d68910" },
-  rh: { rotulo: "RH", cor: "#16a085" },
-  imobilizado: { rotulo: "Imobilizado", cor: "#7a3aab" },
-  apuramento: { rotulo: "Apuramento", cor: "#e6007e" },
-};
-
-/** O que se pede ao servidor. Quando a resposta vem com este tamanho
- *  exacto, é sinal de que foi cortada — e o rodapé diz que pode haver mais,
- *  em vez de apresentar um total que não é o total. */
+/** Quantos movimentos se pedem ao servidor. Ver `RodapeHistorico`. */
 const LIMITE_PEDIDO = 1000;
 
+/**
+ * Movimentos — o editor em página do Piloto (`movimentos.html`).
+ *
+ * Não é uma lista com um modal por cima: é uma barra de acções, a lista dos
+ * movimentos à esquerda e o editor à direita. Carregar num movimento traz-lho
+ * para o editor; `Novo` limpa mas **guarda o diário e o documento**, porque
+ * quem lança vinte compras seguidas não quer voltar a escolhê-los vinte vezes.
+ *
+ * O SELO DE ESTADO à direita da barra é o que diz porque é que `Gravar` está
+ * apagado, e segue a ordem do Piloto: primeiro o diário, depois o documento,
+ * depois o fluxo de caixa das contas monetárias, e só então o equilíbrio.
+ * Um botão desactivado sem explicação é uma parede; com o motivo à vista é uma
+ * indicação.
+ */
 export default function Movimentos() {
-  const { pode, empresa } = useAuth();
+  const { pode } = useAuth();
   const { exercicios, activo } = useExercicios();
   const { diarios } = useDiarios();
 
+  const podeLancar = pode("contab.lancar");
+
   const [exercicioId, setExercicioId] = useState<string | undefined>();
-  const [diario, setDiario] = useState("todos");
-  const [de, setDe] = useState("");
-  const [ate, setAte] = useState("");
-  const [incluirDiferidos, setIncluirDiferidos] = useState(false);
-  const [novoAberto, setNovoAberto] = useState(false);
-  const [detalhe, setDetalhe] = useState<string | null>(null);
+  const [filtroDiario, setFiltroDiario] = useState("");
+  const [procura, setProcura] = useState("");
+  const [soDiferidos, setSoDiferidos] = useState(false);
+
+  const [estado, setEstado] = useState<EstadoEditor>(() => estadoNovo());
+  const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [aCriarConta, setACriarConta] = useState<string | null>(null);
+  const [aEliminar, setAEliminar] = useState(false);
 
   const exId = exercicioId ?? activo?.id;
-  const moeda = empresa?.moeda ?? "Kz";
+  const { documentos } = useDocumentos(estado.diario || undefined);
 
+  // A lista traz sempre os diferidos: são precisamente os que é preciso
+  // encontrar para integrar. Filtram-se aqui, não no pedido.
   const parametros = new URLSearchParams();
   if (exId) parametros.set("exercicio_id", exId);
-  if (diario !== "todos") parametros.set("diario", diario);
-  if (de) parametros.set("de", de);
-  if (ate) parametros.set("ate", ate);
-  if (incluirDiferidos) parametros.set("incluir_diferidos", "true");
+  parametros.set("incluir_diferidos", "true");
   parametros.set("limite", String(LIMITE_PEDIDO));
-
   const chave = `/api/contabilidade/lancamentos?${parametros}`;
   const {
-    data: lancamentos,
+    data: todos,
     isLoading,
     mutate,
   } = useSWR<Lancamento[]>(chave, buscador);
 
-  const historico = useHistorico(lancamentos);
+  const lista = useMemo(() => {
+    const q = procura.toLowerCase().trim();
+    return (todos ?? []).filter((l) => {
+      if (filtroDiario && l.diario_codigo !== filtroDiario) return false;
+      if (soDiferidos && !l.diferido) return false;
+      if (!q) return true;
+      return (
+        (l.descricao ?? "").toLowerCase().includes(q) ||
+        (l.documento_ref ?? "").toLowerCase().includes(q) ||
+        (l.numero_op ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [todos, filtroDiario, soDiferidos, procura]);
 
-  return (
-    <>
-      <CabecalhoPagina
-        titulo="Movimentos"
-        descricao="Lançamentos em partidas dobradas."
-        accoes={
-          pode("contab.lancar") && (
-            <Botao variante="primario" onClick={() => setNovoAberto(true)}>
-              <Plus size={16} />
-              Novo movimento
-            </Botao>
-          )
-        }
-      />
+  // ---- Estado do movimento, pela ordem do Piloto ----
+  const preenchidas = estado.linhas.filter(linhaPreenchida);
+  const totalDebito = soma(...estado.linhas.map((l) => l.debito));
+  const totalCredito = soma(...estado.linhas.map((l) => l.credito));
+  const diferenca = subtrai(totalDebito, totalCredito);
+  const equilibrado = diferenca.eq(0) && totalDebito.gt(0);
 
-      <BarraFiltros className="mb-4">
-        <Selector
-          rotulo="Exercício"
-          valor={exId ?? ""}
-          aoMudar={setExercicioId}
-          opcoes={exercicios.map((e) => ({
-            valor: e.id,
-            rotulo: `${e.nome}${e.ativo ? " · activo" : ""}`,
-          }))}
-          larguraMinima="13rem"
-        />
-        <Selector
-          rotulo="Diário"
-          valor={diario}
-          aoMudar={setDiario}
-          opcoes={[
-            { valor: "todos", rotulo: "Todos os diários" },
-            ...diarios.map((d) => ({
-              valor: d.codigo,
-              rotulo: `${d.codigo} — ${d.nome}`,
-            })),
-          ]}
-          larguraMinima="15rem"
-        />
-        <Campo rotulo="De">
-          <Entrada
-            type="date"
-            value={de}
-            onChange={(e) => setDe(e.target.value)}
-          />
-        </Campo>
-        <Campo rotulo="Até">
-          <Entrada
-            type="date"
-            value={ate}
-            onChange={(e) => setAte(e.target.value)}
-          />
-        </Campo>
-        <label className="flex cursor-pointer items-center gap-2 pb-2.5 text-[13px] text-texto-suave">
-          <input
-            type="checkbox"
-            checked={incluirDiferidos}
-            onChange={(e) => setIncluirDiferidos(e.target.checked)}
-            className="h-4 w-4 accent-[var(--color-marca)]"
-          />
-          Incluir diferidos
-        </label>
-      </BarraFiltros>
-
-      <Cartao className="p-0">
-        {isLoading ? (
-          <ACarregar />
-        ) : !lancamentos?.length ? (
-          <Vazio>Sem movimentos no período seleccionado.</Vazio>
-        ) : (
-          <>
-            <EnvolveTabela className="rounded-none border-0">
-              <Tabela>
-                <thead>
-                  <tr>
-                    <Th>Nº Operação</Th>
-                    <Th>Data</Th>
-                    <Th>Per.</Th>
-                    <Th>Diário</Th>
-                    <Th>Doc.</Th>
-                    <Th>Descrição</Th>
-                    <Th>Referência</Th>
-                    <Th>Origem</Th>
-                    <Th numerico>Valor</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historico.visiveis.map((l) => {
-                    const o = ORIGENS[l.origem] ?? {
-                      rotulo: l.origem,
-                      cor: "#62657a",
-                    };
-                    return (
-                      <Tr
-                        key={l.id}
-                        onClick={() => setDetalhe(l.id)}
-                        className="cursor-pointer"
-                      >
-                        <Td className="font-bold tabular">
-                          {l.numero_op ?? l.numero}
-                          {l.diferido && (
-                            <Selo cor="#c98a10" className="ml-2">
-                              Diferido
-                            </Selo>
-                          )}
-                        </Td>
-                        <Td className="tabular">
-                          {new Date(l.data).toLocaleDateString("pt-PT")}
-                        </Td>
-                        <Td className="tabular text-texto-suave">{l.mes}</Td>
-                        <Td className="tabular">{l.diario_codigo}</Td>
-                        <Td className="tabular">{l.documento_codigo}</Td>
-                        <Td className="max-w-[300px] truncate">
-                          <span title={l.descricao ?? ""}>
-                            {l.descricao ?? "—"}
-                          </span>
-                        </Td>
-                        <Td className="text-texto-suave">
-                          {l.documento_ref ?? "—"}
-                        </Td>
-                        <Td>
-                          <Selo cor={o.cor}>{o.rotulo}</Selo>
-                        </Td>
-                        <Td numerico className="font-semibold">
-                          {formataMoeda(l.total, moeda)}
-                        </Td>
-                      </Tr>
-                    );
-                  })}
-                </tbody>
-              </Tabela>
-            </EnvolveTabela>
-            <RodapeHistorico
-              {...historico}
-              truncadoNoServidor={(lancamentos?.length ?? 0) >= LIMITE_PEDIDO}
-              nome="movimentos"
-            />
-          </>
-        )}
-      </Cartao>
-
-      {novoAberto && (
-        <FormularioLancamento
-          exercicioId={exId}
-          aoFechar={() => setNovoAberto(false)}
-          aoGravar={() => {
-            setNovoAberto(false);
-            mutate();
-          }}
-        />
-      )}
-
-      {detalhe && (
-        <DetalheLancamento
-          id={detalhe}
-          moeda={moeda}
-          aoFechar={() => setDetalhe(null)}
-          aoMudar={mutate}
-        />
-      )}
-    </>
-  );
-}
-
-function DetalheLancamento({
-  id,
-  moeda,
-  aoFechar,
-  aoMudar,
-}: {
-  id: string;
-  moeda: string;
-  aoFechar: () => void;
-  aoMudar: () => void;
-}) {
-  const { pode } = useAuth();
-  const { data, isLoading, mutate } = useSWR<Lancamento>(
-    `/api/contabilidade/lancamentos/${id}`,
-    buscador,
+  const semFluxo = estado.linhas.find(
+    (l) =>
+      CONTA_MONETARIA.test(l.conta_codigo) &&
+      (big(l.debito).gt(0) || big(l.credito).gt(0)) &&
+      !l.fluxo_codigo,
   );
 
-  const [erro, setErro] = useState<string | null>(null);
-  const [ocupado, setOcupado] = useState(false);
-  const [aApagar, setAApagar] = useState(false);
+  const selo = (() => {
+    if (!estado.diario) return { texto: "⚠ Indica o diário", tipo: "aviso" };
+    if (!estado.documento)
+      return { texto: "⚠ Indica o documento", tipo: "aviso" };
+    if (semFluxo)
+      return {
+        texto: `⚠ Indica o fluxo de caixa da conta ${semFluxo.conta_codigo} (separador Fluxos Caixa)`,
+        tipo: "aviso",
+      };
+    if (totalDebito.eq(0) && totalCredito.eq(0))
+      return { texto: "vazio", tipo: "vazio" };
+    if (equilibrado) return { texto: "✓ equilibrado", tipo: "ok" };
+    return {
+      texto: `✗ diferença ${formataMoeda(diferenca.abs(), "")} — débito ≠ crédito`,
+      tipo: "erro",
+    };
+  })();
 
-  const podeLancar = pode("contab.lancar");
+  const editavel = estado.origem === "manual";
+  const completo =
+    Boolean(estado.diario) &&
+    Boolean(estado.documento) &&
+    !semFluxo &&
+    equilibrado;
+  const podeGravar = podeLancar && completo && editavel;
 
-  async function integrar() {
+  // ---- Acções ----
+  function alterar(parcial: Partial<EstadoEditor>) {
     setErro(null);
+    setAviso(null);
+    setEstado((e) => {
+      const novo = { ...e, ...parcial };
+      // Escolher o documento traz as contas por omissão e a descrição — mas só
+      // se a grelha ainda estiver limpa, para não apagar o que já se escreveu.
+      if (parcial.documento && parcial.documento !== e.documento) {
+        const doc = documentos.find((d) => d.codigo === parcial.documento);
+        if (doc) {
+          if (!novo.descricao) novo.descricao = doc.descricao;
+          const vazia = !e.linhas.some(
+            (l) => l.conta_codigo || l.debito || l.credito,
+          );
+          if (vazia) {
+            const linhas = [];
+            if (doc.conta_debito)
+              linhas.push({
+                ...linhaVazia(),
+                conta_codigo: doc.conta_debito,
+                descricao: doc.descricao,
+              });
+            if (doc.conta_credito)
+              linhas.push({
+                ...linhaVazia(),
+                conta_codigo: doc.conta_credito,
+                descricao: doc.descricao,
+              });
+            while (linhas.length < 2) linhas.push(linhaVazia());
+            novo.linhas = linhas;
+          }
+        }
+      }
+      return novo;
+    });
+  }
+
+  function novo() {
+    // Diário e documento mantêm-se: não é produtivo voltar a escolhê-los.
+    setEstado((e) => ({
+      ...estadoNovo(),
+      diario: e.diario,
+      documento: e.documento,
+    }));
+    setErro(null);
+    setAviso(null);
+  }
+
+  async function carregar(l: Lancamento) {
+    setErro(null);
+    setAviso(null);
+    try {
+      const completo = await api.get<Lancamento>(
+        `/api/contabilidade/lancamentos/${l.id}`,
+      );
+      setEstado(estadoDe(completo));
+    } catch {
+      setErro("Não foi possível abrir o movimento.");
+    }
+  }
+
+  async function gravar() {
+    setErro(null);
+    setAviso(null);
+
     setOcupado(true);
     try {
-      await api.post(`/api/contabilidade/lancamentos/${id}/integrar`, {});
-      mutate();
-      aoMudar();
+      const corpo = {
+        data: estado.data,
+        mes: estado.mes || undefined,
+        diario_codigo: estado.diario,
+        documento_codigo: estado.documento,
+        descricao: estado.descricao || undefined,
+        documento_ref: estado.documentoRef || undefined,
+        exercicio_id: exId,
+        diferido: estado.diferido,
+        linhas: preenchidas.map((l) => ({
+          conta_codigo: l.conta_codigo,
+          debito: paraApi(l.debito),
+          credito: paraApi(l.credito),
+          descricao: l.descricao || undefined,
+          entidade: l.entidade || undefined,
+          tipo_entidade: l.tipo_entidade || undefined,
+          iva_perc: paraApi(l.iva_perc),
+          perc_nao_ded: paraApi(l.perc_nao_ded),
+          iva_autoliq: paraApi(l.iva_autoliq),
+          moeda: l.moeda,
+          cambio: paraApi(l.cambio || "1"),
+          centro_codigo: l.centro_codigo || undefined,
+          fluxo_codigo: l.fluxo_codigo || undefined,
+        })),
+      };
+
+      if (estado.editId) {
+        await api.put(`/api/contabilidade/lancamentos/${estado.editId}`, corpo);
+        setAviso("Movimento actualizado.");
+      } else {
+        const r = await api.post<{ numero: number }>(
+          "/api/contabilidade/lancamentos",
+          corpo,
+        );
+        setAviso(
+          estado.diferido
+            ? `Movimento nº ${r.numero} gravado — diferido, pendente de integração.`
+            : `Movimento nº ${r.numero} gravado.`,
+        );
+      }
+      await mutate();
+      novo();
+    } catch (e) {
+      // O servidor devolve 422 com a regra violada em português.
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível gravar.",
+      );
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function eliminar() {
+    if (!estado.editId) return;
+    setOcupado(true);
+    try {
+      await api.delete(`/api/contabilidade/lancamentos/${estado.editId}`);
+      await mutate();
+      novo();
+      setAviso("Movimento eliminado.");
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAEliminar(false);
+    }
+  }
+
+  async function integrar() {
+    if (!estado.editId) return;
+    setOcupado(true);
+    try {
+      await api.post(
+        `/api/contabilidade/lancamentos/${estado.editId}/integrar`,
+        {},
+      );
+      await mutate();
+      novo();
+      setAviso("Movimento integrado — passa a contar nos mapas.");
     } catch (e) {
       setErro(
         e instanceof ErroApi
@@ -284,223 +292,135 @@ function DetalheLancamento({
     }
   }
 
-  async function eliminar() {
-    setErro(null);
-    setOcupado(true);
-    try {
-      await api.delete(`/api/contabilidade/lancamentos/${id}`);
-      aoMudar();
-      aoFechar();
-    } catch (e) {
-      setErro(
-        e instanceof ErroApi
-          ? e.mensagemUtilizador
-          : "Não foi possível eliminar.",
-      );
-      setOcupado(false);
-      setAApagar(false);
-    }
-  }
-
   return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[88vh] w-[min(920px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
-          <div className="flex items-center justify-between gap-3 border-b border-borda px-5 py-3.5">
-            <Dialog.Title className="truncate text-[15px] font-bold">
-              Movimento {data?.numero_op ?? ""}
-            </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
-              >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
-          </div>
+    <>
+      <CabecalhoPagina
+        titulo="Movimentos"
+        descricao="Lançamentos em partidas dobradas."
+        accoes={
+          exercicios.length > 0 && (
+            <Selector
+              rotulo=""
+              valor={exId ?? ""}
+              aoMudar={setExercicioId}
+              opcoes={exercicios.map((e) => ({
+                valor: e.id,
+                rotulo: `${e.nome}${e.estado === "fechado" ? " · fechado" : ""}`,
+              }))}
+              larguraMinima="13rem"
+            />
+          )
+        }
+      />
 
-          <div className="min-w-0 overflow-auto p-5">
-            {isLoading || !data ? (
-              <ACarregar />
-            ) : (
-              <>
-                <dl className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <Info rotulo="Data">
-                    {new Date(data.data).toLocaleDateString("pt-PT")}
-                  </Info>
-                  <Info rotulo="Período">{data.mes}</Info>
-                  <Info rotulo="Diário">{data.diario_codigo}</Info>
-                  <Info rotulo="Documento">{data.documento_codigo}</Info>
-                  <Info rotulo="Referência">{data.documento_ref ?? "—"}</Info>
-                  <Info rotulo="Origem">{data.origem}</Info>
-                  <Info rotulo="Estado">
-                    {data.diferido ? "Diferido" : "Integrado"}
-                  </Info>
-                  <Info rotulo="Nº interno">{data.numero}</Info>
-                </dl>
-
-                {data.descricao && (
-                  <p className="mb-4 text-sm text-texto-suave">
-                    {data.descricao}
-                  </p>
-                )}
-
-                {/* Um movimento diferido não conta em lado nenhum — nem no
-                    balancete, nem no razão, nem nos apuramentos — enquanto não
-                    for integrado. Sem esta acção ficava preso, e o utilizador
-                    via um estado que não conseguia mudar. */}
-                {data.diferido && podeLancar && (
-                  <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--color-aviso)]/40 bg-[var(--color-aviso)]/8 px-4 py-3">
-                    <CircleAlert
-                      size={17}
-                      className="shrink-0 text-[var(--color-aviso)]"
-                    />
-                    <p className="min-w-0 flex-1 text-sm leading-relaxed">
-                      <b>Pendente de integração.</b> Não entra no balancete, no
-                      razão, no extracto nem nos apuramentos até ser integrado.
-                    </p>
-                    <Botao
-                      variante="primario"
-                      tamanho="pequeno"
-                      onClick={integrar}
-                      disabled={ocupado}
-                    >
-                      {ocupado ? "A integrar…" : "Integrar"}
-                    </Botao>
-                  </div>
-                )}
-
-                {erro && (
-                  <div className="mb-4">
-                    <Alerta tipo="erro">{erro}</Alerta>
-                  </div>
-                )}
-
-                <EnvolveTabela>
-                  <Tabela>
-                    <thead>
-                      <tr>
-                        <Th>Conta</Th>
-                        <Th>Designação</Th>
-                        <Th>Descrição</Th>
-                        <Th>Entidade</Th>
-                        <Th>Centro</Th>
-                        <Th numerico>Débito</Th>
-                        <Th numerico>Crédito</Th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.linhas?.map((x) => (
-                        <Tr key={`${x.ordem}-${x.conta_codigo}`}>
-                          <Td className="font-bold tabular">
-                            {x.conta_codigo}
-                          </Td>
-                          <Td className="max-w-[220px] truncate text-texto-suave">
-                            {x.conta_nome ?? "—"}
-                          </Td>
-                          <Td className="max-w-[200px] truncate">
-                            {x.descricao ?? "—"}
-                          </Td>
-                          <Td className="max-w-[160px] truncate">
-                            {x.entidade || "—"}
-                          </Td>
-                          <Td className="text-texto-suave">
-                            {x.centro_codigo || "—"}
-                          </Td>
-                          <Td numerico>
-                            {x.debito === "0.00"
-                              ? ""
-                              : formataMoeda(x.debito, moeda)}
-                          </Td>
-                          <Td numerico>
-                            {x.credito === "0.00"
-                              ? ""
-                              : formataMoeda(x.credito, moeda)}
-                          </Td>
-                        </Tr>
-                      ))}
-                    </tbody>
-                  </Tabela>
-                </EnvolveTabela>
-              </>
-            )}
-          </div>
-
-          {podeLancar && data && (
-            <div className="flex justify-between gap-2 border-t border-borda px-5 py-3.5">
+      {/* Barra de acções — a `mov-toolbar` do Piloto */}
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[14px] border border-borda bg-superficie px-3 py-2.5 shadow-suave">
+        {podeLancar && (
+          <>
+            <Botao
+              variante="primario"
+              tamanho="pequeno"
+              onClick={gravar}
+              disabled={!podeGravar || ocupado}
+              title={
+                podeGravar
+                  ? undefined
+                  : !editavel
+                    ? "Movimento gerado automaticamente — altera-se no documento que o originou"
+                    : selo.texto.replace(/^[⚠✗✓]\s*/, "")
+              }
+            >
+              <Save size={15} />
+              {ocupado ? "A gravar…" : "Gravar"}
+            </Botao>
+            <Botao variante="neutro" tamanho="pequeno" onClick={novo}>
+              <FilePlus2 size={15} />
+              Novo
+            </Botao>
+            <Botao
+              variante="neutro"
+              tamanho="pequeno"
+              onClick={() => setAEliminar(true)}
+              disabled={!estado.editId || ocupado}
+              title={
+                estado.editId
+                  ? undefined
+                  : "Nada para eliminar (movimento novo)"
+              }
+            >
+              <Trash2 size={15} />
+              Eliminar
+            </Botao>
+            {estado.editId && estado.diferido && (
               <Botao
-                variante="perigo"
+                variante="sucesso"
                 tamanho="pequeno"
-                onClick={() => setAApagar(true)}
+                onClick={integrar}
                 disabled={ocupado}
+                title="Integra o movimento: passa a contar no balancete, razão e apuramentos"
               >
-                <Trash2 size={14} />
-                Eliminar
+                <CheckCircle2 size={15} />
+                Integrar
               </Botao>
-              <Dialog.Close asChild>
-                <Botao variante="neutro" tamanho="pequeno">
-                  Fechar
-                </Botao>
-              </Dialog.Close>
-            </div>
+            )}
+          </>
+        )}
+
+        <div className="ml-auto flex items-center gap-2">
+          {aviso && (
+            <span className="text-[13px] font-semibold text-sucesso">
+              {aviso}
+            </span>
           )}
+          <SeloEstado texto={selo.texto} tipo={selo.tipo} />
+        </div>
+      </div>
 
-          <AlertDialog.Root open={aApagar} onOpenChange={setAApagar}>
-            <AlertDialog.Portal>
-              <AlertDialog.Overlay className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm" />
-              <AlertDialog.Content className="fixed left-1/2 top-1/2 z-[60] w-[min(28rem,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-borda bg-superficie p-6 shadow-forte">
-                <AlertDialog.Title className="text-lg font-semibold">
-                  Eliminar o movimento {data?.numero_op ?? ""}?
-                </AlertDialog.Title>
-                <AlertDialog.Description className="mt-2 text-sm leading-relaxed text-texto-suave">
-                  As linhas desaparecem com ele e os mapas passam a ser
-                  calculados sem este movimento.
-                  {data && !data.diferido && (
-                    <>
-                      {" "}
-                      <b>Este já está integrado</b> — o balancete, o razão e os
-                      apuramentos vão mudar.
-                    </>
-                  )}{" "}
-                  Não há como desfazer.
-                </AlertDialog.Description>
-                <div className="mt-5 flex justify-end gap-2">
-                  <AlertDialog.Cancel asChild>
-                    <Botao variante="neutro">Manter</Botao>
-                  </AlertDialog.Cancel>
-                  <Botao
-                    variante="perigo"
-                    onClick={eliminar}
-                    disabled={ocupado}
-                  >
-                    {ocupado ? "A eliminar…" : "Eliminar"}
-                  </Botao>
-                </div>
-              </AlertDialog.Content>
-            </AlertDialog.Portal>
-          </AlertDialog.Root>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
+      <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]">
+        <ListaLancamentos
+          lancamentos={lista}
+          diarios={diarios}
+          seleccionado={estado.editId}
+          aoEscolher={carregar}
+          filtroDiario={filtroDiario}
+          aoMudarFiltroDiario={setFiltroDiario}
+          procura={procura}
+          aoMudarProcura={setProcura}
+          soDiferidos={soDiferidos}
+          aoMudarSoDiferidos={setSoDiferidos}
+          aCarregar={isLoading}
+          truncadoNoServidor={(todos?.length ?? 0) >= LIMITE_PEDIDO}
+        />
 
-function Info({
-  rotulo,
-  children,
-}: {
-  rotulo: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-[11.5px] uppercase tracking-[0.4px] text-texto-suave">
-        {rotulo}
-      </dt>
-      <dd className="truncate text-sm font-semibold">{children}</dd>
-    </div>
+        <EditorLancamento
+          estado={estado}
+          aoMudar={alterar}
+          aoPedirCriacaoDeConta={setACriarConta}
+          erro={erro}
+          soLeitura={!podeLancar || !editavel}
+        />
+      </div>
+
+      {aCriarConta && (
+        <CriarContaEmFalta
+          codigo={aCriarConta}
+          aoFechar={() => setACriarConta(null)}
+          aoCriar={() => setACriarConta(null)}
+        />
+      )}
+
+      <Confirmar
+        aberto={aEliminar}
+        aoMudar={(a) => !a && setAEliminar(false)}
+        titulo={`Eliminar o movimento ${estado.numeroOp ?? ""}?`}
+        rotuloConfirmar="Eliminar"
+        rotuloOcupado="A eliminar…"
+        ocupado={ocupado}
+        aoConfirmar={eliminar}
+      >
+        O movimento sai do balancete, do razão e dos extractos. Não há como o
+        recuperar.
+      </Confirmar>
+    </>
   );
 }
