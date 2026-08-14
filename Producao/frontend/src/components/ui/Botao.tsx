@@ -17,7 +17,7 @@ type Tamanho = "normal" | "pequeno";
 const VARIANTES: Record<Variante, string> = {
   primario:
     "bg-marca text-white border-transparent hover:bg-marca-escuro hover:shadow-[0_6px_18px_rgba(11,61,145,0.35)]",
-  acento: "bg-acento text-[#0b1220] border-transparent hover:bg-acento-claro",
+  acento: "bg-acento text-[#241500] border-transparent hover:bg-acento-claro",
   contorno:
     "bg-transparent border-[1.5px] border-marca text-marca hover:bg-marca/5",
   perigo:
@@ -28,7 +28,7 @@ const VARIANTES: Record<Variante, string> = {
 
 const TAMANHOS: Record<Tamanho, string> = {
   normal: "px-[18px] py-[11px] text-sm rounded-[10px]",
-  pequeno: "px-3 py-[6px] text-[12.5px] rounded-lg",
+  pequeno: "px-3 py-[7px] text-[12.5px] rounded-lg",
 };
 
 export interface BotaoProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -59,7 +59,7 @@ export const Botao = forwardRef<HTMLButtonElement, BotaoProps>(function Botao(
       // submissões acidentais em botões de acção secundária.
       type={comoFilho ? undefined : (type ?? "button")}
       className={cn(
-        "inline-flex items-center justify-center gap-2 border font-semibold",
+        "inline-flex items-center justify-center gap-2 border font-bold",
         "cursor-pointer select-none",
         // Só transform e opacidade animam — regra do CLAUDE.md.
         "transition-[transform,box-shadow,background-color,border-color,color] duration-150",

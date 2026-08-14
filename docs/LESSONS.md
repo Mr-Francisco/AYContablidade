@@ -110,3 +110,7 @@
 - Ler o DOM logo a seguir a disparar um evento no React dá o estado ANTES do redesenho: duas vezes julguei que o auto-equilíbrio tinha falhado quando tinha funcionado. Ler numa chamada separada.
 - As teclas reais do `computer` só chegam à página se o painel do browser estiver visível; escondido, nem o `document` recebe `keydown`. Um atalho que «não funciona» pode ser o painel, não o código.
 - Um editor de lançamento não é uma lista com um modal: a lista à esquerda e o editor à direita são o que permite carregar um movimento, corrigi-lo e gravar sem perder o contexto — e é isso que o Piloto faz.
+- Ao inserir um teste novo num ficheiro, nunca o pôr entre um `@pytest.mark.parametrize` e a função a que ele pertence: o decorador passa a aplicar-se ao teste novo e a recolha falha com «function uses no argument».
+- A divergência visual entre Piloto e Produção não estava na paleta — as variáveis já eram idênticas. Estava em eu escrever tabelas e botões à mão em vez de usar `Th`, `Td` e `Botao`. Alinhar a base **e** passar as páginas a usá-la; só uma das duas não chega.
+- Medir antes de mexer: abrir os dois no browser e comparar `getBoundingClientRect` + `getComputedStyle` do mesmo elemento dá a diferença exacta, em vez de a estimar a olho.
+- A `.toolbar` do Piloto não tem moldura nem fundo. O cartão que a Produção lhe punha criava uma caixa dentro da caixa em todas as páginas de uma vez.

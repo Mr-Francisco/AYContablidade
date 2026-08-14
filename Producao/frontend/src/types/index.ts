@@ -134,6 +134,20 @@ export interface Conta {
   natureza: "D" | "C" | "M";
   classe_iva: string | null;
   ativa: boolean;
+
+  /** A ficha de conta do Piloto. Nenhum destes campos entra no motor de
+   *  lançamentos — são parametrização e arquivo. */
+  classe_primavera: string | null;
+  conta_alt_codigo: string | null;
+  conta_alt_nome: string | null;
+  retencao: string | null;
+  motivo_tributacao: string | null;
+  trat_pendentes: boolean;
+  integra_equipamentos: boolean;
+  integra_ativos: boolean;
+  investimento: string | null;
+  custo_fixo: string;
+  item_tesouraria: string | null;
 }
 
 export interface Diario {

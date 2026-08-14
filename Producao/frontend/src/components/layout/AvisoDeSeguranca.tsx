@@ -48,7 +48,7 @@ export function AvisoDeSeguranca() {
 
   return (
     <div className="border-b border-[var(--color-aviso)]/30 bg-[var(--color-aviso)]/10">
-      <div className="mx-auto flex max-w-[1400px] items-start gap-3 px-5 py-3">
+      <div className="mx-auto flex max-w-[1360px] items-start gap-3 px-5 py-3">
         <span className="mt-0.5 shrink-0 text-[var(--color-aviso)]">
           <ShieldCheck size={17} />
         </span>

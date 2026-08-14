@@ -15,12 +15,10 @@ export function BarraFiltros({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex flex-wrap items-end gap-3 rounded-xl border border-borda bg-superficie p-3.5 shadow-suave",
-        className,
-      )}
-    >
+    // A `.toolbar` do Piloto: só uma fila de controlos, sem moldura nem fundo
+    // próprios. O cartão que aqui estava criava uma caixa dentro da caixa e
+    // afastava a Produção do Piloto em todas as páginas de uma vez.
+    <div className={cn("flex flex-wrap items-center gap-2.5", className)}>
       {children}
     </div>
   );

@@ -40,7 +40,11 @@ export default function LayoutAplicacao({
       {/* min-w-0 impede que uma tabela larga alargue o main e crie barra
           horizontal na página inteira. */}
       <main className="min-w-0 flex-1">
-        <div className="mx-auto min-w-0 max-w-[1400px] px-5 pb-16">
+        {/* A `.container-wide` do Piloto: 1360 px centrados, com 22 px de
+            lado e 40 px em baixo. É o contentor de 36 das 58 páginas — as
+            restantes usam a `.container` de 1200, mais estreita, e essas
+            ajustam-se página a página. */}
+        <div className="mx-auto min-w-0 max-w-[1360px] px-[22px] pb-10 pt-5">
           {children}
         </div>
       </main>

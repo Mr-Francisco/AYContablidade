@@ -67,22 +67,42 @@ class LancamentoCriar(BaseModel):
     diferido: bool = False
 
 
-class ContaCriar(BaseModel):
+class FichaConta(BaseModel):
+    """Os campos da ficha de conta do Piloto.
+
+    Nenhum entra no motor de lançamentos — são informativos ou de
+    parametrização. Partilhados por criar e alterar para não divergirem.
+    """
+
+    classe_iva: str | None = Field(default=None, max_length=20)
+    classe_primavera: str | None = Field(default=None, max_length=20)
+    conta_alt_codigo: str | None = Field(default=None, max_length=20)
+    conta_alt_nome: str | None = Field(default=None, max_length=200)
+    retencao: str | None = Field(default=None, max_length=40)
+    motivo_tributacao: str | None = Field(default=None, max_length=200)
+    trat_pendentes: bool | None = None
+    integra_equipamentos: bool | None = None
+    integra_ativos: bool | None = None
+    investimento: str | None = Field(default=None, max_length=40)
+    custo_fixo: Decimal | None = None
+    item_tesouraria: str | None = Field(default=None, max_length=40)
+
+
+class ContaCriar(FichaConta):
     codigo: str = Field(min_length=1, max_length=20)
     nome: str = Field(min_length=1, max_length=200)
     tipo: str | None = Field(default=None, max_length=1)
     natureza: str | None = Field(default=None, max_length=1)
-    classe_iva: str | None = None
+    ativa: bool = True
 
 
-class ContaAtualizar(BaseModel):
+class ContaAtualizar(FichaConta):
     """O CÓDIGO NÃO SE ALTERA. Os lançamentos guardam o código da conta, não a
     sua chave interna — mudá-lo aqui deixava os movimentos antigos a apontar
     para uma conta que já não existe. Para outro código, cria-se outra conta."""
 
     nome: str | None = Field(default=None, min_length=1, max_length=200)
     natureza: str | None = Field(default=None, max_length=1)
-    classe_iva: str | None = None
     ativa: bool | None = None
 
 
@@ -258,13 +278,39 @@ def listar_contas(
             select(Conta).where(Conta.empresa_id == empresa.id)
         ).all()
         contas = [c for c in contas if c.ativa and svc.eh_movimento(c, todas)]
-    return [
-        {
-            "id": c.id, "codigo": c.codigo, "nome": c.nome, "tipo": c.tipo,
-            "natureza": c.natureza, "classe_iva": c.classe_iva, "ativa": c.ativa,
-        }
-        for c in contas[:limite]
-    ]
+    return [_conta_publica(c) for c in contas[:limite]]
+
+
+def _aplicar_ficha(c: Conta, dados) -> None:
+    """Escreve os campos da ficha que vieram no pedido.
+
+    `exclude_unset` e não `exclude_none`: um campo enviado explicitamente a
+    `null` é uma ordem para limpar, e tem de chegar.
+    """
+    enviados = dados.model_dump(exclude_unset=True)
+    for campo in FichaConta.model_fields:
+        if campo in enviados:
+            setattr(c, campo, enviados[campo])
+
+
+def _conta_publica(c: Conta) -> dict:
+    """A ficha completa. Os onze campos do Piloto vêm sempre — um campo que a
+    resposta omite é um campo que o formulário perde ao gravar de volta."""
+    return {
+        "id": c.id, "codigo": c.codigo, "nome": c.nome, "tipo": c.tipo,
+        "natureza": c.natureza, "classe_iva": c.classe_iva, "ativa": c.ativa,
+        "classe_primavera": c.classe_primavera,
+        "conta_alt_codigo": c.conta_alt_codigo,
+        "conta_alt_nome": c.conta_alt_nome,
+        "retencao": c.retencao,
+        "motivo_tributacao": c.motivo_tributacao,
+        "trat_pendentes": c.trat_pendentes,
+        "integra_equipamentos": c.integra_equipamentos,
+        "integra_ativos": c.integra_ativos,
+        "investimento": c.investimento,
+        "custo_fixo": c.custo_fixo,
+        "item_tesouraria": c.item_tesouraria,
+    }
 
 
 @router.post("/contas", status_code=status.HTTP_201_CREATED, dependencies=[PLANO])
@@ -290,14 +336,16 @@ def criar_conta(
         nome=dados.nome,
         natureza=dados.natureza,
     )
-    if dados.classe_iva is not None:
-        criada = db.scalar(
-            select(Conta).where(
-                Conta.empresa_id == empresa.id, Conta.codigo == resultado["criada"]
-            )
+    criada = db.scalar(
+        select(Conta).where(
+            Conta.empresa_id == empresa.id, Conta.codigo == resultado["criada"]
         )
-        if criada is not None:
-            criada.classe_iva = dados.classe_iva
+    )
+    if criada is not None:
+        # A ficha aplica-se depois: `svc.criar_conta` só sabe de código, nome e
+        # natureza — o resto é parametrização que não lhe diz respeito.
+        _aplicar_ficha(criada, dados)
+        criada.ativa = dados.ativa
     db.commit()
 
     c = db.scalar(
@@ -319,7 +367,8 @@ def actualizar_conta(
     request: Request, conta_id: UUID, dados: ContaAtualizar,
     empresa: EmpresaAtual, db: DB,
 ) -> dict:
-    """Altera o nome, a natureza, a classe de IVA ou o estado de uma conta.
+    """Altera a ficha de uma conta: nome, natureza, estado e os campos de
+    fiscalidade, integração e tesouraria do Piloto.
 
     O código fica de fora de propósito — ver `ContaAtualizar`.
     """
@@ -336,7 +385,7 @@ def actualizar_conta(
         setattr(c, campo, valor)
     db.commit()
     db.refresh(c)
-    return {"id": c.id, "codigo": c.codigo, "nome": c.nome, "ativa": c.ativa}
+    return _conta_publica(c)
 
 
 @router.delete("/contas/{conta_id}", status_code=status.HTTP_204_NO_CONTENT,

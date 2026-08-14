@@ -1,14 +1,14 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
-import Link from "next/link";
 import {
-  type FormEvent,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Upload,
+  X,
+} from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   ACarregar,
@@ -16,75 +16,147 @@ import {
   BarraFiltros,
   Botao,
   CabecalhoPagina,
-  Campo,
   Cartao,
-  Entrada,
-  EnvolveTabela,
   Selector,
   Selo,
-  Tabela,
-  Td,
   Th,
-  Tr,
   Vazio,
 } from "@/components/ui";
-import {
-  AccoesDaLinha,
-  ConfirmarEliminar,
-  DialogoMestre,
-} from "@/components/ui/CrudMestre";
+import { Confirmar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ErroApi } from "@/lib/api";
 import { useContas } from "@/lib/hooks";
+import {
+  CLASSES,
+  construirArvore,
+  ehMovimento,
+  NATUREZAS,
+  visiveisComFiltros,
+} from "@/lib/plano";
+import { cn } from "@/lib/utils";
 import type { Conta } from "@/types";
 
-const ROTA = "/api/contabilidade/contas";
+import { FichaConta } from "./FichaConta";
+import { ImportarPlano } from "./ImportarPlano";
 
-const CLASSES: Record<string, string> = {
-  "1": "Meios Fixos e Investimentos",
-  "2": "Existências",
-  "3": "Terceiros",
-  "4": "Disponibilidades",
-  "5": "Capital e Reservas",
-  "6": "Proveitos e Ganhos",
-  "7": "Custos e Perdas",
-  "8": "Resultados",
-  "9": "Contabilidade Analítica",
-};
-
-const TIPOS: Record<string, { rotulo: string; cor: string }> = {
-  M: { rotulo: "Movimento", cor: "#1a9c5f" },
-  I: { rotulo: "Integradora", cor: "#3d7fe0" },
-  R: { rotulo: "Raiz", cor: "#7a3aab" },
-};
-
-const NATUREZAS: Record<string, string> = {
-  D: "Devedora",
-  C: "Credora",
-  M: "Mista",
-};
-
+/**
+ * Plano de Contas — a árvore do Piloto.
+ *
+ * Era uma lista plana de mil e seiscentas linhas. O plano é hierárquico por
+ * natureza: classes, integradoras, subcontas. Vê-lo achatado é vê-lo sem a
+ * informação que o organiza — não se percebe o que agrega o quê nem onde uma
+ * conta nova vai cair.
+ *
+ * Tudo aberto por omissão, como no Piloto, com `⊞` e `⊟` para as duas pontas.
+ * Filtrar por texto, natureza ou tipo abre a árvore toda e mostra os resultados
+ * **com os seus ascendentes** — senão apareciam pendurados fora do ramo.
+ *
+ * Duplo clique numa linha abre a ficha, como lá.
+ */
 export default function PlanoDeContas() {
   const { contas, isLoading, mutate } = useContas();
   const { pode } = useAuth();
+  const podeGerir = pode("contab.plano");
+
   const [procura, setProcura] = useState("");
-  const [classe, setClasse] = useState("todas");
-  const [tipo, setTipo] = useState("todos");
-  const [emEdicao, setEmEdicao] = useState<Conta | null>(null);
-  const [aCriar, setACriar] = useState<{ mae?: Conta } | null>(null);
+  const [classe, setClasse] = useState("");
+  const [natureza, setNatureza] = useState("");
+  const [tipo, setTipo] = useState("");
+  const [fechados, setFechados] = useState<Set<string>>(new Set());
+  const [tudoFechado, setTudoFechado] = useState(false);
+
+  const [aEditar, setAEditar] = useState<Conta | null>(null);
+  const [aCriar, setACriar] = useState<string | null>(null);
+  const [aImportar, setAImportar] = useState(false);
   const [aApagar, setAApagar] = useState<Conta | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
-  const podeGerir = pode("contab.plano");
+  const arvore = useMemo(() => construirArvore(contas), [contas]);
+  const visiveis = useMemo(
+    () => visiveisComFiltros(contas, arvore, { procura, natureza, tipo }),
+    [contas, arvore, procura, natureza, tipo],
+  );
+
+  // A filtrar, está tudo aberto: um resultado escondido num ramo fechado é um
+  // resultado que não se encontrou.
+  const aFiltrar = visiveis !== null;
+  const aberto = useCallback(
+    (chave: string) => aFiltrar || (!tudoFechado && !fechados.has(chave)),
+    [aFiltrar, tudoFechado, fechados],
+  );
+
+  function alternar(chave: string) {
+    setFechados((f) => {
+      const novo = new Set(f);
+      if (tudoFechado) {
+        // Vinha de «colapsar tudo»: abrir um nó passa a lista para «tudo aberto
+        // menos os outros», que é o que o utilizador espera do clique seguinte.
+        setTudoFechado(false);
+        for (const c of contas) novo.add(c.codigo);
+        for (const cl of Object.keys(CLASSES)) novo.add(`cls-${cl}`);
+      }
+      if (novo.has(chave)) novo.delete(chave);
+      else novo.add(chave);
+      return novo;
+    });
+  }
+
+  const linhas = useMemo(() => {
+    const saida: {
+      tipo: "classe" | "conta";
+      classe?: string;
+      quantas?: number;
+      conta?: Conta;
+      nivel: number;
+      temFilhos: boolean;
+      movimento: boolean;
+    }[] = [];
+
+    function descer(c: Conta, nivel: number) {
+      if (visiveis && !visiveis.has(c.codigo)) return;
+      const filhos = arvore.filhos.get(c.codigo) ?? [];
+      saida.push({
+        tipo: "conta",
+        conta: c,
+        nivel,
+        temFilhos: filhos.length > 0,
+        movimento: ehMovimento(c, contas),
+      });
+      if (filhos.length && aberto(c.codigo))
+        for (const f of filhos) descer(f, nivel + 1);
+    }
+
+    for (const cl of Object.keys(CLASSES)) {
+      if (classe && cl !== classe) continue;
+      const raizes = (arvore.raizesPorClasse[cl] ?? []).filter(
+        (c) => !visiveis || visiveis.has(c.codigo),
+      );
+      if (raizes.length === 0) continue;
+      saida.push({
+        tipo: "classe",
+        classe: cl,
+        quantas: contas.filter((c) => c.codigo[0] === cl).length,
+        nivel: 0,
+        temFilhos: true,
+        movimento: false,
+      });
+      // Escolher uma classe força-a aberta: pediu-se para a ver.
+      if (aberto(`cls-${cl}`) || classe === cl)
+        for (const r of raizes) descer(r, 0);
+    }
+    return saida;
+  }, [contas, arvore, visiveis, classe, aberto]);
 
   async function eliminar() {
     if (!aApagar) return;
     setErro(null);
     setOcupado(true);
     try {
-      await api.delete(`${ROTA}/${aApagar.id}`);
-      mutate();
+      await api.delete(`/api/contabilidade/contas/${aApagar.id}`);
+      await mutate();
+      setAviso(`Conta ${aApagar.codigo} eliminada.`);
     } catch (e) {
       setErro(
         e instanceof ErroApi
@@ -97,390 +169,314 @@ export default function PlanoDeContas() {
     }
   }
 
-  // O plano tem 1619 contas: filtrar a cada tecla bloquearia a escrita. O
-  // useDeferredValue deixa o campo responder já e a lista actualizar a seguir.
-  const procuraAdiada = useDeferredValue(procura);
-
-  const filtradas = useMemo(() => {
-    const termo = procuraAdiada.trim().toLowerCase();
-    return contas.filter((c) => {
-      if (classe !== "todas" && c.codigo[0] !== classe) return false;
-      if (tipo !== "todos" && (c.tipo ?? "") !== tipo) return false;
-      if (!termo) return true;
-      return (
-        c.codigo.toLowerCase().includes(termo) ||
-        c.nome.toLowerCase().includes(termo)
-      );
-    });
-  }, [contas, procuraAdiada, classe, tipo]);
-
-  // Mostrar 1619 linhas de uma vez trava o browser — limita-se e diz-se quantas
-  // ficaram de fora, em vez de truncar em silêncio.
-  const LIMITE = 300;
-  const visiveis = filtradas.slice(0, LIMITE);
-  const ocultas = filtradas.length - visiveis.length;
-
   return (
     <>
       <CabecalhoPagina
         titulo="Plano de Contas"
-        descricao="Plano Geral de Contabilidade de Angola (PGC-AR)."
-        accoes={
-          <div className="flex items-center gap-3">
-            <Selo cor="#3d7fe0">
-              {contas.length.toLocaleString("pt-PT")} contas
-            </Selo>
-            {podeGerir && (
-              <Botao variante="primario" onClick={() => setACriar({})}>
-                <Plus size={16} />
-                Nova conta
-              </Botao>
-            )}
-          </div>
-        }
+        descricao="PGC Angola — contas de razão e de movimento. Pesquisa por código ou nome."
+        accoes={<Selo cor="#3d7fe0">{contas.length} contas</Selo>}
       />
 
-      {erro && (
-        <div className="mb-4">
-          <Alerta tipo="erro">{erro}</Alerta>
-        </div>
-      )}
-
       <BarraFiltros className="mb-4">
-        <Campo rotulo="Pesquisar" className="min-w-[240px] flex-1">
-          <div className="relative">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
-              aria-hidden
-            />
-            <Entrada
-              value={procura}
-              onChange={(e) => setProcura(e.target.value)}
-              placeholder="Código ou designação…"
-              className="pl-9"
-              type="search"
-            />
-          </div>
-        </Campo>
-
+        <input
+          type="search"
+          value={procura}
+          onChange={(e) => setProcura(e.target.value)}
+          placeholder="Pesquisar conta (código ou nome)…"
+          className="min-w-[16rem] flex-1 rounded-[9px] border border-borda bg-superficie px-3 py-2.5 text-sm outline-none focus:border-acento"
+        />
         <Selector
-          rotulo="Classe"
           valor={classe}
           aoMudar={setClasse}
           opcoes={[
-            { valor: "todas", rotulo: "Todas as classes" },
+            { valor: "", rotulo: "Todas as classes" },
             ...Object.entries(CLASSES).map(([k, v]) => ({
               valor: k,
-              rotulo: `${k} — ${v}`,
+              rotulo: `${k} · ${v}`,
             })),
           ]}
-          larguraMinima="15rem"
+          larguraMinima="14rem"
         />
-
         <Selector
-          rotulo="Tipo"
+          valor={natureza}
+          aoMudar={setNatureza}
+          opcoes={[
+            { valor: "", rotulo: "Toda a natureza" },
+            { valor: "D", rotulo: "Devedora" },
+            { valor: "C", rotulo: "Credora" },
+            { valor: "M", rotulo: "Mista" },
+          ]}
+          larguraMinima="11rem"
+        />
+        <Selector
           valor={tipo}
           aoMudar={setTipo}
           opcoes={[
-            { valor: "todos", rotulo: "Todos" },
+            { valor: "", rotulo: "Todos os tipos" },
             { valor: "M", rotulo: "Movimento" },
-            { valor: "I", rotulo: "Integradora" },
-            { valor: "R", rotulo: "Raiz" },
+            { valor: "I", rotulo: "Integração" },
           ]}
+          larguraMinima="11rem"
         />
+
+        <Botao
+          variante="contorno"
+          tamanho="pequeno"
+          title="Expandir tudo"
+          onClick={() => {
+            setFechados(new Set());
+            setTudoFechado(false);
+          }}
+        >
+          ⊞
+        </Botao>
+        <Botao
+          variante="contorno"
+          tamanho="pequeno"
+          title="Colapsar tudo"
+          onClick={() => {
+            setFechados(new Set());
+            setTudoFechado(true);
+          }}
+        >
+          ⊟
+        </Botao>
+
+        {podeGerir && (
+          <>
+            <Botao variante="neutro" onClick={() => setAImportar(true)}>
+              <Upload size={15} />
+              Importar (Primavera)
+            </Botao>
+            <Botao variante="acento" onClick={() => setACriar("")}>
+              <Plus size={16} />
+              Nova conta
+            </Botao>
+          </>
+        )}
       </BarraFiltros>
+
+      {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
+      {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
       <Cartao className="p-0">
         {isLoading ? (
-          <ACarregar texto="A carregar o plano de contas…" />
-        ) : filtradas.length === 0 ? (
-          <Vazio>Nenhuma conta corresponde aos filtros.</Vazio>
+          <ACarregar />
+        ) : linhas.length === 0 ? (
+          <Vazio>Sem contas para o filtro.</Vazio>
         ) : (
-          <>
-            <EnvolveTabela className="rounded-none border-0">
-              <Tabela>
-                <thead>
-                  <tr>
-                    <Th>Código</Th>
-                    <Th>Designação</Th>
-                    <Th>Classe</Th>
-                    <Th>Tipo</Th>
-                    <Th>Natureza</Th>
-                    <Th>Classe de IVA</Th>
-                    <Th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {visiveis.map((c) => {
-                    const t = TIPOS[c.tipo ?? ""];
-                    return (
-                      <Tr key={c.id}>
-                        <Td className="font-bold tabular">{c.codigo}</Td>
-                        {/* Designações longas: largura máxima e truncate, senão
-                            a coluna empurra a tabela toda. */}
-                        <Td className="max-w-[380px] truncate">
-                          <span title={c.nome}>{c.nome}</span>
-                        </Td>
-                        <Td className="text-texto-suave">
-                          {CLASSES[c.codigo[0]] ?? "—"}
-                        </Td>
-                        <Td>{t ? <Selo cor={t.cor}>{t.rotulo}</Selo> : "—"}</Td>
-                        <Td className="text-texto-suave">
-                          {NATUREZAS[c.natureza] ?? c.natureza}
-                        </Td>
-                        <Td className="max-w-[200px] truncate text-texto-suave">
-                          {c.classe_iva || "—"}
-                        </Td>
-                        <Td numerico>
-                          <div className="flex items-center justify-end gap-3">
-                            {c.tipo === "M" && (
-                              <Link
-                                href={`/contabilidade/razao?conta=${c.codigo}`}
-                                className="text-[12.5px] font-semibold text-marca hover:underline"
-                              >
-                                Ver razão
-                              </Link>
-                            )}
-                            {podeGerir && (
-                              <>
-                                {c.tipo === "M" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setACriar({ mae: c })}
-                                    title="Criar uma subconta desta"
-                                    className="text-[12.5px] font-semibold text-texto-suave hover:text-marca"
-                                  >
-                                    + Subconta
-                                  </button>
-                                )}
-                                <AccoesDaLinha
-                                  nome={`conta ${c.codigo}`}
-                                  aoEditar={() => setEmEdicao(c)}
-                                  aoApagar={() => setAApagar(c)}
-                                  desactivado={ocupado}
-                                />
-                              </>
-                            )}
-                          </div>
-                        </Td>
-                      </Tr>
-                    );
-                  })}
-                </tbody>
-              </Tabela>
-            </EnvolveTabela>
-            {ocultas > 0 && (
-              <div className="border-t border-borda px-4 py-3 text-center text-[13px] text-texto-suave">
-                A mostrar {visiveis.length} de{" "}
-                {filtradas.length.toLocaleString("pt-PT")} contas. Refine a
-                pesquisa para ver as restantes {ocultas.toLocaleString("pt-PT")}
-                .
-              </div>
-            )}
-          </>
+          <div className="min-w-0 overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              {/* Larguras do Piloto: código 30%, e as três colunas de
+                  classificação fixas para não dançarem entre páginas. */}
+              <thead>
+                <tr>
+                  <Th className="w-[30%]">Código</Th>
+                  <Th>Designação</Th>
+                  <Th className="w-[110px]">Cl. IVA</Th>
+                  <Th className="w-[110px]">Natureza</Th>
+                  <Th className="w-[120px]">Tipo</Th>
+                  {podeGerir && <Th className="w-[150px]"> </Th>}
+                </tr>
+              </thead>
+              <tbody>
+                {linhas.map((l) =>
+                  l.tipo === "classe" ? (
+                    <tr
+                      key={`cls-${l.classe}`}
+                      onClick={() => alternar(`cls-${l.classe}`)}
+                      className="cursor-pointer border-b border-borda bg-[color-mix(in_srgb,var(--color-indigo)_12%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-indigo)_18%,transparent)]"
+                    >
+                      <td colSpan={podeGerir ? 6 : 5} className="px-3.5 py-2">
+                        <span className="mr-1 inline-block w-3 text-texto-suave">
+                          {aberto(`cls-${l.classe}`) ? "▾" : "▸"}
+                        </span>
+                        <b>
+                          {l.classe} · {CLASSES[l.classe ?? ""]}
+                        </b>{" "}
+                        <span className="text-[12.5px] text-texto-suave">
+                          — {l.quantas} conta(s)
+                        </span>
+                      </td>
+                    </tr>
+                  ) : (
+                    <LinhaConta
+                      key={l.conta?.id}
+                      conta={l.conta as Conta}
+                      nivel={l.nivel}
+                      temFilhos={l.temFilhos}
+                      aberto={aberto((l.conta as Conta).codigo)}
+                      movimento={l.movimento}
+                      podeGerir={podeGerir}
+                      aoAlternar={() => alternar((l.conta as Conta).codigo)}
+                      aoEditar={() => setAEditar(l.conta as Conta)}
+                      aoSubconta={() =>
+                        setACriar(`${(l.conta as Conta).codigo}001`)
+                      }
+                      aoApagar={() => setAApagar(l.conta as Conta)}
+                    />
+                  ),
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </Cartao>
 
-      {(aCriar || emEdicao) && (
-        <FormularioConta
-          conta={emEdicao}
-          mae={aCriar?.mae}
+      {(aEditar || aCriar !== null) && (
+        <FichaConta
+          conta={aEditar}
+          codigoSugerido={aCriar ?? ""}
           aoFechar={() => {
+            setAEditar(null);
             setACriar(null);
-            setEmEdicao(null);
           }}
-          aoGravar={() => {
-            mutate();
+          aoGravar={(msg) => {
+            setAviso(msg);
+            setErro(null);
+            setAEditar(null);
             setACriar(null);
-            setEmEdicao(null);
           }}
         />
       )}
 
-      <ConfirmarEliminar
+      {aImportar && (
+        <ImportarPlano
+          aoFechar={() => setAImportar(false)}
+          aoImportar={(msg) => {
+            setAviso(msg);
+            setAImportar(false);
+            mutate();
+          }}
+        />
+      )}
+
+      <Confirmar
         aberto={aApagar !== null}
         aoMudar={(a) => !a && setAApagar(null)}
         titulo={`Eliminar a conta ${aApagar?.codigo ?? ""}?`}
-        aoConfirmar={eliminar}
+        rotuloConfirmar="Eliminar"
+        rotuloOcupado="A eliminar…"
         ocupado={ocupado}
+        aoConfirmar={eliminar}
       >
-        Uma conta <b>com movimentos não pode ser eliminada</b> — o balancete
-        ficaria com linhas sem designação. Nesse caso o servidor recusa, e a
-        alternativa é desactivá-la: sai das escolhas e o histórico continua a
-        ler-se.
-      </ConfirmarEliminar>
+        Uma conta <b>com movimentos não pode ser eliminada</b> — nesse caso o
+        servidor recusa, e a alternativa é pô-la inactiva, que a tira das
+        escolhas sem tocar no histórico.
+      </Confirmar>
     </>
   );
 }
 
 // ---------------------------------------------------------------------------
-/** Criar, criar subconta, ou alterar.
- *
- * A SUBCONTA é o caso do Piloto (`criarSubconta`): parte-se de uma conta de
- * movimento e cria-se outra por baixo. O código sugerido vem do servidor, que
- * sabe qual é o próximo livre. */
-function FormularioConta({
+function LinhaConta({
   conta,
-  mae,
-  aoFechar,
-  aoGravar,
+  nivel,
+  temFilhos,
+  aberto,
+  movimento,
+  podeGerir,
+  aoAlternar,
+  aoEditar,
+  aoSubconta,
+  aoApagar,
 }: {
-  conta: Conta | null;
-  mae?: Conta;
-  aoFechar: () => void;
-  aoGravar: () => void;
+  conta: Conta;
+  nivel: number;
+  temFilhos: boolean;
+  aberto: boolean;
+  movimento: boolean;
+  podeGerir: boolean;
+  aoAlternar: () => void;
+  aoEditar: () => void;
+  aoSubconta: () => void;
+  aoApagar: () => void;
 }) {
-  const novo = conta === null;
-  const [campos, setCampos] = useState({
-    codigo: conta?.codigo ?? "",
-    nome: conta?.nome ?? "",
-    natureza: conta?.natureza ?? "D",
-    classe_iva: conta?.classe_iva ?? "",
-    ativa: conta?.ativa ?? true,
-  });
-  const [erro, setErro] = useState<string | null>(null);
-  const [aGravar, setAGravar] = useState(false);
-
-  // O próximo código livre por baixo da conta-mãe, perguntado ao servidor —
-  // é ele que conhece o plano inteiro. Num efeito e não no corpo do
-  // componente: um pedido lançado durante a renderização corre duas vezes em
-  // modo estrito e não tem como ser cancelado.
-  useEffect(() => {
-    if (!mae || !novo) return;
-    let vivo = true;
-    api
-      .get<{ codigo: string }>(`${ROTA}/${mae.codigo}/proxima-subconta`)
-      .then((r) => {
-        if (vivo) setCampos((c) => ({ ...c, codigo: r.codigo }));
-      })
-      .catch(() => undefined);
-    return () => {
-      vivo = false;
-    };
-  }, [mae, novo]);
-
-  function alterar(campo: string, valor: string | boolean) {
-    setCampos((c) => ({ ...c, [campo]: valor }));
-  }
-
-  async function submeter(e: FormEvent) {
-    e.preventDefault();
-    setErro(null);
-    setAGravar(true);
-    try {
-      if (novo) {
-        await api.post(ROTA, {
-          codigo: campos.codigo,
-          nome: campos.nome,
-          natureza: campos.natureza,
-          classe_iva: campos.classe_iva || null,
-        });
-      } else {
-        await api.patch(`${ROTA}/${conta.id}`, {
-          nome: campos.nome,
-          natureza: campos.natureza,
-          classe_iva: campos.classe_iva || null,
-          ativa: campos.ativa,
-        });
-      }
-      aoGravar();
-    } catch (e2) {
-      setErro(
-        e2 instanceof ErroApi
-          ? e2.mensagemUtilizador
-          : "Não foi possível gravar.",
-      );
-    } finally {
-      setAGravar(false);
-    }
-  }
-
+  const nat = NATUREZAS[conta.natureza] ?? NATUREZAS.M;
   return (
-    <DialogoMestre
-      titulo={
-        novo
-          ? mae
-            ? `Nova subconta de ${mae.codigo}`
-            : "Nova conta"
-          : `Alterar conta ${conta.codigo}`
-      }
-      aoFechar={aoFechar}
-      aoSubmeter={submeter}
-      aGravar={aGravar}
-      erro={erro}
-      aviso={
-        mae && novo ? (
-          <Alerta tipo="info">
-            A conta <b>{mae.codigo}</b> passa a integradora quando ganhar
-            subcontas: deixa de aceitar movimentos directos, e passam a ser as
-            subcontas a recebê-los.
-          </Alerta>
-        ) : undefined
-      }
-    >
-      <Campo
-        rotulo="Código"
-        dica={
-          novo
-            ? "É o que fica gravado em cada linha de lançamento."
-            : "Não se altera: os movimentos guardam-no."
-        }
-      >
-        <Entrada
-          value={campos.codigo}
-          onChange={(e) => alterar("codigo", e.target.value)}
-          disabled={!novo}
-          required
-          maxLength={20}
-          className="tabular"
-        />
-      </Campo>
-
-      <Campo rotulo="Designação">
-        <Entrada
-          value={campos.nome}
-          onChange={(e) => alterar("nome", e.target.value)}
-          required
-          maxLength={200}
-        />
-      </Campo>
-
-      <Campo
-        rotulo="Natureza"
-        dica="Vazia, o servidor deduz da classe do código."
-      >
-        <Selector
-          valor={campos.natureza}
-          aoMudar={(v) => alterar("natureza", v)}
-          opcoes={[
-            { valor: "D", rotulo: "Devedora" },
-            { valor: "C", rotulo: "Credora" },
-            { valor: "M", rotulo: "Mista" },
-          ]}
-        />
-      </Campo>
-
-      <Campo rotulo="Classe de IVA" dica="Opcional.">
-        <Entrada
-          value={campos.classe_iva}
-          onChange={(e) => alterar("classe_iva", e.target.value)}
-          maxLength={60}
-        />
-      </Campo>
-
-      {!novo && (
-        <label className="flex cursor-pointer items-center gap-2 text-sm sm:col-span-2">
-          <input
-            type="checkbox"
-            checked={campos.ativa}
-            onChange={(e) => alterar("ativa", e.target.checked)}
-            className="size-4 accent-[var(--color-marca)]"
-          />
-          Activa — uma conta inactiva deixa de ser oferecida em movimentos
-          novos, e o histórico continua a ler-se.
-        </label>
+    <tr
+      className={cn(
+        "border-b border-borda hover:bg-superficie-2",
+        !conta.ativa && "opacity-55",
       )}
-    </DialogoMestre>
+      // Duplo clique abre a ficha, como no Piloto — mas não quando o clique é
+      // num botão da linha.
+      onDoubleClick={(e) => {
+        if ((e.target as HTMLElement).closest("button")) return;
+        if (podeGerir) aoEditar();
+      }}
+    >
+      <td className="px-3.5 py-1.5">
+        <span
+          className="tabular inline-flex items-center gap-1.5"
+          style={{ paddingLeft: `${nivel * 16}px` }}
+        >
+          {temFilhos ? (
+            <button
+              type="button"
+              onClick={aoAlternar}
+              aria-label={aberto ? "Fechar" : "Abrir"}
+              className="text-texto-suave hover:text-texto"
+            >
+              {aberto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </button>
+          ) : (
+            <span className="w-3.5 text-center text-texto-suave">·</span>
+          )}
+          {temFilhos ? <b>{conta.codigo}</b> : conta.codigo}
+        </span>
+      </td>
+      <td className="px-3.5 py-1.5">
+        {temFilhos ? <b>{conta.nome}</b> : conta.nome}
+        {!conta.ativa && (
+          <Selo cor="#8a8a8a" className="ml-2">
+            Inactiva
+          </Selo>
+        )}
+      </td>
+      <td className="px-3.5 py-1.5 text-[12.5px] text-texto-suave">
+        {conta.classe_iva || "—"}
+      </td>
+      <td className="px-3.5 py-1.5">
+        <Selo cor={nat.cor}>{nat.rotulo}</Selo>
+      </td>
+      <td className="px-3.5 py-1.5">
+        <Selo cor={movimento ? "#2980b9" : "#8a8a8a"}>
+          {movimento ? "Movimento" : "Integração"}
+        </Selo>
+      </td>
+      {podeGerir && (
+        <td className="px-3.5 py-1.5">
+          <div className="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              onClick={aoSubconta}
+              title="Criar uma subconta desta"
+              className="rounded-md border border-borda px-2 py-1 text-[11.5px] font-semibold text-texto-suave hover:border-marca hover:text-marca"
+            >
+              + Sub
+            </button>
+            <button
+              type="button"
+              onClick={aoEditar}
+              title="Alterar a ficha"
+              className="rounded-md border border-borda px-2 py-1 text-[11.5px] font-semibold text-texto-suave hover:border-acento"
+            >
+              <Pencil size={12} className="mr-1 inline" />
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={aoApagar}
+              title="Eliminar"
+              aria-label={`Eliminar a conta ${conta.codigo}`}
+              className="rounded-md border border-borda px-2 py-1 text-texto-suave hover:border-perigo hover:text-perigo"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </td>
+      )}
+    </tr>
   );
 }

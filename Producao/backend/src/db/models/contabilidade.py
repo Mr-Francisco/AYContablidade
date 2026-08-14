@@ -24,6 +24,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -56,6 +57,43 @@ class Conta(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     # Classe de IVA do plano do Primavera (ex.: "22?11"), usada no apuramento.
     classe_iva: Mapped[str | None] = mapped_column(String(20))
     ativa: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # --- A ficha de conta do Piloto -----------------------------------------
+    # Os campos da janela «Nova conta» de `plano-contas.html`, que a Produção
+    # não guardava. São informativos ou de parametrização: nenhum entra no
+    # motor de lançamentos, e por isso nenhum é obrigatório. Ficam aqui e não
+    # num JSONB porque se pesquisa e se filtra por eles.
+
+    #: Agrupamento do Primavera (ex.: "DEFA"). Não é a classe PGC — essa lê-se
+    #: do primeiro dígito do código.
+    classe_primavera: Mapped[str | None] = mapped_column(String(20))
+
+    #: Conta alternativa: o par código/designação que o Piloto guarda para
+    #: mapeamentos de plano. A designação é livre e não tem de existir no plano.
+    conta_alt_codigo: Mapped[str | None] = mapped_column(String(20))
+    conta_alt_nome: Mapped[str | None] = mapped_column(String(200))
+
+    # Fiscalidade
+    retencao: Mapped[str | None] = mapped_column(String(40))
+    motivo_tributacao: Mapped[str | None] = mapped_column(String(200))
+
+    # Integração
+    trat_pendentes: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
+    integra_equipamentos: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
+    integra_ativos: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
+    investimento: Mapped[str | None] = mapped_column(String(40))
+    custo_fixo: Mapped[Decimal] = mapped_column(
+        Numeric(6, 2), default=Decimal("0"), server_default=text("0"), nullable=False
+    )
+
+    # Tesouraria
+    item_tesouraria: Mapped[str | None] = mapped_column(String(40))
 
     def __repr__(self) -> str:
         return f"<Conta {self.codigo} {self.nome!r}>"

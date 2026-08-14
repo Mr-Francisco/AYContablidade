@@ -288,12 +288,30 @@ class _Empresa:
 # ---------------------------------------------------------------------------
 # A interface
 # ---------------------------------------------------------------------------
+def test_o_plano_de_contas_cria_altera_e_elimina():
+    """O Plano de Contas passou a ser a ÁRVORE do Piloto: a página desenha e
+    elimina, e a ficha de conta — o diálogo com os três separadores — é que
+    cria e altera. As três operações continuam lá; mudaram de ficheiro."""
+    from pathlib import Path
+
+    base = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "app" / "(app)" / "contabilidade" / "plano-contas"
+    )
+    pagina = (base / "page.tsx").read_text(encoding="utf-8")
+    ficha = (base / "FichaConta.tsx").read_text(encoding="utf-8")
+
+    assert "api.post" in ficha, "a ficha não cria"
+    assert "api.patch" in ficha, "a ficha não altera"
+    assert "api.delete" in pagina, "a página não elimina"
+    assert 'pode("contab.plano")' in pagina
+
+
 @pytest.mark.parametrize(
     "pagina,rota",
     [
         ("contabilidade/diarios", "/api/contabilidade/diarios"),
         ("contabilidade/documentos", "/api/contabilidade/documentos"),
-        ("contabilidade/plano-contas", "/api/contabilidade/contas"),
         ("analitica/centros", "/api/contabilidade/centros"),
     ],
 )

@@ -103,9 +103,9 @@ export function Cabecalho() {
 
   return (
     <header className="sticky top-0 z-40 bg-superficie border-b border-borda shadow-suave">
-      <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-5 py-2.5">
+      <div className="mx-auto flex max-w-[1360px] items-center gap-4 px-5 py-2.5">
         <Link href="/painel" className="flex shrink-0 items-center gap-2.5">
-          <span className="rounded-lg bg-marca px-2.5 py-1 text-2xl font-black leading-none tracking-[-1px] text-white">
+          <span className="gradiente-marca rounded-lg px-[9px] py-[3px] text-2xl font-black leading-none tracking-[-1px] text-white">
             SGD
           </span>
           <span className="hidden flex-col leading-[1.05] sm:flex">
@@ -313,7 +313,7 @@ function Ribbon({
 
   return (
     <div className="sem-imprimir border-t border-borda bg-superficie-2 overflow-x-auto">
-      <div className="mx-auto flex min-w-max max-w-[1400px] items-stretch whitespace-nowrap px-4 pb-0.5 pt-1.5">
+      <div className="mx-auto flex min-w-max max-w-[1360px] items-stretch whitespace-nowrap px-4 pb-0.5 pt-1.5">
         {seccoes.map((s, i) => (
           <Fragment key={s.nome}>
             {i > 0 && (

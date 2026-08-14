@@ -118,16 +118,41 @@ export function visiveisNaPesquisa(
   arvore: ArvorePlano,
   procura: string,
 ): Set<string> | null {
-  const q = procura.toLowerCase().trim();
-  if (!q) return null;
+  return visiveisComFiltros(contas, arvore, { procura });
+}
+
+/**
+ * O mesmo, com os três filtros do Plano de Contas: texto, natureza e tipo.
+ *
+ * Devolve `null` quando não há filtro nenhum — e `null` quer dizer «mostra
+ * tudo», que é diferente de um conjunto vazio («não há nada que corresponda»).
+ */
+export function visiveisComFiltros(
+  contas: Conta[],
+  arvore: ArvorePlano,
+  filtros: { procura?: string; natureza?: string; tipo?: string },
+): Set<string> | null {
+  const q = (filtros.procura ?? "").toLowerCase().trim();
+  const nat = filtros.natureza ?? "";
+  const tipo = filtros.tipo ?? "";
+  if (!q && !nat && !tipo) return null;
 
   const visiveis = new Set<string>();
   for (const c of contas) {
     if (
+      q &&
       !c.codigo.toLowerCase().includes(q) &&
       !c.nome.toLowerCase().includes(q)
     )
       continue;
+    if (nat && (c.natureza || "D") !== nat) continue;
+    if (tipo) {
+      const mov = ehMovimento(c, contas);
+      if (tipo === "M" && !mov) continue;
+      if (tipo === "I" && mov) continue;
+    }
+    // Os ascendentes entram também: sem eles o resultado aparecia fora do ramo
+    // que o contém, pendurado no nada.
     let actual: Conta | null = c;
     while (actual) {
       visiveis.add(actual.codigo);

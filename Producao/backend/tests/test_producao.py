@@ -165,7 +165,9 @@ def test_existe_caminho_para_criar_a_primeira_conta_real():
 # Regra dos históricos
 # ---------------------------------------------------------------------------
 LISTAS_CRONOLOGICAS = [
-    "contabilidade/movimentos",
+    # `movimentos` está em `ListaLancamentos.tsx` e não em `page.tsx`: a página
+    # passou a ser o editor, e a lista é um componente ao lado. A regra é a
+    # mesma — ver a entrada própria mais abaixo.
     "contabilidade/razao",
     "contabilidade/extrato",
     "contabilidade/retencoes",
@@ -199,6 +201,22 @@ def test_nenhuma_lista_cronologica_se_desenha_inteira(pagina):
     assert "useHistorico" in fonte, f"{pagina} não limita o que desenha"
     assert "historico.visiveis.map" in fonte, f"{pagina} desenha a lista toda"
     assert "RodapeHistorico" in fonte, f"{pagina} não diz quantos registos há"
+
+
+def test_a_lista_de_movimentos_tambem_limita():
+    """A lista dos movimentos mudou de `page.tsx` para `ListaLancamentos.tsx`
+    quando a página passou a ser o editor em página do Piloto. A regra dos
+    históricos continua a valer — é só noutro ficheiro."""
+    from pathlib import Path
+
+    fonte = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "app" / "(app)" / "contabilidade" / "movimentos"
+        / "ListaLancamentos.tsx"
+    ).read_text(encoding="utf-8")
+    assert "useHistorico" in fonte
+    assert "historico.visiveis.map" in fonte
+    assert "RodapeHistorico" in fonte
 
 
 def test_a_auditoria_partilhada_tambem_limita():
