@@ -16,7 +16,7 @@ implementado** e não consta deste documento. Ver `PILOTO_VS_PRODUCAO.md`.
 | 3 | [Configurações da empresa](#3-configurações-da-empresa) | MÉDIA/ALTA | Parametrização por empresa |
 | 4 | [Recuperação de palavra-passe](#4-recuperação-de-palavra-passe-por-e-mail) | POSTERIOR | Nada — há alternativa manual |
 | 9 | [Paginação nas listagens que faltam](#9-paginação-nas-listagens-que-faltam) | ALTA | Nada, mas piora todos os dias |
-| 10 | [Carrossel do painel inicial](#10-carrossel-do-painel-inicial) | MÉDIA | Nada |
+| 10 | [Carrossel do painel inicial](#10-carrossel-do-painel-inicial) | ✅ FEITO | — |
 | 11 | [Página inicial ao estilo Primavera](#11-página-inicial-ao-estilo-primavera) | MÉDIA | Nada |
 
 ---
@@ -605,21 +605,22 @@ avisa do que importa. A lista curta é a decisão mais importante deste ponto.
 restantes.
 
 Feito: `src/api/paginacao.py`, `components/ui/Paginacao.tsx`, e aplicado a
-lançamentos, movimentos de stock, auditoria e notificações.
+lançamentos, movimentos de stock, auditoria, notificações, **vendas, consulta
+de facturas e compras** — estas três com o filtro e os totais também do lado
+do servidor.
 
-Falta, com o mecanismo antigo (`useHistorico`, que revela no cliente mas pede
-tudo ao servidor):
+Falta, ainda com o mecanismo antigo (`useHistorico`, que revela no cliente mas
+pede tudo ao servidor):
 
 - `contabilidade/razao`, `contabilidade/extrato`, `contabilidade/retencoes`
-- `comercial/vendas`, `comercial/consulta-faturas`
-- `logistica/compras`
 - `plataforma/licencas`
 - `rh/independentes`, `rh/processamento`, `rh/pagamentos`
 - `imobilizados/amortizacoes`
 
-E, do lado do servidor, as rotas de vendas e de compras ainda têm
-`limite: int = 200` sem `offset` — não dá para pedir a segunda página nem
-saber quantas há.
+Nota sobre o razão e o extracto: as linhas levam saldo acumulado, que se
+calcula ao longo da lista. Paginar sem passar esse cálculo para o servidor
+daria uma segunda página a começar o saldo do zero — é a única do grupo que
+precisa de trabalho no serviço e não só na rota.
 
 **Como se confirma:** abrir cada ecrã com mais registos do que uma página e ver
 «1–25 de N» com o «seguinte» a funcionar; e o pedido na consola a levar
@@ -627,10 +628,12 @@ saber quantas há.
 
 ---
 
-## 10. Carrossel do painel inicial
+## 10. Carrossel do painel inicial ✅ FEITO
 
-**Pedido em:** 14 de Agosto de 2026.
-**Estado:** em execução.
+**Pedido em:** 14 de Agosto de 2026. **Feito em:** 15 de Agosto de 2026.
+
+Verificado no browser a 1512, 756 e 375 px. Trouxe também o gráfico mensal
+(`/api/relatorios/evolucao-mensal`), que não existia.
 
 Os dois painéis do `/painel` estavam empilhados — a faixa de marca em cima e o
 painel de números por baixo, só acessível a fazer scroll. Passam a ser dois

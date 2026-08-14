@@ -156,3 +156,5 @@
 - `offsetHeight` não inclui margens. Ao reservar espaço para um rodapé, medir `rect.bottom - rect.bottom` entre elementos, senão a página transborda exactamente a margem que sobrou.
 - Legend do Recharts 3 não aceita `payload`: para fixar a ordem das séries, desenhar a legenda em HTML.
 - Numa coluna flex, os filhos encolhem por omissão: sem `shrink-0` o gráfico ficava esmagado a 9 px em vez de a caixa fazer scroll.
+- Filtrar no cliente sobre uma resposta cortada mente duas vezes: procura só nos primeiros N e conta só o que apanhou. Filtro e agregados vão para o servidor, e os totais são do conjunto filtrado — nunca da página.
+- `usePaginacao` devolve `reiniciar`/`controlos` estáveis (`useCallback`/`useMemo`): recriados a cada render, entram em `useEffect` e dão ciclo de renderizações.

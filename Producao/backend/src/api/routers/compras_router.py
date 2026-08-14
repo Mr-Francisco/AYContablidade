@@ -9,10 +9,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.api.deps import DB, EmpresaAtual, exigir_cap
+from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.db.models.comercial import Compra, CompraLinha
 from src.db.models.terceiros import Terceiro
 from src.services import compras as svc
@@ -171,20 +172,47 @@ def documentos_disponiveis(empresa: EmpresaAtual, db: DB) -> list[dict]:
 
 @router.get("")
 def listar_compras(
-    empresa: EmpresaAtual, db: DB, estado: str | None = None, limite: int = 200
-) -> list[dict]:
+    empresa: EmpresaAtual,
+    db: DB,
+    estado: str | None = None,
+    procura: str | None = None,
+    offset: int = 0,
+    limite: int = LIMITE_OMISSAO,
+) -> dict:
+    """Compras, uma página de cada vez.
+
+    `{linhas, total, offset, limite}`. O ecrã pedia mil de uma vez e mostrava
+    quarenta — os outros novecentos e sessenta atravessavam a rede para
+    ninguém os ler.
+    """
     q = select(Compra).where(Compra.empresa_id == empresa.id)
     if estado:
         q = q.where(Compra.estado == estado)
-    return [
-        {"id": c.id, "numero": c.numero, "documento_codigo": c.documento_codigo,
-         "documento_nome": c.documento_nome, "data": c.data,
-         "fornecedor_id": c.fornecedor_id, "fornecedor_nome": c.fornecedor_nome,
-         "subtotal": c.subtotal, "iva": c.iva, "total": c.total, "estado": c.estado}
-        for c in db.scalars(
-            q.order_by(Compra.data.desc(), Compra.criado_em.desc()).limit(limite)
-        ).all()
-    ]
+    if procura and procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(
+            or_(
+                Compra.numero.ilike(termo),
+                Compra.fornecedor_nome.ilike(termo),
+                Compra.documento_nome.ilike(termo),
+            )
+        )
+
+    return pagina(
+        db,
+        q.order_by(Compra.data.desc(), Compra.criado_em.desc()),
+        offset=offset,
+        limite=limite,
+        formatar=lambda c: {
+            "id": c.id, "numero": c.numero,
+            "documento_codigo": c.documento_codigo,
+            "documento_nome": c.documento_nome, "data": c.data,
+            "fornecedor_id": c.fornecedor_id,
+            "fornecedor_nome": c.fornecedor_nome,
+            "subtotal": c.subtotal, "iva": c.iva, "total": c.total,
+            "estado": c.estado,
+        },
+    )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, dependencies=[GERIR])

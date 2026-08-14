@@ -36,6 +36,15 @@ class SessaoFalsa:
     def scalars(self, _stmt):
         return _Vazio()
 
+    def execute(self, _stmt):
+        """Agregados (somas e contagens) de uma empresa sem dados.
+
+        Estes testes são sobre QUEM PODE CHEGAR à rota, não sobre o que ela
+        devolve — daí a linha de zeros. Sem isto, uma rota que passasse a somar
+        totais fazia falhar testes de permissões, que é onde ninguém iria
+        procurar."""
+        return _UmaLinha()
+
     def commit(self):
         pass
 
@@ -43,6 +52,11 @@ class SessaoFalsa:
 class _Vazio:
     def all(self):
         return []
+
+
+class _UmaLinha:
+    def one(self):
+        return (0, 0, 0)
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@
 
 import { Search, X } from "lucide-react";
 import { Dialog } from "radix-ui";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import useSWR from "swr";
 import { GrelhaKpis } from "@/components/painel";
 import {
@@ -22,12 +22,27 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import {
+  BarraPaginacao,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
-import { formataMoeda, soma } from "@/lib/dinheiro";
+import { formataMoeda } from "@/lib/dinheiro";
 import { numeroLimpo } from "@/lib/texto";
 import type { TipoDocumento, Venda } from "@/types";
+
+/**
+ * A resposta da listagem de vendas.
+ *
+ * Os `totais` são do conjunto filtrado inteiro e não da página: os quatro
+ * indicadores no topo contam o que o filtro apanhou, e contar só as
+ * vinte e cinco linhas à vista seria dar um número errado com ar de certo.
+ */
+interface PaginaVendas extends Pagina<Venda> {
+  totais: { total: string; iva: string; clientes: number };
+}
 
 export default function ConsultaFaturas() {
   const { empresa } = useAuth();
@@ -44,26 +59,17 @@ export default function ConsultaFaturas() {
     { revalidateOnFocus: false },
   );
   // Só documentos emitidos: um rascunho não é uma factura.
-  const { data: vendas, isLoading } = useSWR<Venda[]>(
-    "/api/comercial/vendas?estado=emitida&limite=500",
-    buscador,
-  );
-
-  const filtradas = useMemo(() => {
-    const termo = procuraAdiada.trim().toLowerCase();
-    return (vendas ?? []).filter((v) => {
-      if (tipo !== "todos" && v.tipo_doc !== tipo) return false;
-      if (!termo) return true;
-      return (
-        (v.numero ?? "").toLowerCase().includes(termo) ||
-        (v.cliente_nome ?? "").toLowerCase().includes(termo) ||
-        (v.codigo_validacao ?? "").toLowerCase().includes(termo) ||
-        (v.numero_op ?? "").toLowerCase().includes(termo)
-      );
-    });
-  }, [vendas, procuraAdiada, tipo]);
-
-  const historico = useHistorico(filtradas);
+  //
+  // O FILTRO É DO SERVIDOR e não do cliente. Antes vinham quinhentas facturas
+  // e filtravam-se aqui: quem tivesse mais do que quinhentas procurava dentro
+  // das quinhentas mais recentes e não sabia. Agora procura-se em todas, e o
+  // que volta é uma página.
+  const p = usePaginacao();
+  const chave = `/api/comercial/vendas?estado=emitida&${p.query}${
+    tipo !== "todos" ? `&tipo_doc=${encodeURIComponent(tipo)}` : ""
+  }${procuraAdiada.trim() ? `&procura=${encodeURIComponent(procuraAdiada.trim())}` : ""}`;
+  const { data: pagina, isLoading } = useSWR<PaginaVendas>(chave, buscador);
+  const visiveis = pagina?.linhas ?? [];
 
   return (
     <>
@@ -77,34 +83,24 @@ export default function ConsultaFaturas() {
       <GrelhaKpis>
         <Kpi
           rotulo="Documentos"
-          valor={String(filtradas.length)}
+          valor={String(pagina?.total ?? 0)}
           detalhe="emitidos (filtro)"
           cor="var(--color-azul)"
         />
         <Kpi
           rotulo="Total faturado"
-          valor={formataMoeda(
-            soma(...filtradas.map((v) => v.total)).toString(),
-            moeda,
-            0,
-          )}
+          valor={formataMoeda(pagina?.totais.total ?? "0", moeda, 0)}
           cor="#16a085"
         />
         <Kpi
           rotulo="Total IVA"
-          valor={formataMoeda(
-            soma(...filtradas.map((v) => v.iva)).toString(),
-            moeda,
-            0,
-          )}
+          valor={formataMoeda(pagina?.totais.iva ?? "0", moeda, 0)}
           detalhe="liquidado"
           cor="var(--color-roxo)"
         />
         <Kpi
           rotulo="Clientes"
-          valor={String(
-            new Set(filtradas.map((v) => v.cliente_id).filter(Boolean)).size,
-          )}
+          valor={String(pagina?.totais.clientes ?? 0)}
           detalhe="distintos"
           cor="var(--grafico-1)"
         />
@@ -121,7 +117,13 @@ export default function ConsultaFaturas() {
             <Entrada
               type="search"
               value={procura}
-              onChange={(e) => setProcura(e.target.value)}
+              // Reiniciar aqui e não num efeito: ficar na página 3 de um
+              // conjunto que a pesquisa reduziu a meia dúzia de linhas dá uma
+              // lista vazia sem explicação nenhuma.
+              onChange={(e) => {
+                setProcura(e.target.value);
+                p.reiniciar();
+              }}
               placeholder="FT 2026/0001, cliente, código…"
               className="pl-9"
             />
@@ -130,7 +132,10 @@ export default function ConsultaFaturas() {
         <Selector
           rotulo="Tipo"
           valor={tipo}
-          aoMudar={setTipo}
+          aoMudar={(v) => {
+            setTipo(v);
+            p.reiniciar();
+          }}
           opcoes={[
             { valor: "todos", rotulo: "Todos os tipos" },
             ...(tipos ?? []).map((t) => ({
@@ -145,7 +150,7 @@ export default function ConsultaFaturas() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
-        ) : filtradas.length === 0 ? (
+        ) : visiveis.length === 0 ? (
           <Vazio>
             {procura.trim()
               ? "Nenhum documento corresponde à pesquisa."
@@ -167,7 +172,7 @@ export default function ConsultaFaturas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.visiveis.map((v) => (
+                  {visiveis.map((v) => (
                     <Tr
                       key={v.id}
                       className="cursor-pointer"
@@ -201,7 +206,7 @@ export default function ConsultaFaturas() {
                 </tbody>
               </Tabela>
             </EnvolveTabela>
-            <RodapeHistorico {...historico} nome="facturas" />
+            <BarraPaginacao pagina={pagina} {...p.controlos} nome="facturas" />
           </>
         )}
       </Cartao>

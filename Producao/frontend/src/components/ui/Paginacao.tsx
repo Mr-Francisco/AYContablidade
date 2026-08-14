@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 import { Botao } from "@/components/ui";
 
@@ -41,16 +41,25 @@ export const LIMITE_OMISSAO = 25;
 export function usePaginacao(limite = LIMITE_OMISSAO) {
   const [offset, setOffset] = useState(0);
 
+  // `reiniciar` e `controlos` são estáveis de propósito: entram em listas de
+  // dependências de `useEffect` («mudou o filtro, volta à primeira página») e,
+  // recriados a cada render, davam um ciclo de renderizações.
+  const reiniciar = useCallback(() => setOffset(0), []);
+  const controlos = useMemo(
+    () => ({
+      aoAnterior: () => setOffset((o) => Math.max(0, o - limite)),
+      aoSeguinte: () => setOffset((o) => o + limite),
+    }),
+    [limite],
+  );
+
   return {
     offset,
     limite,
     query: `offset=${offset}&limite=${limite}`,
     /** Voltar ao início — chamar sempre que um filtro muda. */
-    reiniciar: () => setOffset(0),
-    controlos: {
-      aoAnterior: () => setOffset((o) => Math.max(0, o - limite)),
-      aoSeguinte: () => setOffset((o) => o + limite),
-    },
+    reiniciar,
+    controlos,
   };
 }
 

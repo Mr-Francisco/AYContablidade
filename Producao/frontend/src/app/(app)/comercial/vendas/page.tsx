@@ -22,10 +22,14 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import {
+  BarraPaginacao,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
-import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
+import { formataMoeda } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
 import { plural } from "@/lib/texto";
 import type { ResumoComercial, Terceiro, Venda } from "@/types";
@@ -36,11 +40,6 @@ const CORES_ESTADO: Record<string, string> = {
   rascunho: "#c98a10",
   emitida: "#1a9c5f",
 };
-
-/** O que se pede ao servidor. Quando a resposta vem com este tamanho
- *  exacto, é sinal de que foi cortada — e o rodapé diz que pode haver mais,
- *  em vez de apresentar um total que não é o total. */
-const LIMITE_PEDIDO = 1000;
 
 export default function Vendas() {
   const { empresa, pode } = useAuth();
@@ -55,10 +54,16 @@ export default function Vendas() {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
-  const chave = `/api/comercial/vendas?limite=${LIMITE_PEDIDO}${
+  const p = usePaginacao();
+  const chave = `/api/comercial/vendas?${p.query}${
     estado !== "todos" ? `&estado=${estado}` : ""
   }`;
-  const { data: vendas, isLoading, mutate } = useSWR<Venda[]>(chave, buscador);
+  const {
+    data: pagina,
+    isLoading,
+    mutate,
+  } = useSWR<Pagina<Venda>>(chave, buscador);
+  const vendas = pagina?.linhas;
   const { data: resumo, mutate: mutateResumo } = useSWR<ResumoComercial>(
     "/api/comercial/resumo",
     buscador,
@@ -116,8 +121,6 @@ export default function Vendas() {
     }
   }
 
-  const historico = useHistorico(vendas);
-
   const kz = (v: string) => formataMoeda(v, moeda, 0);
   // O Piloto conta os clientes no KPI; a lista já é pedida noutro lado, o SWR
   // devolve a mesma resposta sem novo pedido.
@@ -171,7 +174,10 @@ export default function Vendas() {
         <Selector
           rotulo="Estado"
           valor={estado}
-          aoMudar={setEstado}
+          aoMudar={(v) => {
+            setEstado(v);
+            p.reiniciar();
+          }}
           opcoes={[
             { valor: "todos", rotulo: "Todos" },
             { valor: "rascunho", rotulo: "Rascunhos" },
@@ -212,7 +218,7 @@ export default function Vendas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.visiveis.map((v) => (
+                  {(vendas ?? []).map((v) => (
                     <Tr key={v.id}>
                       <Td className="tabular font-bold">
                         {v.numero ?? (
@@ -274,9 +280,9 @@ export default function Vendas() {
                 </tbody>
               </Tabela>
             </EnvolveTabela>
-            <RodapeHistorico
-              {...historico}
-              truncadoNoServidor={(vendas?.length ?? 0) >= LIMITE_PEDIDO}
+            <BarraPaginacao
+              pagina={pagina}
+              {...p.controlos}
               nome="documentos"
             />
           </>

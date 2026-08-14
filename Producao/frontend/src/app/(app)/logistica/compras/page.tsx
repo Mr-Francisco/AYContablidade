@@ -23,17 +23,16 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import {
+  BarraPaginacao,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
 import type { Compra, ResumoCompras } from "@/types";
-
-/** O que se pede ao servidor. Quando a resposta vem com este tamanho
- *  exacto, é sinal de que foi cortada — e o rodapé diz que pode haver mais,
- *  em vez de apresentar um total que não é o total. */
-const LIMITE_PEDIDO = 1000;
 
 export default function Compras() {
   const { empresa, pode } = useAuth();
@@ -48,16 +47,16 @@ export default function Compras() {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
+  const p = usePaginacao();
   const {
-    data: compras,
+    data: pagina,
     isLoading,
     mutate,
-  } = useSWR<Compra[]>(
-    `/api/compras?limite=${LIMITE_PEDIDO}${
-      estado !== "todos" ? `&estado=${estado}` : ""
-    }`,
+  } = useSWR<Pagina<Compra>>(
+    `/api/compras?${p.query}${estado !== "todos" ? `&estado=${estado}` : ""}`,
     buscador,
   );
+  const compras = pagina?.linhas;
   const { data: resumo, mutate: mutateResumo } = useSWR<ResumoCompras>(
     "/api/compras/resumo",
     buscador,
@@ -107,8 +106,6 @@ export default function Compras() {
       setAEliminar(null);
     }
   }
-
-  const historico = useHistorico(compras);
 
   return (
     <>
@@ -169,7 +166,10 @@ export default function Compras() {
         <Selector
           rotulo="Estado"
           valor={estado}
-          aoMudar={setEstado}
+          aoMudar={(v) => {
+            setEstado(v);
+            p.reiniciar();
+          }}
           opcoes={[
             { valor: "todos", rotulo: "Todos" },
             { valor: "rascunho", rotulo: "Rascunhos" },
@@ -202,7 +202,7 @@ export default function Compras() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.visiveis.map((c) => (
+                  {(compras ?? []).map((c) => (
                     <Tr key={c.id}>
                       <Td className="tabular font-bold">
                         {c.numero ?? (
@@ -259,9 +259,9 @@ export default function Compras() {
                 </tbody>
               </Tabela>
             </EnvolveTabela>
-            <RodapeHistorico
-              {...historico}
-              truncadoNoServidor={(compras?.length ?? 0) >= LIMITE_PEDIDO}
+            <BarraPaginacao
+              pagina={pagina}
+              {...p.controlos}
               nome="documentos"
             />
           </>

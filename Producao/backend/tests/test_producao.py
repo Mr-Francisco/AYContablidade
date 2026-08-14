@@ -164,22 +164,53 @@ def test_existe_caminho_para_criar_a_primeira_conta_real():
 # ---------------------------------------------------------------------------
 # Regra dos históricos
 # ---------------------------------------------------------------------------
-LISTAS_CRONOLOGICAS = [
-    # `movimentos` está em `ListaLancamentos.tsx` e não em `page.tsx`: a página
-    # passou a ser o editor, e a lista é um componente ao lado. A regra é a
-    # mesma — ver a entrada própria mais abaixo.
-    "contabilidade/razao",
-    "contabilidade/extrato",
-    "contabilidade/retencoes",
+#: Já pedem uma janela ao servidor. É para aqui que as outras vão.
+LISTAS_PAGINADAS = [
     "comercial/vendas",
     "comercial/consulta-faturas",
     "logistica/compras",
+]
+
+#: Ainda com o mecanismo antigo: revelam por partes no cliente, mas pedem tudo
+#: ao servidor. Cumprem metade da regra — a página não cresce — e falham a
+#: outra metade. A conversão está registada em
+#: `docs/documentacao/PENDENCIAS_PRIORITARIAS.md`, ponto 9.
+#:
+#: `contabilidade/movimentos` não está em nenhuma das duas: a lista mudou-se
+#: para `ListaLancamentos.tsx` e tem teste próprio mais abaixo.
+LISTAS_CRONOLOGICAS = [
+    "contabilidade/razao",
+    "contabilidade/extrato",
+    "contabilidade/retencoes",
     "plataforma/licencas",
     "rh/independentes",
     "rh/processamento",
     "rh/pagamentos",
     "imobilizados/amortizacoes",
 ]
+
+
+@pytest.mark.parametrize("pagina", LISTAS_PAGINADAS)
+def test_as_listas_convertidas_pedem_uma_janela_ao_servidor(pagina):
+    """REGRESSÃO: `limite=1000` para mostrar quarenta linhas.
+
+    A lista ficava curta no ecrã e o pedido continuava enorme — meio megabyte
+    de JSON a cada abertura numa empresa com dois anos de actividade. Nenhuma
+    destas pode voltar a pedir tudo.
+    """
+    from pathlib import Path
+
+    fonte = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "app" / "(app)" / pagina / "page.tsx"
+    ).read_text(encoding="utf-8")
+    assert "usePaginacao" in fonte, f"{pagina} não gere o offset"
+    assert "BarraPaginacao" in fonte, f"{pagina} não diz onde vai nem quantos há"
+    assert "useHistorico" not in fonte, f"{pagina} ainda revela no cliente"
+    assert "LIMITE_PEDIDO" not in fonte, f"{pagina} ainda pede um lote grande"
+    # Mudar de filtro tem de voltar à primeira página: ficar na página 3 de um
+    # conjunto que encolheu dá uma lista vazia sem explicação.
+    assert "reiniciar()" in fonte, f"{pagina} não volta ao início ao filtrar"
 
 
 @pytest.mark.parametrize("pagina", LISTAS_CRONOLOGICAS)

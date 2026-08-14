@@ -9,10 +9,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 
 from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.api.deps import DB, EmpresaAtual, exigir_cap
+from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.db.models.comercial import TIPOS_DOC, Venda, VendaLinha, Vendedor
 from src.db.models.terceiros import PROVINCIAS, Terceiro
 from src.services import comercial as svc
@@ -253,22 +254,74 @@ def remover_vendedor(vendedor_id: UUID, empresa: EmpresaAtual, db: DB) -> None:
 # ---------------------------------------------------------------------------
 # Vendas
 # ---------------------------------------------------------------------------
+def _venda_publica(v: Venda) -> dict:
+    return {
+        "id": v.id, "numero": v.numero, "tipo_doc": v.tipo_doc, "tipo": v.tipo,
+        "data": v.data, "cliente_id": v.cliente_id, "cliente_nome": v.cliente_nome,
+        "subtotal": v.subtotal, "iva": v.iva, "total": v.total, "estado": v.estado,
+        "numero_op": v.numero_op, "codigo_validacao": v.codigo_validacao,
+    }
+
+
 @router.get("/vendas")
 def listar_vendas(
-    empresa: EmpresaAtual, db: DB, estado: str | None = None, limite: int = 200
-) -> list[dict]:
+    empresa: EmpresaAtual,
+    db: DB,
+    estado: str | None = None,
+    tipo_doc: str | None = None,
+    procura: str | None = None,
+    offset: int = 0,
+    limite: int = LIMITE_OMISSAO,
+) -> dict:
+    """Vendas, uma página de cada vez.
+
+    Devolve `{linhas, total, offset, limite, totais}` e não uma lista: sem o
+    `total`, o ecrã tinha de dizer quantos documentos há contando os que
+    recebeu — e recebia os primeiros mil.
+
+    Os `totais` são do CONJUNTO FILTRADO e não da página. Sem eles, os
+    indicadores no topo («Documentos», «Total facturado», «Total IVA»,
+    «Clientes») passariam a somar vinte e cinco linhas em vez de todas: um
+    número errado com ar de certo, que é o pior tipo de número.
+
+    `procura` cobre número, cliente, código de validação e nº de operação —
+    os quatro campos por onde se procura uma factura já emitida.
+    """
     q = select(Venda).where(Venda.empresa_id == empresa.id)
     if estado:
         q = q.where(Venda.estado == estado)
-    return [
-        {"id": v.id, "numero": v.numero, "tipo_doc": v.tipo_doc, "tipo": v.tipo,
-         "data": v.data, "cliente_id": v.cliente_id, "cliente_nome": v.cliente_nome,
-         "subtotal": v.subtotal, "iva": v.iva, "total": v.total, "estado": v.estado,
-         "numero_op": v.numero_op, "codigo_validacao": v.codigo_validacao}
-        for v in db.scalars(
-            q.order_by(Venda.data.desc(), Venda.criado_em.desc()).limit(limite)
-        ).all()
-    ]
+    if tipo_doc:
+        q = q.where(Venda.tipo_doc == tipo_doc)
+    if procura and procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(
+            or_(
+                Venda.numero.ilike(termo),
+                Venda.cliente_nome.ilike(termo),
+                Venda.codigo_validacao.ilike(termo),
+                Venda.numero_op.ilike(termo),
+            )
+        )
+
+    ordenada = q.order_by(Venda.data.desc(), Venda.criado_em.desc())
+    p = pagina(
+        db, ordenada, offset=offset, limite=limite, formatar=_venda_publica
+    )
+
+    agregados = q.with_only_columns(
+        func.coalesce(func.sum(Venda.total), 0),
+        func.coalesce(func.sum(Venda.iva), 0),
+        func.count(func.distinct(Venda.cliente_id)),
+    ).order_by(None)
+    total_valor, total_iva, clientes = db.execute(agregados).one()
+    return {
+        **p,
+        "totais": {
+            "total": total_valor,
+            "iva": total_iva,
+            "clientes": clientes,
+        },
+    }
 
 
 @router.get("/vendas/{venda_id}")
