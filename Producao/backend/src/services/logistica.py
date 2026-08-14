@@ -16,7 +16,9 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
+from src.db.base import agora
 from src.db.models.comercial import SequenciaVenda
+from src.db.models.contabilidade import Lancamento
 from src.db.models.logistica import Armazem, Artigo, MovimentoStock
 from src.db.models.tenancy import ConfigEmpresa
 from src.services.contabilidade import ErroContabilistico, conta_corrente, postar
@@ -448,6 +450,138 @@ def registar_movimento(
     db.add(mov)
     db.flush()
     return mov
+
+
+def anular_movimento(
+    db: Session, *, empresa_id: UUID, movimento_id: UUID, quem_id: UUID | None = None
+) -> tuple[MovimentoStock, MovimentoStock]:
+    """Anula um movimento criando o CONTRÁRIO — nunca apagando o original.
+
+    O Piloto apaga a linha e avisa, num `confirm()`, que «não reverte o
+    lançamento contabilístico». Numa demonstração em `localStorage` isso passa.
+    Aqui não: o movimento gerou um lançamento a sério, e apagar um sem o outro
+    deixa a existência fora do mapa e o custo na classe 6 — uma discordância
+    que ninguém encontra até ao fecho do exercício.
+
+    Por isso anular é um ESTORNO:
+
+    - o original fica intacto, marcado com quem anulou e quando;
+    - nasce um movimento contrário que o referencia;
+    - o lançamento é revertido com as MESMAS LINHAS de débito e crédito
+      TROCADAS, e não reconstruído a partir das contas de configuração — se a
+      configuração mudou entretanto, um estorno reconstruído lançaria noutro
+      sítio e não fecharia com o original;
+    - tudo na mesma transacção: ou stock e contabilidade voltam atrás juntos,
+      ou não se mexe em nada.
+
+    O tipo do movimento contrário é o SIMÉTRICO, não o mesmo com quantidade
+    negativa: o `stock()` e o `custo_medio()` lêem o tipo, e uma «entrada» de
+    −10 seria contada como entrada de 10 no custo médio.
+    """
+    mov = db.scalar(
+        select(MovimentoStock).where(
+            MovimentoStock.id == movimento_id,
+            MovimentoStock.empresa_id == empresa_id,
+        )
+    )
+    if mov is None:
+        raise ErroContabilistico("Movimento não encontrado.")
+    if mov.estornado_em is not None:
+        raise ErroContabilistico(
+            f"O movimento {mov.numero} já foi anulado em "
+            f"{mov.estornado_em:%d/%m/%Y} — não se anula duas vezes."
+        )
+    if mov.estorna_id is not None:
+        raise ErroContabilistico(
+            f"O movimento {mov.numero} É a anulação de outro. Para o desfazer, "
+            "registe um movimento novo."
+        )
+
+    # --- O contrário, em espelho ----------------------------------------
+    if mov.tipo == "entrada":
+        tipo_inverso, origem, destino = "saida", mov.armazem_id, None
+    elif mov.tipo == "saida":
+        tipo_inverso, origem, destino = "entrada", mov.armazem_id, None
+    elif mov.tipo == "transferencia":
+        # Troca origem e destino: a mercadoria volta por onde veio.
+        tipo_inverso = "transferencia"
+        origem, destino = mov.armazem_destino_id, mov.armazem_id
+    else:
+        tipo_inverso, origem, destino = "ajuste", mov.armazem_id, None
+
+    qtd_inversa = -(mov.qtd or ZERO) if tipo_inverso == "ajuste" else abs(mov.qtd or ZERO)
+
+    # Reverter tira stock de algum lado: se entretanto já saiu, não há o que
+    # devolver, e é melhor dizê-lo do que deixar a existência negativa.
+    armazem_que_perde = (
+        origem if tipo_inverso in ("saida", "transferencia")
+        else (origem if qtd_inversa < 0 else None)
+    )
+    if armazem_que_perde is not None:
+        disp = stock(
+            db, empresa_id=empresa_id, artigo_id=mov.artigo_id,
+            armazem_id=armazem_que_perde,
+        )
+        if abs(qtd_inversa) > disp:
+            raise ErroContabilistico(
+                f"Não há stock para reverter o movimento {mov.numero}: são "
+                f"precisas {abs(qtd_inversa)} unidades e há {disp}. O que este "
+                "movimento trouxe já saiu."
+            )
+
+    prefixo = tipo_mov(tipo_inverso)["prefixo"] or (
+        "ACP" if qtd_inversa >= 0 else "ACN"
+    )
+    hoje = Date.today()
+    numero = _proximo_numero(db, empresa_id, prefixo, hoje.year)
+
+    # --- O lançamento de estorno ----------------------------------------
+    lanc = None
+    if mov.lancamento_id is not None:
+        original = db.scalar(
+            select(Lancamento).where(Lancamento.id == mov.lancamento_id)
+        )
+        if original is not None:
+            linhas = [
+                {
+                    "conta_codigo": l.conta_codigo,
+                    "debito": l.credito or ZERO,
+                    "credito": l.debito or ZERO,
+                    "entidade": l.entidade or "",
+                    "descricao": f"Estorno — {l.descricao or ''}".strip(" —"),
+                }
+                for l in sorted(original.linhas, key=lambda x: x.ordem or 0)
+            ]
+            lanc = postar(
+                db, empresa_id=empresa_id, data=hoje,
+                diario_codigo=original.diario_codigo,
+                documento_codigo=original.documento_codigo,
+                mes=f"{hoje.month:02d}",
+                descricao=f"Anulação de {mov.numero} — {mov.artigo_desc or ''}".strip(),
+                documento_ref=numero, origem="logistica",
+                exercicio_id=original.exercicio_id, linhas=linhas,
+            )
+
+    inverso = MovimentoStock(
+        empresa_id=empresa_id, numero=numero, tipo=tipo_inverso, data=hoje,
+        artigo_id=mov.artigo_id, artigo_desc=mov.artigo_desc,
+        armazem_id=origem, armazem_destino_id=destino,
+        qtd=qtd_inversa, unidade=mov.unidade,
+        # O mesmo custo do original, para que o valor revertido seja o mesmo
+        # que entrou — e não o CUMP de hoje, que já é outro.
+        custo_unit=mov.custo_unit, valor=mov.valor,
+        documento=mov.documento,
+        descricao=f"Anulação do movimento {mov.numero}",
+        entidade=mov.entidade, estorna_id=mov.id,
+        lancamento_id=lanc.id if lanc else None,
+        numero_op=lanc.numero_op if lanc else None,
+    )
+    db.add(inverso)
+
+    mov.estornado_em = agora()
+    mov.estornado_por_id = quem_id
+    db.flush()
+    return mov, inverso
 
 
 def proximo_codigo_artigo(db: Session, empresa_id: UUID) -> str:

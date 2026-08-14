@@ -269,13 +269,28 @@ formulário sempre aberto na página e nem KPIs nem pesquisa. Refeitas:
 | Formulário em diálogo | ✅ |
 | «Resumo» com stock actual, CUMP e valor antes de gravar | ✅ |
 | Nº de operação a ligar ao lançamento | ✅ |
-| Eliminar movimento (`✕`) | ❌ **não migrado — ver abaixo** |
+| Anular movimento | ✅ **por estorno, não por eliminação** |
 
-**Não migrado, e porquê:** o Piloto deixa anular um movimento de stock e avisa
-que «não reverte o lançamento contabilístico». Na Produção o movimento gera um
-lançamento a sério; apagar o movimento e deixar o lançamento deixa o stock e a
-contabilidade a discordar, de forma silenciosa. Não há rota de eliminação no
-backend e não a criei sem falar. **Decisão pendente do utilizador.**
+**Decidido pelo utilizador em 2026-08-14.** O Piloto apaga a linha e avisa que
+«não reverte o lançamento contabilístico». Na Produção o movimento gera um
+lançamento a sério, e apagar um sem o outro deixa o stock e a contabilidade a
+discordar em silêncio. A regra da Produção passa a ser:
+
+- o original NÃO se apaga: fica no histórico marcado com quem anulou e quando;
+- nasce um movimento contrário, que o referencia (`estorna_id`);
+- o lançamento é revertido com as MESMAS linhas de débito e crédito trocadas —
+  e não reconstruído das contas de configuração, que podem ter mudado;
+- tudo na mesma transacção;
+- não se anula duas vezes, nem se anula uma anulação;
+- se o que entrou já saiu, recusa em vez de deixar existência negativa.
+
+O tipo do movimento contrário é o SIMÉTRICO (entrada↔saída, e a transferência
+volta por onde veio), e não o mesmo tipo com quantidade negativa: o
+`custo_medio()` lê `abs(qtd)` e trataria uma «entrada» de −10 como entrada.
+
+Provado na base a sério: `REC 2026/0003` ficou **Anulado**, nasceu
+`EXP 2026/0004` marcada **Anulação**, cada um com o seu lançamento, e a segunda
+tentativa devolve 409. Sete testes.
 
 **Logística — Artigos.** Faltavam os quatro KPIs do Piloto (artigos, valor de
 stock, em rutura, famílias) e o botão estava no cabeçalho em vez da barra.

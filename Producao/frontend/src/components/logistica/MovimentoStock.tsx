@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -26,7 +26,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
-import { DialogoMestre } from "@/components/ui/CrudMestre";
+import { Confirmar, DialogoMestre } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { big, formataMoeda, multiplica, soma } from "@/lib/dinheiro";
@@ -55,6 +55,10 @@ interface Movimento {
   documento: string | null;
   entidade: string | null;
   numero_op: string | null;
+  /** Preenchido quando este movimento já foi anulado. */
+  estornado_em: string | null;
+  /** Preenchido quando ESTE movimento é a anulação de outro. */
+  estorna_id: string | null;
 }
 
 export interface ConfigMovimento {
@@ -109,6 +113,7 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
   const [ocupado, setOcupado] = useState(false);
   const [procura, setProcura] = useState("");
   const [aberto, setAberto] = useState(false);
+  const [aAnular, setAAnular] = useState<Movimento | null>(null);
 
   const artigo = artigoId ? porId.get(artigoId) : undefined;
 
@@ -205,6 +210,33 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
       );
     } finally {
       setOcupado(false);
+    }
+  }
+
+  async function anular() {
+    if (!aAnular) return;
+    setErro(null);
+    setOcupado(true);
+    try {
+      const r = await api.post<{
+        compensacao: string;
+        numero_op: string | null;
+      }>(`/api/logistica/movimentos/${aAnular.id}/anular`, {});
+      setSucesso(
+        `Movimento ${aAnular.numero} anulado — foi criado o movimento ` +
+          `contrário ${r.compensacao}` +
+          (r.numero_op ? `, com o lançamento ${r.numero_op}.` : "."),
+      );
+      mutate();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível anular.",
+      );
+    } finally {
+      setOcupado(false);
+      setAAnular(null);
     }
   }
 
@@ -307,6 +339,7 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
                   <Th numerico>Custo unit.</Th>
                   <Th numerico>Valor</Th>
                   <Th>Nº Operação</Th>
+                  {pode("logistica.gerir") && <Th />}
                 </tr>
               </thead>
               <tbody>
@@ -352,6 +385,28 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
                         <Selo cor="#62657a">sem lançamento</Selo>
                       )}
                     </Td>
+                    {/* Anular uma vez. Um movimento já anulado, ou que É a
+                        anulação de outro, não se anula de novo — e diz-se
+                        aqui, para não se descobrir só depois de carregar. */}
+                    {pode("logistica.gerir") && (
+                      <Td numerico>
+                        {m.estornado_em ? (
+                          <Selo cor="#c0392b">Anulado</Selo>
+                        ) : m.estorna_id ? (
+                          <Selo cor="#62657a">Anulação</Selo>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setAAnular(m)}
+                            title="Anular este movimento"
+                            className="rounded-md border border-borda px-2 py-1 text-[11.5px] font-semibold text-texto-suave hover:border-perigo hover:text-perigo"
+                          >
+                            <Undo2 size={12} className="mr-1 inline" />
+                            Anular
+                          </button>
+                        )}
+                      </Td>
+                    )}
                   </Tr>
                 ))}
               </tbody>
@@ -359,6 +414,27 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
           </EnvolveTabela>
         )}
       </Cartao>
+      {aAnular && (
+        <Confirmar
+          aberto
+          aoMudar={(a) => {
+            if (!a) setAAnular(null);
+          }}
+          titulo={`Anular o movimento ${aAnular.numero}?`}
+          rotuloConfirmar="Anular"
+          rotuloOcupado="A anular…"
+          variante="perigo"
+          aoConfirmar={anular}
+          ocupado={ocupado}
+        >
+          O movimento <b>não é apagado</b>: fica no histórico marcado como
+          anulado, e é criado um movimento contrário que o reverte. Se tiver
+          lançamento, ele é estornado com as mesmas contas e os valores
+          trocados. É o que permite responder mais tarde a quem pergunte o que
+          se passou — uma linha apagada não responde a nada.
+        </Confirmar>
+      )}
+
       {aberto && (
         <DialogoMestre
           titulo={config.titulo}

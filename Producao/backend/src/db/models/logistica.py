@@ -9,12 +9,13 @@ quantidade — e sai sempre ao CUMP corrente do armazém de origem, que nunca é
 editável pelo utilizador. É isso que garante a coerência da valorização.
 """
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import (
     Date,
+    DateTime,
     ForeignKey,
     Index,
     Numeric,
@@ -124,6 +125,25 @@ class MovimentoStock(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
         ForeignKey("lancamentos.id", ondelete="SET NULL")
     )
     numero_op: Mapped[str | None] = mapped_column(String(30))
+
+    # --- Anulação por estorno -------------------------------------------
+    #
+    # Um movimento contabilizado NÃO SE APAGA. Anular cria um movimento
+    # contrário e um lançamento de sinal trocado; o original fica no
+    # histórico, marcado. É o que permite responder a um auditor «isto foi
+    # lançado, e foi revertido no dia X por fulano» — coisa que uma linha
+    # apagada não permite.
+    #
+    # `estorna_id` está no movimento NOVO e aponta para o que ele reverte.
+    # `estornado_em`/`estornado_por_id` estão no ORIGINAL: é a marca que
+    # impede uma segunda anulação.
+    estorna_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("movimentos_stock.id", ondelete="SET NULL"), index=True
+    )
+    estornado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    estornado_por_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
 
     def __repr__(self) -> str:
         return f"<MovimentoStock {self.numero} {self.tipo} {self.qtd}>"

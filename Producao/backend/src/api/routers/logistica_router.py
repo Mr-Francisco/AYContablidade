@@ -11,10 +11,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from src.api.deps import DB, EmpresaAtual, exigir_cap
+from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
 from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.db.models.logistica import Armazem, Artigo, MovimentoStock
 from src.services import logistica as svc
+from src.services.contabilidade import ErroContabilistico
+from src.services.auditoria import auditar
 
 router = APIRouter(
     prefix="/api/logistica",
@@ -241,7 +243,10 @@ def listar_movimentos(
          "armazem_id": m.armazem_id, "armazem_destino_id": m.armazem_destino_id,
          "qtd": m.qtd, "unidade": m.unidade, "custo_unit": m.custo_unit,
          "valor": m.valor, "documento": m.documento, "entidade": m.entidade,
-         "numero_op": m.numero_op}
+         "numero_op": m.numero_op,
+         # Quem já foi anulado, e quem é a anulação de quem: sem isto a lista
+         # mostrava o movimento original e o seu contrário sem os relacionar.
+         "estornado_em": m.estornado_em, "estorna_id": m.estorna_id}
         for m in db.scalars(
             q.order_by(MovimentoStock.data.desc(), MovimentoStock.criado_em.desc())
             .limit(limite)
@@ -262,6 +267,44 @@ def criar_movimento(
     db.commit()
     return {"id": m.id, "numero": m.numero, "custo_unit": m.custo_unit,
             "valor": m.valor, "numero_op": m.numero_op}
+
+
+@router.post("/movimentos/{movimento_id}/anular", dependencies=[GERIR])
+def anular_movimento(
+    request: Request, movimento_id: UUID, empresa: EmpresaAtual,
+    quem: UtilizadorAtual, db: DB,
+) -> dict:
+    """Anula um movimento de stock por ESTORNO — o original não se apaga.
+
+    Cria o movimento contrário e reverte o lançamento, na mesma transacção. O
+    original fica no histórico marcado com quem anulou e quando: é o que
+    permite responder a um auditor «foi lançado, e foi revertido no dia X por
+    fulano», coisa que uma linha apagada não permite.
+    """
+    try:
+        original, inverso = svc.anular_movimento(
+            db, empresa_id=empresa.id, movimento_id=movimento_id, quem_id=quem.id
+        )
+    except ErroContabilistico as e:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from e
+
+    auditar(
+        db, actor=quem, accao="logistica.movimento.anular", request=request,
+        alvo_tipo="movimento_stock", alvo_id=original.id,
+        alvo_desc=original.numero, empresa_id=empresa.id,
+        detalhes={
+            "anulado": original.numero,
+            "compensacao": inverso.numero,
+            "lancamento_anulado": original.numero_op,
+            "lancamento_compensacao": inverso.numero_op,
+        },
+    )
+    db.commit()
+    return {
+        "anulado": original.numero,
+        "compensacao": inverso.numero,
+        "numero_op": inverso.numero_op,
+    }
 
 
 @router.get("/existencias")

@@ -133,3 +133,6 @@
 - Quantidades, taxas e percentagens NÃO são dinheiro: passam por `numeroLimpo()` (`40.0000 Un` → `40 Un`, `14.00 %` → `14 %`). Só os valores monetários levam sempre as duas casas.
 - No Piloto o botão de acção («+ Novo artigo», «+ Receção») vive DENTRO da barra de ferramentas, não no cabeçalho da página.
 - Os KPIs de uma página de consulta contam o que está FILTRADO, não o total — é o que faz do filtro uma ferramenta de análise.
+- Anular um movimento contabilizado é ESTORNO, nunca eliminação: o original fica marcado, nasce o contrário, e o lançamento reverte-se com as MESMAS linhas de D e C trocados — reconstruí-lo da configuração falha se as contas mudaram entretanto.
+- O movimento contrário usa o TIPO SIMÉTRICO (entrada↔saída), não o mesmo tipo com quantidade negativa: `custo_medio()` lê `abs(qtd)` e trataria uma «entrada» de −10 como entrada de 10.
+- O autogenerate do Alembic arrasta desvios anteriores de outras tabelas: ler sempre a migração gerada e deixar lá só o que é da alteração.
