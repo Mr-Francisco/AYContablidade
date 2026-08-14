@@ -3,11 +3,10 @@
 import { Check } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { FaixaPainel } from "@/components/painel";
 import {
   ACarregar,
   Alerta,
-  CabecalhoPagina,
   Campo,
   Cartao,
   Entrada,
@@ -30,9 +29,11 @@ export default function RegimesIva() {
 
   return (
     <>
-      <CabecalhoPagina
-        titulo="Regimes de IVA"
-        descricao="O enquadramento em sede de IVA depende do volume de negócios anual. Cada regime tem taxa, direito à dedução e obrigações próprias."
+      <FaixaPainel
+        sobrenome="Fiscalidade · IVA"
+        titulo="Regimes de IVA em Angola"
+        subtitulo="O enquadramento em sede de IVA depende do volume de negócios anual. Cada regime tem taxa, direito à dedução e obrigações próprias."
+        valores={[]}
       />
 
       {isLoading || !data ? (

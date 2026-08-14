@@ -2,14 +2,8 @@
 
 import { CalendarDays, ExternalLink } from "lucide-react";
 import useSWR from "swr";
-
-import {
-  ACarregar,
-  Alerta,
-  CabecalhoPagina,
-  Cartao,
-  Vazio,
-} from "@/components/ui";
+import { FaixaPainel } from "@/components/painel";
+import { ACarregar, Alerta, Cartao, Vazio } from "@/components/ui";
 import { buscador } from "@/lib/api";
 import type { CatalogoFiscal } from "@/types";
 
@@ -22,9 +16,11 @@ export default function Calendario() {
 
   return (
     <>
-      <CabecalhoPagina
+      <FaixaPainel
+        sobrenome="Fiscalidade · Calendário"
         titulo="Calendário Fiscal"
-        descricao="Principais obrigações declarativas e de pagamento ao longo do ano."
+        subtitulo="Principais obrigações declarativas e de pagamento ao longo do ano. Confirme as datas no Calendário Fiscal oficial da AGT."
+        valores={[]}
       />
 
       <Alerta tipo="aviso" className="mb-4">

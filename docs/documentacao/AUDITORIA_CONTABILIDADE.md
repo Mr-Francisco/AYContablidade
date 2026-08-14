@@ -313,3 +313,31 @@ meses processados e líquido do mês.
 **Transversal:** quantidades e taxas deixaram de sair com as casas do
 `Numeric` da base — `40,0000 Un` passou a `40 Un` e `14,00 %` a `14 %`, via
 `numeroLimpo()` em `lib/texto.ts`.
+
+
+---
+
+## Fiscalidade e o ecrã de entrada (2026-08-14)
+
+**As quatro páginas de Fiscalidade** são as únicas do Piloto, fora dos painéis,
+que abrem com a faixa em gradiente (`dash-hero`) em vez do cabeçalho de página.
+A Produção usava o cabeçalho normal nas quatro. Repostas, com os textos do
+Piloto tal e qual — incluindo os sobrenomes «Fiscalidade · Angola / AGT»,
+«· Calendário», «· Obrigações» e «· IVA».
+
+O resto do conteúdo já estava: o catálogo com incidência, taxas, cálculo,
+modelos, prazo e retenção; o cartão de Fontes; o calendário com o cartão
+mensal separado; as obrigações por forma jurídica; e os regimes de IVA.
+
+**O ecrã de entrada.** O `index.html` do Piloto é uma faixa de marca a 60vh
+(44vh abaixo de 700px) com o logótipo a 56px, o nome do produto em maiúsculas
+espaçadas, e a lista de módulos. Mais nada — o Piloto não tem painel
+transversal.
+
+A Produção tinha um painel com saudação e KPIs de todos os módulos. **Ficaram
+os dois:** a faixa em cima, porque é o primeiro ecrã que um cliente vê e era o
+que mais denunciava dois sistemas diferentes; os KPIs por baixo, porque
+apagá-los seria tirar função a troco de fidelidade.
+
+Se preferir o painel primeiro e a faixa depois, é trocar a ordem de dois
+blocos em `app/(app)/painel/page.tsx`.

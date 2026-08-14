@@ -3,12 +3,11 @@
 import { ExternalLink, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { FaixaPainel } from "@/components/painel";
 import {
   ACarregar,
   Alerta,
   BarraFiltros,
-  CabecalhoPagina,
   Campo,
   Cartao,
   Entrada,
@@ -44,9 +43,11 @@ export default function Impostos() {
 
   return (
     <>
-      <CabecalhoPagina
+      <FaixaPainel
+        sobrenome="Fiscalidade · Angola / AGT"
         titulo="Catálogo de Impostos"
-        descricao="Impostos em vigor em Angola, com incidência, taxas, forma de cálculo e modelos obrigatórios."
+        subtitulo="Impostos em vigor em Angola, com incidência, taxas, forma de cálculo e modelos obrigatórios. As taxas devem ser confirmadas com a legislação em vigor."
+        valores={[]}
       />
 
       <Alerta tipo="aviso" className="mb-4">

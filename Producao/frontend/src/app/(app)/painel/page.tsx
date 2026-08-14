@@ -116,20 +116,33 @@ export default function Painel() {
 
   return (
     <>
+      {/* O `index.html` do Piloto é isto e mais nada: uma faixa de marca a
+          60vh com o logótipo, o nome e os módulos. É o primeiro ecrã que um
+          cliente vê ao entrar, e era o que mais denunciava dois sistemas
+          diferentes.
+
+          Os KPIs da Produção ficam POR BAIXO, e não no lugar dela: o Piloto
+          não tem painel transversal nenhum, mas apagar o que já existe seria
+          tirar função a troco de fidelidade. */}
+      <div className="gradiente-marca mb-4 mt-5 flex h-[44vh] min-h-[260px] flex-col items-center justify-center gap-3.5 rounded-[14px] px-4 py-7 text-center shadow-suave min-[700px]:h-[60vh] min-[700px]:min-h-[360px] min-[700px]:px-6 min-[700px]:py-12">
+        <div className="rounded-2xl bg-white/[0.16] px-5 py-2 text-[40px] font-black tracking-[2px] text-white min-[700px]:px-7 min-[700px]:py-2.5 min-[700px]:text-[56px]">
+          SGD
+        </div>
+        <div className="text-[20px] font-bold uppercase tracking-[4px] text-white">
+          Software de Gestão Dirigida
+        </div>
+        <p className="max-w-[560px] text-sm leading-[1.6] text-white/85">
+          Contabilidade · Analítica · Contas Correntes · Comercial · Logística ·
+          Imobilizados · RH — tudo num só sistema.
+        </p>
+      </div>
+
       <CabecalhoPagina
         titulo={`Bom dia, ${primeiroNome}`}
         descricao={
           empresa
             ? `${empresa.nome}${exercicio ? ` · ${exercicio.nome}` : ""}`
             : "Painel geral"
-        }
-        accoes={
-          exercicio && (
-            <Selo cor={exercicio.estado === "fechado" ? "#62657a" : "#1a9c5f"}>
-              {exercicio.nome} ·{" "}
-              {exercicio.estado === "fechado" ? "fechado" : "aberto"}
-            </Selo>
-          )
         }
       />
 

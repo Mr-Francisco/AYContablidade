@@ -3,12 +3,12 @@
 import { Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
+import { FaixaPainel } from "@/components/painel";
 import {
   ACarregar,
   Alerta,
   BarraFiltros,
   Botao,
-  CabecalhoPagina,
   Cartao,
   EnvolveTabela,
   Selector,
@@ -94,17 +94,11 @@ export default function Obrigacoes() {
 
   return (
     <>
-      <CabecalhoPagina
-        titulo="Obrigações Fiscais"
-        descricao="Indique o enquadramento e o sistema lista todas as obrigações declarativas e de pagamento a que a empresa está sujeita."
-        accoes={
-          resposta && (
-            <Botao onClick={() => window.print()}>
-              <Printer size={16} />
-              Imprimir
-            </Botao>
-          )
-        }
+      <FaixaPainel
+        sobrenome="Fiscalidade · Obrigações"
+        titulo="Obrigações Fiscais por Empresa"
+        subtitulo="Indique a forma jurídica e o enquadramento — o sistema lista todas as obrigações declarativas e de pagamento a que a empresa está sujeita."
+        valores={[]}
       />
 
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
