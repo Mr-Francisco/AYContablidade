@@ -229,3 +229,25 @@ a âmbar porque o token do Piloto se chama `--chart-amber`… e é rosa.
 **Diferenças assumidas:** o «Excluir apuramento» e a pesquisa por texto que a
 Produção tinha aqui não existem no Piloto — saíram. O serviço continua a
 aceitar `excluir_apuramento`.
+
+
+---
+
+## Os outros cinco painéis (2026-08-14)
+
+O Piloto tem seis painéis (`assets/js/dashboards.js`), construídos todos com as
+mesmas quatro peças. Depois de fazer o da contabilidade, as peças foram para
+`components/painel/` e os outros cinco passaram a usá-las.
+
+| Painel | Piloto | Estado |
+|---|---|---|
+| Financeiro (`/contas-correntes`) | `Tesouraria · Contas Correntes` · 4 KPIs · clientes + anel receber/pagar · fornecedores + resumo | ✅ verificado com dados |
+| Comercial (`/comercial`) | `Comercial · Vendas` · 4 KPIs · top clientes + anel produtos/serviços · comissões + vendas recentes | ✅ verificado com dados |
+| Imobilizados (`/imobilizados`) | `Imobilizado · Ativos` · 4 KPIs · valor líquido + anel bruto/amortizado · lista de activos | ✅ verificado com dados |
+| RH (`/rh`) | `Recursos Humanos · Salários` · 4 KPIs · categorias + anel do custo · maiores vencimentos | ✅ verificado com dados |
+| Analítica (`/analitica`) | `Contabilidade Analítica` · 4 KPIs · maiores centros + anel · mapa de custos | ✅ verificado |
+
+Dois defeitos apanhados a verificar: três facturas emitidas apareciam como
+«Rascunho» (o serviço trata «emitida» e «faturada» como o mesmo estado, o
+painel só lia a segunda), e a taxa de amortização saía «25.00%» em vez de
+«25%».

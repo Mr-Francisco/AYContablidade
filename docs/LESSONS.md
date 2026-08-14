@@ -127,3 +127,6 @@
 - No Explorador e no Plano de Contas o `+ Sub` só aparece nas contas de MOVIMENTO: dar filhos a uma integradora não muda nada, ela já o é.
 - Avisos que mudam uma decisão dizem-se ANTES de gravar: o Piloto diz «ao gravar, a mãe passa a integradora e os movimentos migram» no próprio diálogo, não numa mensagem posterior.
 - `--chart-amber` do Piloto é ROSA (#e6007e), não âmbar — o nome engana; conferir sempre o hex antes de mapear cores.
+- Os seis painéis do Piloto usam as MESMAS quatro peças (`dash-hero`, `grid-4`, `chartDonut`, `chartBars`): estão em `components/painel/` — não reescrever em cada página.
+- O `plural(n, singular)` já inclui o número: `${n} ${plural(n, "conta")}` escreve o número duas vezes.
+- Uma venda «emitida» conta como facturada (`_emitida` em `services/comercial.py`): ler só `estado === "faturada"` põe facturas emitidas a dizer «Rascunho».
