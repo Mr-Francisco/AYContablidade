@@ -144,3 +144,5 @@
 - Um pedido que devolve 403 NÃO se mostra como zero: num painel de gestão «0 Kz de stock» lê-se como «a empresa não tem stock». Distinguir não-ter de não-poder-ver, e usar «—» para o desconhecido.
 - Um documento não se põe num acordeão: as Notas às Contas lêem-se de seguida, imprimem-se de seguida e citam-se pelo número — fechadas, a impressão sai vazia.
 - Uma nota sem a coluna do ano anterior não é uma nota: «8 500 000» sozinho não diz se a empresa investiu, amortizou ou vendeu.
+- Escrever num sítio e lançar no outro: LANÇAR PRIMEIRO. Se o lançamento falhar não se escreve nada — a ordem inversa deixa a ficha a discordar das contas sem erro nenhum.
+- Um `if` que envolve o lançamento sem `else` é uma divergência silenciosa à espera: faltavam as contas de amortização e o activo era amortizado sem lançamento nem erro.

@@ -233,29 +233,51 @@ def processar_periodo(
         valor = amort_do_periodo(a, mes)
         if valor <= 0:
             continue
-        a.amort_acumulada = r2((a.amort_acumulada or ZERO) + valor)
-        item = {"ativo_id": str(a.id), "codigo": a.codigo,
-                "designacao": a.designacao, "valor": str(valor)}
 
-        if a.conta_custo_amort and a.conta_amort_acum:
-            try:
-                lanc = postar(
-                    db, empresa_id=empresa_id, data=data, diario_codigo=c2["diario"],
-                    documento_codigo=c2["documento"], mes=mes, exercicio_id=exercicio_id,
-                    descricao=f"Amortização do período — {a.designacao or a.codigo}",
-                    documento_ref=a.codigo, origem="imobilizado",
-                    linhas=[
-                        {"conta_codigo": a.conta_custo_amort, "debito": valor,
-                         "descricao": a.designacao},
-                        {"conta_codigo": a.conta_amort_acum, "credito": valor,
-                         "descricao": a.designacao},
-                    ],
-                )
-                item["lancamento_id"] = str(lanc.id)
-                lancamento_ids.append(str(lanc.id))
-            except ErroContabilistico as e:
-                erros.append(f"{a.codigo}: {e}")
-        itens.append(item)
+        # A AMORTIZAÇÃO SÓ SE ESCREVE DEPOIS DE O LANÇAMENTO PASSAR.
+        #
+        # Antes escrevia-se primeiro e lançava-se a seguir. Se o lançamento
+        # falhasse, o activo ficava amortizado na ficha e não nas contas — o
+        # mapa de imobilizados a discordar do balanço, sem erro visível, até
+        # ao fecho do exercício. E se o activo não tivesse contas de
+        # amortização definidas, o lançamento nem era tentado: a divergência
+        # nascia em silêncio absoluto.
+        #
+        # Agora, por activo: ou vai aos dois sítios, ou não vai a nenhum. Um
+        # activo mal configurado deixa os outros passar — bloquear o mês
+        # inteiro por causa de um seria trocar uma inconsistência por uma
+        # paragem — mas fica na lista de erros e não é amortizado.
+        if not a.conta_custo_amort or not a.conta_amort_acum:
+            erros.append(
+                f"{a.codigo}: sem contas de amortização na ficha "
+                "(custo e amortizações acumuladas) — não foi amortizado."
+            )
+            continue
+
+        try:
+            lanc = postar(
+                db, empresa_id=empresa_id, data=data, diario_codigo=c2["diario"],
+                documento_codigo=c2["documento"], mes=mes, exercicio_id=exercicio_id,
+                descricao=f"Amortização do período — {a.designacao or a.codigo}",
+                documento_ref=a.codigo, origem="imobilizado",
+                linhas=[
+                    {"conta_codigo": a.conta_custo_amort, "debito": valor,
+                     "descricao": a.designacao},
+                    {"conta_codigo": a.conta_amort_acum, "credito": valor,
+                     "descricao": a.designacao},
+                ],
+            )
+        except ErroContabilistico as e:
+            erros.append(f"{a.codigo}: {e} — não foi amortizado.")
+            continue
+
+        a.amort_acumulada = r2((a.amort_acumulada or ZERO) + valor)
+        itens.append({
+            "ativo_id": str(a.id), "codigo": a.codigo,
+            "designacao": a.designacao, "valor": str(valor),
+            "lancamento_id": str(lanc.id),
+        })
+        lancamento_ids.append(str(lanc.id))
 
     total = r2(sum((Decimal(i["valor"]) for i in itens), ZERO))
     batch = ProcessoAmortizacao(
