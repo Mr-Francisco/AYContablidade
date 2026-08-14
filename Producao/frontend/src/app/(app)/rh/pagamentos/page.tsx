@@ -4,7 +4,7 @@ import { Banknote } from "lucide-react";
 import { AlertDialog } from "radix-ui";
 import { useState } from "react";
 import useSWR from "swr";
-
+import { GrelhaKpis } from "@/components/painel";
 import {
   ESTADOS_MES,
   mesActual,
@@ -18,6 +18,7 @@ import {
   CabecalhoPagina,
   Cartao,
   EnvolveTabela,
+  Kpi,
   Selector,
   Selo,
   Tabela,
@@ -30,8 +31,9 @@ import {
 import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
-import { formataMoeda } from "@/lib/dinheiro";
+import { formataMoeda, soma } from "@/lib/dinheiro";
 import { useContas, useExercicios } from "@/lib/hooks";
+import { plural } from "@/lib/texto";
 import type { Folha, PagamentoSalarial } from "@/types";
 
 export default function Pagamentos() {
@@ -97,6 +99,20 @@ export default function Pagamentos() {
 
   const historico = useHistorico(pagamentos);
 
+  const kz = (v: string) => formataMoeda(v, moeda, 0);
+  const { data: processamentos } = useSWR<{ mes: string; total: string }[]>(
+    "/api/rh/processamentos",
+    buscador,
+  );
+  const totalPago = soma(...(pagamentos ?? []).map((p) => p.valor));
+  // Por pagar: o que foi processado e ainda não tem pagamento registado.
+  const mesesPagos = new Set((pagamentos ?? []).map((p) => p.mes));
+  const porPagar = soma(
+    ...(processamentos ?? [])
+      .filter((p) => !mesesPagos.has(p.mes))
+      .map((p) => p.total ?? "0"),
+  );
+
   return (
     <>
       <CabecalhoPagina
@@ -118,6 +134,34 @@ export default function Pagamentos() {
 
       {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
+
+      {/* Os quatro do Piloto: quanto já se pagou, quanto falta, quantos meses
+          foram processados, e o saldo da conta de pessoal. */}
+      <GrelhaKpis>
+        <Kpi
+          rotulo="Total pago"
+          valor={kz(totalPago.toString())}
+          detalhe={plural(pagamentos?.length ?? 0, "pagamento")}
+          cor="#16a085"
+        />
+        <Kpi
+          rotulo="Por pagar"
+          valor={kz(porPagar.toString())}
+          detalhe={`${processamentos?.length ?? 0} ${(processamentos?.length ?? 0) === 1 ? "mês processado" : "meses processados"}`}
+          cor="var(--grafico-1)"
+        />
+        <Kpi
+          rotulo="Meses processados"
+          valor={String(processamentos?.length ?? 0)}
+          cor="var(--color-azul)"
+        />
+        <Kpi
+          rotulo="Líquido do mês"
+          valor={kz(folha?.totais.liquido ?? "0")}
+          detalhe={mesPorExtenso(mes)}
+          cor="var(--color-roxo)"
+        />
+      </GrelhaKpis>
 
       <BarraFiltros className="mb-4">
         <Selector

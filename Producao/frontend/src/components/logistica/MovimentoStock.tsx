@@ -1,17 +1,22 @@
 "use client";
 
+import { Search } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 
+import { GrelhaKpis } from "@/components/painel";
 import {
   ACarregar,
   Alerta,
+  BarraFiltros,
   Botao,
   CabecalhoPagina,
   Campo,
   Cartao,
   Entrada,
   EnvolveTabela,
+  Kpi,
   Selector,
   Selo,
   Tabela,
@@ -21,10 +26,12 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { DialogoMestre } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
-import { big, formataMoeda, multiplica } from "@/lib/dinheiro";
+import { big, formataMoeda, multiplica, soma } from "@/lib/dinheiro";
 import { useArtigos, useExercicios } from "@/lib/hooks";
+import { numeroLimpo } from "@/lib/texto";
 
 interface Armazem {
   id: string;
@@ -100,6 +107,8 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [procura, setProcura] = useState("");
+  const [aberto, setAberto] = useState(false);
 
   const artigo = artigoId ? porId.get(artigoId) : undefined;
 
@@ -110,6 +119,14 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
       ? `/api/logistica/stock/${artigoId}${armazemId ? `?armazem_id=${armazemId}` : ""}`
       : null,
     buscador,
+  );
+
+  // Só para o KPI «Valor de stock» — o Piloto mostra-o em todas as páginas de
+  // movimento, para se ver a escala do que se está a mexer.
+  const { data: existencias } = useSWR<{ valor_total: string }>(
+    "/api/logistica/existencias",
+    buscador,
+    { revalidateOnFocus: false },
   );
 
   const nomeArmazem = useMemo(() => {
@@ -178,6 +195,7 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
       setCustoUnit("");
       setDocumento("");
       setDescricao("");
+      setAberto(false);
       mutate();
     } catch (e) {
       setErro(
@@ -190,162 +208,82 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
     }
   }
 
+  // A pesquisa é sobre o número e o artigo, como no Piloto.
+  const listados = useMemo(() => {
+    const termo = procura.trim().toLowerCase();
+    if (!termo) return movimentos ?? [];
+    return (movimentos ?? []).filter((m) =>
+      `${m.numero} ${m.artigo_desc ?? ""}`.toLowerCase().includes(termo),
+    );
+  }, [movimentos, procura]);
+
+  const totalQtd = listados.reduce(
+    (s, m) => s.plus(big(m.qtd).abs()),
+    big("0"),
+  );
+  const totalValor = soma(...listados.map((m) => m.valor));
+
   return (
     <>
       <CabecalhoPagina titulo={config.titulo} descricao={config.descricao} />
 
+      {/* Os quatro KPIs do `stock-ui.js`: quantos movimentos, que quantidade,
+          que valor, e o valor total das existências para dar escala. */}
+      <GrelhaKpis>
+        <Kpi
+          rotulo={`${config.titulo} (nº)`}
+          valor={String(listados.length)}
+          detalhe="movimentos"
+          cor={config.sinal === -1 ? "#c0392b" : "#16a085"}
+        />
+        <Kpi
+          rotulo="Quantidade"
+          valor={totalQtd.toString()}
+          detalhe="unidades"
+          cor="var(--color-azul)"
+        />
+        <Kpi
+          rotulo="Valor"
+          valor={formataMoeda(totalValor.toString(), moeda, 0)}
+          detalhe="custo"
+          cor="var(--color-roxo)"
+        />
+        <Kpi
+          rotulo="Valor de stock"
+          valor={formataMoeda(existencias?.valor_total ?? "0", moeda, 0)}
+          detalhe="total"
+          cor="var(--color-sucesso)"
+        />
+      </GrelhaKpis>
+
       {sucesso && <Alerta tipo="sucesso">{sucesso}</Alerta>}
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
-      {pode("logistica.gerir") && (
-        <Cartao className="mb-4">
-          <TituloCartao>Registar {config.titulo.toLowerCase()}</TituloCartao>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Selector
-              rotulo="Artigo"
-              valor={artigoId}
-              aoMudar={setArtigoId}
-              opcoes={artigos.map((a) => ({
-                valor: a.id,
-                rotulo: `${a.codigo} — ${a.descricao}`,
-              }))}
-              placeholder="Escolher artigo…"
-              larguraMinima="16rem"
-            />
-            <Selector
-              rotulo={config.pedeDestino ? "Armazém de origem" : "Armazém"}
-              valor={armazemId}
-              aoMudar={setArmazemId}
-              opcoes={(armazens ?? []).map((a) => ({
-                valor: a.id,
-                rotulo: `${a.codigo} — ${a.nome}`,
-              }))}
-              placeholder="Escolher armazém…"
-            />
-            {config.pedeDestino && (
-              <Selector
-                rotulo="Armazém de destino"
-                valor={armazemDestinoId}
-                aoMudar={setArmazemDestinoId}
-                opcoes={(armazens ?? [])
-                  .filter((a) => a.id !== armazemId)
-                  .map((a) => ({
-                    valor: a.id,
-                    rotulo: `${a.codigo} — ${a.nome}`,
-                  }))}
-                placeholder="Escolher destino…"
+      <Cartao className="mb-4">
+        <BarraFiltros>
+          <Campo rotulo="" className="min-w-[220px] flex-1">
+            <div className="relative">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
+                aria-hidden
               />
-            )}
-            <Campo
-              rotulo={`Quantidade${artigo?.unidade ? ` (${artigo.unidade})` : ""}`}
-              dica={
-                stock
-                  ? `Em stock: ${stock.stock} · custo médio ${formataMoeda(stock.custo_medio, moeda)}`
-                  : undefined
-              }
-            >
               <Entrada
-                type="number"
-                step="0.0001"
-                min="0"
-                value={qtd}
-                onChange={(e) => setQtd(e.target.value)}
-                className="text-right tabular"
+                type="search"
+                value={procura}
+                onChange={(e) => setProcura(e.target.value)}
+                placeholder="Pesquisar…"
+                className="pl-9"
               />
-            </Campo>
-            {config.custoEditavel && (
-              <Campo
-                rotulo="Custo unitário"
-                dica={
-                  artigo
-                    ? config.custoPadrao === "cump"
-                      ? `Em branco usa o custo médio: ${formataMoeda(custoPadrao, moeda)}`
-                      : `Em branco usa o preço de compra da ficha: ${formataMoeda(artigo.preco_compra, moeda)}`
-                    : undefined
-                }
-              >
-                <Entrada
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={custoUnit}
-                  onChange={(e) => setCustoUnit(e.target.value)}
-                  placeholder={artigo ? custoPadrao : ""}
-                  className="text-right tabular"
-                />
-              </Campo>
-            )}
-            {config.pedeIva && (
-              <Campo rotulo="IVA dedutível (%)">
-                <Entrada
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={ivaPerc}
-                  onChange={(e) => setIvaPerc(e.target.value)}
-                  className="text-right tabular"
-                />
-              </Campo>
-            )}
-            <Campo rotulo="Data">
-              <Entrada
-                type="date"
-                value={data}
-                onChange={(e) => setData(e.target.value)}
-              />
-            </Campo>
-            {config.pedeEntidade && (
-              <Campo rotulo="Fornecedor">
-                <Entrada
-                  value={entidade}
-                  onChange={(e) => setEntidade(e.target.value)}
-                  placeholder="Nome do fornecedor"
-                />
-              </Campo>
-            )}
-            <Campo rotulo="Documento">
-              <Entrada
-                value={documento}
-                onChange={(e) => setDocumento(e.target.value)}
-                placeholder="Referência externa"
-              />
-            </Campo>
-            <Campo rotulo="Descrição" className="sm:col-span-2">
-              <Entrada
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-              />
-            </Campo>
-          </div>
-
-          {!config.custoEditavel && (
-            <Alerta tipo="info" className="mt-3">
-              O custo unitário não é editável nesta operação — sai sempre ao
-              Custo Médio Ponderado corrente do armazém de origem. É essa regra
-              que mantém a valorização das existências coerente.
-            </Alerta>
-          )}
-
-          <Alerta tipo="info" className="mt-1">
-            {config.efeito}
-          </Alerta>
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm text-texto-suave">
-              Valor estimado:{" "}
-              <b className="tabular text-texto">
-                {formataMoeda(valorEstimado, moeda)}
-              </b>
-            </span>
-            <Botao variante="primario" onClick={submeter} disabled={ocupado}>
-              {ocupado
-                ? "A registar…"
-                : `Registar ${config.titulo.toLowerCase()}`}
+            </div>
+          </Campo>
+          {pode("logistica.gerir") && (
+            <Botao variante="acento" onClick={() => setAberto(true)}>
+              + {config.titulo}
             </Botao>
-          </div>
-        </Cartao>
-      )}
+          )}
+        </BarraFiltros>
+      </Cartao>
 
       <Cartao className="p-0">
         <TituloCartao className="px-5 pt-5" extra="Últimos 100">
@@ -353,7 +291,7 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
         </TituloCartao>
         {isLoading ? (
           <ACarregar />
-        ) : !movimentos?.length ? (
+        ) : listados.length === 0 ? (
           <Vazio>Ainda não há movimentos deste tipo.</Vazio>
         ) : (
           <EnvolveTabela className="rounded-none border-0 border-t">
@@ -372,7 +310,7 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
                 </tr>
               </thead>
               <tbody>
-                {movimentos.map((m) => (
+                {listados.map((m) => (
                   <Tr key={m.id}>
                     <Td className="tabular font-bold">{m.numero}</Td>
                     <Td className="tabular">
@@ -391,15 +329,28 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
                           : "—"}
                       </Td>
                     )}
+                    {/* Sem zeros à direita: uma quantidade não é dinheiro, e
+                        «40,0000 Un» lê-se pior do que «40 Un». */}
                     <Td numerico>
-                      {m.qtd} {m.unidade ?? ""}
+                      {numeroLimpo(m.qtd)} {m.unidade ?? ""}
                     </Td>
                     <Td numerico>{formataMoeda(m.custo_unit, moeda)}</Td>
                     <Td numerico className="font-semibold">
                       {formataMoeda(m.valor, moeda)}
                     </Td>
+                    {/* O nº de operação LIGA ao lançamento — é o que fecha o
+                        circuito entre o stock e a contabilidade. */}
                     <Td className="tabular text-texto-suave">
-                      {m.numero_op ?? <Selo cor="#62657a">sem lançamento</Selo>}
+                      {m.numero_op ? (
+                        <Link
+                          href="/contabilidade/movimentos"
+                          className="font-semibold text-marca hover:underline"
+                        >
+                          {m.numero_op}
+                        </Link>
+                      ) : (
+                        <Selo cor="#62657a">sem lançamento</Selo>
+                      )}
                     </Td>
                   </Tr>
                 ))}
@@ -408,6 +359,175 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
           </EnvolveTabela>
         )}
       </Cartao>
+      {aberto && (
+        <DialogoMestre
+          titulo={config.titulo}
+          aoFechar={() => {
+            setAberto(false);
+            setErro(null);
+          }}
+          aoSubmeter={(e) => {
+            e.preventDefault();
+            submeter();
+          }}
+          aGravar={ocupado}
+          erro={erro}
+          rotuloGravar="Registar"
+          aviso={
+            <>
+              {!config.custoEditavel && (
+                <Alerta tipo="info">
+                  O custo unitário não é editável nesta operação — sai sempre ao
+                  Custo Médio Ponderado corrente do armazém de origem. É essa
+                  regra que mantém a valorização das existências coerente.
+                </Alerta>
+              )}
+              <Alerta tipo="info">{config.efeito}</Alerta>
+              {/* O «resumo» do Piloto: stock actual, CUMP e valor, os três
+                  números que dizem se o movimento faz sentido antes de o
+                  gravar. */}
+              <div className="flex flex-wrap justify-end gap-4 text-[13px] text-texto-suave">
+                <span>
+                  Stock actual{" "}
+                  <b className="tabular text-texto">
+                    {stock?.stock ?? "—"} {artigo?.unidade ?? ""}
+                  </b>
+                </span>
+                {!config.custoEditavel && (
+                  <span>
+                    CUMP do armazém{" "}
+                    <b className="tabular text-texto">
+                      {formataMoeda(stock?.custo_medio ?? "0", moeda)}
+                    </b>
+                  </span>
+                )}
+                <span>
+                  Valor{" "}
+                  <b className="tabular text-texto">
+                    {formataMoeda(valorEstimado, moeda)}
+                  </b>
+                </span>
+              </div>
+            </>
+          }
+        >
+          <Selector
+            rotulo="Artigo"
+            valor={artigoId}
+            aoMudar={setArtigoId}
+            opcoes={artigos.map((a) => ({
+              valor: a.id,
+              rotulo: `${a.codigo} — ${a.descricao}`,
+            }))}
+            placeholder="Escolher artigo…"
+            larguraMinima="16rem"
+          />
+          <Selector
+            rotulo={config.pedeDestino ? "Armazém de origem" : "Armazém"}
+            valor={armazemId}
+            aoMudar={setArmazemId}
+            opcoes={(armazens ?? []).map((a) => ({
+              valor: a.id,
+              rotulo: `${a.codigo} — ${a.nome}`,
+            }))}
+            placeholder="Escolher armazém…"
+          />
+          {config.pedeDestino && (
+            <Selector
+              rotulo="Armazém de destino"
+              valor={armazemDestinoId}
+              aoMudar={setArmazemDestinoId}
+              opcoes={(armazens ?? [])
+                .filter((a) => a.id !== armazemId)
+                .map((a) => ({
+                  valor: a.id,
+                  rotulo: `${a.codigo} — ${a.nome}`,
+                }))}
+              placeholder="Escolher destino…"
+            />
+          )}
+          <Campo
+            rotulo={`Quantidade${artigo?.unidade ? ` (${artigo.unidade})` : ""}`}
+            dica={
+              stock
+                ? `Em stock: ${stock.stock} · custo médio ${formataMoeda(stock.custo_medio, moeda)}`
+                : undefined
+            }
+          >
+            <Entrada
+              type="number"
+              step="0.0001"
+              min="0"
+              value={qtd}
+              onChange={(e) => setQtd(e.target.value)}
+              className="text-right tabular"
+            />
+          </Campo>
+          {config.custoEditavel && (
+            <Campo
+              rotulo="Custo unitário"
+              dica={
+                artigo
+                  ? config.custoPadrao === "cump"
+                    ? `Em branco usa o custo médio: ${formataMoeda(custoPadrao, moeda)}`
+                    : `Em branco usa o preço de compra da ficha: ${formataMoeda(artigo.preco_compra, moeda)}`
+                  : undefined
+              }
+            >
+              <Entrada
+                type="number"
+                step="0.01"
+                min="0"
+                value={custoUnit}
+                onChange={(e) => setCustoUnit(e.target.value)}
+                placeholder={artigo ? custoPadrao : ""}
+                className="text-right tabular"
+              />
+            </Campo>
+          )}
+          {config.pedeIva && (
+            <Campo rotulo="IVA dedutível (%)">
+              <Entrada
+                type="number"
+                step="0.01"
+                min="0"
+                value={ivaPerc}
+                onChange={(e) => setIvaPerc(e.target.value)}
+                className="text-right tabular"
+              />
+            </Campo>
+          )}
+          <Campo rotulo="Data">
+            <Entrada
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+            />
+          </Campo>
+          {config.pedeEntidade && (
+            <Campo rotulo="Fornecedor">
+              <Entrada
+                value={entidade}
+                onChange={(e) => setEntidade(e.target.value)}
+                placeholder="Nome do fornecedor"
+              />
+            </Campo>
+          )}
+          <Campo rotulo="Documento">
+            <Entrada
+              value={documento}
+              onChange={(e) => setDocumento(e.target.value)}
+              placeholder="Referência externa"
+            />
+          </Campo>
+          <Campo rotulo="Descrição" className="sm:col-span-2">
+            <Entrada
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+            />
+          </Campo>
+        </DialogoMestre>
+      )}
     </>
   );
 }

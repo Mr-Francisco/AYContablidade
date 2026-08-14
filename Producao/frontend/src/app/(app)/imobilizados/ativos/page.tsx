@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
 import { useContas } from "@/lib/hooks";
+import { numeroLimpo } from "@/lib/texto";
 import type { Ativo } from "@/types";
 
 export default function Ativos() {
@@ -210,7 +211,7 @@ export default function Ativos() {
                         : "—"}
                     </Td>
                     <Td numerico>{formataMoeda(a.valor_aquisicao, moeda)}</Td>
-                    <Td numerico>{a.taxa} %</Td>
+                    <Td numerico>{numeroLimpo(a.taxa)} %</Td>
                     <Td className="text-texto-suave">
                       {a.metodo === "degressivas"
                         ? "Quotas decrescentes"

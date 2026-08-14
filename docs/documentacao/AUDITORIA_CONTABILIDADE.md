@@ -251,3 +251,50 @@ Dois defeitos apanhados a verificar: três facturas emitidas apareciam como
 «Rascunho» (o serviço trata «emitida» e «faturada» como o mesmo estado, o
 painel só lia a segunda), e a taxa de amortização saía «25.00%» em vez de
 «25%».
+
+
+---
+
+## Logística, Comercial e RH (2026-08-14)
+
+**Logística — páginas de movimento** (Receção, Expedição, Transferência,
+Acertos). O `stock-ui.js` do Piloto tem quatro KPIs em cima, uma barra com
+pesquisa e o botão `+ {nome}`, e o formulário NUM DIÁLOGO. A Produção tinha o
+formulário sempre aberto na página e nem KPIs nem pesquisa. Refeitas:
+
+| Do Piloto | Estado |
+|---|---|
+| 4 KPIs: nº de movimentos, quantidade, valor, valor de stock | ✅ |
+| Barra com pesquisa (número e artigo) + `+ {nome}` | ✅ |
+| Formulário em diálogo | ✅ |
+| «Resumo» com stock actual, CUMP e valor antes de gravar | ✅ |
+| Nº de operação a ligar ao lançamento | ✅ |
+| Eliminar movimento (`✕`) | ❌ **não migrado — ver abaixo** |
+
+**Não migrado, e porquê:** o Piloto deixa anular um movimento de stock e avisa
+que «não reverte o lançamento contabilístico». Na Produção o movimento gera um
+lançamento a sério; apagar o movimento e deixar o lançamento deixa o stock e a
+contabilidade a discordar, de forma silenciosa. Não há rota de eliminação no
+backend e não a criei sem falar. **Decisão pendente do utilizador.**
+
+**Logística — Artigos.** Faltavam os quatro KPIs do Piloto (artigos, valor de
+stock, em rutura, famílias) e o botão estava no cabeçalho em vez da barra.
+
+**Comercial — Vendas.** Os KPIs eram outros e usavam valores compactos
+(`937,7 mil`); o Piloto escreve-os por extenso. Repostos os quatro do Piloto:
+Faturado (emitido), Por emitir, Total, Clientes.
+
+**Comercial — Consulta de Facturas.** Não tinha KPIs nenhuns. Os quatro do
+Piloto contam o que está FILTRADO: documentos, total faturado, total IVA e
+clientes distintos.
+
+**RH — Funcionários.** Tinha três KPIs inventados; o Piloto tem quatro —
+colaboradores, massa salarial bruta, líquido a pagar e encargos (IRT+INSS+INSS
+empresa).
+
+**RH — Pagamentos.** Não tinha KPIs. Acrescentados total pago, por pagar,
+meses processados e líquido do mês.
+
+**Transversal:** quantidades e taxas deixaram de sair com as casas do
+`Numeric` da base — `40,0000 Un` passou a `40 Un` e `14,00 %` a `14 %`, via
+`numeroLimpo()` em `lib/texto.ts`.

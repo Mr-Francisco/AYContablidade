@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
 import { useExercicios, usePeriodos } from "@/lib/hooks";
+import { numeroLimpo } from "@/lib/texto";
 import type { MapaImob, MapaPeriodoImob, ProcessoAmortizacao } from "@/types";
 
 const SEPARADOR =
@@ -380,7 +381,7 @@ export default function Amortizacoes() {
                             : "—"}
                         </Td>
                         <Td numerico>{formataMoeda(l.valor_bruto, moeda)}</Td>
-                        <Td numerico>{l.taxa} %</Td>
+                        <Td numerico>{numeroLimpo(l.taxa)} %</Td>
                         <Td numerico>
                           {formataMoeda(l.amort_acumulada_ant, moeda)}
                         </Td>

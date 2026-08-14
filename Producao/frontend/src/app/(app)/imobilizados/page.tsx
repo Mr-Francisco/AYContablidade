@@ -15,6 +15,7 @@ import { ACarregar, Cartao, Kpi, TituloCartao } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, formataMoeda } from "@/lib/dinheiro";
+import { numeroLimpo } from "@/lib/texto";
 import type { MapaImob } from "@/types";
 
 /**
@@ -134,16 +135,11 @@ export default function PainelImobilizados() {
           vazio="Sem ativos registados."
           linhas={(mapa?.linhas ?? []).map((l) => ({
             titulo: l.designacao,
-            sub: `Taxa ${semZeros(l.taxa)}% · ${dataCurta(l.data_aquisicao)}`,
+            sub: `Taxa ${numeroLimpo(l.taxa)}% · ${dataCurta(l.data_aquisicao)}`,
             valor: kz(l.valor_liquido),
           }))}
         />
       </Cartao>
     </>
   );
-}
-
-/** `25.00` → `25`: a taxa é uma percentagem, não um valor monetário. */
-function semZeros(v: string): string {
-  return String(Number(v)).replace(".", ",");
 }

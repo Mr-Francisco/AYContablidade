@@ -4,7 +4,7 @@ import { CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { AlertDialog } from "radix-ui";
 import { useState } from "react";
 import useSWR from "swr";
-
+import { GrelhaKpis } from "@/components/painel";
 import {
   ACarregar,
   Alerta,
@@ -27,7 +27,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
-import type { ResumoComercial, Venda } from "@/types";
+import { plural } from "@/lib/texto";
+import type { ResumoComercial, Terceiro, Venda } from "@/types";
 
 import { FormularioVenda } from "./FormularioVenda";
 
@@ -117,57 +118,51 @@ export default function Vendas() {
 
   const historico = useHistorico(vendas);
 
+  const kz = (v: string) => formataMoeda(v, moeda, 0);
+  // O Piloto conta os clientes no KPI; a lista já é pedida noutro lado, o SWR
+  // devolve a mesma resposta sem novo pedido.
+  const { data: clientes } = useSWR<Terceiro[]>(
+    "/api/comercial/clientes",
+    buscador,
+  );
+
   return (
     <>
       <CabecalhoPagina
         titulo="Vendas"
         descricao="Documentos do Regime Jurídico das Facturas (Decreto Presidencial n.º 71/25)."
-        accoes={
-          pode("comercial.gerir") && (
-            <Botao variante="primario" onClick={() => setNovoAberto(true)}>
-              <Plus size={16} />
-              Novo documento
-            </Botao>
-          )
-        }
       />
 
-      {resumo && (
-        <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="min-w-0">
-            <Kpi
-              rotulo="Total facturado"
-              valor={formataCompacto(resumo.total_faturado, moeda)}
-              detalhe={`${resumo.n_faturadas} documentos emitidos`}
-              cor="var(--grafico-6)"
-            />
-          </div>
-          <div className="min-w-0">
-            <Kpi
-              rotulo="Por facturar"
-              valor={formataCompacto(resumo.por_faturar, moeda)}
-              detalhe="Em rascunho"
-              cor="var(--grafico-1)"
-            />
-          </div>
-          <div className="min-w-0">
-            <Kpi
-              rotulo="Documentos"
-              valor={String(resumo.n_vendas)}
-              detalhe="Total no sistema"
-              cor="var(--grafico-2)"
-            />
-          </div>
-          <div className="min-w-0">
-            <Kpi
-              rotulo="Valor total"
-              valor={formataCompacto(resumo.total_vendas, moeda)}
-              detalhe="Emitidos e rascunhos"
-              cor="var(--grafico-4)"
-            />
-          </div>
-        </div>
-      )}
+      {/* Os quatro do Piloto, pela mesma ordem e com as mesmas legendas.
+          Sem `formataCompacto`: o Piloto escreve o valor por extenso. */}
+      <GrelhaKpis>
+        <Kpi
+          rotulo="Faturado (emitido)"
+          valor={kz(resumo?.total_faturado ?? "0")}
+          detalhe={plural(resumo?.n_faturadas ?? 0, "documento")}
+          cor="#16a085"
+        />
+        <Kpi
+          rotulo="Por emitir"
+          valor={kz(resumo?.por_faturar ?? "0")}
+          detalhe={plural(
+            (resumo?.n_vendas ?? 0) - (resumo?.n_faturadas ?? 0),
+            "rascunho",
+          )}
+          cor="var(--grafico-1)"
+        />
+        <Kpi
+          rotulo="Total"
+          valor={kz(resumo?.total_vendas ?? "0")}
+          detalhe={plural(resumo?.n_vendas ?? 0, "documento")}
+          cor="var(--color-roxo)"
+        />
+        <Kpi
+          rotulo="Clientes"
+          valor={String(clientes?.length ?? 0)}
+          cor="var(--color-azul)"
+        />
+      </GrelhaKpis>
 
       {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
@@ -184,6 +179,13 @@ export default function Vendas() {
           ]}
           larguraMinima="12rem"
         />
+        <span className="flex-1" />
+        {pode("comercial.gerir") && (
+          <Botao variante="acento" onClick={() => setNovoAberto(true)}>
+            <Plus size={16} />
+            Novo documento
+          </Botao>
+        )}
       </BarraFiltros>
 
       <Cartao className="p-0">

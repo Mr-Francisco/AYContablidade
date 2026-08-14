@@ -4,7 +4,7 @@ import { Plus, Search, X } from "lucide-react";
 import { Dialog, Tabs } from "radix-ui";
 import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { GrelhaKpis } from "@/components/painel";
 import {
   ACarregar,
   Alerta,
@@ -15,6 +15,7 @@ import {
   Cartao,
   Entrada,
   EnvolveTabela,
+  Kpi,
   Selector,
   Selo,
   Tabela,
@@ -28,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
 import { useContas } from "@/lib/hooks";
+import { numeroLimpo } from "@/lib/texto";
 import type { Artigo } from "@/types";
 
 const TIPOS = ["Mercadoria", "Produto acabado", "Matéria-prima", "Serviço"];
@@ -70,6 +72,12 @@ export default function Artigos() {
     "/api/logistica/artigos",
     buscador,
   );
+  const artigos = data ?? [];
+  // Valor de stock e artigos em rutura, para os KPIs do Piloto.
+  const { data: existencias } = useSWR<{
+    valor_total: string;
+    em_rutura: number;
+  }>("/api/logistica/existencias", buscador, { revalidateOnFocus: false });
 
   const filtrados = useMemo(() => {
     const t = procura.trim().toLowerCase();
@@ -99,16 +107,36 @@ export default function Artigos() {
     <>
       <CabecalhoPagina
         titulo="Artigos"
-        descricao="Catálogo de artigos, preços e contas de contabilização."
-        accoes={
-          pode("logistica.gerir") && (
-            <Botao variante="primario" onClick={() => setNovoAberto(true)}>
-              <Plus size={16} />
-              Novo artigo
-            </Botao>
-          )
-        }
+        descricao="Ficha de artigo — dados gerais, preços, existências e integração contabilística."
       />
+
+      <GrelhaKpis>
+        <Kpi
+          rotulo="Artigos"
+          valor={String(artigos.length)}
+          detalhe={`${artigos.filter((a) => a.estado === "activo").length} activos`}
+          cor="var(--color-azul)"
+        />
+        <Kpi
+          rotulo="Valor de stock"
+          valor={formataMoeda(existencias?.valor_total ?? "0", moeda, 0)}
+          detalhe="custo médio"
+          cor="var(--color-sucesso)"
+        />
+        <Kpi
+          rotulo="Em rutura"
+          valor={String(existencias?.em_rutura ?? 0)}
+          detalhe="≤ stock mínimo"
+          cor="var(--grafico-1)"
+        />
+        <Kpi
+          rotulo="Famílias"
+          valor={String(
+            new Set(artigos.map((a) => a.familia || "(Sem família)")).size,
+          )}
+          cor="var(--color-roxo)"
+        />
+      </GrelhaKpis>
 
       <BarraFiltros className="mb-4">
         <Campo rotulo="Pesquisar" className="min-w-[260px] flex-1">
@@ -137,6 +165,12 @@ export default function Artigos() {
           ]}
           larguraMinima="14rem"
         />
+        {pode("logistica.gerir") && (
+          <Botao variante="acento" onClick={() => setNovoAberto(true)}>
+            <Plus size={16} />
+            Novo artigo
+          </Botao>
+        )}
       </BarraFiltros>
 
       {isLoading ? (
@@ -266,8 +300,8 @@ function TabelaArtigos({
               <Td>{a.unidade || "—"}</Td>
               <Td numerico>{formataMoeda(a.preco_venda, moeda)}</Td>
               <Td numerico>{formataMoeda(a.preco_compra, moeda)}</Td>
-              <Td numerico>{a.taxa_iva} %</Td>
-              <Td numerico>{a.stock_min}</Td>
+              <Td numerico>{numeroLimpo(a.taxa_iva)} %</Td>
+              <Td numerico>{numeroLimpo(a.stock_min)}</Td>
               <Td>
                 <Selo cor={a.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}>
                   {a.estado === "activo" ? "Activo" : "Inactivo"}

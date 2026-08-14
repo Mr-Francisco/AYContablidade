@@ -4,7 +4,7 @@ import { Search, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useDeferredValue, useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { GrelhaKpis } from "@/components/painel";
 import {
   ACarregar,
   BarraFiltros,
@@ -13,6 +13,7 @@ import {
   Cartao,
   Entrada,
   EnvolveTabela,
+  Kpi,
   Selector,
   Selo,
   Tabela,
@@ -24,7 +25,8 @@ import {
 import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
-import { formataMoeda } from "@/lib/dinheiro";
+import { formataMoeda, soma } from "@/lib/dinheiro";
+import { numeroLimpo } from "@/lib/texto";
 import type { TipoDocumento, Venda } from "@/types";
 
 export default function ConsultaFaturas() {
@@ -68,8 +70,45 @@ export default function ConsultaFaturas() {
       <CabecalhoPagina
         titulo="Consulta de Facturas"
         descricao="Documentos emitidos. Procure por número, cliente, código de validação ou nº de operação."
-        accoes={<Selo cor="#3d7fe0">{filtradas.length} documentos</Selo>}
       />
+
+      {/* Os quatro do Piloto: contam sempre o QUE ESTÁ FILTRADO, não o total —
+          é o que faz do filtro uma ferramenta de análise e não só de procura. */}
+      <GrelhaKpis>
+        <Kpi
+          rotulo="Documentos"
+          valor={String(filtradas.length)}
+          detalhe="emitidos (filtro)"
+          cor="var(--color-azul)"
+        />
+        <Kpi
+          rotulo="Total faturado"
+          valor={formataMoeda(
+            soma(...filtradas.map((v) => v.total)).toString(),
+            moeda,
+            0,
+          )}
+          cor="#16a085"
+        />
+        <Kpi
+          rotulo="Total IVA"
+          valor={formataMoeda(
+            soma(...filtradas.map((v) => v.iva)).toString(),
+            moeda,
+            0,
+          )}
+          detalhe="liquidado"
+          cor="var(--color-roxo)"
+        />
+        <Kpi
+          rotulo="Clientes"
+          valor={String(
+            new Set(filtradas.map((v) => v.cliente_id).filter(Boolean)).size,
+          )}
+          detalhe="distintos"
+          cor="var(--grafico-1)"
+        />
+      </GrelhaKpis>
 
       <BarraFiltros className="mb-4">
         <Campo rotulo="Pesquisar" className="min-w-[260px] flex-1">
@@ -262,7 +301,7 @@ function DetalheFactura({
                           <Td className="text-texto-suave">
                             {l.unidade || "—"}
                           </Td>
-                          <Td numerico>{l.qtd}</Td>
+                          <Td numerico>{numeroLimpo(l.qtd)}</Td>
                           <Td numerico>{formataMoeda(l.preco, moeda)}</Td>
                           <Td numerico className="font-semibold">
                             {formataMoeda(l.total, moeda)}

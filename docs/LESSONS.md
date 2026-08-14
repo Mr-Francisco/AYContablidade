@@ -130,3 +130,6 @@
 - Os seis painéis do Piloto usam as MESMAS quatro peças (`dash-hero`, `grid-4`, `chartDonut`, `chartBars`): estão em `components/painel/` — não reescrever em cada página.
 - O `plural(n, singular)` já inclui o número: `${n} ${plural(n, "conta")}` escreve o número duas vezes.
 - Uma venda «emitida» conta como facturada (`_emitida` em `services/comercial.py`): ler só `estado === "faturada"` põe facturas emitidas a dizer «Rascunho».
+- Quantidades, taxas e percentagens NÃO são dinheiro: passam por `numeroLimpo()` (`40.0000 Un` → `40 Un`, `14.00 %` → `14 %`). Só os valores monetários levam sempre as duas casas.
+- No Piloto o botão de acção («+ Novo artigo», «+ Receção») vive DENTRO da barra de ferramentas, não no cabeçalho da página.
+- Os KPIs de uma página de consulta contam o que está FILTRADO, não o total — é o que faz do filtro uma ferramenta de análise.

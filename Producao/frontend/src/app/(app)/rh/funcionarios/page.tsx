@@ -4,7 +4,7 @@ import { Plus, Search, X } from "lucide-react";
 import { Dialog, Tabs } from "radix-ui";
 import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { GrelhaKpis } from "@/components/painel";
 import {
   ACarregar,
   Alerta,
@@ -28,7 +28,7 @@ import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
-import type { Colaborador } from "@/types";
+import type { Colaborador, Folha } from "@/types";
 
 const SEPARADOR =
   "rounded-lg px-3 py-1.5 text-sm font-semibold text-texto-suave data-[state=active]:bg-superficie data-[state=active]:text-texto data-[state=active]:shadow-suave";
@@ -90,47 +90,53 @@ export default function Funcionarios() {
   );
   const activos = (data ?? []).filter((c) => c.estado === "activo").length;
 
+  const kz = (v: string) => formataMoeda(v, moeda, 0);
+  // A folha do mês corrente, só para os KPIs — é uma simulação, não grava nada.
+  const { data: folha } = useSWR<Folha>(
+    "/api/rh/folha?so_ativos=true",
+    buscador,
+  );
+
   return (
     <>
       <CabecalhoPagina
         titulo="Funcionários"
         descricao="Ficha de pessoal: remuneração, dados fiscais e da Segurança Social."
-        accoes={
-          pode("rh.gerir") && (
-            <Botao variante="primario" onClick={() => setNovoAberto(true)}>
-              <Plus size={16} />
-              Novo funcionário
-            </Botao>
-          )
-        }
       />
 
-      <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <div className="min-w-0">
-          <Kpi
-            rotulo="Colaboradores"
-            valor={String(data?.length ?? 0)}
-            detalhe={`${activos} activos`}
-            cor="var(--grafico-2)"
-          />
-        </div>
-        <div className="min-w-0">
-          <Kpi
-            rotulo="Massa salarial base"
-            valor={formataCompacto(totalBase, moeda)}
-            detalhe="Soma dos salários base listados"
-            cor="var(--grafico-1)"
-          />
-        </div>
-        <div className="min-w-0">
-          <Kpi
-            rotulo="A mostrar"
-            valor={String(filtrados.length)}
-            detalhe="Depois dos filtros"
-            cor="var(--grafico-4)"
-          />
-        </div>
-      </div>
+      {/* Os quatro do Piloto: colaboradores, massa salarial, líquido a pagar
+          e encargos. A folha é simulada — não grava nem lança nada. */}
+      <GrelhaKpis>
+        <Kpi
+          rotulo="Colaboradores"
+          valor={String(data?.length ?? 0)}
+          detalhe={`${activos} activos`}
+          cor="var(--color-azul)"
+        />
+        <Kpi
+          rotulo="Massa salarial (bruto)"
+          valor={kz(folha?.totais.bruto ?? "0")}
+          detalhe="mensal"
+          cor="var(--color-roxo)"
+        />
+        <Kpi
+          rotulo="Líquido a pagar"
+          valor={kz(folha?.totais.liquido ?? "0")}
+          detalhe="mensal"
+          cor="#16a085"
+        />
+        <Kpi
+          rotulo="Encargos (IRT+INSS)"
+          valor={kz(
+            soma(
+              folha?.totais.irt ?? "0",
+              folha?.totais.inss ?? "0",
+              folha?.totais.inss_empresa ?? "0",
+            ).toString(),
+          )}
+          cor="var(--grafico-1)"
+        />
+      </GrelhaKpis>
 
       <BarraFiltros className="mb-4">
         <Campo rotulo="Pesquisar" className="min-w-[240px] flex-1">
@@ -159,6 +165,13 @@ export default function Funcionarios() {
             { valor: "inactivo", rotulo: "Inactivos" },
           ]}
         />
+        <span className="flex-1" />
+        {pode("rh.gerir") && (
+          <Botao variante="acento" onClick={() => setNovoAberto(true)}>
+            <Plus size={16} />
+            Novo funcionário
+          </Botao>
+        )}
       </BarraFiltros>
 
       <Cartao className="p-0">
