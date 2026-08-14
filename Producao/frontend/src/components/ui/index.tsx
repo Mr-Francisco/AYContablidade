@@ -11,6 +11,7 @@ import type {
 import { cn } from "@/lib/utils";
 
 export { Botao } from "./Botao";
+export { Carrossel, type PainelCarrossel } from "./Carrossel";
 export { Cartao, GrelhaRevelada, ItemRevelado, TituloCartao } from "./Cartao";
 export { BarraFiltros, Selector } from "./Filtros";
 
@@ -50,45 +51,102 @@ export function CabecalhoPagina({
 // ---------------------------------------------------------------------------
 // KPI
 // ---------------------------------------------------------------------------
+/** Uma célula do rodapé de um KPI: um número e o que ele é. */
+export interface CelulaKpi {
+  valor: ReactNode;
+  rotulo: string;
+  tendencia?: "sobe" | "desce";
+}
+
 export function Kpi({
   rotulo,
   valor,
   detalhe,
   cor = "var(--color-acento)",
   tendencia,
+  icone,
+  rodape,
 }: {
   rotulo: string;
   valor: ReactNode;
   detalhe?: ReactNode;
   cor?: string;
   tendencia?: "sobe" | "desce";
+  /** Símbolo do indicador, dentro de um disco da cor dele. */
+  icone?: ReactNode;
+  /**
+   * Até duas células por baixo de uma linha divisória — tipicamente a variação
+   * e o valor de referência. Só aparece onde houver números para lá pôr: um
+   * rodapé vazio ocupa espaço a dizer nada.
+   */
+  rodape?: CelulaKpi[];
 }) {
   return (
-    <div className="relative overflow-hidden bg-superficie border border-borda rounded-[14px] shadow-suave px-4 py-[15px] min-w-0">
+    <div className="relative overflow-hidden bg-superficie border border-borda rounded-[14px] shadow-suave px-4 py-3 min-w-0">
       <span
         aria-hidden
         className="absolute left-0 top-0 bottom-0 w-1"
         style={{ background: cor }}
       />
-      <div className="text-[11.5px] uppercase tracking-[0.5px] text-texto-suave font-bold truncate">
-        {rotulo}
-      </div>
-      {/* tabular-nums alinha os dígitos; truncate evita transbordo em mobile. */}
-      <div className="text-[23px] font-black mt-[3px] tracking-[-0.5px] tabular truncate">
-        {valor}
-      </div>
-      {detalhe && (
-        <div
-          className={cn(
-            "text-[11.5px] mt-[3px] truncate",
-            tendencia === "sobe"
-              ? "text-sucesso"
-              : tendencia === "desce"
-                ? "text-perigo"
-                : "text-texto-suave",
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-[11.5px] uppercase tracking-[0.5px] text-texto-suave font-bold truncate">
+            {rotulo}
+          </div>
+          {/* tabular-nums alinha os dígitos; truncate evita transbordo em
+              mobile. */}
+          <div className="text-[23px] font-black mt-[3px] tracking-[-0.5px] tabular truncate">
+            {valor}
+          </div>
+          {detalhe && (
+            <div
+              className={cn(
+                "text-[11.5px] mt-[3px] truncate",
+                tendencia === "sobe"
+                  ? "text-sucesso"
+                  : tendencia === "desce"
+                    ? "text-perigo"
+                    : "text-texto-suave",
+              )}
+            >
+              {detalhe}
+            </div>
           )}
-        >
-          {detalhe}
+        </div>
+        {icone && (
+          <span
+            aria-hidden
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+            style={{
+              color: cor,
+              background: `color-mix(in srgb, ${cor} 16%, transparent)`,
+            }}
+          >
+            {icone}
+          </span>
+        )}
+      </div>
+      {rodape && rodape.length > 0 && (
+        <div className="mt-2.5 grid grid-cols-2 gap-3 border-t border-borda pt-2">
+          {rodape.map((c) => (
+            <div key={c.rotulo} className="min-w-0">
+              <div
+                className={cn(
+                  "text-[12.5px] font-bold tabular truncate",
+                  c.tendencia === "sobe"
+                    ? "text-sucesso"
+                    : c.tendencia === "desce"
+                      ? "text-perigo"
+                      : "",
+                )}
+              >
+                {c.valor}
+              </div>
+              <div className="text-[11px] text-texto-suave truncate">
+                {c.rotulo}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

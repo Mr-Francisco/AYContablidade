@@ -152,3 +152,7 @@
 - Dizer «SGD» duas vezes lado a lado no logótipo era redundante: símbolo em cima, nome do produto por baixo.
 - REGRA: nenhum histórico é infinito. Paginação no SERVIDOR (`offset`/`limite`/`total`), scroll DA CAIXA e não da página, e nunca centenas de registos de uma vez. `components/ui/Paginacao.tsx` + `src/api/paginacao.py`.
 - Revelar no cliente («mostrar mais») não é paginação: a lista fica curta no ecrã mas o pedido continua enorme. Os movimentos pediam mil de cada vez para mostrar quarenta.
+- `ResizeObserver` sobre uma caixa de tamanho fixo nunca dispara quando o CONTEÚDO cresce: observa a border-box, não o `scrollHeight`. Num carrossel, a altura ficou a do painel antes de os dados chegarem — a área passa a ser «o que cabe no ecrã» e o painel enche-a.
+- `offsetHeight` não inclui margens. Ao reservar espaço para um rodapé, medir `rect.bottom - rect.bottom` entre elementos, senão a página transborda exactamente a margem que sobrou.
+- Legend do Recharts 3 não aceita `payload`: para fixar a ordem das séries, desenhar a legenda em HTML.
+- Numa coluna flex, os filhos encolhem por omissão: sem `shrink-0` o gráfico ficava esmagado a 9 px em vez de a caixa fazer scroll.

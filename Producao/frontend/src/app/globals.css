@@ -70,6 +70,10 @@
   --grafico-6: #1a9c5f;
   --grafico-7: #8a8ba0;
   --gradiente-marca: linear-gradient(100deg, #0b3d91 0%, #3d7fe0 100%);
+  /* Fundo dos painéis do carrossel inicial: o mesmo azul da marca, muito
+     diluído. Serve para o painel se ler como um ecrã inteiro e não como
+     conteúdo solto na página. */
+  --gradiente-painel: linear-gradient(155deg, #eef3fb 0%, #e4ecf8 100%);
 }
 [data-theme="dark"] {
   --grafico-1: #ff3fa0;
@@ -80,6 +84,10 @@
   --grafico-6: #2ec7a9;
   --grafico-7: #a1a1b8;
   --gradiente-marca: linear-gradient(100deg, #16264a 0%, #2b5da8 100%);
+  /* No escuro fica ENTRE o fundo (#0c1220) e a superfície dos cartões
+     (#141b2b): o painel destaca-se do fundo e os cartões destacam-se do
+     painel. Ao contrário, os cartões afundavam. */
+  --gradiente-painel: linear-gradient(155deg, #0d1830 0%, #111e39 100%);
 }
 
 @layer base {
@@ -109,6 +117,9 @@
 @layer utilities {
   .gradiente-marca {
     background: var(--gradiente-marca);
+  }
+  .gradiente-painel {
+    background: var(--gradiente-painel);
   }
 }
 

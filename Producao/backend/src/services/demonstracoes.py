@@ -405,6 +405,73 @@ def resumo_resultado(db: Session, **opts) -> dict:
     }
 
 
+#: Os doze períodos que são meses. O plano tem dezasseis (00 abertura,
+#: 13 regularizações, 14/15 apuramentos) e esses não entram num gráfico
+#: mensal — não são meses e empilhavam o ano inteiro numa barra só.
+MESES = tuple(f"{m:02d}" for m in range(1, 13))
+
+NOMES_MESES = (
+    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+)
+
+
+def evolucao_mensal(
+    db: Session, *, empresa_id: UUID, exercicio_id: UUID | None = None
+) -> list[dict]:
+    """Proveitos, custos e resultado mês a mês.
+
+    Uma consulta só, agrupada pelo período do lançamento e pela classe da
+    conta. Os doze meses vêm sempre, mesmo os que não têm movimento: um
+    gráfico que salta de Março para Julho porque Abril está vazio mente sobre
+    a forma do ano.
+
+    Os filtros são os mesmos do `resumo_resultado` — não diferidos, sem
+    apuramento — para que a soma das barras dê o valor do KPI ao lado. Se
+    divergirem, é o painel a contradizer-se a si próprio.
+    """
+    classe = func.substr(LancamentoLinha.conta_codigo, 1, 1)
+    q = (
+        select(
+            Lancamento.mes,
+            classe.label("classe"),
+            func.sum(LancamentoLinha.debito),
+            func.sum(LancamentoLinha.credito),
+        )
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(
+            Lancamento.empresa_id == empresa_id,
+            Lancamento.diferido.is_(False),
+            Lancamento.origem != "apuramento",
+            Lancamento.mes.in_(MESES),
+            classe.in_(("6", "7")),
+        )
+        .group_by(Lancamento.mes, classe)
+    )
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+
+    por_mes = {m: {"proveitos": ZERO, "custos": ZERO} for m in MESES}
+    for mes, cl, debito, credito in db.execute(q):
+        d = debito or ZERO
+        c = credito or ZERO
+        if cl == "6":
+            por_mes[mes]["proveitos"] += c - d
+        else:
+            por_mes[mes]["custos"] += d - c
+
+    return [
+        {
+            "mes": m,
+            "nome": NOMES_MESES[i],
+            "proveitos": por_mes[m]["proveitos"],
+            "custos": por_mes[m]["custos"],
+            "resultado": por_mes[m]["proveitos"] - por_mes[m]["custos"],
+        }
+        for i, m in enumerate(MESES)
+    ]
+
+
 def _quanto_se_lancou(
     db: Session,
     *,

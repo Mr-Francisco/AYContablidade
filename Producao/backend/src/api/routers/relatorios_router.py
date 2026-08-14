@@ -136,6 +136,20 @@ def resumo(
     )
 
 
+@router.get("/evolucao-mensal")
+def evolucao_mensal(
+    empresa: EmpresaAtual, db: DB, exercicio_id: UUID | None = None
+) -> list[dict]:
+    """Proveitos, custos e resultado dos doze meses do exercício.
+
+    Doze linhas e não mais: é o que o gráfico do painel desenha. Não pagina
+    porque não cresce — um exercício tem sempre doze meses.
+    """
+    return dem.evolucao_mensal(
+        db, empresa_id=empresa.id, exercicio_id=exercicio_id
+    )
+
+
 # ---------------------------------------------------------------------------
 # Notas às Contas
 # ---------------------------------------------------------------------------
