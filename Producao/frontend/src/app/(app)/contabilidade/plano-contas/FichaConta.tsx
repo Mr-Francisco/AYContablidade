@@ -4,7 +4,7 @@ import { Tabs } from "radix-ui";
 import { type FormEvent, useId, useState } from "react";
 
 import { useSelectorDeConta } from "@/components/contabilidade/SelectorDeConta";
-import { Campo, Entrada, Selector } from "@/components/ui";
+import { Alerta, Campo, Entrada, Selector } from "@/components/ui";
 import { DialogoMestre } from "@/components/ui/CrudMestre";
 import { api, ErroApi } from "@/lib/api";
 import { useContas, useExercicios } from "@/lib/hooks";
@@ -97,12 +97,18 @@ export function fichaDe(c: Conta | null, codigoSugerido = ""): DadosFicha {
 export function FichaConta({
   conta,
   codigoSugerido,
+  paiCodigo,
+  paiVaiVirarIntegradora,
   aoFechar,
   aoGravar,
 }: {
   /** `null` cria; uma conta altera. */
   conta: Conta | null;
   codigoSugerido?: string;
+  /** Preenchido quando se veio pelo «＋ Sub» de uma conta. */
+  paiCodigo?: string;
+  /** A mãe ainda não tem filhos, por isso vai deixar de receber movimentos. */
+  paiVaiVirarIntegradora?: boolean;
   aoFechar: () => void;
   aoGravar: (mensagem: string) => void;
 }) {
@@ -181,12 +187,29 @@ export function FichaConta({
 
   return (
     <DialogoMestre
-      titulo={novo ? "Nova conta" : `Conta ${conta.codigo}`}
+      titulo={
+        paiCodigo
+          ? `Nova subconta de ${paiCodigo}${paiVaiVirarIntegradora ? " — a mãe passa a integradora" : ""}`
+          : novo
+            ? "Nova conta"
+            : `Conta ${conta.codigo}`
+      }
       aoFechar={aoFechar}
       aoSubmeter={submeter}
       aGravar={aGravar}
       erro={erro}
     >
+      {/* O aviso do Piloto, dito ANTES de gravar: quem estende uma conta de
+          movimento tem de saber que ela deixa de receber lançamentos e que os
+          que já tem mudam de sítio. Depois de gravar já não há decisão. */}
+      {paiCodigo && (
+        <Alerta tipo="info" className="sm:col-span-2">
+          {paiVaiVirarIntegradora
+            ? `Ao gravar: ${paiCodigo} passa a integradora e os seus movimentos migram para ${codigoSugerido}.`
+            : `Nova conta de movimento sob ${paiCodigo}.`}
+        </Alerta>
+      )}
+
       {/* Topo: exercício, agrupamento, inactivo */}
       <Campo rotulo="Exercício">
         <Entrada value={activo?.nome ?? "—"} disabled />

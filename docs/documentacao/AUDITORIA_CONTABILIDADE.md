@@ -178,9 +178,37 @@ F4 e duplo clique nos campos Conta Débito / Conta Crédito.
 9. ~~Importar plano~~ — feito.
 
 **Falta ainda:**
-- Plano de Contas: testar criar/editar/importar no browser.
-- Explorador: comparar linha a linha.
 - Resultados: «Ver lançamento» no apuramento.
+
+### Plano de Contas — provado no browser (2026-08-14)
+
+Criar, subconta, editar e eliminar, de ponta a ponta, na base de demonstração,
+com as contas de ensaio apagadas no fim (1622 contas antes, 1622 depois):
+
+| Passo | Resultado |
+|---|---|
+| «Nova conta» com 11149 | «Conta 11149 criada.» · linha nova como Movimento |
+| «＋ Sub» em 11149 | Título «Nova subconta de 11149 — a mãe passa a integradora» e o aviso do Piloto **antes** de gravar |
+| Gravar a subconta | «A conta-mãe passou a integradora e 0 movimento(s) migraram.» |
+| Duplo clique na linha | abre a ficha «Conta 11149001» |
+| Gravar alteração | «Conta 11149001 gravada.» com o nome novo na árvore |
+| Eliminar | confirmação a explicar que uma conta com movimentos é recusada |
+| Pesquisa «caixa» | 15 linhas, cada uma **com os seus ascendentes** |
+| ⊟ / ⊞ | 1630 → 8 → 1630 |
+
+Corrigido no processo: o `＋ Sub` aparecia em contas de integração (o Piloto só
+o mostra nas de movimento), a coluna Cl. IVA desenhava um travessão onde o
+Piloto deixa vazio, e o diálogo de subconta não dizia o que ia acontecer à
+conta-mãe.
+
+### Explorador — alinhado (2026-08-14)
+
+Faltava a capa `mo-cover` inteira: gradiente, nome da empresa por cima do
+título e os dois números do exercício à direita (Movimentos · Resultado).
+Também: os números levavam cêntimos, os cartões estavam a duas colunas em vez
+de quatro, os ícones eram traçados nossos em vez dos emoji do Piloto, e as
+cores dos KPIs estavam trocadas — «Proveitos» a azul em vez de verde, «Custos»
+a âmbar porque o token do Piloto se chama `--chart-amber`… e é rosa.
 
 ### Balancete Geral — o que ficou (verificado no browser)
 

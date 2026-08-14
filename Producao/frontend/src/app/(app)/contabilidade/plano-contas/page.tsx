@@ -67,6 +67,8 @@ export default function PlanoDeContas() {
 
   const [aEditar, setAEditar] = useState<Conta | null>(null);
   const [aCriar, setACriar] = useState<string | null>(null);
+  /** Conta-mãe quando se veio pelo «＋ Sub» — para a ficha o poder dizer. */
+  const [pai, setPai] = useState<Conta | null>(null);
   const [aImportar, setAImportar] = useState(false);
   const [aApagar, setAApagar] = useState<Conta | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -248,7 +250,13 @@ export default function PlanoDeContas() {
               <Upload size={15} />
               Importar (Primavera)
             </Botao>
-            <Botao variante="acento" onClick={() => setACriar("")}>
+            <Botao
+              variante="acento"
+              onClick={() => {
+                setPai(null);
+                setACriar("");
+              }}
+            >
               <Plus size={16} />
               Nova conta
             </Botao>
@@ -310,9 +318,10 @@ export default function PlanoDeContas() {
                       podeGerir={podeGerir}
                       aoAlternar={() => alternar((l.conta as Conta).codigo)}
                       aoEditar={() => setAEditar(l.conta as Conta)}
-                      aoSubconta={() =>
-                        setACriar(`${(l.conta as Conta).codigo}001`)
-                      }
+                      aoSubconta={() => {
+                        setPai(l.conta as Conta);
+                        setACriar(`${(l.conta as Conta).codigo}001`);
+                      }}
                       aoApagar={() => setAApagar(l.conta as Conta)}
                     />
                   ),
@@ -327,15 +336,26 @@ export default function PlanoDeContas() {
         <FichaConta
           conta={aEditar}
           codigoSugerido={aCriar ?? ""}
+          paiCodigo={pai?.codigo}
+          // Só vira integradora se ainda não tiver filhos; se já os tem, é só
+          // mais uma conta de movimento debaixo dela.
+          paiVaiVirarIntegradora={
+            pai != null &&
+            !contas.some(
+              (c) => c.codigo !== pai.codigo && c.codigo.startsWith(pai.codigo),
+            )
+          }
           aoFechar={() => {
             setAEditar(null);
             setACriar(null);
+            setPai(null);
           }}
           aoGravar={(msg) => {
             setAviso(msg);
             setErro(null);
             setAEditar(null);
             setACriar(null);
+            setPai(null);
           }}
         />
       )}
@@ -434,8 +454,12 @@ function LinhaConta({
           </Selo>
         )}
       </td>
-      <td className="px-3.5 py-1.5 text-[12.5px] text-texto-suave">
-        {conta.classe_iva || "—"}
+      {/* Em branco quando não há: o Piloto só desenha a etiqueta se a conta
+          tiver classe de IVA, e uma coluna de travessões não diz nada. */}
+      <td className="px-3.5 py-1.5">
+        {conta.classe_iva ? (
+          <Selo cor="#62657a">{conta.classe_iva}</Selo>
+        ) : null}
       </td>
       <td className="px-3.5 py-1.5">
         <Selo cor={nat.cor}>{nat.rotulo}</Selo>
@@ -448,14 +472,18 @@ function LinhaConta({
       {podeGerir && (
         <td className="px-3.5 py-1.5">
           <div className="flex items-center justify-end gap-1">
-            <button
-              type="button"
-              onClick={aoSubconta}
-              title="Criar uma subconta desta"
-              className="rounded-md border border-borda px-2 py-1 text-[11.5px] font-semibold text-texto-suave hover:border-marca hover:text-marca"
-            >
-              + Sub
-            </button>
+            {/* Só nas contas de movimento, como no Piloto: criar uma
+                subconta de uma integradora não muda nada — ela já o é. */}
+            {movimento && (
+              <button
+                type="button"
+                onClick={aoSubconta}
+                title="Criar uma subconta desta"
+                className="rounded-md border border-borda px-2 py-1 text-[11.5px] font-semibold text-texto-suave hover:border-marca hover:text-marca"
+              >
+                ＋ Sub
+              </button>
+            )}
             <button
               type="button"
               onClick={aoEditar}

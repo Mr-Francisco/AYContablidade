@@ -124,3 +124,6 @@
 - O `.card-title` do Piloto não tem linha divisória: 16px a 800 e catorze píxeis de margem. A borda que a Produção desenhava aparecia em todos os cartões.
 - `/api/empresa` exige perfil admin: qualquer ecrã que precise do nome ou da moeda da empresa tem de usar `/api/empresa/cartao`, senão sai sem cabeçalho e com «Kz» por omissão.
 - Gatilhos de cabeçalho que dependem da empresa devem testar `utilizador.empresa_id`, não o objecto `empresa` — este é nulo para quem não pode ver a ficha.
+- No Explorador e no Plano de Contas o `+ Sub` só aparece nas contas de MOVIMENTO: dar filhos a uma integradora não muda nada, ela já o é.
+- Avisos que mudam uma decisão dizem-se ANTES de gravar: o Piloto diz «ao gravar, a mãe passa a integradora e os movimentos migram» no próprio diálogo, não numa mensagem posterior.
+- `--chart-amber` do Piloto é ROSA (#e6007e), não âmbar — o nome engana; conferir sempre o hex antes de mapear cores.
