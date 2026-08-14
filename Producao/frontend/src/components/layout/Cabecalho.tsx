@@ -104,44 +104,41 @@ export function Cabecalho() {
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-superficie border-b border-borda shadow-suave">
-      <div className="mx-auto flex max-w-[1360px] items-center gap-4 px-5 py-2.5">
-        <Link href="/painel" className="flex shrink-0 items-center gap-2.5">
-          <span className="gradiente-marca rounded-lg px-[9px] py-[3px] text-2xl font-black leading-none tracking-[-1px] text-white">
+    /*
+     * DUAS FILAS, e não uma.
+     *
+     * Numa fila só, a navegação ficava espremida entre o logótipo e as acções
+     * e quebrava para três linhas com onze módulos — a mais feia das soluções,
+     * porque as linhas seguintes ficavam ocas do lado direito.
+     *
+     * Em cima fica QUEM: a marca, a empresa e a pessoa. Em baixo fica ONDE: a
+     * navegação, com a largura toda. São as duas perguntas que o cabeçalho
+     * responde, e cada uma tem agora o seu sítio.
+     *
+     * É um desvio ao Piloto, que tem tudo numa fila, e foi pedido.
+     */
+    <header className="sticky top-0 z-40 border-b border-borda bg-superficie shadow-suave">
+      {/* --- Fila de cima: marca, empresa, pessoa ------------------------ */}
+      <div className="mx-auto flex max-w-[1360px] items-center gap-4 px-5 pb-2 pt-2.5">
+        {/* O texto por baixo do símbolo: dizer «SGD» duas vezes lado a lado
+            era redundante e é o que fazia o canto parecer desarrumado. */}
+        <Link
+          href="/painel"
+          className="flex shrink-0 flex-col items-start leading-none"
+        >
+          <span className="gradiente-marca rounded-lg px-2.5 py-1 text-[22px] font-black leading-none tracking-[-1px] text-white">
             SGD
           </span>
-          <span className="hidden flex-col leading-[1.05] sm:flex">
-            <b className="text-[13px] tracking-[3px] text-acento">SGD</b>
-            <span className="text-[8.5px] tracking-[2px] text-texto-suave">
-              SOFTWARE DE GESTÃO DIRIGIDA
-            </span>
+          <span className="mt-1 hidden text-[8px] tracking-[1.6px] text-texto-suave sm:block">
+            SOFTWARE DE GESTÃO DIRIGIDA
           </span>
         </Link>
 
-        {/* Navegação de topo. Aparece só a partir de lg — abaixo disso usa-se o
-            menu lateral, para não transbordar. */}
-        <nav className="ml-1.5 hidden min-w-0 flex-wrap gap-[3px] lg:flex">
-          {grupos.map((g) => (
-            <Link
-              key={g.rotulo}
-              href={hrefDoGrupo(g)}
-              className={cn(
-                "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
-                g === grupoActivo || (g.href && itemActivo(caminho, g.href))
-                  ? "bg-superficie-2 text-marca"
-                  : "text-texto-suave hover:bg-superficie-2 hover:text-marca",
-              )}
-            >
-              {g.rotulo}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex shrink-0 items-center gap-2.5">
+        <div className="ml-auto flex min-w-0 items-center gap-2.5">
           {empresa && (
-            // Nome de empresa vem de dados: precisa de largura máxima e truncate,
-            // senão empurra o resto do cabeçalho (ver docs/LESSONS.md).
-            <span className="hidden max-w-[180px] truncate rounded-full border border-borda bg-superficie-2 px-3 py-1 text-xs font-semibold text-texto-suave xl:block">
+            // Nome de empresa vem de dados: precisa de largura máxima e
+            // truncate, senão empurra o resto do cabeçalho (docs/LESSONS.md).
+            <span className="hidden max-w-[220px] truncate rounded-full border border-borda bg-superficie-2 px-3 py-1.5 text-[12.5px] font-semibold text-texto-suave md:block">
               {empresa.nome}
             </span>
           )}
@@ -163,7 +160,7 @@ export function Cabecalho() {
                 ? "Mudar para tema claro"
                 : "Mudar para tema escuro"
             }
-            className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-borda bg-superficie-2 text-texto transition-colors hover:border-acento"
+            className="flex size-[38px] items-center justify-center rounded-[10px] border border-borda bg-superficie-2 text-texto transition-colors hover:border-acento"
           >
             {tema === "dark" ? <Sun size={17} /> : <Moon size={17} />}
           </button>
@@ -176,7 +173,7 @@ export function Cabecalho() {
                   className="flex max-w-[220px] items-center gap-2 rounded-full border border-borda bg-superficie-2 py-[5px] pl-[5px] pr-3 text-left transition-colors hover:border-acento"
                 >
                   <span
-                    className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white"
+                    className="flex size-[30px] shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white"
                     style={{
                       background: COR_PERFIL[utilizador.perfil] ?? "#555",
                     }}
@@ -289,6 +286,31 @@ export function Cabecalho() {
           </Dialog.Root>
         </div>
       </div>
+
+      {/* --- Fila de baixo: para onde se vai --------------------------- */}
+      <nav className="mx-auto hidden max-w-[1360px] items-center gap-1 overflow-x-auto px-5 pb-1.5 lg:flex">
+        {grupos.map((g) => {
+          const activo =
+            g === grupoActivo || (g.href && itemActivo(caminho, g.href));
+          return (
+            <Link
+              key={g.rotulo}
+              href={hrefDoGrupo(g)}
+              className={cn(
+                // A marca do separador activo é uma barra em baixo e não um
+                // fundo: numa fila própria, o sublinhado diz onde se está sem
+                // partir a linha em caixas.
+                "relative whitespace-nowrap rounded-t-lg px-3 py-2 text-sm font-semibold transition-colors",
+                activo
+                  ? "text-marca after:absolute after:inset-x-2 after:-bottom-[1.5px] after:h-[3px] after:rounded-full after:bg-marca after:content-['']"
+                  : "text-texto-suave hover:bg-superficie-2 hover:text-marca",
+              )}
+            >
+              {g.rotulo}
+            </Link>
+          );
+        })}
+      </nav>
 
       {grupoActivo?.filhos && (
         <Ribbon grupo={grupoActivo} visivel={itemVisivel} />

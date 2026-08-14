@@ -148,3 +148,5 @@
 - Um `if` que envolve o lançamento sem `else` é uma divergência silenciosa à espera: faltavam as contas de amortização e o activo era amortizado sem lançamento nem erro.
 - Uma capacidade `*` não casa num `IN (...)`: o administrador, que pode tudo, não via notificação nenhuma. Sempre que se filtra por capacidade, tratar o `*` à parte.
 - Repor o acesso de uma conta de demonstração NÃO regenera o segredo de 2FA: decifra-se o que lá está e volta-se a desenhar o mesmo QR — regerar invalidaria o telemóvel de quem o configurou.
+- O cabeçalho tem duas perguntas — QUEM (marca, empresa, pessoa) e ONDE (navegação). Numa fila só, a navegação com onze módulos quebrava para três linhas ocas; em duas filas cabe numa linha e sobra espaço.
+- Dizer «SGD» duas vezes lado a lado no logótipo era redundante: símbolo em cima, nome do produto por baixo.
