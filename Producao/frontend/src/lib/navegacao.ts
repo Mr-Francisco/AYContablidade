@@ -508,6 +508,13 @@ const NAV_COMPLETO: GrupoNav[] = [
     rotulo: "Gestão",
     filhos: [
       {
+        href: "/gestao/progresso",
+        rotulo: "Progresso Equipa",
+        seccao: "Empresa",
+        perfis: ["admin"],
+        icone: "dashboard",
+      },
+      {
         href: "/gestao/utilizadores",
         rotulo: "Utilizadores",
         seccao: "Sistema",

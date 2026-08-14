@@ -141,3 +141,4 @@
 - Não migrar um interruptor que na Produção não muda nada: se a rota já exige a capacidade sempre, uma caixa que se desliga engana quem a desliga. Dizer qual é a regra.
 - Um símbolo de estado (`⚠`, `✓`) vive no selo, não dentro da string: o mesmo texto costuma ir para um `title` ou um `aria-label`, e lá o símbolo lê-se mal — e obriga a limpá-lo com uma expressão regular.
 - Ícones de linha só em `components/layout/IconeDeLinha.tsx`: três sítios desenhavam o SVG à mão e a espessura já tinha divergido.
+- Um pedido que devolve 403 NÃO se mostra como zero: num painel de gestão «0 Kz de stock» lê-se como «a empresa não tem stock». Distinguir não-ter de não-poder-ver, e usar «—» para o desconhecido.

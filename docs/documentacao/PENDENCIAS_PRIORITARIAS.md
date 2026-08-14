@@ -417,38 +417,37 @@ Não confirmado — a verificar com o fornecedor escolhido. Ordens de grandeza:
 
 ---
 
-## 5. «Progresso Equipa» — o separador do administrador da empresa
+## 5. «Progresso Equipa» ✅ FEITO
 
-**Pedido pelo utilizador em 2026-08-14. Ainda não implementado.**
+**Pedido em 2026-08-14. Feito no mesmo dia**, em `/gestao/progresso`, visível
+só ao administrador da empresa.
 
-Um separador **só para o administrador da empresa** — não para o
-superadministrador da plataforma, que já tem o seu, e não para os restantes
-perfis. Chama-se **Progresso Equipa**.
+As três perguntas que este documento dizia ser preciso responder foram
+respondidas assim:
 
-**O que deve mostrar:** o resumo de tudo o que se passa na empresa, bloco a
-bloco — contabilidade, contas correntes, comercial, logística, imobilizados,
-RH e fiscalidade — para que o administrador veja num ecrã só em que pé está
-cada área, sem ter de entrar em sete módulos.
+**«Progresso» é o ESTADO DAS ÁREAS, não a produtividade de quem lá trabalha.**
+Um painel que ordenasse pessoas por número de lançamentos mediria quem escreve
+mais, não quem faz melhor — e o trabalho de contabilidade não se conta assim.
+O que aparece por pessoa é o registo de auditoria: quem mexeu em quê e quando.
+É uma pergunta de auditoria, e responde-se com o registo que já existe.
 
-**Como deve ser feito:** o mesmo layout dos painéis do Piloto —
-`dash-hero` com a faixa e os valores, `grid-4` de KPIs, e os cartões de
-gráfico (`chart-card`) por baixo. Não inventar um desenho novo: o Piloto tem
-sete painéis por módulo em `assets/js/dashboards.js`, e este é a soma deles.
+**Três a quatro números por bloco**, os mesmos que o painel de cada módulo já
+mostra em destaque. Cada bloco tem um «Abrir» que leva ao módulo, que é onde
+estão os outros. Um painel com quarenta números não se lê.
 
-**Por decidir antes de começar:**
+**Os blocos seguem os módulos da empresa** — `moduloAtivo()`. Uma empresa sem
+RH não vê um bloco de RH a mostrar zeros.
 
-- Que três a quatro números representam cada bloco. Um painel com quarenta
-  números não se lê — e o pedido foi «de forma resumida».
-- Se «progresso» quer dizer estado das áreas (o que está feito e o que
-  falta) ou actividade da equipa (quem lançou o quê). São dois painéis
-  diferentes; o nome sugere o segundo, a descrição sugere o primeiro.
-- Se cada bloco respeita as licenças e módulos da empresa — um bloco de RH
-  numa empresa sem RH deve desaparecer, não mostrar zeros.
+**Além do pedido, uma coisa que se impôs ao construir:** o cartão «Por
+resolver». Junta o que está em aberto e liga ao sítio onde se resolve — o
+balanço que não equilibra, os resultados por apurar, os documentos por emitir,
+os artigos em rutura. É a única parte do ecrã que pede acção; o resto são
+números que já aconteceram.
 
-**Estimativa:** 2 a 3 dias depois de as três perguntas acima terem resposta.
-A maior parte dos números já existe em serviços (`resumo_resultado`,
-`balanco`, `contas_correntes`, os mapas de cada módulo); o trabalho é de
-agregação e interface.
+**E um defeito que este ecrã tornou impossível de ignorar:** quando um pedido
+devolve 403, a Produção mostrava ZEROS. Num painel de gestão isso lê-se como
+«a empresa não tem stock», e é falso. Cada bloco distingue agora não-ter de
+não-poder-ver, e a contagem de pessoas mostra «—» em vez de «0».
 
 ---
 
