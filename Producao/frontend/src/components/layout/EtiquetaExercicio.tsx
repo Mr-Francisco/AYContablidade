@@ -141,8 +141,8 @@ function Numeros({ exercicioId }: { exercicioId: string }) {
         valor={
           balanco
             ? balanco.equilibrado
-              ? "equilibrado ✓"
-              : "⚠ verificar"
+              ? "equilibrado"
+              : "por verificar"
             : "…"
         }
       />

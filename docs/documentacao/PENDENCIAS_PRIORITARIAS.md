@@ -452,43 +452,31 @@ agregação e interface.
 
 ---
 
-## 6. Ícones: fora os emojis, dentro os ícones de linha
+## 6. Ícones: fora os emojis, dentro os ícones de linha ✅ FEITO
 
-**Pedido pelo utilizador em 2026-08-14. Fazer DEPOIS de a migração das páginas
-estar terminada.**
+**Pedido em 2026-08-14. Feito no mesmo dia.**
 
-Todos os ícones devem ter aparência profissional, consistente e monocromática:
+Não sobrou um único emoji em `Producao/frontend/src`. Verificado por varrimento
+dos intervalos Unicode de emoji e de símbolos, e no browser.
 
-- **Sem emojis nativos do sistema** — nada de 🚀 📊 ⚙️ 🔔 🗑️ ✅ ❌.
-- Ícones vectoriais de linha, bem desenhados e explícitos.
-- Reconhecíveis pela forma, sem depender da cor nem do estilo de emoji.
-- Mesmo padrão em toda a aplicação: espessura do traço, tamanho, alinhamento.
-- Minimalistas, adequados a um ERP empresarial.
-- O ícone tem de representar claramente a acção.
-- Nada que faça a interface parecer informal ou um protótipo.
+| Onde | Estava | Ficou |
+|---|---|---|
+| Explorador — 13 cartões | ✍️ 📄 📗 ⚖️ 📘 🏛️ 📈 📝 💧 🧾 📚 🗂️ 📅 | traçados do `iconesNav`, 19px, numa moldura de 36 |
+| Faixa do login — 3 módulos | 📒 💳 👥 | `livro`, `wallet`, `users` |
+| Plano de Contas | `⊞` `⊟` | `ChevronsUpDown` / `ChevronsDownUp` |
+| Selo de estado dos Movimentos | `⚠` `✓` `✗` **dentro do texto** | ícone no selo, texto limpo |
+| Campo de conta | `✓` `✕` | `Check` / `X` |
+| Etiqueta do exercício, KPIs, totais | `⚠ verificar`, `✓ Equilibrado` | palavras: «por verificar», «Equilibrado» |
 
-**Isto é uma divergência assumida em relação ao Piloto, e a única até agora.**
-O Piloto usa emojis em vários sítios — os cartões do Explorador (✍️ 📄 📗 ⚖️
-📘 🏛️ 📈 📝 💧 🧾 📚 🗂️), o `⊞`/`⊟` do plano de contas, o `🔄` das barras de
-ferramentas, o `👁` do login, o `🔔` do cabeçalho. A regra de reproduzir o
-Piloto mantém-se para tudo o resto; para ícones, esta regra ganha.
+**Uma decisão que mudou mais do que o desenho:** nos Movimentos o `⚠` estava
+colado ao texto do selo — `"⚠ Indica o diário"` — e esse mesmo texto ia para o
+`title` do botão «Gravar», que tinha de o limpar com uma expressão regular. O
+símbolo passou para o selo e o texto ficou limpo. A expressão regular
+desapareceu.
 
-**Onde estão, por ordem de visibilidade:**
-
-| Sítio | O que lá está |
-|---|---|
-| `contabilidade/explorador` | 13 emojis nos cartões de módulo |
-| `contabilidade/plano-contas` | `⊞` e `⊟` na barra |
-| Vários mapas | `🔄 Atualizar`, `⬇ Exportar`, `🖨 Imprimir` (já são lucide na Produção) |
-| Cabeçalho | `🔔` das notificações (o Piloto tem; a Produção ainda não) |
-| Balancete e mapas | `✓` e `✗` nos totais — **estes ficam**: são símbolos tipográficos, não emojis |
-
-**Como fazer:** já existe `components/layout/iconesNav.ts` com 36 traçados SVG
-portados do `ICO` do Piloto, todos com a mesma espessura (1.7) e a mesma
-grelha de 24. É essa a fonte; o que faltar acrescenta-se lá, e não se importa
-uma segunda biblioteca de ícones.
-
-**Estimativa:** 1 dia, quase todo em revisão visual página a página.
+**Ficou um componente:** `components/layout/IconeDeLinha.tsx`, que desenha
+qualquer traçado do `iconesNav` sempre com a mesma espessura (1.7) e a mesma
+grelha (24). Havia três sítios a desenhá-los à mão, e a espessura já divergia.
 
 ---
 

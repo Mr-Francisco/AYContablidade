@@ -1,7 +1,9 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
+import { IconeDeLinha } from "@/components/layout/IconeDeLinha";
 import { Kpi, TituloCartao } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
@@ -28,7 +30,7 @@ const SECCOES: {
     titulo: "Movimentos (Edição)",
     itens: [
       {
-        icone: "✍️",
+        icone: "movimentos",
         nome: "Movimentos",
         sub: "Registo em partidas dobradas",
         href: "/contabilidade/movimentos",
@@ -39,13 +41,13 @@ const SECCOES: {
     titulo: "Consultas",
     itens: [
       {
-        icone: "📄",
+        icone: "extratos",
         nome: "Extratos de Conta",
         sub: "Conta corrente por conta",
         href: "/contabilidade/extrato",
       },
       {
-        icone: "📗",
+        icone: "livro",
         nome: "Razão",
         sub: "Movimentos por conta",
         href: "/contabilidade/razao",
@@ -56,37 +58,37 @@ const SECCOES: {
     titulo: "Mapas",
     itens: [
       {
-        icone: "⚖️",
+        icone: "balancete",
         nome: "Balancete Geral",
         sub: "Verificação · duplo clique → extrato",
         href: "/contabilidade/balancete",
       },
       {
-        icone: "📘",
+        icone: "bookopen",
         nome: "Balancete do Razão",
         sub: "Por classe (contas do razão)",
         href: "/contabilidade/balancete-razao",
       },
       {
-        icone: "🏛️",
+        icone: "balanco",
         nome: "Balanço",
         sub: "Activo · Capital Próprio · Passivo",
         href: "/contabilidade/balanco",
       },
       {
-        icone: "📈",
+        icone: "resultados",
         nome: "Demonstração de Resultados",
         sub: "Por naturezas",
         href: "/contabilidade/resultados",
       },
       {
-        icone: "📝",
+        icone: "notas",
         nome: "Notas às Contas",
         sub: "Composição das rubricas",
         href: "/contabilidade/notas",
       },
       {
-        icone: "💧",
+        icone: "fluxos",
         nome: "Fluxos de Caixa",
         sub: "Demonstração de fluxos",
         href: "/contabilidade/fluxos-caixa",
@@ -97,25 +99,25 @@ const SECCOES: {
     titulo: "Tabelas",
     itens: [
       {
-        icone: "🧾",
+        icone: "plano",
         nome: "Plano de Contas",
         sub: "PGC Angola",
         href: "/contabilidade/plano-contas",
       },
       {
-        icone: "📚",
+        icone: "diarios",
         nome: "Diários",
         sub: "Tabela de diários",
         href: "/contabilidade/diarios",
       },
       {
-        icone: "🗂️",
+        icone: "documentos",
         nome: "Documentos",
         sub: "Documentos afetos a diários",
         href: "/contabilidade/documentos",
       },
       {
-        icone: "📅",
+        icone: "calendario",
         nome: "Exercícios",
         sub: "Abrir, fechar e reabrir exercícios",
         href: "/contabilidade/exercicios",
@@ -194,7 +196,7 @@ export default function Explorador() {
         />
         <Kpi
           rotulo="Balancete"
-          valor={equilibrado ? "✓ Equilibrado" : "✗ Desequilíbrio"}
+          valor={equilibrado ? "Equilibrado" : "Desequilíbrio"}
           detalhe="D = C"
           cor={equilibrado ? "#16a085" : "#c0392b"}
         />
@@ -247,16 +249,23 @@ function CartaoModulo({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-[14px] border border-borda bg-superficie p-3.5 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-marca hover:shadow-forte"
+      className="group flex items-center gap-3 rounded-[14px] border border-borda bg-superficie p-3.5 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-marca hover:shadow-forte"
     >
-      <span aria-hidden className="text-[26px] leading-none">
-        {icone}
+      <span
+        aria-hidden
+        className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-borda bg-fundo text-texto-suave transition-colors group-hover:border-marca group-hover:text-marca"
+      >
+        <IconeDeLinha nome={icone} tamanho={19} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col leading-[1.25]">
         <b className="truncate text-[14.5px]">{nome}</b>
         <small className="truncate text-[12px] text-texto-suave">{sub}</small>
       </span>
-      <span className="shrink-0 text-[20px] font-extrabold text-acento">→</span>
+      <ArrowRight
+        size={18}
+        className="shrink-0 text-acento transition-transform group-hover:translate-x-0.5"
+        aria-hidden
+      />
     </Link>
   );
 }

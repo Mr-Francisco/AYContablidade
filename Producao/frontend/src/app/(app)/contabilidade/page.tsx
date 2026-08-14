@@ -126,7 +126,9 @@ export default function PainelContabilistico() {
           rotulo="Total do Activo"
           valor={kz(balanco?.total_activo ?? "0")}
           detalhe={
-            balanco?.equilibrado ? "Balanço equilibrado ✓" : "⚠ verificar"
+            balanco?.equilibrado
+              ? "Balanço equilibrado"
+              : "Balanço por verificar"
           }
           cor="var(--color-indigo)"
         />

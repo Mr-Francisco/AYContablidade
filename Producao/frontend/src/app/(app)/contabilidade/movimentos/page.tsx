@@ -103,19 +103,19 @@ export default function Movimentos() {
   );
 
   const selo = (() => {
-    if (!estado.diario) return { texto: "⚠ Indica o diário", tipo: "aviso" };
+    if (!estado.diario) return { texto: "Indica o diário", tipo: "aviso" };
     if (!estado.documento)
-      return { texto: "⚠ Indica o documento", tipo: "aviso" };
+      return { texto: "Indica o documento", tipo: "aviso" };
     if (semFluxo)
       return {
-        texto: `⚠ Indica o fluxo de caixa da conta ${semFluxo.conta_codigo} (separador Fluxos Caixa)`,
+        texto: `Indica o fluxo de caixa da conta ${semFluxo.conta_codigo} (separador Fluxos Caixa)`,
         tipo: "aviso",
       };
     if (totalDebito.eq(0) && totalCredito.eq(0))
       return { texto: "vazio", tipo: "vazio" };
-    if (equilibrado) return { texto: "✓ equilibrado", tipo: "ok" };
+    if (equilibrado) return { texto: "equilibrado", tipo: "ok" };
     return {
-      texto: `✗ diferença ${formataMoeda(diferenca.abs(), "")} — débito ≠ crédito`,
+      texto: `diferença ${formataMoeda(diferenca.abs(), "")} — débito ≠ crédito`,
       tipo: "erro",
     };
   })();
@@ -327,7 +327,7 @@ export default function Movimentos() {
                   ? undefined
                   : !editavel
                     ? "Movimento gerado automaticamente — altera-se no documento que o originou"
-                    : selo.texto.replace(/^[⚠✗✓]\s*/, "")
+                    : selo.texto
               }
             >
               <Save size={15} />

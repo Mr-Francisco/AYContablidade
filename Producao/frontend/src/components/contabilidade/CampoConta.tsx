@@ -1,5 +1,7 @@
 "use client";
 
+import { Check, X } from "lucide-react";
+
 import { useId, useMemo } from "react";
 
 import { useContas } from "@/lib/hooks";
@@ -113,7 +115,9 @@ export function CampoConta({
           )}
         >
           {estado.tipo === "ok" && (
-            <span className="text-sucesso">✓ {estado.nome}</span>
+            <span className="text-sucesso">
+              <Check size={12} className="inline" /> {estado.nome}
+            </span>
           )}
           {estado.tipo === "integradora" && (
             <span className="text-[var(--color-aviso)]">
@@ -122,7 +126,7 @@ export function CampoConta({
           )}
           {estado.tipo === "inexistente" && (
             <span className="text-perigo">
-              ✕ conta inexistente
+              <X size={12} className="inline" /> conta inexistente
               {aoPedirCriacao && (
                 <button
                   type="button"

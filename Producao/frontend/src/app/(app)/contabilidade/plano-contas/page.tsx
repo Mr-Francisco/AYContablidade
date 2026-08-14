@@ -3,6 +3,8 @@
 import {
   ChevronDown,
   ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Pencil,
   Plus,
   Upload,
@@ -47,7 +49,8 @@ import { ImportarPlano } from "./ImportarPlano";
  * informação que o organiza — não se percebe o que agrega o quê nem onde uma
  * conta nova vai cair.
  *
- * Tudo aberto por omissão, como no Piloto, com `⊞` e `⊟` para as duas pontas.
+ * Tudo aberto por omissão, como no Piloto, com os dois botões de expandir e
+ * colapsar tudo para as duas pontas.
  * Filtrar por texto, natureza ou tipo abre a árvore toda e mostra os resultados
  * **com os seus ascendentes** — senão apareciam pendurados fora do ramo.
  *
@@ -230,7 +233,7 @@ export default function PlanoDeContas() {
             setTudoFechado(false);
           }}
         >
-          ⊞
+          <ChevronsUpDown size={15} />
         </Botao>
         <Botao
           variante="contorno"
@@ -241,7 +244,7 @@ export default function PlanoDeContas() {
             setTudoFechado(true);
           }}
         >
-          ⊟
+          <ChevronsDownUp size={15} />
         </Botao>
 
         {podeGerir && (

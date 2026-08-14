@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, EyeOff, Moon, ShieldCheck, Sun } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useState } from "react";
 
+import { IconeDeLinha } from "@/components/layout/IconeDeLinha";
 import { Alerta, Botao, Campo, Entrada } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTema } from "@/contexts/TemaContext";
@@ -229,16 +230,16 @@ function Faixa() {
         </p>
         <ul className="mt-7 hidden list-none flex-col gap-[13px] p-0 min-[860px]:flex">
           {[
-            ["📒", "Contabilidade geral (PGC Angola) e analítica"],
-            ["💳", "Contas correntes, tesouraria e imobilizados"],
-            ["👥", "Comercial, logística e recursos humanos"],
+            ["livro", "Contabilidade geral (PGC Angola) e analítica"],
+            ["wallet", "Contas correntes, tesouraria e imobilizados"],
+            ["users", "Comercial, logística e recursos humanos"],
           ].map(([icone, texto]) => (
             <li
               key={texto}
               className="flex items-center gap-3 text-[14.5px] font-medium"
             >
-              <span className="flex size-9 flex-none items-center justify-center rounded-[10px] bg-white/[0.18] text-lg">
-                {icone}
+              <span className="flex size-9 flex-none items-center justify-center rounded-[10px] bg-white/[0.18]">
+                <IconeDeLinha nome={icone} tamanho={19} />
               </span>
               {texto}
             </li>

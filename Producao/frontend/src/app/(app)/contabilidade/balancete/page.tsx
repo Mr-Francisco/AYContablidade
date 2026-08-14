@@ -413,7 +413,7 @@ export default function PaginaBalancete() {
               <tfoot>
                 <tr className="border-t-2 border-acento bg-[color-mix(in_srgb,var(--color-acento)_12%,var(--color-superficie-2))] font-extrabold">
                   <td colSpan={2} className="px-2 py-1">
-                    TOTAL {equilibrado ? "✓" : "✗ desequilíbrio"}
+                    TOTAL{equilibrado ? "" : " — desequilíbrio"}
                   </td>
                   {celulas(total)}
                 </tr>

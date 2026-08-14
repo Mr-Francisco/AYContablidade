@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { AlertTriangle, Check, Plus, X as XIcon } from "lucide-react";
 import { Tabs } from "radix-ui";
 import { useId, useMemo } from "react";
 import useSWR from "swr";
@@ -473,5 +473,13 @@ export function SeloEstado({ texto, tipo }: { texto: string; tipo: string }) {
     erro: "#c62828",
     vazio: "#8a8a8a",
   };
-  return <Selo cor={cores[tipo] ?? cores.vazio}>{texto}</Selo>;
+  // O sinal é do selo, não do texto: o texto vai também para o `title` do
+  // botão «Gravar», e um símbolo colado à frente da frase lia-se lá mal.
+  const Icone = { aviso: AlertTriangle, ok: Check, erro: XIcon }[tipo];
+  return (
+    <Selo cor={cores[tipo] ?? cores.vazio}>
+      {Icone && <Icone size={12} aria-hidden />}
+      {texto}
+    </Selo>
+  );
 }
