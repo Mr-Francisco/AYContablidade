@@ -30,15 +30,17 @@ export function TituloCartao({
 }) {
   return (
     <div
+      // `.card-title` do Piloto: 16px a 800, catorze píxeis de margem em baixo
+      // e mais nada. A linha divisória que aqui estava era invenção nossa, e
+      // aparecia em todos os cartões da aplicação.
       className={cn(
-        "flex items-center gap-3 flex-wrap font-extrabold text-[15px]",
-        "pb-3 mb-4 border-b border-borda",
+        "flex items-baseline gap-3 flex-wrap font-extrabold text-[16px] mb-3.5",
         className,
       )}
     >
       {children}
       {extra && (
-        <span className="ml-auto font-normal text-[13px] text-texto-suave">
+        <span className="ml-auto font-semibold text-[12.5px] text-texto-suave">
           {extra}
         </span>
       )}

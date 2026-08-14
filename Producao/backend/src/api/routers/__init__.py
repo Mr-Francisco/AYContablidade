@@ -30,6 +30,7 @@ ROUTERS = (
     totp_router.router,
     user_router.router,
     empresa_router.router,
+    empresa_router.router_cartao,
     licenca_router.router_publico,
     licenca_router.router,
     contabilidade_router.router,

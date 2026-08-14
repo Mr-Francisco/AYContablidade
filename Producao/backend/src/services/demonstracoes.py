@@ -11,7 +11,7 @@ from datetime import date as Date
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.core.pgc import CLASSES, classe_de
@@ -381,7 +381,9 @@ def balanco(db: Session, **opts) -> dict:
 def resumo_resultado(db: Session, **opts) -> dict:
     """Custos, proveitos e resultado do exercício, para o painel.
 
-    Exclui o apuramento: o painel mostra sempre a actividade real do ano.
+    Exclui o apuramento nos custos e proveitos: o painel mostra a actividade
+    real do ano. A contagem e o total movimentado NÃO o excluem — são «quantos
+    lançamentos há e quanto passou por eles», e o apuramento também passou.
     """
     from src.services.contabilidade import balancete
 
@@ -392,7 +394,48 @@ def resumo_resultado(db: Session, **opts) -> dict:
             custos += g["debito"] - g["credito"]
         elif g["classe"] == "6":
             proveitos += g["credito"] - g["debito"]
-    return {"custos": custos, "proveitos": proveitos, "resultado": proveitos - custos}
+
+    quantos, movimentado = _quanto_se_lancou(db, **opts)
+    return {
+        "custos": custos,
+        "proveitos": proveitos,
+        "resultado": proveitos - custos,
+        "lancamentos": quantos,
+        "movimentado": movimentado,
+    }
+
+
+def _quanto_se_lancou(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> tuple[int, Decimal]:
+    """Quantos lançamentos e quanto somam os seus débitos — o KPI «Lançamentos»
+    do painel do Piloto, que diz o número e, por baixo, «Movimentado X»."""
+    def filtrar(q):
+        q = q.where(
+            Lancamento.empresa_id == empresa_id, Lancamento.diferido.is_(False)
+        )
+        if exercicio_id is not None:
+            q = q.where(Lancamento.exercicio_id == exercicio_id)
+        if de is not None:
+            q = q.where(Lancamento.data >= de)
+        if ate is not None:
+            q = q.where(Lancamento.data <= ate)
+        return q
+
+    quantos = filtrar(select(func.count()).select_from(Lancamento))
+    # O total é a soma dos débitos: numa partida dobrada equilibrada os débitos
+    # já são o valor do lançamento — somar os dois lados contava tudo a dobrar.
+    total = filtrar(
+        select(func.coalesce(func.sum(LancamentoLinha.debito), 0)).join(
+            Lancamento, Lancamento.id == LancamentoLinha.lancamento_id
+        )
+    )
+    return db.scalar(quantos) or 0, db.scalar(total) or ZERO
 
 
 # ---------------------------------------------------------------------------

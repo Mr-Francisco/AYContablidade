@@ -120,3 +120,7 @@
 - Duas utilidades Tailwind em conflito na mesma string (`text-left` + `text-center`) não se resolvem pela ordem em que se escrevem; separar as variantes em constantes distintas.
 - Verificar no serviço antes de escrever na auditoria que «falta»: o `balancete_modelo` já existia em `demonstracoes.py` com o modelo Primavera completo, e eu tinha-o dado como trabalho por fazer.
 - Com o painel do browser não visível, os cliques do `computer` não chegam à página (nem sequer geram eventos): provar com `form_input`, `.click()` e `requestSubmit()`, e não concluir daí que o código está errado.
+- O painel do Piloto usa `formatKz` (zero casas decimais) — os cêntimos são para os mapas, não para o painel; usar `formataMoeda(v, moeda, 0)` nos dashboards.
+- O `.card-title` do Piloto não tem linha divisória: 16px a 800 e catorze píxeis de margem. A borda que a Produção desenhava aparecia em todos os cartões.
+- `/api/empresa` exige perfil admin: qualquer ecrã que precise do nome ou da moeda da empresa tem de usar `/api/empresa/cartao`, senão sai sem cabeçalho e com «Kz» por omissão.
+- Gatilhos de cabeçalho que dependem da empresa devem testar `utilizador.empresa_id`, não o objecto `empresa` — este é nulo para quem não pode ver a ficha.

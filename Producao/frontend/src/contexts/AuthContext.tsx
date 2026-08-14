@@ -82,6 +82,27 @@ interface AuthContexto {
 
 const Ctx = createContext<AuthContexto | null>(null);
 
+/**
+ * A empresa do utilizador, com a ficha completa se ele lá chegar.
+ *
+ * A ficha inteira (`/api/empresa`) é do administrador. Os outros perfis ficam
+ * pelo cartão — nome, NIF, código, moeda e regime —, que é o que todo o mapa
+ * precisa para levar cabeçalho e mostrar os valores na moeda certa. Sem isto,
+ * um contabilista imprimia o balancete sem nome de empresa e com «Kz» por
+ * omissão, mesmo numa empresa que trabalha noutra moeda.
+ */
+async function carregarEmpresa(): Promise<Empresa | null> {
+  try {
+    return await api.get<Empresa>("/api/empresa");
+  } catch {
+    try {
+      return await api.get<Empresa>("/api/empresa/cartao");
+    } catch {
+      return null; // não impede trabalhar; só o cabeçalho fica sem nome
+    }
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [utilizador, setUtilizador] = useState<Utilizador | null>(null);
@@ -102,13 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelado) return;
         setUtilizador(u);
         // O superadmin da plataforma não tem empresa — o 400 é esperado.
-        if (u.empresa_id) {
-          try {
-            setEmpresa(await api.get<Empresa>("/api/empresa"));
-          } catch {
-            /* perfis sem acesso a /api/empresa continuam a funcionar */
-          }
-        }
+        if (u.empresa_id) setEmpresa(await carregarEmpresa());
       } catch (e) {
         if (e instanceof ErroApi && e.precisaLogin) limparSessao();
       } finally {
@@ -128,13 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const abrirSessao = useCallback(async (r: RespostaLogin) => {
     guardarToken(r.access_token, r.expira_absoluto);
     setUtilizador(r.utilizador);
-    if (r.utilizador.empresa_id) {
-      try {
-        setEmpresa(await api.get<Empresa>("/api/empresa"));
-      } catch {
-        /* sem acesso à ficha da empresa — não impede entrar */
-      }
-    }
+    if (r.utilizador.empresa_id) setEmpresa(await carregarEmpresa());
   }, []);
 
   // Devolve `null` quando a sessão ficou aberta, ou o desafio quando falta o

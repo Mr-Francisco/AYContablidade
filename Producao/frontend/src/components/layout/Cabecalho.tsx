@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Dialog, DropdownMenu } from "radix-ui";
 import { Fragment, useMemo, useState } from "react";
 
+import { EtiquetaExercicio } from "@/components/layout/EtiquetaExercicio";
 import { iconeNav } from "@/components/layout/iconesNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTema } from "@/contexts/TemaContext";
@@ -143,6 +144,11 @@ export function Cabecalho() {
               {empresa.nome}
             </span>
           )}
+
+          {/* O exercício activo, como no Piloto — mas este abre. Ligado ao
+              utilizador ter empresa e não a termos a ficha dela: uma conta da
+              plataforma não tem exercícios, um contabilista tem. */}
+          {utilizador?.empresa_id && <EtiquetaExercicio />}
 
           <button
             type="button"

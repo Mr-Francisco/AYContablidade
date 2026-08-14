@@ -231,6 +231,9 @@ export interface Resumo {
   custos: string;
   proveitos: string;
   resultado: string;
+  /** Quantos lançamentos há no exercício, e quanto passou por eles. */
+  lancamentos?: number;
+  movimentado?: string;
 }
 
 export interface Balancete {

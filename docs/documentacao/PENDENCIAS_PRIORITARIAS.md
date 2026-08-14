@@ -417,6 +417,41 @@ Não confirmado — a verificar com o fornecedor escolhido. Ordens de grandeza:
 
 ---
 
+## 5. «Progresso Equipa» — o separador do administrador da empresa
+
+**Pedido pelo utilizador em 2026-08-14. Ainda não implementado.**
+
+Um separador **só para o administrador da empresa** — não para o
+superadministrador da plataforma, que já tem o seu, e não para os restantes
+perfis. Chama-se **Progresso Equipa**.
+
+**O que deve mostrar:** o resumo de tudo o que se passa na empresa, bloco a
+bloco — contabilidade, contas correntes, comercial, logística, imobilizados,
+RH e fiscalidade — para que o administrador veja num ecrã só em que pé está
+cada área, sem ter de entrar em sete módulos.
+
+**Como deve ser feito:** o mesmo layout dos painéis do Piloto —
+`dash-hero` com a faixa e os valores, `grid-4` de KPIs, e os cartões de
+gráfico (`chart-card`) por baixo. Não inventar um desenho novo: o Piloto tem
+sete painéis por módulo em `assets/js/dashboards.js`, e este é a soma deles.
+
+**Por decidir antes de começar:**
+
+- Que três a quatro números representam cada bloco. Um painel com quarenta
+  números não se lê — e o pedido foi «de forma resumida».
+- Se «progresso» quer dizer estado das áreas (o que está feito e o que
+  falta) ou actividade da equipa (quem lançou o quê). São dois painéis
+  diferentes; o nome sugere o segundo, a descrição sugere o primeiro.
+- Se cada bloco respeita as licenças e módulos da empresa — um bloco de RH
+  numa empresa sem RH deve desaparecer, não mostrar zeros.
+
+**Estimativa:** 2 a 3 dias depois de as três perguntas acima terem resposta.
+A maior parte dos números já existe em serviços (`resumo_resultado`,
+`balanco`, `contas_correntes`, os mapas de cada módulo); o trabalho é de
+agregação e interface.
+
+---
+
 ## Resumo para decisão
 
 **Pode começar já, sem depender de ninguém:**

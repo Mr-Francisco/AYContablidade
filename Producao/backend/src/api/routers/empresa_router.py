@@ -7,7 +7,9 @@ para outra empresa.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
 from src.api.deps import (
@@ -28,6 +30,41 @@ router = APIRouter(
     tags=["empresa"],
     dependencies=[Depends(exigir_perfil(Perfil.ADMIN))],
 )
+
+# ---------------------------------------------------------------------------
+# O cartão da empresa — fora do router acima, e por isso sem o `exigir_perfil`.
+#
+# Todo o mapa que se imprime leva o nome da empresa em cima e os valores na
+# moeda dela. Como a ficha inteira é do administrador, um contabilista tinha o
+# balancete a sair sem cabeçalho e os valores em «Kz» por omissão, mesmo numa
+# empresa que trabalha noutra moeda. Isso não é uma questão de permissões: é o
+# documento a sair errado.
+#
+# Aqui vão só os cinco campos que um cabeçalho precisa. Morada, contactos,
+# licença e configurações continuam onde estavam.
+# ---------------------------------------------------------------------------
+router_cartao = APIRouter(prefix="/api/empresa", tags=["empresa"])
+
+
+class CartaoEmpresa(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    nome: str
+    nif: str
+    codigo: str
+    moeda: str
+    regime: RegimeIVA
+
+
+@router_cartao.get("/cartao", response_model=CartaoEmpresa)
+def cartao(empresa: EmpresaAtual) -> CartaoEmpresa:
+    """Nome, NIF, código, moeda e regime — o que vai no topo de um mapa.
+
+    Qualquer utilizador autenticado da empresa; `EmpresaAtual` já garante que
+    é a dele e não outra.
+    """
+    return CartaoEmpresa.model_validate(empresa)
 
 
 class EmpresaAtualizar(BaseModel):
