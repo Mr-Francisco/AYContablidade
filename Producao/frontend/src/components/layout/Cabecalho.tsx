@@ -8,6 +8,7 @@ import { Fragment, useMemo, useState } from "react";
 
 import { EtiquetaExercicio } from "@/components/layout/EtiquetaExercicio";
 import { iconeNav } from "@/components/layout/iconesNav";
+import { Notificacoes } from "@/components/layout/Notificacoes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTema } from "@/contexts/TemaContext";
 import {
@@ -149,6 +150,10 @@ export function Cabecalho() {
               utilizador ter empresa e não a termos a ficha dela: uma conta da
               plataforma não tem exercícios, um contabilista tem. */}
           {utilizador?.empresa_id && <EtiquetaExercicio />}
+
+          {/* O sino do Piloto. Lá é uma casca — nada no Piloto cria uma
+              notificação. Aqui as notificações nascem das operações. */}
+          {utilizador?.empresa_id && <Notificacoes />}
 
           <button
             type="button"

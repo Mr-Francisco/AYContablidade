@@ -25,6 +25,7 @@ from src.services.contabilidade import (
     postar,
     proxima_subconta,
 )
+from src.services.notificacoes import notificar
 from src.services.logistica import armazem_venda, cfg_log, registar_movimento
 
 ZERO = Decimal("0")
@@ -247,6 +248,19 @@ def baixa_stock_venda(
 
     arm = armazem_venda(db, empresa_id)
     if arm is None:
+        # Notificação 2. Chave global e não por venda: enquanto não houver
+        # armazém, TODAS as facturas saem assim, e uma notificação por factura
+        # seria enterrar o problema em cópias de si mesmo.
+        notificar(
+            db, empresa_id=empresa_id, capacidade="logistica.gerir",
+            origem="comercial", chave="sem-armazem-venda",
+            titulo="Vendas a sair sem movimentar stock",
+            texto=(
+                "Não há armazém de saída configurado. As facturas estão a ser "
+                "emitidas sem baixa de stock nem lançamento do custo."
+            ),
+            ligacao="/configuracoes",
+        )
         return {
             "movimentos": [],
             "avisos": [
@@ -410,6 +424,22 @@ def emitir(
     if td["contab"] in ("venda", "venda_pronto"):
         bs = baixa_stock_venda(db, empresa_id=empresa_id, venda=venda, exercicio_id=exercicio_id)
         avisos = bs["avisos"]
+        # Notificação 1. A factura está emitida e numerada — não se desfaz. O
+        # proveito ficou lançado e o custo não: a margem do mês está errada e,
+        # sem isto, o aviso morria no ecrã de quem estava a facturar.
+        if avisos:
+            notificar(
+                db, empresa_id=empresa_id, capacidade="contab.lancar",
+                origem="comercial", chave=f"venda-sem-custo:{venda.id}",
+                titulo=f"{venda.numero} emitida sem o custo lançado",
+                texto=(
+                    "A saída de stock ou o lançamento do custo falhou: "
+                    + " · ".join(avisos)
+                    + ". O proveito está lançado, o custo não."
+                ),
+                ligacao="/comercial/vendas",
+                alvo_tipo="venda", alvo_id=venda.id,
+            )
 
     db.flush()
     return {

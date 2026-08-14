@@ -13,6 +13,7 @@ from src.api.routers import (
     compras_router,
     contabilidade_router,
     empresa_router,
+    notificacoes_router,
     fiscalidade_router,
     ia_router,
     imobilizados_router,
@@ -32,6 +33,7 @@ ROUTERS = (
     # `/metadados` e o mandava para o guarda de administrador.
     user_router.router_vocabulario,
     user_router.router,
+    notificacoes_router.router,
     empresa_router.router,
     empresa_router.router_cartao,
     licenca_router.router_publico,
@@ -56,6 +58,7 @@ __all__ = [
     "compras_router",
     "contabilidade_router",
     "empresa_router",
+    "notificacoes_router",
     "fiscalidade_router",
     "ia_router",
     "imobilizados_router",

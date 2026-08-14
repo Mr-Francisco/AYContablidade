@@ -27,6 +27,7 @@ from src.db.models.rh import (
     ProcessamentoSalarial,
 )
 from src.db.models.tenancy import ConfigEmpresa, Exercicio
+from src.services.notificacoes import notificar, resolver
 from src.services.contabilidade import (
     ErroContabilistico,
     conta_corrente,
@@ -491,6 +492,26 @@ def processar_mes(
         reg.totais = totais_str
         reg.lancado = lancado
         reg.lancamento_id = lancamento_id
+
+    # Notificação 5. Processado e por lançar quer dizer que o custo com
+    # pessoal do mês não está nas contas. O registo fica com `lancado` a
+    # falso e mais nada acontece — é preciso alguém saber.
+    chave = f"salarios-por-lancar:{exercicio_id}:{mes}"
+    if lancado:
+        resolver(db, empresa_id=empresa_id, chave=chave)
+    else:
+        notificar(
+            db, empresa_id=empresa_id, capacidade="contab.lancar",
+            origem="rh", chave=chave,
+            titulo=f"Salários de {rotulo} processados e por lançar",
+            texto=(
+                "O processamento está fechado mas não foi lançado. O custo "
+                "com pessoal do mês não está na contabilidade."
+            ),
+            ligacao="/rh/processamento",
+            alvo_tipo="processamento_salarial", alvo_id=reg.id,
+        )
+
     db.flush()
 
     return {

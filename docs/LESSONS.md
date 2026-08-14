@@ -146,3 +146,5 @@
 - Uma nota sem a coluna do ano anterior não é uma nota: «8 500 000» sozinho não diz se a empresa investiu, amortizou ou vendeu.
 - Escrever num sítio e lançar no outro: LANÇAR PRIMEIRO. Se o lançamento falhar não se escreve nada — a ordem inversa deixa a ficha a discordar das contas sem erro nenhum.
 - Um `if` que envolve o lançamento sem `else` é uma divergência silenciosa à espera: faltavam as contas de amortização e o activo era amortizado sem lançamento nem erro.
+- Uma capacidade `*` não casa num `IN (...)`: o administrador, que pode tudo, não via notificação nenhuma. Sempre que se filtra por capacidade, tratar o `*` à parte.
+- Repor o acesso de uma conta de demonstração NÃO regenera o segredo de 2FA: decifra-se o que lá está e volta-se a desenhar o mesmo QR — regerar invalidaria o telemóvel de quem o configurou.

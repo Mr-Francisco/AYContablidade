@@ -94,6 +94,14 @@ def guardar_cfg_log(db: Session, empresa_id: UUID, novo: dict) -> dict:
     params["log"] = {**cfg_log_default(), **(params.get("log") or {}), **novo}
     cfg.parametrizacoes = params
     db.flush()
+
+    # Configurado o armazém, a situação que gerou a notificação 2 deixou de
+    # existir. Fica no histórico, marcada como resolvida.
+    if armazem_venda(db, empresa_id) is not None:
+        from src.services.notificacoes import resolver
+
+        resolver(db, empresa_id=empresa_id, chave="sem-armazem-venda")
+
     return params["log"]
 
 

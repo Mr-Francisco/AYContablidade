@@ -567,3 +567,20 @@ Plataforma (campo da empresa VAZIO)
 Código TOTP do superadmin (depois do atalho da secção 6):
   .venv/Scripts/python.exe -c "import pyotp; print(pyotp.TOTP('JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP').now())"
 ```
+
+---
+
+## Perdeu a palavra-passe de uma conta de demonstração
+
+Só em desenvolvimento. O script recusa-se a correr com `AMBIENTE=producao`.
+
+```bash
+python scripts/repor_acesso_demo.py admin@demo.ao
+```
+
+Repõe a palavra-passe para `demo12345`, termina as sessões abertas, e volta a
+mostrar o **QR do segundo factor que já lá está** — o mesmo segredo, para que
+a entrada que já existe na aplicação autenticadora continue a servir. Grava
+`qr_2fa.svg` na pasta do backend.
+
+Para desligar também o segundo factor: `--sem-2fa`.

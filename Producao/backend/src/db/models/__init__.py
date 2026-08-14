@@ -30,6 +30,7 @@ from src.db.models.contabilidade import (
 from src.db.models.ia import ConsultaIA, ModeloIA
 from src.db.models.imobilizados import Ativo, ProcessoAmortizacao
 from src.db.models.logistica import Armazem, Artigo, MovimentoStock
+from src.db.models.notificacoes import Notificacao, NotificacaoLida
 from src.db.models.rh import (
     AlteracaoMensal,
     Colaborador,
@@ -58,6 +59,8 @@ __all__ = [
     "CentroCusto",
     "Colaborador",
     "Compra",
+    "Notificacao",
+    "NotificacaoLida",
     "CompraLinha",
     "ConfigEmpresa",
     "ConsultaIA",

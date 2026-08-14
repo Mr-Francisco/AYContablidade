@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from src.db.models.imobilizados import Ativo, ProcessoAmortizacao
 from src.db.models.tenancy import ConfigEmpresa
+from src.services.notificacoes import notificar, resolver
 from src.services.contabilidade import ErroContabilistico, postar
 
 ZERO = Decimal("0")
@@ -285,6 +286,25 @@ def processar_periodo(
         itens=itens, total_amort=total, por=por or "sistema",
     )
     db.add(batch)
+
+    # Notificação 4. Os activos que falharam NÃO foram amortizados — isso já
+    # está garantido acima. O que a notificação diz é que ficaram por
+    # amortizar, e porquê: sem isto, o período aparece «processado» e ninguém
+    # repara que faltaram activos lá dentro.
+    if erros:
+        notificar(
+            db, empresa_id=empresa_id, capacidade="contab.lancar",
+            origem="imobilizado",
+            chave=f"amort-por-lancar:{exercicio_id}:{mes}",
+            titulo=f"{len(erros)} activo(s) por amortizar em {mes}",
+            texto=(
+                "Estes activos não foram amortizados nem lançados: "
+                + " · ".join(erros)
+            ),
+            ligacao="/imobilizados/amortizacoes",
+            alvo_tipo="processo_amortizacao", alvo_id=batch.id,
+        )
+
     db.flush()
     return {"processados": len(itens), "total_amort": total,
             "lancados": len(lancamento_ids), "erros": erros, "processo_id": batch.id}
@@ -314,5 +334,8 @@ def reabrir_periodo(
                 db.delete(lanc)
 
     db.delete(batch)
+    # Reabrir desfaz o processamento inteiro: o que estava por amortizar
+    # deixou de estar, porque já não há período processado nenhum.
+    resolver(db, empresa_id=empresa_id, chave=f"amort-por-lancar:{exercicio_id}:{mes}")
     db.flush()
     return True

@@ -21,6 +21,7 @@ from src.db.models.comercial import Compra
 from src.db.models.contabilidade import DocumentoContabilistico
 from src.services.contabilidade import ErroContabilistico
 from src.services.comercial import proximo_numero
+from src.services.notificacoes import notificar
 from src.services.logistica import cfg_log, registar_movimento
 
 ZERO = Decimal("0")
@@ -126,6 +127,24 @@ def emitir_compra(
     compra.estado = "emitida"
     compra.documento_nome = doc.descricao
     compra.emitido_em = agora()
+
+    # Notificação 3. Alguma linha entrou, por isso o documento é dado por
+    # emitido — mas a mercadoria das linhas que falharam não está no
+    # inventário nem nas contas, e o documento diz «emitida».
+    if erros:
+        notificar(
+            db, empresa_id=empresa_id, capacidade="logistica.gerir",
+            origem="compras", chave=f"compra-linhas-falhadas:{compra.id}",
+            titulo=f"Compra {compra.numero}: {len(erros)} linha(s) não entraram em stock",
+            texto=(
+                "O documento foi emitido, mas estas linhas falharam: "
+                + " · ".join(erros)
+                + ". A mercadoria não está no inventário."
+            ),
+            ligacao="/logistica/compras",
+            alvo_tipo="compra", alvo_id=compra.id,
+        )
+
     db.flush()
     return {
         "compra_id": compra.id, "numero": compra.numero,
