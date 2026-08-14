@@ -111,7 +111,7 @@ export function Cabecalho() {
           <span className="hidden flex-col leading-[1.05] sm:flex">
             <b className="text-[13px] tracking-[3px] text-acento">SGD</b>
             <span className="text-[8.5px] tracking-[2px] text-texto-suave">
-              SISTEMA DE GESTÃO DISTRIBUÍDO
+              SOFTWARE DE GESTÃO DIRIGIDA
             </span>
           </span>
         </Link>

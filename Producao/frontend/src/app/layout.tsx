@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "SGD — Sistema de Gestão Distribuído",
+    default: "SGD — Software de Gestão Dirigida",
     template: "%s · SGD",
   },
   description: "ERP de Contabilidade — Plano Geral de Contabilidade de Angola.",

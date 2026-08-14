@@ -116,3 +116,7 @@
 - A `.toolbar` do Piloto não tem moldura nem fundo. O cartão que a Produção lhe punha criava uma caixa dentro da caixa em todas as páginas de uma vez.
 - O `formatter` do tooltip do Recharts recebe `ValueType | undefined`, não `number`: tipar o parâmetro como `number` não compila.
 - Antes de dar uma diferença por confirmada na auditoria, procurar no código da Produção: o «incluir subcontas» do razão e o «apurar e lançar» do IVA já existiam, e eu tinha-os listado como em falta.
+- O `Select` do Radix reserva a string vazia para «nada seleccionado»: uma opção com `valor: ""` aparece como o placeholder e não com o seu rótulo — trocar por um sentinela dentro do `Selector`, nunca em cada página.
+- Duas utilidades Tailwind em conflito na mesma string (`text-left` + `text-center`) não se resolvem pela ordem em que se escrevem; separar as variantes em constantes distintas.
+- Verificar no serviço antes de escrever na auditoria que «falta»: o `balancete_modelo` já existia em `demonstracoes.py` com o modelo Primavera completo, e eu tinha-o dado como trabalho por fazer.
+- Com o painel do browser não visível, os cliques do `computer` não chegam à página (nem sequer geram eventos): provar com `form_input`, `.click()` e `requestSubmit()`, e não concluir daí que o código está errado.

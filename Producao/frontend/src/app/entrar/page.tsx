@@ -1,12 +1,13 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Moon, ShieldCheck, Sun } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useState } from "react";
 
 import { Alerta, Botao, Campo, Entrada } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTema } from "@/contexts/TemaContext";
 import { ErroApi } from "@/lib/api";
 import type { Utilizador } from "@/types";
 
@@ -112,91 +113,161 @@ function Formulario() {
       };
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-5 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-        className="w-full max-w-[420px]"
-      >
-        <div className="mb-7 flex items-center gap-3">
-          <span className="rounded-xl bg-marca px-3 py-1.5 text-[28px] font-black leading-none tracking-[-1px] text-white">
-            SGD
-          </span>
-          <div className="flex flex-col leading-tight">
-            <b className="text-base tracking-[3px] text-acento">SGD</b>
-            <span className="text-[9px] tracking-[2px] text-texto-suave">
-              SISTEMA DE GESTÃO DISTRIBUÍDO
-            </span>
-          </div>
-        </div>
+    // A `.auth` do Piloto: duas colunas, 1.05fr para a faixa de marca e 0.95fr
+    // para o formulário, e abaixo de 860px passa a uma coluna só.
+    <main className="grid min-h-[100dvh] grid-rows-[auto_1fr] min-[860px]:grid-cols-[1.05fr_0.95fr] min-[860px]:grid-rows-1">
+      <Faixa />
 
-        {/* `layout` faz a altura acompanhar a troca de passo em vez de saltar.
-            A diferença entre os dois formulários é de dezenas de píxeis, e sem
-            isto o cartão encolhia de repente e a página inteira re-centrava-se. */}
+      <section className="relative flex items-center justify-center bg-fundo px-5 pb-11 pt-[30px] min-[860px]:px-7 min-[860px]:py-11">
+        <BotaoTema />
+
         <motion.div
-          layout={!menosMovimento}
-          transition={{ duration: 0.22, ease: "easeOut" }}
-          className="overflow-hidden rounded-[14px] border border-borda bg-superficie shadow-forte"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="w-full max-w-[400px]"
         >
+          {/* `layout` faz a altura acompanhar a troca de passo em vez de saltar.
+              A diferença entre os dois formulários é de dezenas de píxeis, e sem
+              isto o cartão encolhia de repente e a coluna re-centrava-se. */}
           <motion.div
-            key={desafio ? "2fa" : "credenciais"}
-            {...entrada}
-            className="p-7"
+            layout={!menosMovimento}
+            transition={{ duration: 0.22, ease: "easeOut" }}
           >
-            {desafio ? (
-              <PassoDois
-                email={email}
-                codigo={codigo}
-                setCodigo={setCodigo}
-                erro={erro}
-                aEntrar={aEntrar}
-                aoSubmeter={submeterCodigo}
-                aoVoltar={recomecar}
-              />
-            ) : (
-              <PassoUm
-                empresa={empresa}
-                setEmpresa={setEmpresa}
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                erro={erro}
-                aEntrar={aEntrar}
-                aoSubmeter={submeter}
-              />
-            )}
+            <motion.div key={desafio ? "2fa" : "credenciais"} {...entrada}>
+              {desafio ? (
+                <PassoDois
+                  email={email}
+                  codigo={codigo}
+                  setCodigo={setCodigo}
+                  erro={erro}
+                  aEntrar={aEntrar}
+                  aoSubmeter={submeterCodigo}
+                  aoVoltar={recomecar}
+                />
+              ) : (
+                <PassoUm
+                  empresa={empresa}
+                  setEmpresa={setEmpresa}
+                  email={email}
+                  setEmail={setEmail}
+                  password={password}
+                  setPassword={setPassword}
+                  erro={erro}
+                  aEntrar={aEntrar}
+                  aoSubmeter={submeter}
+                />
+              )}
+            </motion.div>
           </motion.div>
-        </motion.div>
 
-        <p className="mt-5 text-center text-[13px] text-texto-suave">
-          {desafio ? (
-            <>
-              Perdeu o telemóvel? Use um dos <b>códigos de recuperação</b> que
-              guardou ao activar a verificação.
-            </>
-          ) : (
-            <>
-              Ainda não tem conta?{" "}
-              <a
-                href="/registar"
-                className="font-semibold text-marca hover:underline"
-              >
-                Registar numa empresa
-              </a>
-              {" · "}
-              <a
-                href="/activar"
-                className="font-semibold text-marca hover:underline"
-              >
-                Activar licença
-              </a>
-            </>
-          )}
-        </p>
-      </motion.div>
+          <p className="mt-3.5 text-center text-sm">
+            {desafio ? (
+              <span className="text-texto-suave">
+                Perdeu o telemóvel? Use um dos <b>códigos de recuperação</b> que
+                guardou ao activar a verificação.
+              </span>
+            ) : (
+              <>
+                Ainda não tem conta?{" "}
+                <a href="/registar" className="font-bold text-marca">
+                  Registar numa empresa
+                </a>
+                {" · "}
+                <a href="/activar" className="font-bold text-marca">
+                  Activar licença
+                </a>
+              </>
+            )}
+          </p>
+        </motion.div>
+      </section>
     </main>
+  );
+}
+
+// ---------------------------------------------------------------------------
+/**
+ * A faixa de marca do Piloto (`.auth-hero`): gradiente, logótipo, promessa e
+ * os três módulos. Os dois círculos são pseudo-elementos no Piloto — aqui são
+ * dois `span` absolutos, porque o Tailwind não dá jeito para `::before` com
+ * geometria própria e o resultado no ecrã é o mesmo.
+ */
+function Faixa() {
+  return (
+    <section className="gradiente-marca relative flex flex-col justify-between overflow-hidden px-[22px] py-[26px] text-white min-[860px]:px-12 min-[860px]:py-[52px]">
+      <span
+        aria-hidden
+        className="absolute -right-[130px] -top-[150px] size-[440px] rounded-full bg-white/[0.08]"
+      />
+      <span
+        aria-hidden
+        className="absolute -bottom-[130px] -left-[90px] size-[320px] rounded-full bg-black/10"
+      />
+
+      <div className="relative z-[1] flex items-center gap-3">
+        <span className="rounded-xl bg-black/30 px-3.5 py-1.5 text-[30px] font-black leading-none tracking-[-1px]">
+          SGD
+        </span>
+        <span className="flex flex-col leading-[1.05]">
+          <b className="text-[15px] tracking-[4px]">SGD</b>
+          <span className="text-[9.5px] tracking-[2px] opacity-85">
+            SOFTWARE DE GESTÃO DIRIGIDA
+          </span>
+        </span>
+      </div>
+
+      <div className="relative z-[1] my-4 min-[860px]:my-0">
+        <h2 className="mb-3 text-2xl font-extrabold leading-[1.15] min-[860px]:text-[34px]">
+          Toda a empresa,
+          <br />
+          num só sistema.
+        </h2>
+        <p className="max-w-[430px] text-[15px] leading-[1.55] opacity-90">
+          Contabilidade, contas correntes, logística, imobilizados, comercial e
+          RH — módulos ligados entre si.
+        </p>
+        <ul className="mt-7 hidden list-none flex-col gap-[13px] p-0 min-[860px]:flex">
+          {[
+            ["📒", "Contabilidade geral (PGC Angola) e analítica"],
+            ["💳", "Contas correntes, tesouraria e imobilizados"],
+            ["👥", "Comercial, logística e recursos humanos"],
+          ].map(([icone, texto]) => (
+            <li
+              key={texto}
+              className="flex items-center gap-3 text-[14.5px] font-medium"
+            >
+              <span className="flex size-9 flex-none items-center justify-center rounded-[10px] bg-white/[0.18] text-lg">
+                {icone}
+              </span>
+              {texto}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="relative z-[1] hidden text-[12.5px] opacity-80 min-[860px]:block">
+        © {new Date().getFullYear()} SGD · Software de Gestão Dirigida
+      </div>
+    </section>
+  );
+}
+
+/** O `#themeBtn` do Piloto, no canto do painel. */
+function BotaoTema() {
+  const { tema, alternar } = useTema();
+  return (
+    <button
+      type="button"
+      onClick={alternar}
+      title="Alternar tema"
+      aria-label={
+        tema === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"
+      }
+      className="absolute right-[18px] top-[18px] flex size-[38px] items-center justify-center rounded-[10px] border border-borda bg-superficie-2 text-texto transition-colors hover:border-acento"
+    >
+      {tema === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+    </button>
   );
 }
 
@@ -222,13 +293,13 @@ function PassoUm({
   aEntrar: boolean;
   aoSubmeter: (e: FormEvent) => void;
 }) {
+  const [aVer, setAVer] = useState(false);
+
   return (
     <>
-      <h1 className="mb-1 text-[22px] font-bold tracking-[-0.3px]">
-        Iniciar sessão
-      </h1>
-      <p className="mb-6 text-sm text-texto-suave">
-        Introduza as suas credenciais para aceder ao sistema.
+      <h1 className="mb-1 text-[25px] font-bold tracking-[-0.3px]">Entrar</h1>
+      <p className="mb-5 text-[13.5px] text-texto-suave">
+        Aceda com a sua conta para continuar.
       </p>
 
       <form onSubmit={aoSubmeter} className="flex flex-col gap-4">
@@ -262,16 +333,44 @@ function PassoUm({
           />
         </Campo>
 
-        <Campo rotulo="Palavra-passe">
-          <Entrada
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-            placeholder="••••••••"
-          />
-        </Campo>
+        {/* O olho do Piloto (`.toggle-eye`): quem escreve uma palavra-passe
+            longa num teclado de telemóvel precisa de a poder ver.
+
+            SEM `Campo` aqui, e de propósito: o `Campo` envolve tudo num
+            `<label>`, e um botão dentro de um rótulo fica dependente da
+            activação implícita do campo associado. O Piloto tem o `<label>` à
+            parte e o `.input-wrap` a seguir; é a mesma estrutura. */}
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="password"
+            className="text-[13px] font-bold text-texto"
+          >
+            Palavra-passe
+          </label>
+          <div className="relative">
+            <Entrada
+              id="password"
+              type={aVer ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              placeholder="••••••••"
+              className="pr-11"
+            />
+            <button
+              type="button"
+              onClick={() => setAVer(!aVer)}
+              title="Mostrar/ocultar"
+              aria-label={
+                aVer ? "Ocultar palavra-passe" : "Mostrar palavra-passe"
+              }
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1.5 text-texto-suave hover:bg-superficie-2"
+            >
+              {aVer ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
 
         {erro && <Alerta tipo="erro">{erro}</Alerta>}
 

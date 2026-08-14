@@ -265,9 +265,10 @@ export function Campo({
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: o input vem em children e fica envolvido pelo label (associacao implicita, valida em HTML); o Biome nao verifica isto estaticamente.
     <label className={cn("flex flex-col gap-1.5 min-w-0", className)}>
-      <span className="text-[12.5px] font-semibold text-texto-suave">
-        {rotulo}
-      </span>
+      {/* A regra global do Piloto: `label { font-size: 13px; font-weight: 700;
+          color: var(--text) }`. A Produção tinha-os mais pequenos e cinzentos,
+          o que dá aos formulários um ar de legenda em vez de rótulo. */}
+      <span className="text-[13px] font-bold text-texto">{rotulo}</span>
       {children}
       {dica && !erro && (
         <span className="text-[11.5px] text-texto-suave">{dica}</span>

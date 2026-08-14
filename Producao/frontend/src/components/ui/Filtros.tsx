@@ -18,16 +18,58 @@ export function BarraFiltros({
     // A `.toolbar` do Piloto: só uma fila de controlos, sem moldura nem fundo
     // próprios. O cartão que aqui estava criava uma caixa dentro da caixa e
     // afastava a Produção do Piloto em todas as páginas de uma vez.
-    <div className={cn("flex flex-wrap items-center gap-2.5", className)}>
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-2.5",
+        ROTULO_AO_LADO,
+        className,
+      )}
+    >
       {children}
     </div>
   );
 }
 
+/**
+ * Numa barra de filtros o rótulo fica AO LADO do campo, não por cima.
+ *
+ * É a regra do Piloto — `label { display: block }` com o texto e o controlo na
+ * mesma linha, e `.toolbar label { margin: 0; font-weight: 600 }`. A Produção
+ * empilhava-os, o que faz a barra crescer em altura e dá àquela fila de
+ * controlos um ar de formulário. Posto aqui e não em cada `Campo` porque a
+ * diferença é da barra: no meio de um formulário o rótulo por cima está certo.
+ */
+const ROTULO_AO_LADO = [
+  "[&>label]:flex-row [&>label]:items-center [&>label]:gap-2",
+  // `.toolbar label { font-weight: 600 }` — um grau abaixo do rótulo de
+  // formulário, porque aqui há muitos lado a lado.
+  "[&>label>span:first-child]:whitespace-nowrap",
+  "[&>label>span:first-child]:font-semibold",
+  // A caixa de pesquisa é a única que quer crescer: vem embrulhada num `div`
+  // por causa da lupa, e sem isto ficava com a largura de sempre e um vão de
+  // quatrocentos pixéis ao lado. Os outros campos ficam do seu tamanho.
+  "[&>label>div]:flex-1",
+].join(" ");
+
 interface Opcao {
   valor: string;
   rotulo: string;
 }
+
+/**
+ * O Radix reserva a string vazia para «nada seleccionado» e, ao vê-la, mostra
+ * o placeholder. Só que nos filtros o vazio É uma escolha, e tem nome próprio:
+ * «Todos os exercícios», «Toda a natureza», «Todos (15 · Resultado Líquido)».
+ * O ecrã dizia «Seleccionar…» em vinte páginas onde o Piloto diz o nome da
+ * opção.
+ *
+ * Trocamos por um sentinela à entrada e desfazemos à saída, para que as
+ * páginas continuem a escrever `valor: ""` como no `<option value="">` do
+ * Piloto e ninguém tenha de se lembrar disto.
+ */
+const SEM_VALOR = "__vazio__";
+const paraRadix = (v: string | undefined) => (v === "" ? SEM_VALOR : v);
+const doRadix = (v: string) => (v === SEM_VALOR ? "" : v);
 
 /**
  * Selector. Usa Radix `Select` — teclado, leitores de ecrã e posicionamento
@@ -54,11 +96,12 @@ export function Selector({
     // biome-ignore lint/a11y/noLabelWithoutControl: o label envolve o trigger do Radix Select, que ja recebe aria-label; o Biome nao reconhece o componente como controlo.
     <label className={cn("flex min-w-0 flex-col gap-1.5", className)}>
       {rotulo && (
-        <span className="text-[12.5px] font-semibold text-texto-suave">
-          {rotulo}
-        </span>
+        <span className="text-[13px] font-bold text-texto">{rotulo}</span>
       )}
-      <Select.Root value={valor} onValueChange={aoMudar}>
+      <Select.Root
+        value={paraRadix(valor)}
+        onValueChange={(v) => aoMudar(doRadix(v))}
+      >
         <Select.Trigger
           className="flex items-center justify-between gap-2 rounded-[10px] border border-borda bg-superficie px-3 py-2.5 text-sm text-texto outline-none focus:border-acento focus:ring-2 focus:ring-acento/25 data-[placeholder]:text-texto-suave/70"
           style={{ minWidth: larguraMinima }}
@@ -79,7 +122,7 @@ export function Selector({
               {opcoes.map((o) => (
                 <Select.Item
                   key={o.valor}
-                  value={o.valor}
+                  value={paraRadix(o.valor) ?? o.valor}
                   className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm outline-none data-[highlighted]:bg-superficie-2"
                 >
                   <Select.ItemText>{o.rotulo}</Select.ItemText>

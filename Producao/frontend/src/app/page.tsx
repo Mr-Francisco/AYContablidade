@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_PT",
     url: SITE,
-    siteName: "SGD — Sistema de Gestão Distribuído",
+    siteName: "SGD — Software de Gestão Dirigida",
     title: "SGD — ERP de contabilidade para empresas em Angola",
     description:
       "Contabilidade em PGC-AR, IVA, RH com IRT e INSS, facturação, stocks e " +
@@ -60,7 +60,7 @@ const DADOS_ESTRUTURADOS = {
   "@graph": [
     {
       "@type": "SoftwareApplication",
-      name: "SGD — Sistema de Gestão Distribuído",
+      name: "SGD — Software de Gestão Dirigida",
       applicationCategory: "BusinessApplication",
       applicationSubCategory: "Accounting",
       operatingSystem: "Web",
@@ -365,7 +365,7 @@ export default function Apresentacao() {
             <span className="hidden flex-col leading-[1.05] sm:flex">
               <b className="text-[13px] tracking-[3px] text-acento">SGD</b>
               <span className="text-[8.5px] tracking-[2px] text-texto-suave">
-                SISTEMA DE GESTÃO DISTRIBUÍDO
+                SOFTWARE DE GESTÃO DIRIGIDA
               </span>
             </span>
           </Link>
@@ -683,8 +683,8 @@ export default function Apresentacao() {
                 SGD
               </span>
               <p className="mt-3.5 text-[13px] leading-relaxed text-texto-suave">
-                Sistema de Gestão Distribuído — ERP de contabilidade para
-                empresas em Angola, em conformidade com o PGC-AR.
+                Software de Gestão Dirigida — ERP de contabilidade para empresas
+                em Angola, em conformidade com o PGC-AR.
               </p>
             </div>
 

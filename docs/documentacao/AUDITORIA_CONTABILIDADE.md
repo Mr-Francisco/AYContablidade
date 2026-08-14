@@ -161,11 +161,14 @@ F4 e duplo clique nos campos Conta Débito / Conta Crédito.
 
 ## Resumo do que falta
 
-**Grande (serviço + interface):**
-1. Balancete Modelo Primavera — 3 grupos de colunas, subtotais, intervalos.
-2. ~~Movimentos~~ — **feito**.
-3. Plano de Contas em árvore.
-4. Painel Contabilístico.
+**Grande (serviço + interface) — todos feitos:**
+1. ~~Balancete Modelo Primavera~~ — feito. **Não exigiu trabalho de serviço
+   nenhum:** o `balancete_modelo` já estava em `demonstracoes.py`, transposto
+   linha a linha do Piloto, e havia rota (`GET /api/relatorios/balancete-modelo`).
+   O que faltava era a página usá-lo — estava a pedir o balancete simples.
+2. ~~Movimentos~~ — feito.
+3. ~~Plano de Contas em árvore~~ — feito.
+4. ~~Painel Contabilístico~~ — feito.
 
 **Médio — todos feitos:**
 5. ~~Apuramento de resultados~~ — feito (falta «Ver lançamento»).
@@ -175,7 +178,26 @@ F4 e duplo clique nos campos Conta Débito / Conta Crédito.
 9. ~~Importar plano~~ — feito.
 
 **Falta ainda:**
-- Balancete Modelo Primavera (3 grupos de colunas) — exige trabalho de serviço.
-- Painel Contabilístico (faixa, donut, últimos lançamentos, duas barras).
 - Plano de Contas: testar criar/editar/importar no browser.
 - Explorador: comparar linha a linha.
+- Resultados: «Ver lançamento» no apuramento.
+
+### Balancete Geral — o que ficou (verificado no browser)
+
+| Do Piloto | Estado |
+|---|---|
+| Três grupos `Anterior · Período · Acumulado`, cabeçalho em duas filas | ✅ |
+| `Análise` com os quatro modos, a estreitar a tabela | ✅ |
+| `De` / `Até` / `Até ao mês` (cumulativo) | ✅ |
+| `De conta` / `Até conta` por comparação de texto, com `startsWith` no topo | ✅ 31→32 dá Clientes e Fornecedores e todos os descendentes |
+| `Grau de detalhe`: todas · razão · sub · classe | ✅ classe agrega a 937 650 D / 2 280 000 C |
+| `Limpar filtro` | ✅ repõe os três |
+| Subtotal por raiz + linha de respiro | ✅ |
+| Integradoras a negrito, saldo com sufixo D/C, zeros em branco | ✅ |
+| `TOTAL ✓` / `✗ desequilíbrio` | ✅ 32 299 650,00 dos dois lados |
+| Duplo clique abre o extracto | ✅ |
+| Exportar CSV com uma coluna por grupo activo | ✅ |
+
+**Diferenças assumidas:** o «Excluir apuramento» e a pesquisa por texto que a
+Produção tinha aqui não existem no Piloto — saíram. O serviço continua a
+aceitar `excluir_apuramento`.

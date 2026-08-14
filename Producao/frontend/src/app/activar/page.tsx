@@ -252,7 +252,7 @@ function Envolvente({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col leading-tight">
             <b className="text-base tracking-[3px] text-acento">SGD</b>
             <span className="text-[9px] tracking-[2px] text-texto-suave">
-              SISTEMA DE GESTÃO DISTRIBUÍDO
+              SOFTWARE DE GESTÃO DIRIGIDA
             </span>
           </div>
         </div>
