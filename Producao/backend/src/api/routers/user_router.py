@@ -71,19 +71,22 @@ def _legivel(valor):
     return str(valor)
 
 
-@router.get("", response_model=list[UtilizadorPublico])
-def listar(empresa: EmpresaAtual, db: DB) -> list[UtilizadorPublico]:
-    """Contas da empresa, pendentes primeiro (como na tabela do Piloto)."""
-    users = db.scalars(
-        select(User)
-        .where(User.empresa_id == empresa.id)
-        .order_by(User.aprovado.asc(), User.nome.asc())
-    ).all()
-    return [UtilizadorPublico.model_validate(u) for u in users]
+# ---------------------------------------------------------------------------
+# O vocabulário do sistema — fora do router acima, e por isso sem `exigir_perfil`.
+#
+# São os NOMES e as CORES dos perfis, dos módulos e das acções. Não dizem nada
+# sobre ninguém: dizem que o perfil `contabilista` se escreve «Contabilista» e
+# é azul-escuro. Estavam trancados atrás do perfil de administrador porque a
+# primeira página a precisar deles foi a de gestão de utilizadores.
+#
+# O efeito colateral era o ecrã «O Meu Perfil» de toda a gente: quem não é
+# administrador via o seu próprio perfil escrito `contabilista`, em minúsculas
+# e a cinzento, porque o pedido que traz o rótulo e a cor devolvia 403.
+# ---------------------------------------------------------------------------
+router_vocabulario = APIRouter(prefix="/api/users", tags=["utilizadores"])
 
 
-
-@router.get("/metadados")
+@router_vocabulario.get("/metadados")
 def metadados() -> dict:
     """Perfis, módulos e capacidades, com os rótulos e cores do sistema.
 
@@ -108,6 +111,18 @@ def metadados() -> dict:
         ],
         "accoes": [str(a) for a in Accao],
     }
+
+@router.get("", response_model=list[UtilizadorPublico])
+def listar(empresa: EmpresaAtual, db: DB) -> list[UtilizadorPublico]:
+    """Contas da empresa, pendentes primeiro (como na tabela do Piloto)."""
+    users = db.scalars(
+        select(User)
+        .where(User.empresa_id == empresa.id)
+        .order_by(User.aprovado.asc(), User.nome.asc())
+    ).all()
+    return [UtilizadorPublico.model_validate(u) for u in users]
+
+
 
 @router.get("/pendentes", response_model=list[UtilizadorPublico])
 def pendentes(empresa: EmpresaAtual, db: DB) -> list[UtilizadorPublico]:

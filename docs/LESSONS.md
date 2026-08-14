@@ -136,3 +136,6 @@
 - Anular um movimento contabilizado é ESTORNO, nunca eliminação: o original fica marcado, nasce o contrário, e o lançamento reverte-se com as MESMAS linhas de D e C trocados — reconstruí-lo da configuração falha se as contas mudaram entretanto.
 - O movimento contrário usa o TIPO SIMÉTRICO (entrada↔saída), não o mesmo tipo com quantidade negativa: `custo_medio()` lê `abs(qtd)` e trataria uma «entrada» de −10 como entrada de 10.
 - O autogenerate do Alembic arrasta desvios anteriores de outras tabelas: ler sempre a migração gerada e deixar lá só o que é da alteração.
+- Rotas com caminho fixo (`/metadados`) têm de ser registadas ANTES de routers com `/{id}`: o `/{user_id}` do router de administração casava com `/metadados` e devolvia 403.
+- Um ecrã que espera um pedido que devolve 403 fica com «A carregar…» para sempre: distinguir erro de espera no SWR e dizer que não há acesso.
+- Não migrar um interruptor que na Produção não muda nada: se a rota já exige a capacidade sempre, uma caixa que se desliga engana quem a desliga. Dizer qual é a regra.

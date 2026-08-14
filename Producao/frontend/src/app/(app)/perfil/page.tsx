@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound } from "lucide-react";
+import { KeyRound, LogOut } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import useSWR from "swr";
 import { SegundoFactor } from "@/components/perfil/SegundoFactor";
@@ -56,6 +56,24 @@ export default function Perfil() {
           >
             Conta
           </TituloCartao>
+
+          {/* O cartão do Piloto abre com a fotografia da conta: iniciais na
+              cor do perfil, nome, e-mail e perfil por baixo. É o que dá a
+              quem entra a confirmação imediata de que está na conta certa. */}
+          <div className="mb-4 flex items-center gap-3.5">
+            <span
+              className="flex size-[52px] shrink-0 items-center justify-center rounded-full text-xl font-extrabold text-white"
+              style={{ background: perfil?.cor ?? "#62657a" }}
+            >
+              {iniciais(utilizador.nome)}
+            </span>
+            <div className="min-w-0">
+              <b className="block truncate text-lg">{utilizador.nome}</b>
+              <span className="block truncate text-[13px] text-texto-suave">
+                {utilizador.email} · {perfil?.nome ?? utilizador.perfil}
+              </span>
+            </div>
+          </div>
 
           <dl className="flex flex-col gap-2 text-sm">
             <Par rotulo="Nome" valor={utilizador.nome} />
@@ -129,6 +147,16 @@ export default function Perfil() {
 
           <SegundoFactor />
           <AlterarPassword aoTerminar={sair} />
+
+          {/* O «Terminar sessão» do Piloto, no fim do cartão de perfil. Está
+              também no menu do cabeçalho; aqui é onde quem veio ver a conta o
+              procura. */}
+          <Cartao>
+            <Botao variante="neutro" bloco onClick={sair}>
+              <LogOut size={15} />
+              Terminar sessão
+            </Botao>
+          </Cartao>
         </div>
       </div>
     </>
@@ -241,4 +269,14 @@ function AlterarPassword({ aoTerminar }: { aoTerminar: () => void }) {
       </form>
     </Cartao>
   );
+}
+
+/** «Carlos Contabilista» → «CC». Duas letras, como no Piloto. */
+function iniciais(nome: string): string {
+  return nome
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }

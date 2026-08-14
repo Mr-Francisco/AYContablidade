@@ -21,6 +21,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { plural } from "@/lib/texto";
 import type { ConfigEmpresa, Empresa, Licenca, MetadadosAcesso } from "@/types";
+import { IntegracaoAgt } from "./IntegracaoAgt";
+import { Parametrizacoes } from "./Parametrizacoes";
+import { Permissoes } from "./Permissoes";
 
 const SEPARADOR =
   "rounded-lg px-3 py-1.5 text-sm font-semibold text-texto-suave data-[state=active]:bg-superficie data-[state=active]:text-texto data-[state=active]:shadow-suave";
@@ -34,7 +37,11 @@ const REGIMES = [
 export default function Configuracoes() {
   const { empresa: empresaSessao } = useAuth();
 
-  const { data: empresa, mutate } = useSWR<Empresa>("/api/empresa", buscador);
+  const {
+    data: empresa,
+    error: erroEmpresa,
+    mutate,
+  } = useSWR<Empresa>("/api/empresa", buscador, { shouldRetryOnError: false });
   const { data: licenca } = useSWR<Licenca>("/api/empresa/licenca", buscador, {
     // Sem licença activa o backend devolve 404 — não vale a pena repetir.
     shouldRetryOnError: false,
@@ -56,7 +63,7 @@ export default function Configuracoes() {
     <>
       <CabecalhoPagina
         titulo="Configurações"
-        descricao="Dados da empresa, módulos activos e licença."
+        descricao="Dados da empresa, parametrizações, integração e módulos."
         accoes={
           licenca && (
             <Selo cor={licenca.estado === "activa" ? "#1a9c5f" : "#c62828"}>
@@ -69,7 +76,16 @@ export default function Configuracoes() {
       {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
-      {!empresa ? (
+      {/* Sem isto, quem não é administrador ficava com «A carregar…» para
+          sempre: a ficha da empresa é do administrador, o pedido devolve 403 e
+          o ecrã nunca saía do estado de espera. Uma roda que nunca pára é
+          pior do que uma frase que explica. */}
+      {erroEmpresa ? (
+        <Alerta tipo="erro">
+          As configurações da empresa são do administrador. A sua conta não tem
+          acesso a este ecrã.
+        </Alerta>
+      ) : !empresa ? (
         <Cartao>
           <ACarregar />
         </Cartao>
@@ -81,6 +97,15 @@ export default function Configuracoes() {
             </Tabs.Trigger>
             <Tabs.Trigger value="modulos" className={SEPARADOR}>
               Módulos
+            </Tabs.Trigger>
+            <Tabs.Trigger value="parametrizacoes" className={SEPARADOR}>
+              Parametrizações
+            </Tabs.Trigger>
+            <Tabs.Trigger value="agt" className={SEPARADOR}>
+              Integração AGT
+            </Tabs.Trigger>
+            <Tabs.Trigger value="permissoes" className={SEPARADOR}>
+              Permissões
             </Tabs.Trigger>
             <Tabs.Trigger value="licenca" className={SEPARADOR}>
               Licença
@@ -111,6 +136,32 @@ export default function Configuracoes() {
               }}
               aoFalhar={setErro}
             />
+          </Tabs.Content>
+
+          <Tabs.Content value="parametrizacoes">
+            <Parametrizacoes
+              aoGravar={(msg) => {
+                setAviso(msg);
+                setErro(null);
+              }}
+              aoFalhar={setErro}
+            />
+          </Tabs.Content>
+
+          <Tabs.Content value="agt">
+            <IntegracaoAgt
+              agt={config?.agt}
+              aoGravar={(msg) => {
+                setAviso(msg);
+                setErro(null);
+                mutateConfig();
+              }}
+              aoFalhar={setErro}
+            />
+          </Tabs.Content>
+
+          <Tabs.Content value="permissoes">
+            <Permissoes />
           </Tabs.Content>
 
           <Tabs.Content value="licenca">

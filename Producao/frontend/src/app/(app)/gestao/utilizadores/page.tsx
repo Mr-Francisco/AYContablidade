@@ -560,7 +560,29 @@ function FormularioUtilizador({
           />
           {restringir && (
             <>
-              <div className="mt-3 flex flex-wrap gap-2">
+              {/* Os dois botões do Piloto: com onze módulos, marcar um a um
+                  para depois desmarcar dois é trabalho a mais. */}
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-[12.5px] text-texto-suave">
+                  Módulos disponíveis para este utilizador
+                </span>
+                <span className="flex-1" />
+                <Botao
+                  variante="neutro"
+                  tamanho="pequeno"
+                  onClick={() => setModulos(meta.modulos.map((m) => m.id))}
+                >
+                  Marcar todos
+                </Botao>
+                <Botao
+                  variante="neutro"
+                  tamanho="pequeno"
+                  onClick={() => setModulos([])}
+                >
+                  Desmarcar todos
+                </Botao>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
                 {meta.modulos.map((m) => {
                   const on = modulos.includes(m.id);
                   return (

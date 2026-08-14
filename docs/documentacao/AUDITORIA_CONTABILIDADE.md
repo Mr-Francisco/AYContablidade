@@ -341,3 +341,59 @@ apagá-los seria tirar função a troco de fidelidade.
 
 Se preferir o painel primeiro e a faixa depois, é trocar a ordem de dois
 blocos em `app/(app)/painel/page.tsx`.
+
+
+---
+
+## Configurações, Utilizadores e Perfil (2026-08-14)
+
+**Configurações.** O Piloto tem nove separadores; a Produção tinha três. Foram
+acrescentados os três que dependiam só de interface — o modelo já existia:
+
+| Separador | Estado |
+|---|---|
+| Empresa · Módulos · Licença | já existiam |
+| **Parametrizações** | ✅ contas de CMVMC, armazém de saída, diário e documento, contas de ganho e quebra |
+| **Integração AGT** | ✅ **só ligar/desligar e ambiente** — ver abaixo |
+| **Permissões** | ✅ só de leitura — ver abaixo |
+| Exercícios Económicos | vive em Contabilidade → Exercícios |
+| Faturação e Comunicação · Séries | por fazer, dependem de decisões (pendências 1 e 3.3) |
+
+**A Integração AGT não copia o Piloto, e é de propósito.** O Piloto tem aqui o
+endpoint, o proxy, o utilizador e a palavra-passe da AGT, guardados no
+`localStorage` — não tinha outro sítio, é uma aplicação estática. Na Produção
+há servidor: as credenciais vivem em `AGT_*` no ambiente (Regra 6) e o ecrã só
+mostra o que o cliente decide, que é se está ligado e contra que ambiente.
+
+**As Permissões também não.** O Piloto tem um interruptor para «restringir a
+alteração das condições de comissão». Na Produção a rota que altera vendedores
+já exige `comercial.gerir`, sempre — o interruptor estaria permanentemente
+ligado e desligá-lo não faria nada. Uma caixa que engana quem a desliga é pior
+do que não existir; o separador diz qual é a regra.
+
+**Utilizadores.** A Produção já era um superconjunto (tem «Último acesso» e
+quatro KPIs que o Piloto não tem). Faltavam os botões **«Marcar todos» /
+«Desmarcar todos»** dos módulos — com onze módulos, marcá-los um a um para
+depois desmarcar dois é trabalho a mais.
+
+**Perfil.** Faltavam a **fotografia da conta** (iniciais na cor do perfil, 52px,
+como no Piloto) e o **«Terminar sessão»** no fim do cartão.
+
+### Dois defeitos de permissões apanhados aqui
+
+**`GET /api/users/metadados` estava fechado ao administrador.** Devolve os
+rótulos e as cores dos perfis — que `contabilista` se escreve «Contabilista» e
+é `#2c3e50`. Não diz nada sobre ninguém. Resultado: **toda a gente que não é
+administrador via o próprio perfil escrito em minúsculas e a cinzento**, no
+seu próprio ecrã de perfil. Passou para um router sem guarda, registado
+**antes** do de administração — porque o `/{user_id}` deste casava com
+`/metadados` e mandava-o na mesma para o 403.
+
+**As Configurações ficavam com «A carregar…» para sempre** para quem não é
+administrador: o pedido da ficha da empresa devolve 403 e o ecrã nunca saía do
+estado de espera. Agora diz que o ecrã é do administrador.
+
+**Não verificado no browser:** os separadores de Configurações e a Gestão de
+Utilizadores são de administrador, e a única conta de administração da base de
+demonstração tem 2FA que não consigo passar. Compilam, tipam e passam o lint;
+a verificação visual fica para quem tiver o segundo factor.

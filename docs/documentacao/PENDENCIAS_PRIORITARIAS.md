@@ -492,6 +492,46 @@ uma segunda biblioteca de ícones.
 
 ---
 
+## 7. Contactos obrigatórios por utilizador
+
+**Pedido pelo utilizador em 2026-08-14.**
+
+Hoje o utilizador tem um único campo `telefone`, opcional, e nem sequer é
+pedido ao criar a conta. Passa a ser:
+
+- **Pelo menos um contacto, obrigatório no acto da criação.** Sem ele não se
+  cria a conta.
+- **Um segundo, opcional**, se o utilizador quiser.
+- **CRUD completo** — acrescentar, alterar e remover, com a regra de que o
+  último não se remove.
+
+**O que é preciso decidir antes de começar:**
+
+- **Que tipos de contacto.** Telemóvel e telefone fixo? E-mail alternativo?
+  WhatsApp? A resposta muda o modelo: um campo `tipo` com uma lista fechada,
+  ou dois campos fixos.
+- **Se é para recuperação de acesso.** Se um contacto vier a servir para
+  recuperar a palavra-passe ou receber códigos, precisa de **verificação** —
+  um número que ninguém confirmou não serve para provar identidade. Isso liga
+  à pendência 4 (recuperação de palavra-passe).
+- **Se o próprio utilizador os pode editar.** Hoje `/perfil` é só de leitura,
+  por decisão registada em `CLAUDE.md`. Contactos são dados pessoais do
+  próprio; faz sentido serem a excepção, mas é uma decisão a tomar de
+  propósito e não por acidente.
+- **Formato e validação.** Angola usa +244 com nove dígitos. Validar? Aceitar
+  estrangeiros? Um campo que aceita tudo acaba com «não sei» lá dentro.
+
+**Trabalho:** 1 a 2 dias — modelo `ContactoUtilizador` com migração, validação
+no `UtilizadorCriar`, CRUD nas rotas, e os campos no diálogo de criação e no
+ecrã de perfil.
+
+**Nota de dados:** as contas que já existem não têm contacto nenhum. A
+obrigatoriedade só pode valer para as **novas**, ou é preciso uma campanha
+para preencher as antigas — senão o primeiro administrador a gravar uma conta
+antiga fica bloqueado por um campo que nunca existiu.
+
+---
+
 ## Resumo para decisão
 
 **Pode começar já, sem depender de ninguém:**

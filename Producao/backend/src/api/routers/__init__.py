@@ -28,6 +28,9 @@ from src.api.routers import (
 ROUTERS = (
     auth_router.router,
     totp_router.router,
+    # ANTES do router de administração: este tem `/{user_id}`, que casa com
+    # `/metadados` e o mandava para o guarda de administrador.
+    user_router.router_vocabulario,
     user_router.router,
     empresa_router.router,
     empresa_router.router_cartao,
