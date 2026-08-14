@@ -110,7 +110,7 @@ def test_ler_nao_e_resolver(base, empresa_id):
     )
     assert base.get(Notificacao, n.id).resolvida_em is None
 
-    lista = svc.listar(base, empresa_id=empresa_id, utilizador=u)
+    lista = svc.listar(base, empresa_id=empresa_id, utilizador=u)["linhas"]
     linha = next(x for x in lista if x["id"] == n.id)
     assert linha["lida"] is True
     assert linha["resolvida_em"] is None
@@ -126,7 +126,7 @@ def test_marcar_nao_lida_desfaz(base, empresa_id):
     svc.marcar_nao_lida(base, empresa_id=empresa_id, utilizador=u, notificacao_id=n.id)
 
     linha = next(
-        x for x in svc.listar(base, empresa_id=empresa_id, utilizador=u)
+        x for x in svc.listar(base, empresa_id=empresa_id, utilizador=u)["linhas"]
         if x["id"] == n.id
     )
     assert linha["lida"] is False
@@ -140,8 +140,8 @@ def test_so_ve_quem_tem_a_capacidade(base, empresa_id):
     base.add_all([contabilista, logistico])
     base.flush()
 
-    ids_contab = {x["id"] for x in svc.listar(base, empresa_id=empresa_id, utilizador=contabilista)}
-    ids_log = {x["id"] for x in svc.listar(base, empresa_id=empresa_id, utilizador=logistico)}
+    ids_contab = {x["id"] for x in svc.listar(base, empresa_id=empresa_id, utilizador=contabilista)["linhas"]}
+    ids_log = {x["id"] for x in svc.listar(base, empresa_id=empresa_id, utilizador=logistico)["linhas"]}
     assert n.id in ids_contab
     assert n.id not in ids_log
 
@@ -153,7 +153,7 @@ def test_uma_permissao_extra_tambem_conta(base, empresa_id):
     base.add(u)
     base.flush()
 
-    ids = {x["id"] for x in svc.listar(base, empresa_id=empresa_id, utilizador=u)}
+    ids = {x["id"] for x in svc.listar(base, empresa_id=empresa_id, utilizador=u)["linhas"]}
     assert n.id in ids
 
 
@@ -211,9 +211,32 @@ def test_o_administrador_ve_tudo(base, empresa_id):
     base.add(admin)
     base.flush()
 
-    ids = {x["id"] for x in svc.listar(base, empresa_id=empresa_id, utilizador=admin)}
+    ids = {x["id"] for x in svc.listar(base, empresa_id=empresa_id, utilizador=admin)["linhas"]}
     assert n.id in ids
     assert svc.contar_por_ler(base, empresa_id=empresa_id, utilizador=admin) > 0
     assert svc.marcar_lida(
         base, empresa_id=empresa_id, utilizador=admin, notificacao_id=n.id
     )
+
+
+def test_a_lista_e_paginada(base, empresa_id):
+    """Nenhum histórico é infinito — regra do projecto, em `CLAUDE.md`.
+
+    O histórico de notificações não se apaga nunca, por isso cresce para
+    sempre: é o candidato mais óbvio a encher um ecrã até parar.
+    """
+    for i in range(7):
+        _notificar(base, empresa_id, chave=f"sit-pag-{i}", texto=f"n{i}")
+    u = _user(empresa_id)
+    base.add(u)
+    base.flush()
+
+    p1 = svc.listar(base, empresa_id=empresa_id, utilizador=u, limite=3)
+    assert len(p1["linhas"]) == 3
+    assert p1["total"] >= 7, "o total conta o conjunto todo, não a página"
+
+    p2 = svc.listar(base, empresa_id=empresa_id, utilizador=u, offset=3, limite=3)
+    assert len(p2["linhas"]) == 3
+    assert p1["total"] == p2["total"]
+    # Páginas diferentes trazem linhas diferentes.
+    assert not ({x["id"] for x in p1["linhas"]} & {x["id"] for x in p2["linhas"]})

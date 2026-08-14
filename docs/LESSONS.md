@@ -150,3 +150,5 @@
 - Repor o acesso de uma conta de demonstração NÃO regenera o segredo de 2FA: decifra-se o que lá está e volta-se a desenhar o mesmo QR — regerar invalidaria o telemóvel de quem o configurou.
 - O cabeçalho tem duas perguntas — QUEM (marca, empresa, pessoa) e ONDE (navegação). Numa fila só, a navegação com onze módulos quebrava para três linhas ocas; em duas filas cabe numa linha e sobra espaço.
 - Dizer «SGD» duas vezes lado a lado no logótipo era redundante: símbolo em cima, nome do produto por baixo.
+- REGRA: nenhum histórico é infinito. Paginação no SERVIDOR (`offset`/`limite`/`total`), scroll DA CAIXA e não da página, e nunca centenas de registos de uma vez. `components/ui/Paginacao.tsx` + `src/api/paginacao.py`.
+- Revelar no cliente («mostrar mais») não é paginação: a lista fica curta no ecrã mas o pedido continua enorme. Os movimentos pediam mil de cada vez para mostrar quarenta.

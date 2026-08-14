@@ -7,12 +7,12 @@ import useSWR from "swr";
 import { CriarContaEmFalta } from "@/components/contabilidade/CriarContaEmFalta";
 import { Botao, CabecalhoPagina, Selector } from "@/components/ui";
 import { Confirmar } from "@/components/ui/CrudMestre";
+import { type Pagina, usePaginacao } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { big, formataMoeda, paraApi, soma, subtrai } from "@/lib/dinheiro";
 import { useDiarios, useDocumentos, useExercicios } from "@/lib/hooks";
 import type { Lancamento } from "@/types";
-
 import {
   CONTA_MONETARIA,
   EditorLancamento,
@@ -22,8 +22,14 @@ import { linhaPreenchida } from "./GrelhaGeral";
 import { ListaLancamentos } from "./ListaLancamentos";
 import { type EstadoEditor, estadoDe, estadoNovo, linhaVazia } from "./tipos";
 
-/** Quantos movimentos se pedem ao servidor. Ver `RodapeHistorico`. */
-const LIMITE_PEDIDO = 1000;
+/**
+ * Quantos movimentos se pedem de cada vez.
+ *
+ * Eram MIL, o que numa empresa com dois anos de actividade é meio megabyte de
+ * JSON a cada abertura do ecrã mais usado do sistema. Passam a cinquenta, com
+ * paginação — a regra de listagens do projecto (ver `CLAUDE.md`).
+ */
+const LIMITE_PEDIDO = 50;
 
 /**
  * Movimentos — o editor em página do Piloto (`movimentos.html`).
@@ -59,6 +65,7 @@ export default function Movimentos() {
   const [aEliminar, setAEliminar] = useState(false);
 
   const exId = exercicioId ?? activo?.id;
+  const pag = usePaginacao(LIMITE_PEDIDO);
   const { documentos } = useDocumentos(estado.diario || undefined);
 
   // A lista traz sempre os diferidos: são precisamente os que é preciso
@@ -67,12 +74,14 @@ export default function Movimentos() {
   if (exId) parametros.set("exercicio_id", exId);
   parametros.set("incluir_diferidos", "true");
   parametros.set("limite", String(LIMITE_PEDIDO));
+  parametros.set("offset", String(pag.offset));
   const chave = `/api/contabilidade/lancamentos?${parametros}`;
   const {
-    data: todos,
+    data: pagina,
     isLoading,
     mutate,
-  } = useSWR<Lancamento[]>(chave, buscador);
+  } = useSWR<Pagina<Lancamento>>(chave, buscador);
+  const todos = pagina?.linhas;
 
   const lista = useMemo(() => {
     const q = procura.toLowerCase().trim();
@@ -389,7 +398,8 @@ export default function Movimentos() {
           soDiferidos={soDiferidos}
           aoMudarSoDiferidos={setSoDiferidos}
           aCarregar={isLoading}
-          truncadoNoServidor={(todos?.length ?? 0) >= LIMITE_PEDIDO}
+          pagina={pagina}
+          controlos={pag.controlos}
         />
 
         <EditorLancamento

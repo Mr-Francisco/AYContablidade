@@ -1,7 +1,7 @@
 "use client";
 
 import { Selo } from "@/components/ui";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import { BarraPaginacao, type Pagina } from "@/components/ui/Paginacao";
 import { formataMoeda } from "@/lib/dinheiro";
 import { cn } from "@/lib/utils";
 import type { Diario, Lancamento } from "@/types";
@@ -29,7 +29,8 @@ export function ListaLancamentos({
   soDiferidos,
   aoMudarSoDiferidos,
   aCarregar,
-  truncadoNoServidor,
+  pagina,
+  controlos,
 }: {
   lancamentos: Lancamento[];
   diarios: Diario[];
@@ -42,10 +43,9 @@ export function ListaLancamentos({
   soDiferidos: boolean;
   aoMudarSoDiferidos: (v: boolean) => void;
   aCarregar: boolean;
-  truncadoNoServidor: boolean;
+  pagina: Pagina<Lancamento> | undefined;
+  controlos: { aoAnterior: () => void; aoSeguinte: () => void };
 }) {
-  const historico = useHistorico(lancamentos, { inicial: 40 });
-
   return (
     <aside className="flex min-h-0 flex-col rounded-[14px] border border-borda bg-superficie p-3 shadow-suave">
       <div className="mb-2 flex items-center gap-2">
@@ -91,13 +91,13 @@ export function ListaLancamentos({
           <p className="py-8 text-center text-[13px] text-texto-suave">
             A carregar…
           </p>
-        ) : historico.total === 0 ? (
+        ) : lancamentos.length === 0 ? (
           <p className="py-8 text-center text-[13px] text-texto-suave">
             Sem movimentos.
           </p>
         ) : (
           <div className="flex flex-col gap-1.5">
-            {historico.visiveis.map((l) => {
+            {lancamentos.map((l) => {
               const activo = l.id === seleccionado;
               return (
                 <button
@@ -144,11 +144,10 @@ export function ListaLancamentos({
         )}
       </div>
 
-      <RodapeHistorico
-        {...historico}
-        nome="movimentos"
-        truncadoNoServidor={truncadoNoServidor}
-      />
+      {/* Paginação do SERVIDOR. Antes vinham mil de uma vez e revelavam-se
+          quarenta a quarenta do lado do cliente: a lista era curta no ecrã
+          mas o pedido era enorme. Agora vêm cinquenta, e passa-se de página. */}
+      <BarraPaginacao pagina={pagina} nome="movimentos" {...controlos} />
     </aside>
   );
 }

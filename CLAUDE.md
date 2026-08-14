@@ -109,6 +109,25 @@ Actua como designer UI/UX premium: layout editorial forte, tipografia refinada, 
 - **Dados**: dashboards com Recharts (já instalado), mapas com Leaflet se necessario — nunca adicionar outra lib de charts/mapas.
 - **Verificação obrigatória pós-alteração de UI**: inspeccionar no browser e corrigir erros de consola, overflow, glitches de animação e responsividade em desktop, tablet e mobile.
 
+## Regra de Listagens e Históricos
+
+**Nenhum histórico é infinito no ecrã.** Vale para todo o projecto, em todos os
+módulos, e aplica-se antes de se escrever qualquer listagem nova.
+
+1. **Paginação obrigatória** em tudo o que possa crescer sem limite —
+   históricos, registos, movimentos, lançamentos, auditoria, notificações.
+2. **O scroll é DO COMPONENTE, não da página.** Cada histórico tem a sua
+   própria área de conteúdo com altura máxima e scroll interno. A página não
+   pode ficar mais comprida à medida que os dados crescem.
+3. **Nunca carregar centenas ou milhares de registos de uma vez.** O servidor
+   recebe `offset` e `limite` e devolve o `total`; o cliente pede uma página
+   de cada vez.
+4. **Comportamento consistente** em todos os módulos: mesma barra de
+   paginação, mesmas palavras, mesmo sítio.
+
+Usar `ListaPaginada` / `usePaginacao` (`components/ui/Paginacao.tsx`). Não
+reimplementar por página — foi assim que as listagens divergiram antes.
+
 ## Regra de Aprendizagem
 
 When I correct you or you catch yourself making a mistake, before continuing, add the lesson as a one-line rule em docs/LESSONS.md so it never happens again — or, if the situation is recurring and complex enough, create a skill in .claude/skills/ to reuse.

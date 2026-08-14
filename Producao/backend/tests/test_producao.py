@@ -203,20 +203,27 @@ def test_nenhuma_lista_cronologica_se_desenha_inteira(pagina):
     assert "RodapeHistorico" in fonte, f"{pagina} não diz quantos registos há"
 
 
-def test_a_lista_de_movimentos_tambem_limita():
-    """A lista dos movimentos mudou de `page.tsx` para `ListaLancamentos.tsx`
-    quando a página passou a ser o editor em página do Piloto. A regra dos
-    históricos continua a valer — é só noutro ficheiro."""
+def test_a_lista_de_movimentos_pagina_no_servidor():
+    """A lista dos movimentos passou de revelação no cliente para PAGINAÇÃO NO
+    SERVIDOR.
+
+    Antes vinham mil lançamentos e revelavam-se quarenta a quarenta: a lista
+    era curta no ecrã mas o pedido era enorme, e numa empresa com dois anos de
+    actividade era meio megabyte de JSON a cada abertura do ecrã mais usado do
+    sistema. Agora vêm cinquenta e passa-se de página.
+    """
     from pathlib import Path
 
-    fonte = (
+    pasta = (
         Path(__file__).resolve().parents[2]
         / "frontend" / "src" / "app" / "(app)" / "contabilidade" / "movimentos"
-        / "ListaLancamentos.tsx"
-    ).read_text(encoding="utf-8")
-    assert "useHistorico" in fonte
-    assert "historico.visiveis.map" in fonte
-    assert "RodapeHistorico" in fonte
+    )
+    lista = (pasta / "ListaLancamentos.tsx").read_text(encoding="utf-8")
+    assert "BarraPaginacao" in lista, "a lista não pagina"
+
+    pagina = (pasta / "page.tsx").read_text(encoding="utf-8")
+    assert "usePaginacao" in pagina, "a página não gere o offset"
+    assert "offset" in pagina, "a página não pede uma janela ao servidor"
 
 
 def test_a_auditoria_partilhada_tambem_limita():
@@ -231,17 +238,33 @@ def test_a_auditoria_partilhada_tambem_limita():
     assert "RodapeHistorico" in fonte
 
 
-def test_o_corte_do_servidor_e_visivel():
-    """REGRESSÃO: as rotas cortam a resposta por omissão e a interface mostrava
-    o que veio como se fosse o total. «810 movimentos» quando são 4 000 é pior
-    do que não dizer nada."""
+def test_o_total_vem_do_servidor():
+    """REGRESSÃO: a interface mostrava o que veio como se fosse o total.
+
+    «810 movimentos» quando são 4 000 é pior do que não dizer nada. A resposta
+    paginada traz o `total` do conjunto, e é ele que se escreve — é o que
+    permite dizer «1–25 de 4 812» em vez de inventar.
+    """
     from pathlib import Path
 
-    base = Path(__file__).resolve().parents[2] / "frontend" / "src" / "app" / "(app)"
-    for pagina in ["contabilidade/movimentos", "comercial/vendas", "logistica/compras"]:
-        fonte = (base / pagina / "page.tsx").read_text(encoding="utf-8")
-        assert "LIMITE_PEDIDO" in fonte, f"{pagina} não pede um limite explícito"
-        assert "truncadoNoServidor" in fonte, f"{pagina} não avisa do corte"
+    fonte = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "components" / "ui" / "Paginacao.tsx"
+    ).read_text(encoding="utf-8")
+    assert "pagina.total" in fonte, "a barra não mostra o total do servidor"
+    assert "maxHeight" in fonte, "a caixa de histórico não limita a altura"
+
+
+def test_as_rotas_paginadas_devolvem_total_e_janela():
+    """Sem `total`, o cliente não sabe se há mais nada e o «seguinte» é um
+    salto no escuro."""
+    from src.api.paginacao import LIMITE_MAXIMO, pagina
+
+    assert LIMITE_MAXIMO <= 200, (
+        "um tecto alto de mais desfaz a regra: `limite=100000` na barra de "
+        "endereços traria a tabela inteira"
+    )
+    assert pagina.__doc__ and "total" in pagina.__doc__
 
 
 def test_o_assistente_desenha_o_markdown():

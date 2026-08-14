@@ -27,6 +27,12 @@ import {
   Vazio,
 } from "@/components/ui";
 import { Confirmar, DialogoMestre } from "@/components/ui/CrudMestre";
+import {
+  BarraPaginacao,
+  CaixaHistorico,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { big, formataMoeda, multiplica, soma } from "@/lib/dinheiro";
@@ -89,14 +95,16 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
     buscador,
     { revalidateOnFocus: false },
   );
+  const pag = usePaginacao();
   const {
-    data: movimentos,
+    data: pagina,
     isLoading,
     mutate,
-  } = useSWR<Movimento[]>(
-    `/api/logistica/movimentos?tipo=${config.tipo}&limite=100`,
+  } = useSWR<Pagina<Movimento>>(
+    `/api/logistica/movimentos?tipo=${config.tipo}&${pag.query}`,
     buscador,
   );
+  const movimentos = pagina?.linhas;
 
   const [artigoId, setArtigoId] = useState("");
   const [armazemId, setArmazemId] = useState("");
@@ -326,93 +334,96 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
         ) : listados.length === 0 ? (
           <Vazio>Ainda não há movimentos deste tipo.</Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0 border-t">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Número</Th>
-                  <Th>Data</Th>
-                  <Th>Artigo</Th>
-                  <Th>Armazém</Th>
-                  {config.pedeDestino && <Th>Destino</Th>}
-                  <Th numerico>Qtd.</Th>
-                  <Th numerico>Custo unit.</Th>
-                  <Th numerico>Valor</Th>
-                  <Th>Nº Operação</Th>
-                  {pode("logistica.gerir") && <Th />}
-                </tr>
-              </thead>
-              <tbody>
-                {listados.map((m) => (
-                  <Tr key={m.id}>
-                    <Td className="tabular font-bold">{m.numero}</Td>
-                    <Td className="tabular">
-                      {new Date(m.data).toLocaleDateString("pt-PT")}
-                    </Td>
-                    <Td className="max-w-[240px] truncate">
-                      {m.artigo_desc || "—"}
-                    </Td>
-                    <Td className="max-w-[160px] truncate text-texto-suave">
-                      {nomeArmazem.get(m.armazem_id) ?? "—"}
-                    </Td>
-                    {config.pedeDestino && (
-                      <Td className="max-w-[160px] truncate text-texto-suave">
-                        {m.armazem_destino_id
-                          ? (nomeArmazem.get(m.armazem_destino_id) ?? "—")
-                          : "—"}
+          <CaixaHistorico altura={460}>
+            <EnvolveTabela className="rounded-none border-0 border-t">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Número</Th>
+                    <Th>Data</Th>
+                    <Th>Artigo</Th>
+                    <Th>Armazém</Th>
+                    {config.pedeDestino && <Th>Destino</Th>}
+                    <Th numerico>Qtd.</Th>
+                    <Th numerico>Custo unit.</Th>
+                    <Th numerico>Valor</Th>
+                    <Th>Nº Operação</Th>
+                    {pode("logistica.gerir") && <Th />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {listados.map((m) => (
+                    <Tr key={m.id}>
+                      <Td className="tabular font-bold">{m.numero}</Td>
+                      <Td className="tabular">
+                        {new Date(m.data).toLocaleDateString("pt-PT")}
                       </Td>
-                    )}
-                    {/* Sem zeros à direita: uma quantidade não é dinheiro, e
-                        «40,0000 Un» lê-se pior do que «40 Un». */}
-                    <Td numerico>
-                      {numeroLimpo(m.qtd)} {m.unidade ?? ""}
-                    </Td>
-                    <Td numerico>{formataMoeda(m.custo_unit, moeda)}</Td>
-                    <Td numerico className="font-semibold">
-                      {formataMoeda(m.valor, moeda)}
-                    </Td>
-                    {/* O nº de operação LIGA ao lançamento — é o que fecha o
-                        circuito entre o stock e a contabilidade. */}
-                    <Td className="tabular text-texto-suave">
-                      {m.numero_op ? (
-                        <Link
-                          href="/contabilidade/movimentos"
-                          className="font-semibold text-marca hover:underline"
-                        >
-                          {m.numero_op}
-                        </Link>
-                      ) : (
-                        <Selo cor="#62657a">sem lançamento</Selo>
+                      <Td className="max-w-[240px] truncate">
+                        {m.artigo_desc || "—"}
+                      </Td>
+                      <Td className="max-w-[160px] truncate text-texto-suave">
+                        {nomeArmazem.get(m.armazem_id) ?? "—"}
+                      </Td>
+                      {config.pedeDestino && (
+                        <Td className="max-w-[160px] truncate text-texto-suave">
+                          {m.armazem_destino_id
+                            ? (nomeArmazem.get(m.armazem_destino_id) ?? "—")
+                            : "—"}
+                        </Td>
                       )}
-                    </Td>
-                    {/* Anular uma vez. Um movimento já anulado, ou que É a
-                        anulação de outro, não se anula de novo — e diz-se
-                        aqui, para não se descobrir só depois de carregar. */}
-                    {pode("logistica.gerir") && (
+                      {/* Sem zeros à direita: uma quantidade não é dinheiro, e
+                        «40,0000 Un» lê-se pior do que «40 Un». */}
                       <Td numerico>
-                        {m.estornado_em ? (
-                          <Selo cor="#c0392b">Anulado</Selo>
-                        ) : m.estorna_id ? (
-                          <Selo cor="#62657a">Anulação</Selo>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setAAnular(m)}
-                            title="Anular este movimento"
-                            className="rounded-md border border-borda px-2 py-1 text-[11.5px] font-semibold text-texto-suave hover:border-perigo hover:text-perigo"
+                        {numeroLimpo(m.qtd)} {m.unidade ?? ""}
+                      </Td>
+                      <Td numerico>{formataMoeda(m.custo_unit, moeda)}</Td>
+                      <Td numerico className="font-semibold">
+                        {formataMoeda(m.valor, moeda)}
+                      </Td>
+                      {/* O nº de operação LIGA ao lançamento — é o que fecha o
+                        circuito entre o stock e a contabilidade. */}
+                      <Td className="tabular text-texto-suave">
+                        {m.numero_op ? (
+                          <Link
+                            href="/contabilidade/movimentos"
+                            className="font-semibold text-marca hover:underline"
                           >
-                            <Undo2 size={12} className="mr-1 inline" />
-                            Anular
-                          </button>
+                            {m.numero_op}
+                          </Link>
+                        ) : (
+                          <Selo cor="#62657a">sem lançamento</Selo>
                         )}
                       </Td>
-                    )}
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+                      {/* Anular uma vez. Um movimento já anulado, ou que É a
+                        anulação de outro, não se anula de novo — e diz-se
+                        aqui, para não se descobrir só depois de carregar. */}
+                      {pode("logistica.gerir") && (
+                        <Td numerico>
+                          {m.estornado_em ? (
+                            <Selo cor="#c0392b">Anulado</Selo>
+                          ) : m.estorna_id ? (
+                            <Selo cor="#62657a">Anulação</Selo>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setAAnular(m)}
+                              title="Anular este movimento"
+                              className="rounded-md border border-borda px-2 py-1 text-[11.5px] font-semibold text-texto-suave hover:border-perigo hover:text-perigo"
+                            >
+                              <Undo2 size={12} className="mr-1 inline" />
+                              Anular
+                            </button>
+                          )}
+                        </Td>
+                      )}
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+          </CaixaHistorico>
         )}
+        <BarraPaginacao pagina={pagina} nome="movimentos" {...pag.controlos} />
       </Cartao>
       {aAnular && (
         <Confirmar

@@ -12,6 +12,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
+from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.api.deps import (
     DB,
     EmpresaAtual,
@@ -101,8 +102,9 @@ def _legivel(valor):
 
 @router.get("/auditoria")
 def auditoria(
-    empresa: EmpresaAtual, db: DB, accao: str | None = None, limite: int = 200
-) -> list[dict]:
+    empresa: EmpresaAtual, db: DB, accao: str | None = None,
+    offset: int = 0, limite: int = LIMITE_OMISSAO,
+) -> dict:
     """Registo de auditoria DESTA empresa.
 
     O `empresa_id` é passado sempre e não vem do pedido: é o que garante que um
@@ -110,17 +112,25 @@ def auditoria(
     acções que o superadministrador fez sobre ela — que é justamente o que ele
     tem direito a saber.
     """
-    return [
-        {
+    from src.db.models.auditoria import RegistoAuditoria
+
+    q = (
+        select(RegistoAuditoria)
+        .where(RegistoAuditoria.empresa_id == empresa.id)
+        .order_by(RegistoAuditoria.criado_em.desc())
+    )
+    if accao:
+        q = q.where(RegistoAuditoria.accao == accao)
+
+    return pagina(
+        db, q, offset=offset, limite=limite,
+        formatar=lambda r: {
             "id": r.id, "criado_em": r.criado_em, "accao": r.accao,
             "actor_nome": r.actor_nome, "actor_email": r.actor_email,
             "actor_perfil": r.actor_perfil, "alvo_tipo": r.alvo_tipo,
             "alvo_desc": r.alvo_desc, "detalhes": r.detalhes, "ip": r.ip,
-        }
-        for r in listar_auditoria(
-            db, empresa_id=empresa.id, accao=accao, limite=limite
-        )
-    ]
+        },
+    )
 
 
 @router.get("", response_model=EmpresaPublica)

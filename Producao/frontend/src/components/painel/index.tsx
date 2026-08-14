@@ -230,7 +230,11 @@ export function ListaPainel({
   linhas,
   vazio = "Sem dados.",
 }: {
-  linhas: { titulo: string; sub?: string; valor?: string }[];
+  // `id` quando houver: duas linhas de auditoria da mesma pessoa, com a mesma
+  // acção e no mesmo segundo, têm título e subtítulo iguais — e o React
+  // avisa (com razão) que a chave se repete. A posição resolve-o aqui porque
+  // esta lista não se reordena nem se filtra: é um instantâneo.
+  linhas: { id?: string; titulo: string; sub?: string; valor?: string }[];
   vazio?: string;
 }) {
   if (linhas.length === 0)
@@ -240,9 +244,10 @@ export function ListaPainel({
 
   return (
     <div className="flex flex-col">
-      {linhas.map((l) => (
+      {linhas.map((l, i) => (
         <div
-          key={`${l.titulo}-${l.sub ?? ""}`}
+          // biome-ignore lint/suspicious/noArrayIndexKey: sem `id`, a posição é a única identidade estável — a lista não reordena.
+          key={l.id ?? `${i}-${l.titulo}`}
           className="flex items-center gap-2.5 border-b border-borda px-0.5 py-[9px] last:border-b-0"
         >
           <div className="min-w-0 flex-1">

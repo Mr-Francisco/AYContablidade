@@ -12,6 +12,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual
+from src.api.paginacao import LIMITE_OMISSAO
 from src.services import notificacoes as svc
 
 router = APIRouter(prefix="/api/notificacoes", tags=["notificações"])
@@ -23,7 +24,8 @@ def listar(
     quem: UtilizadorAtual,
     db: DB,
     apenas_por_resolver: bool = False,
-    limite: int = 50,
+    offset: int = 0,
+    limite: int = LIMITE_OMISSAO,
 ) -> dict:
     """As notificações desta pessoa, e quantas tem por ler.
 
@@ -31,13 +33,13 @@ def listar(
     resolvidas continuam na lista — o histórico não se apaga — mas não contam
     para o sino.
     """
-    return {
-        "notificacoes": svc.listar(
-            db, empresa_id=empresa.id, utilizador=quem,
-            apenas_por_resolver=apenas_por_resolver, limite=limite,
-        ),
-        "por_ler": svc.contar_por_ler(db, empresa_id=empresa.id, utilizador=quem),
-    }
+    p = svc.listar(
+        db, empresa_id=empresa.id, utilizador=quem,
+        apenas_por_resolver=apenas_por_resolver, offset=offset, limite=limite,
+    )
+    return {**p, "por_ler": svc.contar_por_ler(
+        db, empresa_id=empresa.id, utilizador=quem
+    )}
 
 
 @router.post("/{notificacao_id}/lida", status_code=status.HTTP_204_NO_CONTENT)

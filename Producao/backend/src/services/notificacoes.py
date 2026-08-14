@@ -143,27 +143,35 @@ def listar(
     empresa_id: UUID,
     utilizador: User,
     apenas_por_resolver: bool = False,
-    limite: int = 50,
-) -> list[dict]:
-    """As notificações que esta pessoa deve ver, mais recentes primeiro."""
+    offset: int = 0,
+    limite: int = 25,
+) -> dict:
+    """Uma página de notificações desta pessoa, mais recentes primeiro.
+
+    Devolve `{linhas, total, offset, limite}`: o histórico nunca se apaga, por
+    isso cresce para sempre e tem de ser paginado — ver a regra de listagens
+    em `CLAUDE.md`.
+    """
     filtro = _filtro_capacidade(utilizador)
     if filtro is False:
-        return []
+        return {"linhas": [], "total": 0, "offset": offset, "limite": limite}
 
     q = (
         select(Notificacao)
         .where(Notificacao.empresa_id == empresa_id)
         .order_by(Notificacao.criado_em.desc())
-        .limit(limite)
     )
     if filtro is not None:
         q = q.where(filtro)
     if apenas_por_resolver:
         q = q.where(Notificacao.resolvida_em.is_(None))
 
-    notificacoes = db.scalars(q).all()
+    total = db.scalar(
+        select(func.count()).select_from(q.order_by(None).subquery())
+    ) or 0
+    notificacoes = db.scalars(q.offset(max(0, offset)).limit(limite)).all()
     if not notificacoes:
-        return []
+        return {"linhas": [], "total": total, "offset": offset, "limite": limite}
 
     lidas = set(
         db.scalars(
@@ -174,16 +182,21 @@ def listar(
         ).all()
     )
 
-    return [
-        {
-            "id": n.id, "tipo": n.tipo, "origem": n.origem,
-            "titulo": n.titulo, "texto": n.texto, "ligacao": n.ligacao,
-            "criado_em": n.criado_em,
-            "resolvida_em": n.resolvida_em,
-            "lida": n.id in lidas,
-        }
-        for n in notificacoes
-    ]
+    return {
+        "linhas": [
+            {
+                "id": n.id, "tipo": n.tipo, "origem": n.origem,
+                "titulo": n.titulo, "texto": n.texto, "ligacao": n.ligacao,
+                "criado_em": n.criado_em,
+                "resolvida_em": n.resolvida_em,
+                "lida": n.id in lidas,
+            }
+            for n in notificacoes
+        ],
+        "total": total,
+        "offset": offset,
+        "limite": limite,
+    }
 
 
 def contar_por_ler(db: Session, *, empresa_id: UUID, utilizador: User) -> int:

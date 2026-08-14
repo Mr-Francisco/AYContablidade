@@ -13,6 +13,7 @@ import {
   ListaPainel,
 } from "@/components/painel";
 import { ACarregar, Cartao, Kpi, TituloCartao } from "@/components/ui";
+import type { Pagina } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, formataMoeda } from "@/lib/dinheiro";
@@ -64,7 +65,7 @@ export default function PainelContabilistico() {
     `/api/relatorios/resumo${q}`,
     buscador,
   );
-  const { data: lancamentos } = useSWR<Lancamento[]>(
+  const { data: lancamentos } = useSWR<Pagina<Lancamento>>(
     `/api/contabilidade/lancamentos?limite=6${activo?.id ? `&exercicio_id=${activo.id}` : ""}`,
     buscador,
   );
@@ -178,7 +179,7 @@ export default function PainelContabilistico() {
           <TituloCartao>Últimos Lançamentos</TituloCartao>
           <ListaPainel
             vazio="Sem lançamentos."
-            linhas={(lancamentos ?? []).map((l) => ({
+            linhas={(lancamentos?.linhas ?? []).map((l) => ({
               titulo: `${l.numero_op ? `${l.numero_op} · ` : ""}${l.descricao || "Lançamento"}`,
               sub: `${dataCurta(l.data)} · Diário ${l.diario_codigo}`,
               valor: kz(l.total ?? "0"),

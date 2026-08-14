@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
+from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.db.models.logistica import Armazem, Artigo, MovimentoStock
 from src.services import logistica as svc
@@ -228,8 +229,9 @@ def listar_movimentos(
     artigo_id: UUID | None = None,
     armazem_id: UUID | None = None,
     tipo: str | None = None,
-    limite: int = 200,
-) -> list[dict]:
+    offset: int = 0,
+    limite: int = LIMITE_OMISSAO,
+) -> dict:
     q = select(MovimentoStock).where(MovimentoStock.empresa_id == empresa.id)
     if artigo_id:
         q = q.where(MovimentoStock.artigo_id == artigo_id)
@@ -237,8 +239,13 @@ def listar_movimentos(
         q = q.where(MovimentoStock.armazem_id == armazem_id)
     if tipo:
         q = q.where(MovimentoStock.tipo == tipo)
-    return [
-        {"id": m.id, "numero": m.numero, "tipo": m.tipo, "data": m.data,
+    return pagina(
+        db, q.order_by(
+            MovimentoStock.data.desc(), MovimentoStock.criado_em.desc()
+        ),
+        offset=offset, limite=limite,
+        formatar=lambda m: {
+         "id": m.id, "numero": m.numero, "tipo": m.tipo, "data": m.data,
          "artigo_id": m.artigo_id, "artigo_desc": m.artigo_desc,
          "armazem_id": m.armazem_id, "armazem_destino_id": m.armazem_destino_id,
          "qtd": m.qtd, "unidade": m.unidade, "custo_unit": m.custo_unit,
@@ -246,12 +253,9 @@ def listar_movimentos(
          "numero_op": m.numero_op,
          # Quem já foi anulado, e quem é a anulação de quem: sem isto a lista
          # mostrava o movimento original e o seu contrário sem os relacionar.
-         "estornado_em": m.estornado_em, "estorna_id": m.estorna_id}
-        for m in db.scalars(
-            q.order_by(MovimentoStock.data.desc(), MovimentoStock.criado_em.desc())
-            .limit(limite)
-        ).all()
-    ]
+         "estornado_em": m.estornado_em, "estorna_id": m.estorna_id,
+        },
+    )
 
 
 @router.post("/movimentos", status_code=status.HTTP_201_CREATED, dependencies=[GERIR])

@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from src.api.paginacao import LIMITE_MAXIMO, LIMITE_OMISSAO, pagina
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
 from src.api.mestres import aplicar, obter_da_empresa
 from src.core.pgc import CATEGORIAS_DIARIO, PERIODOS
@@ -791,13 +792,18 @@ def listar_lancamentos(
     ate: Date | None = None,
     diario: str | None = None,
     incluir_diferidos: bool = False,
-    limite: int = Query(default=200, le=2000),
-) -> list[dict]:
+    offset: int = 0,
+    limite: int = Query(default=LIMITE_OMISSAO, le=LIMITE_MAXIMO),
+) -> dict:
+    """Uma página de lançamentos, mais recentes primeiro.
+
+    Devolve `{linhas, total, offset, limite}` e não uma lista: sem o total, o
+    ecrã não sabe se há mais nada — ver a regra de listagens em `CLAUDE.md`.
+    """
     q = (
         select(Lancamento)
         .where(Lancamento.empresa_id == empresa.id)
         .order_by(Lancamento.data.desc(), Lancamento.numero.desc())
-        .limit(limite)
     )
     if not incluir_diferidos:
         q = q.where(Lancamento.diferido.is_(False))
@@ -810,17 +816,17 @@ def listar_lancamentos(
     if diario:
         q = q.where(Lancamento.diario_codigo == diario)
 
-    return [
-        {
+    return pagina(
+        db, q, offset=offset, limite=limite,
+        formatar=lambda l: {
             "id": l.id, "numero": l.numero, "numero_op": l.numero_op, "data": l.data,
             "mes": l.mes, "diario_codigo": l.diario_codigo,
             "documento_codigo": l.documento_codigo, "descricao": l.descricao,
             "documento_ref": l.documento_ref, "origem": l.origem,
             "diferido": l.diferido,
             "total": sum((x.debito for x in l.linhas), Decimal("0")),
-        }
-        for l in db.scalars(q).all()
-    ]
+        },
+    )
 
 
 @router.get("/lancamentos/{lancamento_id}", dependencies=[VER])

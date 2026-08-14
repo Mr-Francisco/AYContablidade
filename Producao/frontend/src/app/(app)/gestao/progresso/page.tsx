@@ -18,6 +18,7 @@ import {
   Selo,
   TituloCartao,
 } from "@/components/ui";
+import type { Pagina } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, formataMoeda } from "@/lib/dinheiro";
@@ -101,11 +102,11 @@ export default function ProgressoEquipa() {
   // O registo de auditoria é do administrador. Sem acesso, o pedido devolve
   // 403 e é preciso dizê-lo — senão o cartão fica a rodar para sempre, que foi
   // exactamente o defeito que este ecrã tinha nas Configurações.
-  const { data: auditoria, error: erroAuditoria } = useSWR<RegistoAuditoria[]>(
-    "/api/empresa/auditoria?limite=12",
-    buscador,
-    { shouldRetryOnError: false },
-  );
+  const { data: auditoria, error: erroAuditoria } = useSWR<
+    Pagina<RegistoAuditoria>
+  >("/api/empresa/auditoria?limite=10", buscador, {
+    shouldRetryOnError: false,
+  });
 
   if (isLoading) return <ACarregar />;
 
@@ -375,7 +376,16 @@ export default function ProgressoEquipa() {
         </Cartao>
 
         <Cartao>
-          <TituloCartao extra="Quem mexeu em quê">
+          <TituloCartao
+            extra={
+              <Link
+                href="/gestao/auditoria"
+                className="font-semibold text-marca hover:underline"
+              >
+                Ver o registo todo
+              </Link>
+            }
+          >
             Actividade da equipa
           </TituloCartao>
           {erroAuditoria ? (
@@ -385,7 +395,7 @@ export default function ProgressoEquipa() {
             </Alerta>
           ) : auditoria === undefined ? (
             <ACarregar />
-          ) : auditoria.length === 0 ? (
+          ) : auditoria.linhas.length === 0 ? (
             <Alerta tipo="info">
               Ainda não há registo de acções nesta empresa. O registo guarda
               alterações de configuração, contas e utilizadores — não os
@@ -393,7 +403,8 @@ export default function ProgressoEquipa() {
             </Alerta>
           ) : (
             <ListaPainel
-              linhas={auditoria.map((r) => ({
+              linhas={auditoria.linhas.map((r) => ({
+                id: r.id,
                 titulo: `${r.actor_nome ?? "—"} · ${legivel(r.accao)}`,
                 sub: `${dataCurta(r.criado_em?.slice(0, 10))} · ${r.alvo_desc ?? ""}`,
               }))}

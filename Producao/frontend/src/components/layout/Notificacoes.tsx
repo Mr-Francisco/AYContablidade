@@ -7,6 +7,7 @@ import { useState } from "react";
 import useSWR from "swr";
 
 import { Selo } from "@/components/ui";
+import { CaixaHistorico, type Pagina } from "@/components/ui/Paginacao";
 import { api, buscador } from "@/lib/api";
 
 export interface Notificacao {
@@ -21,8 +22,7 @@ export interface Notificacao {
   lida: boolean;
 }
 
-interface Resposta {
-  notificacoes: Notificacao[];
+interface Resposta extends Pagina<Notificacao> {
   por_ler: number;
 }
 
@@ -41,14 +41,16 @@ interface Resposta {
 export function Notificacoes() {
   const [aberto, setAberto] = useState(false);
 
+  // O sino mostra as DEZ mais recentes e nada mais: é um aviso, não um
+  // histórico. Quem quiser o resto tem o «Ver todas», que pagina.
   const { data, mutate } = useSWR<Resposta>(
-    "/api/notificacoes?limite=20",
+    "/api/notificacoes?limite=10",
     buscador,
     { refreshInterval: 30_000, shouldRetryOnError: false },
   );
 
   const porLer = data?.por_ler ?? 0;
-  const lista = data?.notificacoes ?? [];
+  const lista = data?.linhas ?? [];
 
   async function marcarLida(n: Notificacao) {
     // Optimista: a marca é do utilizador e não muda nada do lado do negócio.
@@ -57,7 +59,7 @@ export function Notificacoes() {
         d && {
           ...d,
           por_ler: Math.max(0, d.por_ler - (n.lida ? 0 : 1)),
-          notificacoes: d.notificacoes.map((x) =>
+          linhas: d.linhas.map((x) =>
             x.id === n.id ? { ...x, lida: true } : x,
           ),
         },
@@ -111,7 +113,7 @@ export function Notificacoes() {
             )}
           </div>
 
-          <div className="max-h-[380px] overflow-y-auto">
+          <CaixaHistorico altura={380}>
             {lista.length === 0 ? (
               <p className="px-4 py-8 text-center text-[13px] text-texto-suave">
                 Nada por avisar. As notificações aparecem quando uma operação de
@@ -127,7 +129,7 @@ export function Notificacoes() {
                 />
               ))
             )}
-          </div>
+          </CaixaHistorico>
 
           <div className="border-t border-borda px-4 py-2.5 text-center">
             <Link

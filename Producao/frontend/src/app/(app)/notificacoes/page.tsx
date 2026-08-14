@@ -16,10 +16,15 @@ import {
   Selo,
   Vazio,
 } from "@/components/ui";
+import {
+  BarraPaginacao,
+  CaixaHistorico,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { api, buscador } from "@/lib/api";
 
-interface Resposta {
-  notificacoes: Notificacao[];
+interface Resposta extends Pagina<Notificacao> {
   por_ler: number;
 }
 
@@ -44,13 +49,18 @@ const ROTULO_ORIGEM: Record<string, string> = {
  */
 export default function GestaoNotificacoes() {
   const [filtro, setFiltro] = useState("todas");
+  const p = usePaginacao();
 
+  // «Por resolver» filtra-se NO SERVIDOR, para a paginação contar o conjunto
+  // certo. Os outros filtros são sobre o estado de leitura, que é por pessoa
+  // e não se consulta em SQL — esses ficam do lado do ecrã, sobre a página.
+  const q = filtro === "por_resolver" ? "&apenas_por_resolver=true" : "";
   const { data, isLoading, mutate } = useSWR<Resposta>(
-    "/api/notificacoes?limite=200",
+    `/api/notificacoes?${p.query}${q}`,
     buscador,
   );
 
-  const todas = data?.notificacoes ?? [];
+  const todas = data?.linhas ?? [];
   const visiveis = todas.filter((n) => {
     if (filtro === "por_ler") return !n.lida;
     if (filtro === "lidas") return n.lida;
@@ -81,7 +91,10 @@ export default function GestaoNotificacoes() {
         <Selector
           rotulo="Mostrar"
           valor={filtro}
-          aoMudar={setFiltro}
+          aoMudar={(v) => {
+            setFiltro(v);
+            p.reiniciar();
+          }}
           opcoes={[
             { valor: "todas", rotulo: "Todas" },
             { valor: "por_ler", rotulo: "Por ler" },
@@ -111,69 +124,77 @@ export default function GestaoNotificacoes() {
           </Vazio>
         </Cartao>
       ) : (
-        <div className="flex flex-col gap-3">
-          {visiveis.map((n) => (
-            <Cartao key={n.id} className={n.lida ? "opacity-75" : undefined}>
-              <div className="flex flex-wrap items-start gap-3">
-                <div className="min-w-[16rem] flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    {!n.lida && (
-                      <span
-                        aria-hidden
-                        className="size-2 shrink-0 rounded-full bg-marca"
-                      />
-                    )}
-                    <b className="text-[14.5px]">{n.titulo}</b>
-                    <Selo cor="#62657a">
-                      {ROTULO_ORIGEM[n.origem] ?? n.origem}
-                    </Selo>
-                    {n.resolvida_em ? (
-                      <Selo cor="#1a9c5f">Resolvida</Selo>
-                    ) : (
-                      <Selo cor="#c98a10">Por resolver</Selo>
-                    )}
+        <Cartao className="p-0">
+          {/* A caixa é que rola, não a página: com o histórico a crescer para
+              sempre, a alternativa era uma página cada vez mais comprida. */}
+          <CaixaHistorico altura={560} className="flex flex-col gap-3 p-4">
+            {visiveis.map((n) => (
+              <div
+                key={n.id}
+                className={`rounded-[10px] border border-borda p-3.5 ${n.lida ? "opacity-75" : ""}`}
+              >
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="min-w-[16rem] flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      {!n.lida && (
+                        <span
+                          aria-hidden
+                          className="size-2 shrink-0 rounded-full bg-marca"
+                        />
+                      )}
+                      <b className="text-[14.5px]">{n.titulo}</b>
+                      <Selo cor="#62657a">
+                        {ROTULO_ORIGEM[n.origem] ?? n.origem}
+                      </Selo>
+                      {n.resolvida_em ? (
+                        <Selo cor="#1a9c5f">Resolvida</Selo>
+                      ) : (
+                        <Selo cor="#c98a10">Por resolver</Selo>
+                      )}
+                    </div>
+                    <p className="text-[13px] leading-relaxed text-texto-suave">
+                      {n.texto}
+                    </p>
+                    <p className="mt-1 text-[11.5px] text-texto-suave">
+                      {dataHoraLonga(n.criado_em)}
+                      {n.resolvida_em &&
+                        ` · resolvida em ${dataHoraLonga(n.resolvida_em)}`}
+                    </p>
                   </div>
-                  <p className="text-[13px] leading-relaxed text-texto-suave">
-                    {n.texto}
-                  </p>
-                  <p className="mt-1 text-[11.5px] text-texto-suave">
-                    {dataHoraLonga(n.criado_em)}
-                    {n.resolvida_em &&
-                      ` · resolvida em ${dataHoraLonga(n.resolvida_em)}`}
-                  </p>
-                </div>
 
-                <div className="flex shrink-0 flex-col gap-2">
-                  {n.ligacao && (
-                    <Link
-                      href={n.ligacao}
-                      className="rounded-lg bg-acento px-3 py-[7px] text-center text-[12.5px] font-bold text-[#241500] transition-opacity hover:opacity-90"
-                    >
-                      Resolver
-                    </Link>
-                  )}
-                  <Botao
-                    variante="neutro"
-                    tamanho="pequeno"
-                    onClick={() => alternarLida(n)}
-                  >
-                    {n.lida ? (
-                      <>
-                        <Undo2 size={13} />
-                        Marcar não lida
-                      </>
-                    ) : (
-                      <>
-                        <Check size={13} />
-                        Marcar lida
-                      </>
+                  <div className="flex shrink-0 flex-col gap-2">
+                    {n.ligacao && (
+                      <Link
+                        href={n.ligacao}
+                        className="rounded-lg bg-acento px-3 py-[7px] text-center text-[12.5px] font-bold text-[#241500] transition-opacity hover:opacity-90"
+                      >
+                        Resolver
+                      </Link>
                     )}
-                  </Botao>
+                    <Botao
+                      variante="neutro"
+                      tamanho="pequeno"
+                      onClick={() => alternarLida(n)}
+                    >
+                      {n.lida ? (
+                        <>
+                          <Undo2 size={13} />
+                          Marcar não lida
+                        </>
+                      ) : (
+                        <>
+                          <Check size={13} />
+                          Marcar lida
+                        </>
+                      )}
+                    </Botao>
+                  </div>
                 </div>
               </div>
-            </Cartao>
-          ))}
-        </div>
+            ))}
+          </CaixaHistorico>
+          <BarraPaginacao pagina={data} nome="notificações" {...p.controlos} />
+        </Cartao>
       )}
     </>
   );

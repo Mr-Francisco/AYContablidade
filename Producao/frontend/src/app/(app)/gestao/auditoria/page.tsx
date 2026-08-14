@@ -11,6 +11,12 @@ import {
   Cartao,
   Selector,
 } from "@/components/ui";
+import {
+  BarraPaginacao,
+  CaixaHistorico,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { buscador } from "@/lib/api";
 import type { RegistoAuditoria } from "@/types";
 
@@ -26,8 +32,9 @@ const ACCOES = [
 
 export default function AuditoriaEmpresa() {
   const [accao, setAccao] = useState("");
-  const { data, isLoading } = useSWR<RegistoAuditoria[]>(
-    `/api/empresa/auditoria${accao ? `?accao=${accao}` : ""}`,
+  const p = usePaginacao();
+  const { data, isLoading } = useSWR<Pagina<RegistoAuditoria>>(
+    `/api/empresa/auditoria?${p.query}${accao ? `&accao=${accao}` : ""}`,
     buscador,
   );
 
@@ -49,14 +56,23 @@ export default function AuditoriaEmpresa() {
         <Selector
           rotulo="Acção"
           valor={accao}
-          aoMudar={setAccao}
+          aoMudar={(v) => {
+            setAccao(v);
+            p.reiniciar();
+          }}
           opcoes={ACCOES}
           larguraMinima="18rem"
         />
       </BarraFiltros>
 
       <Cartao className="p-0">
-        <TabelaAuditoria registos={data} aCarregar={isLoading} />
+        {/* O registo de auditoria é o histórico que cresce mais depressa —
+            uma linha por cada acção administrativa, para sempre. A caixa é
+            que rola, e vem uma página de cada vez. */}
+        <CaixaHistorico altura={560}>
+          <TabelaAuditoria registos={data?.linhas} aCarregar={isLoading} />
+        </CaixaHistorico>
+        <BarraPaginacao pagina={data} nome="acções" {...p.controlos} />
       </Cartao>
     </>
   );
