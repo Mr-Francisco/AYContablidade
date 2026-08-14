@@ -519,6 +519,82 @@ antiga fica bloqueado por um campo que nunca existiu.
 
 ---
 
+## 8. Notificações e sua gestão
+
+**Pedido pelo utilizador em 2026-08-14.**
+
+Um componente central de notificações, um sino com contador de não lidas,
+gestão (lidas, não lidas, histórico) e **geração automática** a partir das
+operações dos módulos: quando algo num módulo depende da intervenção de outro,
+nasce uma notificação para os perfis responsáveis.
+
+### O que já existe, analisado antes de propor
+
+**No Piloto há a casca e não há o motor.** O sino, o painel, o contador e o
+«marcar todas lidas» existem em `app.js` (`notifDoUser`, `notifNaoLidas`,
+`marcarLida`, `marcarTodasLidas`) — mas **nada no Piloto cria uma
+notificação**. Não há um `criarNotif` em lado nenhum. É interface sobre uma
+lista que nunca é escrita.
+
+Ou seja: a parte visível copia-se do Piloto; a parte que interessa é nova.
+
+**Na Produção há as costuras, e são explícitas.** Todo o lançamento gerado por
+outro módulo traz `origem`: `comercial`, `logistica`, `rh`, `imobilizado`,
+`apuramento`. Esses cinco pontos são exactamente onde um módulo toca na
+contabilidade, e são os candidatos naturais a emitir notificação.
+
+**E há um sítio onde a falta de notificação já custa hoje.** Em
+`services/comercial.py`, a baixa de stock de uma venda corre com
+`ignorar_erro_contab=True`: se a contabilização falhar, **a factura é emitida
+à mesma** e o erro sobe como aviso no ecrã de quem estava a facturar. Quem
+tiver de o corrigir é a contabilidade — e essa pessoa nunca soube. É o caso
+mais forte para começar, porque o problema existe e não tem hoje resposta
+nenhuma.
+
+### Modelo proposto
+
+Uma tabela `Notificacao` com `EmpresaScopedMixin` (regra do multi-tenant),
+`tipo`, `titulo`, `texto`, `origem` (o módulo que a gerou), `destino_perfil` ou
+`destino_capacidade`, `alvo_tipo`/`alvo_id` e uma ligação para onde se resolve.
+As leituras numa tabela à parte (`notificacao_lida`), por utilizador — uma
+notificação para um perfil é lida por cada pessoa a seu tempo.
+
+**Por capacidade e não por perfil**, se possível: «quem tem `contab.lancar`»
+sobrevive a uma reorganização de perfis; «quem é contabilista» não.
+
+**Emitidas pelos serviços, nunca pelos routers.** É nos serviços que as regras
+vivem, e um mesmo serviço é chamado por mais do que uma rota. Uma função
+`notificar(...)` chamada de dentro da mesma transacção — se a operação
+reverter, a notificação reverte com ela. Uma notificação de uma coisa que não
+aconteceu é pior do que nenhuma.
+
+### O que decidir antes de começar
+
+- **Que operações geram notificação.** A lista tem de ser curta ou o sino passa
+  a ruído e ninguém o abre. Proposta mínima: (1) contabilização falhada numa
+  venda ou movimento de stock; (2) processamento de salários por lançar;
+  (3) exercício por apurar depois de fechado o último período; (4) documento
+  de venda em rascunho há mais de N dias. **Nada de «foi criado um artigo».**
+- **Quem recebe.** Por capacidade, por perfil, ou também nominal?
+- **Se há caducidade.** Uma notificação resolvida deve desaparecer sozinha
+  quando a causa desaparece (a factura foi contabilizada), ou fica no histórico
+  marcada como resolvida?
+- **Se sai da aplicação.** E-mail ou só dentro do sistema? E-mail traz o
+  problema do domínio e da entrega, que já bloqueia a pendência 4.
+
+### Trabalho
+
+- Modelo, migração e serviço `notificar` — 1 dia.
+- Rotas (listar, marcar lida, marcar todas, histórico) — meio dia.
+- Sino com contador e painel no cabeçalho, mais um ecrã de gestão — 1 dia.
+- Ligar os pontos de emissão, um a um, com teste por cada — 1 a 2 dias.
+
+**Risco:** baixo do lado técnico, alto do lado do desenho. Um sistema de
+notificações que avisa de tudo é desligado na primeira semana, e depois já não
+avisa do que importa. A lista curta é a decisão mais importante deste ponto.
+
+---
+
 ## Resumo para decisão
 
 **Pode começar já, sem depender de ninguém:**

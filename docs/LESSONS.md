@@ -142,3 +142,5 @@
 - Um símbolo de estado (`⚠`, `✓`) vive no selo, não dentro da string: o mesmo texto costuma ir para um `title` ou um `aria-label`, e lá o símbolo lê-se mal — e obriga a limpá-lo com uma expressão regular.
 - Ícones de linha só em `components/layout/IconeDeLinha.tsx`: três sítios desenhavam o SVG à mão e a espessura já tinha divergido.
 - Um pedido que devolve 403 NÃO se mostra como zero: num painel de gestão «0 Kz de stock» lê-se como «a empresa não tem stock». Distinguir não-ter de não-poder-ver, e usar «—» para o desconhecido.
+- Um documento não se põe num acordeão: as Notas às Contas lêem-se de seguida, imprimem-se de seguida e citam-se pelo número — fechadas, a impressão sai vazia.
+- Uma nota sem a coluna do ano anterior não é uma nota: «8 500 000» sozinho não diz se a empresa investiu, amortizou ou vendeu.

@@ -1,8 +1,7 @@
 "use client";
 
-import { ChevronDown, Pencil, RotateCcw } from "lucide-react";
-import { Accordion } from "radix-ui";
-import { useState } from "react";
+import { Pencil, RefreshCw, RotateCcw } from "lucide-react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 
 import {
@@ -16,11 +15,12 @@ import {
   Selo,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
-import { ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import { Confirmar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
-import { formataMoeda } from "@/lib/dinheiro";
+import { ehZero, formata } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
+import type { Exercicio } from "@/types";
 
 interface Rubrica {
   codigo: string;
@@ -42,95 +42,169 @@ interface Nota {
   editada: boolean;
 }
 
+/**
+ * Notas às Contas — as 35 notas do Piloto.
+ *
+ * TODAS ABERTAS, cada uma no seu cartão. A Produção tinha-as num acordeão, o
+ * que faz sentido para uma lista de opções e nenhum para um documento: as
+ * notas lêem-se de seguida, imprimem-se de seguida, e são citadas pelo número.
+ * Fechadas, é preciso abrir trinta e cinco para ler o documento e a impressão
+ * sai vazia.
+ *
+ * A COLUNA DO ANO ANTERIOR é a razão de ser de uma nota. «Imobilizações
+ * corpóreas: 8 500 000» não diz nada sozinho; ao lado do ano anterior diz se
+ * a empresa investiu, amortizou ou vendeu. O Piloto tem-na e a Produção não
+ * tinha. Vem do exercício anterior, ligado rubrica a rubrica pelo código de
+ * conta — o número da nota é chave estável, porque a definição não depende
+ * dos dados.
+ */
 export default function Notas() {
-  const { empresa, pode } = useAuth();
+  const { pode } = useAuth();
   const { exercicios, activo } = useExercicios();
   const [exercicioId, setExercicioId] = useState<string | undefined>();
   const [grupo, setGrupo] = useState("todos");
 
   const exId = exercicioId ?? activo?.id;
-  const moeda = empresa?.moeda ?? "Kz";
-  const q = exId ? `?exercicio_id=${exId}` : "";
+  const exercicio = exercicios.find((e) => e.id === exId);
+  const anterior = exercicioAnterior(exercicios, exercicio);
 
+  const q = exId ? `?exercicio_id=${exId}` : "";
   const { data, isLoading, mutate } = useSWR<Nota[]>(
     `/api/relatorios/notas${q}`,
     buscador,
   );
+  const { data: dadosAnteriores, mutate: mutateAnteriores } = useSWR<Nota[]>(
+    anterior ? `/api/relatorios/notas?exercicio_id=${anterior.id}` : null,
+    buscador,
+  );
+
+  // Por número da nota, e dentro dela por código de conta.
+  const antPorNota = useMemo(() => {
+    const m = new Map<
+      number,
+      { total: string; rubricas: Map<string, string> }
+    >();
+    for (const n of dadosAnteriores ?? []) {
+      m.set(n.n, {
+        total: n.total,
+        rubricas: new Map(n.rubricas.map((r) => [r.codigo, r.valor])),
+      });
+    }
+    return m;
+  }, [dadosAnteriores]);
 
   const visiveis = (data ?? []).filter(
     (n) => grupo === "todos" || n.grupo === grupo,
   );
 
+  const anoActual = (exercicio?.inicio ?? "").slice(0, 4);
+  const anoAnterior = anterior
+    ? (anterior.inicio ?? "").slice(0, 4)
+    : anoActual
+      ? String(Number(anoActual) - 1)
+      : "";
+
   return (
     <>
       <CabecalhoPagina
         titulo="Notas às Contas"
-        descricao="Composição de cada rubrica do Balanço e da Demonstração de Resultados."
-        accoes={
-          <div className="flex flex-wrap items-center gap-3">
-            {data && <Selo cor="#3d7fe0">{data.length} notas</Selo>}
-            <AccoesDoMapa />
-          </div>
-        }
+        descricao="Composição de cada rubrica do Balanço e da Demonstração de Resultados — apurada das contas do exercício."
       />
 
-      <BarraFiltros className="mb-4">
-        <Selector
-          rotulo="Exercício"
-          valor={exId ?? ""}
-          aoMudar={setExercicioId}
-          opcoes={exercicios.map((e) => ({
-            valor: e.id,
-            rotulo: `${e.nome}${e.ativo ? " · activo" : ""}`,
-          }))}
-          larguraMinima="13rem"
-        />
-        <Selector
-          rotulo="Grupo"
-          valor={grupo}
-          aoMudar={setGrupo}
-          opcoes={[
-            { valor: "todos", rotulo: "Todas as notas" },
-            { valor: "BL", rotulo: "Balanço" },
-            { valor: "DR", rotulo: "Demonstração de Resultados" },
-          ]}
-          larguraMinima="16rem"
-        />
-      </BarraFiltros>
+      <Cartao className="mb-4">
+        <BarraFiltros>
+          <Selector
+            rotulo="Exercício"
+            valor={exId ?? ""}
+            aoMudar={setExercicioId}
+            opcoes={exercicios.map((e) => ({
+              valor: e.id,
+              rotulo: `${e.nome}${e.ativo ? " · activo" : ""}`,
+            }))}
+            larguraMinima="13rem"
+          />
+          <Selector
+            valor={grupo}
+            aoMudar={setGrupo}
+            opcoes={[
+              { valor: "todos", rotulo: "Todas as notas" },
+              { valor: "BL", rotulo: "Notas do Balanço" },
+              { valor: "DR", rotulo: "Notas da Demonstração de Resultados" },
+            ]}
+            larguraMinima="18rem"
+          />
+          {/* «Ir para» — trinta e cinco notas não se percorrem à roda do rato,
+              e citam-se pelo número. É o índice do Piloto. */}
+          <span className="sem-imprimir min-w-0 flex-1 text-[12.5px] text-texto-suave">
+            {visiveis.length > 0 && (
+              <>
+                Ir para:{" "}
+                {visiveis.map((n, i) => (
+                  <span key={n.n}>
+                    {i > 0 && " · "}
+                    <a
+                      href={`#nota-${n.n}`}
+                      className="font-semibold text-marca hover:underline"
+                    >
+                      {n.n}
+                    </a>
+                  </span>
+                ))}
+              </>
+            )}
+          </span>
+          <Botao
+            tamanho="pequeno"
+            onClick={() => {
+              mutate();
+              mutateAnteriores();
+            }}
+          >
+            <RefreshCw size={14} />
+            Actualizar
+          </Botao>
+          <AccoesDoMapa desactivado={!data} />
+        </BarraFiltros>
+      </Cartao>
 
       {isLoading ? (
         <ACarregar />
       ) : !data ? (
         <Alerta tipo="erro">Não foi possível carregar as notas.</Alerta>
       ) : (
-        <Cartao className="p-0">
-          <Accordion.Root type="multiple" className="min-w-0">
-            {visiveis.map((n) => (
-              <ItemNota
-                key={n.n}
-                nota={n}
-                moeda={moeda}
-                exercicioId={exId}
-                podeEditar={pode("contab.lancar")}
-                aoGravar={() => mutate()}
-              />
-            ))}
-          </Accordion.Root>
-        </Cartao>
+        <div className="flex flex-col gap-4">
+          {visiveis.map((n) => (
+            <CartaoNota
+              key={n.n}
+              nota={n}
+              anterior={antPorNota.get(n.n)}
+              anoActual={anoActual}
+              anoAnterior={anoAnterior}
+              exercicioId={exId}
+              podeEditar={pode("contab.lancar")}
+              aoGravar={() => mutate()}
+            />
+          ))}
+        </div>
       )}
     </>
   );
 }
 
-function ItemNota({
+// ---------------------------------------------------------------------------
+function CartaoNota({
   nota,
-  moeda,
+  anterior,
+  anoActual,
+  anoAnterior,
   exercicioId,
   podeEditar,
   aoGravar,
 }: {
   nota: Nota;
-  moeda: string;
+  anterior?: { total: string; rubricas: Map<string, string> };
+  anoActual: string;
+  anoAnterior: string;
   exercicioId?: string;
   podeEditar: boolean;
   aoGravar: () => void;
@@ -168,6 +242,7 @@ function ItemNota({
     setErro(null);
     try {
       await api.delete(`/api/relatorios/notas/${nota.n}${q}`);
+      setAEditar(false);
       aoGravar();
     } catch (e) {
       setErro(
@@ -175,175 +250,198 @@ function ItemNota({
       );
     } finally {
       setOcupado(false);
+      setARepor(false);
     }
   }
 
+  /** Vazio escreve-se com travessão, não com «0,00»: é ausência, não zero. */
+  const valorAnterior = (codigo: string) => {
+    const v = anterior?.rubricas.get(codigo);
+    return v && !ehZero(v) ? formata(v) : "—";
+  };
+
   return (
-    <Accordion.Item
-      value={String(nota.n)}
-      className="border-b border-borda last:border-b-0"
-    >
-      <Accordion.Header>
-        <Accordion.Trigger className="group flex w-full min-w-0 items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-superficie-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-superficie-2 text-[12px] font-extrabold text-marca">
-            {nota.n}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold">
-              {nota.titulo}
-            </span>
-            <span className="block text-[11.5px] text-texto-suave">
-              {nota.grupo === "BL" ? "Balanço" : "Demonstração de Resultados"}
-              {nota.editada && " · texto editado"}
-            </span>
-          </span>
-          {!nota.narrativa && (
-            <span className="shrink-0 text-sm font-bold tabular">
-              {formataMoeda(nota.total, moeda)}
-            </span>
-          )}
-          <ChevronDown
-            size={16}
-            className="shrink-0 text-texto-suave transition-transform group-data-[state=open]:rotate-180"
-          />
-        </Accordion.Trigger>
-      </Accordion.Header>
+    <Cartao id={`nota-${nota.n}`} className="scroll-mt-24">
+      <div className="mb-3.5 flex flex-wrap items-center gap-2 text-[16px] font-extrabold">
+        <span>
+          {nota.n}. {nota.titulo}
+        </span>
+        <Selo cor="#62657a">{nota.grupo === "BL" ? "Balanço" : "Result."}</Selo>
+        {nota.editada && (
+          <Selo cor="#c98a10">
+            <Pencil size={11} aria-hidden />
+            editado
+          </Selo>
+        )}
+        {podeEditar && !aEditar && (
+          <Botao
+            variante="contorno"
+            tamanho="pequeno"
+            className="sem-imprimir ml-auto"
+            onClick={() => {
+              setTexto(conteudo ?? "");
+              setAEditar(true);
+            }}
+          >
+            <Pencil size={13} />
+            Editar
+          </Botao>
+        )}
+      </div>
 
-      <Accordion.Content className="overflow-hidden">
-        <div className="min-w-0 border-t border-borda bg-superficie-2/40 px-4 py-4">
-          {nota.rubricas.length > 0 && (
-            <div className="mb-4 min-w-0 overflow-x-auto rounded-lg border border-borda bg-superficie">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr>
-                    <th className="border-b border-borda bg-superficie-2 px-3 py-2 text-left text-[11.5px] uppercase tracking-[0.4px] text-texto-suave">
-                      Conta
-                    </th>
-                    <th className="border-b border-borda bg-superficie-2 px-3 py-2 text-left text-[11.5px] uppercase tracking-[0.4px] text-texto-suave">
-                      Designação
-                    </th>
-                    <th className="border-b border-borda bg-superficie-2 px-3 py-2 text-right text-[11.5px] uppercase tracking-[0.4px] text-texto-suave">
-                      Valor
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {nota.rubricas.map((r) => (
-                    <tr
-                      key={`${r.codigo}-${r.nome}`}
-                      className="border-b border-borda last:border-b-0"
-                    >
-                      <td className="px-3 py-2 tabular font-semibold">
-                        {r.codigo || "—"}
-                      </td>
-                      <td className="max-w-[320px] truncate px-3 py-2">
-                        {r.nome}
-                        {r.amort && (
-                          <span className="ml-2 text-[11px] text-texto-suave">
-                            (a deduzir)
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular">
-                        {formataMoeda(r.valor, moeda)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-superficie-2 font-extrabold">
-                    <td colSpan={2} className="px-3 py-2">
-                      TOTAL
-                    </td>
-                    <td className="px-3 py-2 text-right tabular">
-                      {formataMoeda(nota.total, moeda)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-
-          {aEditar ? (
-            <div className="flex flex-col gap-2">
-              <textarea
-                value={texto}
-                onChange={(e) => setTexto(e.target.value)}
-                rows={6}
-                className="w-full min-w-0 rounded-[10px] border border-borda bg-superficie px-3 py-2.5 text-sm text-texto focus:border-acento focus:outline-none focus:ring-2 focus:ring-acento/25"
-              />
-              {erro && <Alerta tipo="erro">{erro}</Alerta>}
-
-              <ConfirmarEliminar
-                aberto={aRepor}
-                aoMudar={setARepor}
-                titulo="Repor o texto automático?"
-                aoConfirmar={() => {
-                  setARepor(false);
-                  repor();
-                }}
-                ocupado={ocupado}
-              >
-                O texto que escreveu nesta nota é <b>descartado</b> e volta o
-                que o sistema gera a partir dos dados. Não há como o recuperar.
-              </ConfirmarEliminar>
-              <div className="flex flex-wrap gap-2">
-                <Botao
-                  variante="primario"
-                  tamanho="pequeno"
-                  onClick={gravar}
-                  disabled={ocupado}
-                >
-                  Gravar texto
-                </Botao>
-                <Botao tamanho="pequeno" onClick={() => setAEditar(false)}>
-                  Cancelar
-                </Botao>
-              </div>
-            </div>
-          ) : (
-            <>
-              {conteudo ? (
-                <p className="text-[13.5px] leading-relaxed text-texto-suave">
-                  {conteudo}
-                </p>
-              ) : (
-                <p className="text-[13.5px] italic text-texto-suave">
-                  Sem valores nesta rubrica no exercício.
-                </p>
-              )}
-
-              {podeEditar && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Botao
-                    tamanho="pequeno"
-                    onClick={() => {
-                      setTexto(conteudo ?? "");
-                      setAEditar(true);
-                    }}
+      {!nota.narrativa && (
+        <div className="-mx-5 mb-3 overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr>
+                <th className={TH}>Conta</th>
+                <th className={TH}>Rubrica</th>
+                <th className={`${TH} w-[150px] text-right`}>{anoActual}</th>
+                <th className={`${TH} w-[120px] text-right`}>{anoAnterior}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {nota.rubricas.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-3 py-6 text-center text-texto-suave"
                   >
-                    <Pencil size={13} />
-                    Editar texto
-                  </Botao>
-                  {/* Só faz sentido repor quando há um texto manual a
-                      substituir o automático. */}
-                  {nota.editada && (
-                    <Botao
-                      tamanho="pequeno"
-                      onClick={() => setARepor(true)}
-                      disabled={ocupado}
-                    >
-                      <RotateCcw size={13} />
-                      Repor automático
-                    </Botao>
-                  )}
-                </div>
+                    Sem movimento nesta rubrica.
+                  </td>
+                </tr>
+              ) : (
+                nota.rubricas.map((r) => (
+                  <tr
+                    key={`${r.codigo}-${r.nome}`}
+                    className={`border-b border-borda ${r.amort ? "text-texto-suave" : ""}`}
+                  >
+                    <td className="tabular px-3 py-1.5">{r.codigo}</td>
+                    <td className="px-3 py-1.5">{r.nome}</td>
+                    <td className="tabular px-3 py-1.5 text-right">
+                      {formata(r.valor)}
+                    </td>
+                    <td className="tabular px-3 py-1.5 text-right text-texto-suave">
+                      {anterior ? valorAnterior(r.codigo) : "—"}
+                    </td>
+                  </tr>
+                ))
               )}
-              {erro && <Alerta tipo="erro">{erro}</Alerta>}
-            </>
-          )}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-acento bg-[color-mix(in_srgb,var(--color-acento)_12%,var(--color-superficie-2))] font-extrabold">
+                <td colSpan={2} className="px-3 py-1.5">
+                  Total
+                </td>
+                <td className="tabular px-3 py-1.5 text-right">
+                  {formata(nota.total)}
+                </td>
+                <td className="tabular px-3 py-1.5 text-right">
+                  {anterior && !ehZero(anterior.total)
+                    ? formata(anterior.total)
+                    : "—"}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
-      </Accordion.Content>
-    </Accordion.Item>
+      )}
+
+      {aEditar ? (
+        <div className="sem-imprimir">
+          <textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            rows={4}
+            placeholder={`Escreva a ${nota.narrativa ? "nota" : "análise"}…`}
+            className="w-full rounded-[10px] border border-borda bg-superficie p-3 text-sm outline-none focus:border-acento focus:ring-2 focus:ring-acento/25"
+          />
+          {erro && (
+            <Alerta tipo="erro" className="mt-2">
+              {erro}
+            </Alerta>
+          )}
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            <Botao
+              variante="primario"
+              tamanho="pequeno"
+              onClick={gravar}
+              disabled={ocupado}
+            >
+              {ocupado ? "A guardar…" : "Guardar"}
+            </Botao>
+            <Botao
+              variante="contorno"
+              tamanho="pequeno"
+              onClick={() => setARepor(true)}
+              disabled={ocupado}
+            >
+              <RotateCcw size={13} />
+              Repor automático
+            </Botao>
+            <Botao
+              variante="contorno"
+              tamanho="pequeno"
+              onClick={() => {
+                setAEditar(false);
+                setErro(null);
+              }}
+              disabled={ocupado}
+            >
+              Cancelar
+            </Botao>
+          </div>
+        </div>
+      ) : nota.narrativa ? (
+        <p className="text-sm leading-relaxed">{conteudo}</p>
+      ) : conteudo ? (
+        <div className="rounded-lg border-l-[3px] border-acento bg-[color-mix(in_srgb,var(--color-acento)_6%,var(--color-superficie))] px-3 py-2.5 text-[13px] leading-[1.6]">
+          <b>Análise:</b> {conteudo}
+        </div>
+      ) : podeEditar ? (
+        <p className="text-[13px] text-texto-suave">
+          Sem análise — use «Editar» para acrescentar.
+        </p>
+      ) : null}
+
+      {aRepor && (
+        <Confirmar
+          aberto
+          aoMudar={(a) => {
+            if (!a) setARepor(false);
+          }}
+          titulo={`Repor o texto automático da nota ${nota.n}?`}
+          rotuloConfirmar="Repor"
+          rotuloOcupado="A repor…"
+          variante="perigo"
+          aoConfirmar={repor}
+          ocupado={ocupado}
+        >
+          O texto escrito à mão é apagado e a nota volta ao que o sistema apura
+          das contas. Não há como o recuperar depois.
+        </Confirmar>
+      )}
+    </Cartao>
   );
+}
+
+const TH =
+  "border-b border-borda bg-superficie-2 px-3 py-1.5 text-left text-[11.5px] font-bold uppercase tracking-[0.4px] text-texto-suave";
+
+/**
+ * O exercício imediatamente anterior a este, pela data de início.
+ *
+ * Pela data e não pelo nome: «Exercício 2026» é convenção, não garantia, e há
+ * empresas com exercícios que não coincidem com o ano civil.
+ */
+function exercicioAnterior(
+  todos: Exercicio[],
+  actual: Exercicio | undefined,
+): Exercicio | undefined {
+  if (!actual) return undefined;
+  return todos
+    .filter(
+      (e) => e.id !== actual.id && (e.inicio ?? "") < (actual.inicio ?? ""),
+    )
+    .sort((a, b) => (b.inicio ?? "").localeCompare(a.inicio ?? ""))[0];
 }

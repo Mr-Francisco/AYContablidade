@@ -124,10 +124,29 @@ mais, não a menos — fica.
 confirmação a dizer o que cada um faz. Falta `Ver lançamento` e o campo de
 data visível (usa a data de hoje).
 
-## 8. Notas ✅
+## 8. Notas ✅ (refeitas em 2026-08-14)
 
-Editar, Guardar e `↺ Repor automático` — todos presentes, o último já com
-confirmação.
+Editar, Guardar e «Repor automático» já lá estavam. Faltava o resto:
+
+| Do Piloto | Estava | Ficou |
+|---|---|---|
+| As 35 notas **abertas**, cada uma no seu cartão | num acordeão, fechadas | ✅ cartões |
+| **Coluna do ano anterior** | não existia | ✅ do exercício anterior, ligada pelo código de conta |
+| Índice «Ir para: 1 · 2 · … · 35» | não existia | ✅ |
+| Etiqueta `Balanço` / `Result.` e `editado` | parcial | ✅ |
+| Botão «Actualizar» | não existia | ✅ |
+| Bloco «Análise» com barra à esquerda | moldura à volta | ✅ barra de 3px |
+
+**O acordeão era o erro maior.** Faz sentido para uma lista de opções e nenhum
+para um documento: as notas lêem-se de seguida, imprimem-se de seguida e
+citam-se pelo número. Fechadas, era preciso abrir trinta e cinco para ler o
+documento, e a impressão saía vazia.
+
+**A coluna do ano anterior é a razão de ser de uma nota.** «Imobilizações
+corpóreas: 8 500 000» não diz nada sozinho; ao lado do ano anterior diz se a
+empresa investiu, amortizou ou vendeu. O exercício anterior escolhe-se pela
+DATA DE INÍCIO e não pelo nome — «Exercício 2026» é convenção, e há empresas
+cujo exercício não coincide com o ano civil.
 
 ## 9. Fluxos de Caixa ✅
 
