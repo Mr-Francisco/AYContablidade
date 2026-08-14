@@ -1,6 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useDeferredValue, useMemo, useState } from "react";
 import useSWR from "swr";
 
@@ -29,6 +30,7 @@ import { useExercicios, usePeriodos } from "@/lib/hooks";
 import type { Balancete } from "@/types";
 
 export default function PaginaBalancete() {
+  const router = useRouter();
   const { empresa } = useAuth();
   const { exercicios, activo } = useExercicios();
   const { periodos } = usePeriodos();
@@ -189,7 +191,18 @@ export default function PaginaBalancete() {
                   </thead>
                   <tbody>
                     {linhas.map((l) => (
-                      <Tr key={l.codigo}>
+                      <Tr
+                        key={l.codigo}
+                        // Duplo clique abre o extracto da conta, como no Piloto. É o gesto que
+                        // liga o mapa ao detalhe: vê-se um saldo estranho e vai-se ver de onde
+                        // vem sem ter de copiar o código para outro ecrã.
+                        onDoubleClick={() =>
+                          router.push(
+                            `/contabilidade/extrato?conta=${l.codigo}`,
+                          )
+                        }
+                        className="cursor-pointer"
+                      >
                         <Td className="font-bold tabular">{l.codigo}</Td>
                         <Td className="max-w-[320px] truncate">
                           <span title={l.nome}>{l.nome || "—"}</span>

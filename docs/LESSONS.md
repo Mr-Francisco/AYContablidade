@@ -114,3 +114,5 @@
 - A divergência visual entre Piloto e Produção não estava na paleta — as variáveis já eram idênticas. Estava em eu escrever tabelas e botões à mão em vez de usar `Th`, `Td` e `Botao`. Alinhar a base **e** passar as páginas a usá-la; só uma das duas não chega.
 - Medir antes de mexer: abrir os dois no browser e comparar `getBoundingClientRect` + `getComputedStyle` do mesmo elemento dá a diferença exacta, em vez de a estimar a olho.
 - A `.toolbar` do Piloto não tem moldura nem fundo. O cartão que a Produção lhe punha criava uma caixa dentro da caixa em todas as páginas de uma vez.
+- O `formatter` do tooltip do Recharts recebe `ValueType | undefined`, não `number`: tipar o parâmetro como `number` não compila.
+- Antes de dar uma diferença por confirmada na auditoria, procurar no código da Produção: o «incluir subcontas» do razão e o «apurar e lançar» do IVA já existiam, e eu tinha-os listado como em falta.

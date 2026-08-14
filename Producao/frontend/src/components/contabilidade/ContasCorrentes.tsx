@@ -1,6 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 
@@ -58,6 +59,7 @@ export function PaginaContasCorrentes({
 }: {
   config: ConfigContaCorrente;
 }) {
+  const router = useRouter();
   const { empresa } = useAuth();
   const moeda = empresa?.moeda ?? "Kz";
   const { exercicios, activo } = useExercicios();
@@ -232,7 +234,16 @@ export function PaginaContasCorrentes({
               </thead>
               <tbody>
                 {linhas.map((l) => (
-                  <Tr key={l.codigo}>
+                  <Tr
+                    key={l.codigo}
+                    // Duplo clique abre o extracto da conta, como no Piloto. É o gesto que
+                    // liga o mapa ao detalhe: vê-se um saldo estranho e vai-se ver de onde
+                    // vem sem ter de copiar o código para outro ecrã.
+                    onDoubleClick={() =>
+                      router.push(`/contabilidade/extrato?conta=${l.codigo}`)
+                    }
+                    className="cursor-pointer"
+                  >
                     <Td className="tabular font-bold">
                       <a
                         href={`/contabilidade/extrato?conta=${l.codigo}`}

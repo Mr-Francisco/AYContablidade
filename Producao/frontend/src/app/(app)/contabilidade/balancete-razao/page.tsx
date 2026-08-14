@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import useSWR from "swr";
 
@@ -190,6 +191,7 @@ function FragmentoClasse({
   classe: ClasseRazao;
   valor: (v: string) => string;
 }) {
+  const router = useRouter();
   return (
     <>
       <tr>
@@ -201,7 +203,16 @@ function FragmentoClasse({
         </td>
       </tr>
       {classe.contas.map((c) => (
-        <Tr key={c.codigo}>
+        <Tr
+          key={c.codigo}
+          // Duplo clique abre o extracto da conta, como no Piloto. É o gesto que
+          // liga o mapa ao detalhe: vê-se um saldo estranho e vai-se ver de onde
+          // vem sem ter de copiar o código para outro ecrã.
+          onDoubleClick={() =>
+            router.push(`/contabilidade/extrato?conta=${c.codigo}`)
+          }
+          className="cursor-pointer"
+        >
           <Td className="tabular font-bold">{c.codigo}</Td>
           <Td className="max-w-[300px] truncate">
             <span title={c.nome}>{c.nome}</span>

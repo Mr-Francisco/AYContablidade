@@ -15,7 +15,7 @@ Legenda: ✅ feito · 🔧 em curso · ❌ por fazer
 |---|---|---|---|
 | Ribbon com ícones | 74 px, ícone 22 px por cima do rótulo, rótulo de secção com traço, separadores | Só texto | ✅ 36 ícones portados de `ICO` |
 | Explorador | `contabilidade.html` — índice do módulo | Não existia | ✅ criado |
-| Atalhos de teclado | **F4**, **Escape**, **Enter**, **duplo clique**. Não há F2 nem combinações | Nenhum | ✅ F4/Esc/Enter · ❌ duplo clique nos mapas |
+| Atalhos de teclado | **F4**, **Escape**, **Enter**, **duplo clique**. Não há F2 nem combinações | Nenhum | ✅ todos — duplo clique abre o extracto no balancete, balancete-razão e contas correntes |
 
 ---
 
@@ -118,11 +118,11 @@ Falta `Modo` (análise) e `Grau`. O resto está.
 O Piloto só filtra por exercício; a Produção acrescenta «Até ao período». É a
 mais, não a menos — fica.
 
-## 7. Result. e Outros ❌
+## 7. Result. e Outros 🔧
 
-Falta o **apuramento de resultados**: `🧮 Apurar Resultados do Exercício`,
-`↺ Reabrir apuramento`, `Ver lançamento`, e o campo `Data de apuramento`.
-As rotas existem (`/api/apuramentos/resultados`).
+«Apurar Resultados do Exercício» e «Reabrir apuramento» acrescentados, com
+confirmação a dizer o que cada um faz. Falta `Ver lançamento` e o campo de
+data visível (usa a data de hoje).
 
 ## 8. Notas ✅
 
@@ -131,28 +131,29 @@ confirmação.
 
 ## 9. Fluxos de Caixa ✅
 
-## 10. Apuramento do IVA ❌
+## 10. Apuramento do IVA ✅
 
-Falta `⚙️ Apurar e lançar`. A rota existe.
+«Apurar e lançar» já existia — a auditoria estava errada neste ponto.
 
 ## 11. Retenções na Fonte ✅
 
-## 12. Extratos ❌
+## 12. Extratos ✅
 
-Falta o **F4** no campo Conta (com botão visível) e o **checkbox «incluir
-subcontas»**.
+Checkbox «Incluir subcontas» acrescentado — ligado por omissão, porque o
+extracto de uma conta corrente agregadora só faz sentido assim, e desliga-se
+para ver só a própria conta.
 
-## 13. Razão ❌
+## 13. Razão ✅
 
-Falta o **checkbox «incluir subcontas»**.
+O checkbox já existia — a auditoria estava errada neste ponto.
 
 ## 14. Diários ✅
 
 Novo, Editar, Eliminar, **Gerir fechos** — todos feitos.
 
-## 15. Documentos ❌
+## 15. Documentos ✅
 
-Falta o **F4** nos campos Conta Débito / Conta Crédito.
+F4 e duplo clique nos campos Conta Débito / Conta Crédito.
 
 ## 16. Explorador ✅
 
@@ -166,9 +167,15 @@ Falta o **F4** nos campos Conta Débito / Conta Crédito.
 3. Plano de Contas em árvore.
 4. Painel Contabilístico.
 
-**Médio (só interface, rotas existem):**
-5. Apuramento de resultados e de IVA — botões.
-6. Duplo clique → extracto em balancete, balancete-razão e contas correntes.
-7. Checkbox «incluir subcontas» em extracto e razão.
-8. F4 em extracto, plano de contas e documentos.
-9. Importar plano (Primavera).
+**Médio — todos feitos:**
+5. ~~Apuramento de resultados~~ — feito (falta «Ver lançamento»).
+6. ~~Duplo clique → extracto~~ — feito nos três mapas.
+7. ~~Checkbox «incluir subcontas»~~ — feito.
+8. ~~F4~~ — feito no plano de contas e nos documentos.
+9. ~~Importar plano~~ — feito.
+
+**Falta ainda:**
+- Balancete Modelo Primavera (3 grupos de colunas) — exige trabalho de serviço.
+- Painel Contabilístico (faixa, donut, últimos lançamentos, duas barras).
+- Plano de Contas: testar criar/editar/importar no browser.
+- Explorador: comparar linha a linha.

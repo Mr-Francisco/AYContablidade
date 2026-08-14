@@ -72,6 +72,10 @@ function Conteudo() {
   const [exercicioId, setExercicioId] = useState<string | undefined>();
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
+  // Ligado por omissão: o extracto de uma conta corrente agregadora só faz
+  // sentido com as subcontas de cada entidade incluídas. Desliga-se para ver
+  // só a própria conta, como o `fSub` do Piloto permite.
+  const [incluirSubcontas, setIncluirSubcontas] = useState(true);
 
   const exId = exercicioId ?? activo?.id;
   const moeda = empresa?.moeda ?? "Kz";
@@ -92,9 +96,7 @@ function Conteudo() {
   if (de) p.set("de", de);
   if (ate) p.set("ate", ate);
   if (entidade.trim()) p.set("entidade", entidade.trim());
-  // O extracto de uma conta corrente agregadora só faz sentido com as
-  // subcontas de cada entidade incluídas.
-  p.set("incluir_subcontas", "true");
+  if (incluirSubcontas) p.set("incluir_subcontas", "true");
 
   const { data, isLoading } = useSWR<Extrato>(
     conta ? `/api/contabilidade/razao/${conta}?${p}` : null,
@@ -162,6 +164,15 @@ function Conteudo() {
             onChange={(e) => setAte(e.target.value)}
           />
         </Campo>
+        <label className="flex cursor-pointer items-center gap-2 self-end pb-2.5 text-sm">
+          <input
+            type="checkbox"
+            checked={incluirSubcontas}
+            onChange={(e) => setIncluirSubcontas(e.target.checked)}
+            className="size-4 accent-[var(--color-marca)]"
+          />
+          Incluir subcontas
+        </label>
       </BarraFiltros>
 
       {!conta ? (

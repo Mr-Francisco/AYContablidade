@@ -1,5 +1,6 @@
 "use client";
 
+import { Calculator, RotateCcw } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   Bar,
@@ -18,6 +19,7 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
+  Botao,
   CabecalhoPagina,
   Cartao,
   Selector,
@@ -25,8 +27,9 @@ import {
   TituloCartao,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { Confirmar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
-import { buscador } from "@/lib/api";
+import { api, buscador, ErroApi } from "@/lib/api";
 import {
   big,
   formataCompacto,
@@ -37,7 +40,7 @@ import { useExercicios, usePeriodos } from "@/lib/hooks";
 import type { DemonstracaoResultados } from "@/types";
 
 export default function Resultados() {
-  const { empresa } = useAuth();
+  const { empresa, pode } = useAuth();
   const { exercicios, activo } = useExercicios();
   const { periodos } = usePeriodos();
   const [exercicioId, setExercicioId] = useState<string | undefined>();
@@ -50,10 +53,73 @@ export default function Resultados() {
   if (exId) p.set("exercicio_id", exId);
   if (mes) p.set("mes", mes);
 
-  const { data, isLoading } = useSWR<DemonstracaoResultados>(
+  const { data, isLoading, mutate } = useSWR<DemonstracaoResultados>(
     `/api/relatorios/demonstracao-resultados?${p}`,
     buscador,
   );
+
+  const [aApurar, setAApurar] = useState(false);
+  const [aReabrir, setAReabrir] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [dataApuramento, setDataApuramento] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+
+  const exercicio = exercicios.find((e) => e.id === exId);
+  const jaApurado = Boolean(exercicio?.apuramento);
+  const podeApurar = pode("contab.fechar");
+
+  /** Apurar transfere os saldos das classes 6 e 7 para o resultado, gerando
+   *  lançamentos. Reabrir remove exactamente esses — é por isso que o
+   *  exercício guarda os ids do apuramento. */
+  async function apurar() {
+    setErro(null);
+    setAviso(null);
+    setOcupado(true);
+    try {
+      const r = await api.post<{ resultado: string; lancamentos: number }>(
+        "/api/apuramentos/resultados",
+        { exercicio_id: exId, data: dataApuramento },
+      );
+      await mutate();
+      setAviso(
+        `Resultado apurado: ${formataMoeda(r.resultado, moeda)} — ${r.lancamentos} lançamento(s) gerados.`,
+      );
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível apurar.",
+      );
+    } finally {
+      setOcupado(false);
+      setAApurar(false);
+    }
+  }
+
+  async function reabrir() {
+    setErro(null);
+    setAviso(null);
+    setOcupado(true);
+    try {
+      await api.delete(`/api/apuramentos/resultados/${exId}`);
+      await mutate();
+      setAviso(
+        "Apuramento reaberto — os lançamentos que gerou foram removidos.",
+      );
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível reabrir.",
+      );
+    } finally {
+      setOcupado(false);
+      setAReabrir(false);
+    }
+  }
 
   // Só as rubricas com valor entram no gráfico — um gráfico com dez barras a
   // zero não diz nada.
@@ -84,10 +150,33 @@ export default function Resultados() {
                 Resultado líquido: {formataMoeda(data.liquido, moeda)}
               </Selo>
             )}
+            {podeApurar &&
+              (jaApurado ? (
+                <Botao
+                  variante="contorno"
+                  onClick={() => setAReabrir(true)}
+                  disabled={ocupado}
+                >
+                  <RotateCcw size={15} />
+                  Reabrir apuramento
+                </Botao>
+              ) : (
+                <Botao
+                  variante="acento"
+                  onClick={() => setAApurar(true)}
+                  disabled={ocupado || !exId}
+                >
+                  <Calculator size={15} />
+                  Apurar Resultados do Exercício
+                </Botao>
+              ))}
             <AccoesDoMapa />
           </div>
         }
       />
+
+      {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
+      {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
       <BarraFiltros className="mb-4">
         <Selector
@@ -186,6 +275,36 @@ export default function Resultados() {
           </Cartao>
         </div>
       )}
+      <Confirmar
+        aberto={aApurar}
+        aoMudar={(a) => !a && setAApurar(false)}
+        titulo="Apurar os resultados do exercício?"
+        rotuloConfirmar="Apurar"
+        rotuloOcupado="A apurar…"
+        variante="primario"
+        ocupado={ocupado}
+        aoConfirmar={apurar}
+      >
+        Transfere os saldos das classes 6 e 7 para o resultado do exercício,
+        gerando os lançamentos de apuramento com data de <b>{dataApuramento}</b>
+        .
+        <br />
+        <br />
+        Reabre-se depois, e os lançamentos gerados são removidos.
+      </Confirmar>
+
+      <Confirmar
+        aberto={aReabrir}
+        aoMudar={(a) => !a && setAReabrir(false)}
+        titulo="Reabrir o apuramento?"
+        rotuloConfirmar="Reabrir"
+        rotuloOcupado="A reabrir…"
+        ocupado={ocupado}
+        aoConfirmar={reabrir}
+      >
+        Os lançamentos que o apuramento gerou são <b>removidos</b>. As classes 6
+        e 7 voltam a ter os seus saldos, e o exercício fica por apurar.
+      </Confirmar>
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { Plus, Search } from "lucide-react";
 import { type FormEvent, useDeferredValue, useMemo, useState } from "react";
-
+import { CampoConta } from "@/components/contabilidade/CampoConta";
 import {
   ACarregar,
   Alerta,
@@ -344,24 +344,23 @@ function FormularioDocumento({
         />
       </Campo>
 
+      {/* F4 e duplo clique, como no `ct-documentos.html` do Piloto. */}
       <Campo
         rotulo="Conta de débito"
-        dica="Opcional. Sugerida ao lançar com este documento."
+        dica="Opcional. Sugerida ao lançar com este documento. F4 procura."
       >
-        <Entrada
-          value={campos.conta_debito}
-          onChange={(e) => alterar("conta_debito", e.target.value)}
-          maxLength={20}
-          className="tabular"
+        <CampoConta
+          valor={campos.conta_debito}
+          aoMudar={(v) => alterar("conta_debito", v)}
+          placeholder="(opcional) · F4"
         />
       </Campo>
 
-      <Campo rotulo="Conta de crédito" dica="Opcional.">
-        <Entrada
-          value={campos.conta_credito}
-          onChange={(e) => alterar("conta_credito", e.target.value)}
-          maxLength={20}
-          className="tabular"
+      <Campo rotulo="Conta de crédito" dica="Opcional. F4 procura.">
+        <CampoConta
+          valor={campos.conta_credito}
+          aoMudar={(v) => alterar("conta_credito", v)}
+          placeholder="(opcional) · F4"
         />
       </Campo>
 
