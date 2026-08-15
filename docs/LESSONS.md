@@ -166,3 +166,6 @@
 - Código TOTP certo mas já usado NÃO é código errado: recusa-se à mesma, mas não conta para o bloqueio e a mensagem diz para esperar pelo seguinte. Tratá-los como iguais trancava a conta de quem entrava logo a seguir a configurar o 2FA.
 - O tratador do slowapi responde `{"error": "..."}` em inglês; a interface lê `detail` e mostrava «Erro 429». Tratador próprio, em PT-PT, com `Retry-After`.
 - Contador TOTP a partir de `time.time()` e não de `datetime.now()` ingénuo: o passo conta segundos desde a época, iguais em qualquer fuso.
+- QR com logótipo: a marca tem de ser CLARA (chapa branca, letras da cor da marca). Uma chapa escura com letras claras ao centro parece um padrão do próprio QR e o leitor agarra-se a ela — mediu-se 36/36 a 9 módulos e 1/36 a 11, só por mudar o tamanho. Clara, lê sempre.
+- Nunca dar um QR com logótipo por bom "porque se vê bem": passá-lo por um leitor a sério (pyzbar) sobre dezenas de dados diferentes. A olho, todos os que falhavam pareciam perfeitos.
+- Ao cortar um ficheiro por índices para reescrever um bloco, confirmar o que fica entre os dois pontos: apaguei o `verificar_codigo` sem dar por isso, e só os testes o apanharam.

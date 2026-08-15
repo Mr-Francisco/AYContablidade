@@ -24,13 +24,17 @@ bcrypt>=4.2
 
 # --- Segundo factor (TOTP, RFC 6238) ---
 # pyotp implementa o RFC e compara os códigos em tempo constante.
-# segno gera o QR Code em SVG, sem depender do Pillow — o QR é desenhado no
-# servidor e enviado como texto, para o segredo nunca passar pelo cliente em
-# forma legível.
+# segno gera o QR Code. O QR é desenhado no servidor e enviado já como imagem,
+# para o segredo nunca passar pelo cliente em forma manipulável.
+# Pillow compõe o PNG com a marca SGD ao centro. O SVG continua a ser o que a
+# aplicação mostra — é vectorial e não pesa; o PNG existe para o QR que se
+# guarda em ficheiro, porque um .svg aberto fora do browser muitas vezes não
+# abre de todo.
 # cryptography cifra o segredo TOTP em repouso: em claro, quem leia a base
 # consegue gerar códigos de qualquer conta.
 pyotp>=2.9
 segno>=1.6
+pillow>=11
 cryptography>=44
 
 # --- Rate limiting ---
@@ -42,5 +46,9 @@ slowapi>=0.1.9
 httpx>=0.28
 
 # --- Testes ---
+# pyzbar lê o QR de volta: é o que prova que a marca ao centro não o partiu.
+# Traz a libzbar consigo no Windows; onde faltar, o teste salta essa parte e
+# continua a verificar o nível de correcção e o tamanho da marca.
 pytest>=8.3
 pytest-asyncio>=0.25
+pyzbar>=0.1.9

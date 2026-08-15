@@ -201,6 +201,54 @@ def test_o_qr_tem_contraste_fixo():
     assert "#fff" in svg or "#ffffff" in svg
 
 
+def test_o_qr_em_png_le_se_com_a_marca_por_cima():
+    """A prova que interessa: a marca SGD ao centro tapa módulos, e o código
+    tem de continuar a ler-se.
+
+    Passa-se o PNG por um leitor a sério (zbar) e exige-se o URI de volta,
+    igual ao que entrou. Um QR bonito que não lê é pior do que um QR sem marca
+    nenhuma — e isso não se vê a olho.
+    """
+    pyzbar = pytest.importorskip(
+        "pyzbar.pyzbar", reason="sem leitor de QR instalado nesta máquina"
+    )
+    from io import BytesIO
+
+    from PIL import Image
+
+    uri = totp.uri_otpauth(totp.gerar_segredo(), "ana@demo.ao")
+    imagem = Image.open(BytesIO(totp.qr_png(uri)))
+
+    lidos = pyzbar.decode(imagem)
+    assert lidos, "o QR com a marca ao centro deixou de se ler"
+    assert lidos[0].data.decode() == uri, "leu, mas devolveu outra coisa"
+
+
+def test_o_png_usa_a_correccao_de_erros_alta():
+    """É o nível H (30%) que sustenta a marca ao centro. Com «M» (15%) a marca
+    come módulos a mais e o código deixa de ler — o teste de cima apanha-o, mas
+    este diz porquê."""
+    import inspect
+
+    fonte = inspect.getsource(totp.qr_png)
+    assert 'error="h"' in fonte
+    # E a marca não pode crescer à vontade: 22% de largura são menos de 5% da
+    # área, bem dentro do que os 30% de redundância aguentam.
+    assert totp.FRACCAO_MARCA <= 0.25
+
+
+def test_o_png_e_mesmo_um_png():
+    """Assinatura do formato, em hexadecimal para não depender de escapes."""
+    dados = totp.qr_png(totp.uri_otpauth(totp.gerar_segredo(), "a@b.ao"))
+    assert dados[:8] == bytes.fromhex("89504e470d0a1a0a")
+
+
+def test_o_qr_em_png_tambem_nao_traz_o_segredo_em_texto():
+    s = totp.gerar_segredo()
+    dados = totp.qr_png(totp.uri_otpauth(s, "ana@demo.ao"))
+    assert s.encode() not in dados
+
+
 # ---------------------------------------------------------------------------
 # Códigos de recuperação
 # ---------------------------------------------------------------------------

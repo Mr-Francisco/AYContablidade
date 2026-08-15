@@ -29,6 +29,7 @@ TRÊS DECISÕES QUE VALE A PENA EXPLICAR:
 
 import base64
 import hashlib
+import io
 import hmac
 import secrets
 import time
@@ -125,6 +126,120 @@ def qr_svg(uri: str) -> str:
     )
 
 
+#: Azul da marca, o mesmo do `--gradiente-marca` do Piloto.
+AZUL_MARCA = (11, 61, 145)
+
+#: Quanto do lado do QR (em módulos) a marca ocupa.
+#:
+#: 22% mediram 36/36 leituras. Não é este número que sustenta a leitura — é a
+#: marca ser CLARA (ver `qr_png`) —, mas não vale a pena crescer mais: a partir
+#: daqui a marca começa a competir com o próprio código à vista.
+FRACCAO_MARCA = 0.22
+
+
+def _fonte(tamanho: int):
+    """Uma fonte grossa, onde ela existir.
+
+    Percorre os sítios habituais em Windows e em Linux porque a imagem corre
+    nos dois — a de desenvolvimento é Windows, a de produção é o contentor. Se
+    não houver nenhuma, a fonte interna do Pillow serve: fica mais pobre, mas
+    o QR continua a ler-se, que é o que não pode falhar.
+    """
+    from PIL import ImageFont
+
+    caminhos = (
+        "C:/Windows/Fonts/segoeuib.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+    )
+    for caminho in caminhos:
+        try:
+            return ImageFont.truetype(caminho, tamanho)
+        except OSError:
+            continue
+    try:
+        return ImageFont.load_default(size=tamanho)
+    except TypeError:  # Pillow antigo: `size` não existe
+        return ImageFont.load_default()
+
+
+def qr_png(uri: str, *, escala: int = 10) -> bytes:
+    """QR do URI em PNG, com a marca SGD ao centro.
+
+    PNG e não SVG porque este é o QR que se GUARDA EM FICHEIRO: um `.svg`
+    aberto fora do browser abre num editor de texto, ou não abre de todo. Na
+    aplicação continua a mostrar-se o SVG, que é vectorial e não pesa.
+
+    DUAS DECISÕES QUE VÊM DE MEDIÇÕES, e não de gosto — a segunda custou a
+    encontrar:
+
+    1. Correcção de erros «H» (30% de redundância) e não «M». A marca tapa
+       módulos, e é a redundância que os repõe.
+
+    2. A MARCA É CLARA: chapa branca com as letras em azul, e não o contrário.
+       Uma chapa escura com letras brancas ao centro fica com o aspecto de um
+       padrão do próprio QR — anel escuro, miolo claro — e o leitor agarra-se a
+       ela para se orientar. Com uma chapa escura a leitura passou de 36/36 a
+       1/36 só por mudar o tamanho em dois módulos; clara, leu 36/36 em todos
+       os tamanhos ensaiados. Não trocar sem voltar a medir: há um teste que
+       passa o PNG por um leitor a sério.
+    """
+    from PIL import Image, ImageDraw
+
+    qr = segno.make(uri, error="h")
+    bruto = io.BytesIO()
+    qr.save(bruto, kind="png", scale=escala, border=4, dark="#000000", light="#ffffff")
+    bruto.seek(0)
+    imagem = Image.open(bruto).convert("RGB")
+
+    # Contas em módulos e só no fim em píxeis, com a margem MEDIDA na imagem —
+    # assumi-la deixava a marca ao lado do centro.
+    lado_matriz = qr.symbol_size(scale=1, border=0)[0]
+    borda = (imagem.width // escala - lado_matriz) // 2
+    modulos = max(4, int(lado_matriz * FRACCAO_MARCA))
+    canto = (borda + (lado_matriz - modulos) // 2) * escala
+    caixa = modulos * escala
+
+    desenho = ImageDraw.Draw(imagem)
+    desenho.rounded_rectangle(
+        [canto, canto, canto + caixa, canto + caixa],
+        radius=caixa // 6,
+        fill="#ffffff",
+    )
+
+    # A folga separa as letras da borda da chapa; o resto é para o texto.
+    folga = max(2, caixa // 8)
+    interior = caixa - folga * 2
+    texto = "SGD"
+    tamanho = interior
+    while tamanho > 6:
+        fonte = _fonte(tamanho)
+        esq, topo, dir_, base = desenho.textbbox((0, 0), texto, font=fonte)
+        if (dir_ - esq) <= interior * 0.86 and (base - topo) <= interior * 0.6:
+            break
+        tamanho -= 2
+
+    largura, altura = dir_ - esq, base - topo
+    desenho.text(
+        (
+            canto + folga + (interior - largura) / 2 - esq,
+            canto + folga + (interior - altura) / 2 - topo,
+        ),
+        texto,
+        font=fonte,
+        fill=AZUL_MARCA,
+    )
+
+    saida = io.BytesIO()
+    imagem.save(saida, format="PNG", optimize=True)
+    return saida.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Verificação
+# ---------------------------------------------------------------------------
 class ResultadoCodigo(NamedTuple):
     """O que aconteceu a um código.
 

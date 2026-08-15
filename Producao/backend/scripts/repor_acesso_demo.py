@@ -47,7 +47,7 @@ def main(email: str, desligar_2fa: bool = False) -> None:
     from sqlalchemy import select
 
     from src.auth.security import hash_password
-    from src.auth.totp import decifrar_segredo, qr_svg, uri_otpauth
+    from src.auth.totp import decifrar_segredo, qr_png, uri_otpauth
     from src.db.base import SessionLocal
     from src.db.models.user import User
 
@@ -93,10 +93,10 @@ def main(email: str, desligar_2fa: bool = False) -> None:
             print("  A entrada que já tens na aplicação autenticadora serve.")
             print()
             print(f"  Chave manual : {segredo}")
-            caminho = Path(__file__).resolve().parents[1] / "qr_2fa.svg"
-            caminho.write_text(
-                qr_svg(uri_otpauth(segredo, u.email)), encoding="utf-8"
-            )
+            # PNG e não SVG: este ficheiro abre-se fora do browser, e um
+            # `.svg` aí ou abre num editor de texto ou não abre de todo.
+            caminho = Path(__file__).resolve().parents[1] / "qr_2fa.png"
+            caminho.write_bytes(qr_png(uri_otpauth(segredo, u.email)))
             print(f"  QR gravado em: {caminho}")
         else:
             print("  Sem segundo factor configurado.")
