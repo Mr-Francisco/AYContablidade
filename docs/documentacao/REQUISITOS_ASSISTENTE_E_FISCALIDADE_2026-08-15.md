@@ -7,9 +7,9 @@ Continuação de `REQUISITOS_RH_E_UX_2026-08-15.md`.
 | A | [Assistente — histórico na lateral](#a-assistente--o-histórico-sai-da-conversa) | ✅ feito |
 | B | [Botão «+» de acesso rápido, em TODOS os ecrãs](#b-botão--de-acesso-rápido) | ✅ feito |
 | C | [O azul do Piloto, recuperado](#c-o-azul-do-piloto) | ✅ feito |
-| D | [Mapa de Remunerações igual ao Piloto](#d-mapa-de-remunerações) | por fazer |
-| E | [Calendário Fiscal — layout](#e-calendário-fiscal) | por fazer |
-| F | [Catálogo de Impostos — layout](#f-catálogo-de-impostos) | por fazer |
+| D | [Mapa de Remunerações igual ao Piloto](#d-mapa-de-remunerações) | ✅ feito |
+| E | [Calendário Fiscal — layout](#e-calendário-fiscal) | ✅ feito |
+| F | [Catálogo de Impostos — layout](#f-catálogo-de-impostos) | ✅ feito |
 
 ---
 
@@ -69,50 +69,16 @@ Só o token mudou; nenhum componente foi alterado por causa da cor.
 ---
 
 ## D. Mapa de Remunerações
-
-**Igual ao Piloto (`mapa-remuneracoes.html`), sem alterar nada.** O que falta:
-
-- **Campos da barra**: NIF do Contribuinte (editável, começa no NIF da empresa),
-  Período = **mês + ano** (a Produção só tem mês), contagem
-  «N trabalhador(es) · valores em Kz», e os três botões: **CSV (interno)**,
-  **Imprimir**, **Gerar .xlsx (modelo AGT)**.
-- **Cabeçalho do relatório**: nome da empresa + «Mapa de Remunerações — Modelo
-  IRT A2.1» à esquerda; NIF do Contribuinte e Período à direita.
-- **A TABELA — o ponto mais importante, e não muda nada**: duas linhas de
-  cabeçalho, com os grupos coloridos —
-  `Identificação do Trabalhador` (indigo, 5 colunas) · `Não Sujeito a IRT`
-  (teal) · `Sujeito a IRT` (rosa) · `Segurança Social` (roxo, 2) · `IRT`
-  (magenta, 2). Colunas: NIF · Nome · Nº Seg. Social · **Província** ·
-  **Município** (separados, e não juntos numa «Localização») · Salário Base ·
-  Descontos p/ Falta · Subsídios Não Sujeitos · Subsídios Sujeitos · Salário
-  Ilíquido · Base Tributável · Contribuição (3%) · Base Tributável · IRT
-  Apurado. Zeros mostram «—». Totais no fundo.
-- **Scroll horizontal DO COMPONENTE**, nunca da página (a tabela tem
-  `min-width` — é larga por natureza).
-- **Botão «✎ Rubricas» por trabalhador**, com o diálogo itemizado: Subsídios
-  Não Sujeitos (Art. 2º do CIRT), Subsídios Sujeitos, Segurança Social e IRT
-  (isento, não sujeito, base manual), e o resumo ao fundo a recalcular sem
-  gravar. O servidor já tem tudo: `GET /api/rh/mapa-irt` devolve o itemizado e
-  `PUT /api/rh/mapa-irt/{colaborador_id}` grava.
-- **Nota ao fundo**: total de IRT a entregar, contribuição da SS, e a explicação
-  do «✎ Rubricas».
-
-O `.xlsx` do Piloto **preenche o modelo oficial da AGT**
-(`Piloto/assets/templates/mapa-irt-a2.1.xlsx`) com um leitor/escritor de zip
-escrito à mão (`assets/js/xlsx-writer.js`, 157 linhas) — não gera um ficheiro
-novo. Para a Produção há que portar o escritor e servir o modelo em
-`public/modelos/`. Sem isso o ficheiro não é aceite no carregamento da AGT.
-
 ## E. Calendário Fiscal
-
-Layout a melhorar — está feio. Manter o conteúdo e as datas; tratar da
-hierarquia, do espaçamento e da leitura (é uma lista de prazos, e o que
-interessa é «o que se entrega e até quando»).
-
 ## F. Catálogo de Impostos
 
-O mesmo: melhorar o layout dos cartões dos impostos e da barra de procura e
-categorias, sem mexer no conteúdo nem nas taxas.
+✅ **Feitos**, e escritos ao pormenor em
+[`REQUISITOS_FISCALIDADE_2026-08-15.md`](REQUISITOS_FISCALIDADE_2026-08-15.md)
+— o mapa com os cabeçalhos de grupo coloridos e as catorze colunas do Piloto,
+o scroll horizontal no componente e não na página, o diálogo «✎ Rubricas», o
+`.xlsx` a preencher o modelo oficial da AGT, e o calendário e o catálogo
+refeitos. Ficam aqui só para a lista deste dia estar completa; a descrição não
+se repete para não haver dois sítios a dizer a mesma coisa e a divergirem.
 
 ---
 
