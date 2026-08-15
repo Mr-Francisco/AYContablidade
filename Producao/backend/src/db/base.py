@@ -77,8 +77,28 @@ class EmpresaScopedMixin:
 # ---------------------------------------------------------------------------
 _settings = get_settings()
 
+
+def url_do_motor(url: str) -> str:
+    """A URL da base com o condutor que este projecto usa.
+
+    Os alojamentos de PostgreSQL — Neon, Supabase, Render, Railway — dão a
+    ligação como `postgresql://…`. Sem condutor indicado, o SQLAlchemy escolhe
+    o `psycopg2`, que aqui não está instalado (usa-se o `psycopg` 3), e a
+    aplicação morre no arranque com um `ModuleNotFoundError` que não diz nada a
+    quem só copiou a linha que o painel do alojamento mandou copiar.
+
+    Normalizar aqui é preferível a pedir que a escrevam à mão de outra maneira:
+    a linha que se copia do fornecedor passa a funcionar tal como está.
+    """
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    if url.startswith("postgres://"):  # forma antiga, ainda usada pelo Heroku
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    return url
+
+
 engine = create_engine(
-    str(_settings.DATABASE_URL),
+    url_do_motor(str(_settings.DATABASE_URL)),
     pool_pre_ping=True,  # recicla ligações mortas em vez de rebentar no primeiro pedido
     echo=_settings.AMBIENTE == "dev",
 )

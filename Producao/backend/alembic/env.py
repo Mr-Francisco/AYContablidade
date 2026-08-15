@@ -13,6 +13,7 @@ from src.core.config import get_settings
 
 # Importar o pacote de modelos regista todas as tabelas no metadata. Sem isto o
 # autogenerate produz migrações vazias.
+from src.db.base import url_do_motor
 from src.db.models import Base
 
 config = context.config
@@ -24,8 +25,12 @@ target_metadata = Base.metadata
 
 # Injecta a URL real, escapando '%' para o interpolador do ConfigParser não
 # se enganar com passwords que o contenham.
+# `url_do_motor` para as migrações correrem com a mesma URL da aplicação: os
+# alojamentos dão `postgresql://` e sem o condutor `psycopg` o Alembic falha no
+# arranque — no sítio mais aborrecido possível, a meio de uma instalação nova.
 config.set_main_option(
-    "sqlalchemy.url", str(get_settings().DATABASE_URL).replace("%", "%%")
+    "sqlalchemy.url",
+    url_do_motor(str(get_settings().DATABASE_URL)).replace("%", "%%"),
 )
 
 

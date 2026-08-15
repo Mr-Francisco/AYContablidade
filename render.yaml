@@ -1,0 +1,84 @@
+# AYContabilidade — a V1 de teste inteira, sem Docker.
+#
+# UM ficheiro para os DOIS serviços. No painel do Render: New → Blueprint,
+# apontar a este repositório. Ele lê isto e cria o backend e o frontend.
+#
+# PORQUE NÃO DOCKER: o Render constrói com os seus próprios runtimes de Python
+# e de Node. Não é preciso ter Docker na máquina de quem lança — e neste caso
+# não há, porque a virtualização do Windows não está activada. Os
+# `docker-compose` do projecto continuam a servir para quem tiver Docker; este
+# caminho existe para quem não tem.
+#
+# A BASE DE DADOS NÃO ESTÁ AQUI, de propósito: a Postgres gratuita do Render
+# **expira 30 dias depois de criada** e leva os dados com ela. Um piloto numa
+# empresa real dura mais do que isso. Usa-se o Neon (gratuito, permanente) e
+# cola-se a ligação em DATABASE_URL. Ver `docs/LANCAMENTO_V1.md`.
+#
+# O QUE O PLANO GRATUITO CUSTA: os serviços adormecem ao fim de 15 minutos sem
+# pedidos e o primeiro pedido a seguir demora cerca de um minuto a responder.
+# Para avaliar comportamento e regras de negócio chega; para o dia-a-dia de uma
+# empresa, são 7 USD/mês por serviço para deixar de adormecer.
+
+services:
+  # ---------------------------------------------------------------- backend --
+  - type: web
+    name: aycontabilidade-api
+    runtime: python
+    plan: free
+    region: frankfurt # a região gratuita mais perto de Angola
+    rootDir: Producao/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
+    # `/docs` fecha em produção (devolve 404), o que serve na mesma para o
+    # Render saber que o processo está de pé — responder 404 já é responder.
+    healthCheckPath: /docs
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: AMBIENTE
+        value: producao
+      # A ligação do Neon, colada tal como o painel a dá (com `?sslmode=require`).
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      # GUARDE ESTA À PARTE, fora do Render. Se se perder, todas as contas com
+      # segundo factor têm de o reconfigurar.
+      - key: TOTP_CHAVE_CIFRA
+        generateValue: true
+      # O endereço https do frontend. Em http, ou apontado a localhost, a
+      # aplicação RECUSA arrancar e diz porquê — é a rede de segurança contra
+      # instalar produção com o `.env` de desenvolvimento.
+      - key: CORS_ORIGINS
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODELO
+        value: gpt-4o-mini
+      - key: PASSWORD_MIN_CARACTERES
+        value: "10"
+
+  # --------------------------------------------------------------- frontend --
+  - type: web
+    name: aycontabilidade-web
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: Producao/frontend
+    # `output: standalone` no `next.config.ts` produz uma pasta que corre sem
+    # `node_modules` — mas NÃO copia sozinha os ficheiros estáticos nem a
+    # `public/`. Sem estas duas cópias o site abre sem CSS e o modelo .xlsx da
+    # AGT dá 404 na hora de gerar o Mapa de Remunerações.
+    buildCommand: >-
+      npm ci && npm run build &&
+      cp -r .next/static .next/standalone/.next/static &&
+      cp -r public .next/standalone/public
+    startCommand: node .next/standalone/server.js
+    healthCheckPath: /entrar
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # O endereço https do backend — o `https://aycontabilidade-api.onrender.com`
+      # que o Render dá ao serviço de cima.
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

@@ -194,3 +194,5 @@
 - Constantes do modelo (períodos 00–15) não podem vir só da rede: a sessão expira e o selector fica sem meses, calado. Ter o chão no cliente e avisar quando o servidor não confirma.
 - Quem mede o ecrã (carrossel) tem de observar TAMBÉM o cabeçalho: ele encolhe sem o corpo mudar de tamanho, e fica um vazio do tamanho exacto do que ele libertou.
 - `flex-1` + `overflow-auto` só encolhe com `min-h-0` E com o pai de altura fixa; com `min-h-` no pai, o filho empurra a página.
+- Alojamentos dão `postgresql://`; este projecto usa psycopg 3. Normalizar a URL no motor e no Alembic — colar a linha do fornecedor tem de bastar.
+- `output: standalone` não copia `.next/static` nem `public/`: sem as duas cópias no build, o site sobe sem CSS e o modelo .xlsx da AGT dá 404.
