@@ -1,8 +1,8 @@
 "use client";
 
-import { PlayCircle, RotateCcw } from "lucide-react";
+import { PlayCircle, RotateCcw, Settings } from "lucide-react";
 import { AlertDialog, Tabs } from "radix-ui";
-import { useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import useSWR from "swr";
 
 import {
@@ -24,11 +24,17 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { DialogoMestre } from "@/components/ui/CrudMestre";
 import { CaixaHistorico } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
-import { useExercicios, usePeriodos } from "@/lib/hooks";
+import {
+  useDiarios,
+  useDocumentos,
+  useExercicios,
+  usePeriodos,
+} from "@/lib/hooks";
 import { numeroLimpo } from "@/lib/texto";
 import type { MapaImob, MapaPeriodoImob, ProcessoAmortizacao } from "@/types";
 
@@ -49,6 +55,7 @@ export default function Amortizacoes() {
   const [confirmar, setConfirmar] = useState(false);
   const [reabrir, setReabrir] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [configAberta, setConfigAberta] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -80,6 +87,14 @@ export default function Amortizacoes() {
    *  repeti-la em cada célula rouba largura a uma tabela de oito colunas. */
   const valor = (v: string) => formataMoeda(v, "");
   const jaProcessado = mapaPeriodo?.processado ?? false;
+  // «Processado em 31/08/2026» e não só «Processado»: num mapa que se reabre e
+  // reprocessa, é a data que diz se o que está no ecrã é o trabalho de ontem
+  // ou o de hoje.
+  const estadoDoPeriodo = jaProcessado
+    ? mapaPeriodo?.processado_em
+      ? `Processado em ${new Date(mapaPeriodo.processado_em).toLocaleDateString("pt-PT")}`
+      : "Processado"
+    : "Por processar";
   // O período 00 é a Abertura, não é um mês: não tem amortização nenhuma.
   const ehAbertura = mes === "00";
 
@@ -156,6 +171,10 @@ export default function Amortizacoes() {
                     Reabrir
                   </Botao>
                 )}
+                <Botao onClick={() => setConfigAberta(true)}>
+                  <Settings size={16} />
+                  Configurações
+                </Botao>
                 <Botao
                   variante="primario"
                   disabled={jaProcessado || ehAbertura}
@@ -195,7 +214,7 @@ export default function Amortizacoes() {
         />
         <div className="flex items-end pb-0.5">
           <Selo cor={jaProcessado ? "#1a9c5f" : "#c98a10"}>
-            {jaProcessado ? "Processado" : "Por processar"}
+            {estadoDoPeriodo}
           </Selo>
         </div>
       </BarraFiltros>
@@ -257,7 +276,7 @@ export default function Amortizacoes() {
               <div className="min-w-0">
                 <Kpi
                   rotulo="Estado"
-                  valor={jaProcessado ? "Processado" : "Por processar"}
+                  valor={estadoDoPeriodo}
                   detalhe={
                     jaProcessado ? "Reabra para refazer" : "Ainda editável"
                   }
@@ -278,7 +297,7 @@ export default function Amortizacoes() {
                 </span>
               </div>
               <Selo cor={jaProcessado ? "#1a9c5f" : "#c98a10"}>
-                {jaProcessado ? "Processado" : "Por processar"}
+                {estadoDoPeriodo}
               </Selo>
             </div>
             {aCarregarPeriodo ? (
@@ -493,6 +512,10 @@ export default function Amortizacoes() {
         </Tabs.Content>
       </Tabs.Root>
 
+      {configAberta && (
+        <ConfiguracoesAmortizacoes aoFechar={() => setConfigAberta(false)} />
+      )}
+
       <AlertDialog.Root open={confirmar} onOpenChange={setConfirmar}>
         <AlertDialog.Portal>
           <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
@@ -569,5 +592,108 @@ export default function Amortizacoes() {
         </AlertDialog.Portal>
       </AlertDialog.Root>
     </>
+  );
+}
+
+/**
+ * Diário e documento usados ao lançar as amortizações — o «Configurações» do
+ * Piloto, ao lado do botão que processa.
+ *
+ * Estavam no `parametrizacoes.imob` da empresa e só se mudavam nas
+ * Configurações gerais, que são do administrador. Quem processa amortizações
+ * precisa de os ver aqui: é aqui que descobre que o lançamento saiu no diário
+ * errado.
+ */
+function ConfiguracoesAmortizacoes({ aoFechar }: { aoFechar: () => void }) {
+  const { diarios } = useDiarios();
+  const { data, mutate } = useSWR<{ diario: string; documento: string }>(
+    "/api/imobilizados/config",
+    buscador,
+  );
+  const [diario, setDiario] = useState("");
+  const [documento, setDocumento] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [aGravar, setAGravar] = useState(false);
+
+  // O estado local só se preenche quando a configuração chega — antes disso
+  // não há nada para escolher.
+  useEffect(() => {
+    if (!data) return;
+    setDiario(data.diario);
+    setDocumento(data.documento);
+  }, [data]);
+
+  const { documentos } = useDocumentos(diario || undefined);
+
+  // O documento gravado entra na lista mesmo que ainda não tenha chegado do
+  // servidor. Sem isto, o campo aparecia VAZIO ao abrir a janela: o valor
+  // chegava da configuração antes de os documentos do diário serem
+  // carregados, e o selector não casa um valor que não tem opção. Quem
+  // abrisse e gravasse sem reparar apagava a configuração.
+  const opcoesDocumento = documentos.map((d) => ({
+    valor: d.codigo,
+    rotulo: `${d.codigo} · ${d.descricao}`,
+  }));
+  if (documento && !opcoesDocumento.some((o) => o.valor === documento)) {
+    opcoesDocumento.unshift({ valor: documento, rotulo: documento });
+  }
+
+  async function gravar(e: FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    setAGravar(true);
+    try {
+      await api.put("/api/imobilizados/config", { diario, documento });
+      await mutate();
+      aoFechar();
+    } catch (e2) {
+      setErro(
+        e2 instanceof ErroApi
+          ? e2.mensagemUtilizador
+          : "Não foi possível gravar a configuração.",
+      );
+    } finally {
+      setAGravar(false);
+    }
+  }
+
+  return (
+    <DialogoMestre
+      titulo="Configurações de Amortizações"
+      subtitulo="Diário e documento usados ao processar amortizações — o lançamento (débito custo · crédito amort. acumulada) usa sempre esta configuração."
+      icone={<Settings size={18} />}
+      aoFechar={aoFechar}
+      aoSubmeter={gravar}
+      aGravar={aGravar}
+      erro={erro}
+      rotuloGravar="Guardar configurações"
+    >
+      <Selector
+        rotulo="Diário de Imobilizado"
+        valor={diario}
+        aoMudar={(v) => {
+          // O documento só se limpa quando o diário TROCA MESMO. A caixa
+          // também chama isto quando o valor lhe chega da configuração, com o
+          // diário ainda vazio — e nessa altura limpar o documento apagava o
+          // que se acabara de carregar, deixando o campo vazio com a
+          // configuração gravada por baixo.
+          const trocaDoUtilizador = diario !== "" && v !== diario;
+          setDiario(v);
+          if (trocaDoUtilizador) setDocumento("");
+        }}
+        opcoes={diarios.map((d) => ({
+          valor: d.codigo,
+          rotulo: `${d.codigo} · ${d.nome}`,
+        }))}
+        larguraMinima="100%"
+      />
+      <Selector
+        rotulo="Documento"
+        valor={documento}
+        aoMudar={setDocumento}
+        opcoes={opcoesDocumento}
+        larguraMinima="100%"
+      />
+    </DialogoMestre>
   );
 }

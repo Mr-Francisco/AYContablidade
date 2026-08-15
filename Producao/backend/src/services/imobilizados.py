@@ -187,6 +187,10 @@ def mapa_periodo(
         "linhas": linhas,
         "total_periodo": r2(sum((l["valor_periodo"] for l in linhas), ZERO)),
         "processado": batch is not None,
+        # A DATA do processamento, e não só o facto. «Processado» sozinho não
+        # diz de quando — e num mapa que se reabre e reprocessa, é a data que
+        # diz se o que está no ecrã é o trabalho de ontem ou o de hoje.
+        "processado_em": batch.data if batch else None,
     }
 
 
@@ -286,6 +290,30 @@ def processar_periodo(
         itens=itens, total_amort=total, por=por or "sistema",
     )
     db.add(batch)
+    # Antes das notificações: sem isto, o `batch.id` que elas guardam como
+    # alvo ainda não existe e a ligação fica a apontar para nada.
+    db.flush()
+
+    # A amortização processada ENTRA NA CONTABILIDADE — débito custo, crédito
+    # amortizações acumuladas. Quem lança não é quem processa, e até aqui não
+    # havia nada a dizê-lo a ninguém: o período ficava «processado» neste ecrã
+    # e o movimento aparecia na contabilidade sem origem visível.
+    #
+    # A chave inclui o período: reabrir e voltar a processar não cria uma
+    # segunda notificação, actualiza a que existe.
+    if itens:
+        notificar(
+            db, empresa_id=empresa_id, capacidade="contab.ver",
+            origem="imobilizado", tipo="info",
+            chave=f"amort-processada:{exercicio_id}:{mes}",
+            titulo=f"Amortizações de {mes} processadas",
+            texto=(
+                f"{len(itens)} activo(s), {total} lançado(s) na contabilidade "
+                f"({len(lancamento_ids)} com movimento)."
+            ),
+            ligacao="/imobilizados/amortizacoes",
+            alvo_tipo="processo_amortizacao", alvo_id=batch.id,
+        )
 
     # Notificação 4. Os activos que falharam NÃO foram amortizados — isso já
     # está garantido acima. O que a notificação diz é que ficaram por

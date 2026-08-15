@@ -14,6 +14,7 @@ from sqlalchemy import select
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
 from src.db.models.imobilizados import Ativo, ProcessoAmortizacao
 from src.services import imobilizados as svc
+from src.services.auditoria import auditar
 
 router = APIRouter(
     prefix="/api/imobilizados",
@@ -52,6 +53,62 @@ def _ativo(db: DB, empresa_id: UUID, ativo_id: UUID) -> Ativo:
     if a is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Activo não encontrado.")
     return a
+
+
+class ConfigImob(BaseModel):
+    """Diário e documento usados ao lançar as amortizações."""
+
+    diario: str = Field(min_length=1, max_length=10)
+    documento: str = Field(min_length=1, max_length=10)
+
+
+@router.get("/config")
+def obter_config(empresa: EmpresaAtual, db: DB) -> dict:
+    """O diário e o documento com que as amortizações são lançadas.
+
+    Estavam a ser lidos do `parametrizacoes.imob` da empresa e não havia
+    maneira de os ver nem de os mudar sem ir às Configurações gerais — o
+    Piloto tem-nos aqui, ao lado do botão que processa, que é onde interessam.
+    """
+    return svc.cfg_imob(db, empresa.id)
+
+
+@router.put("/config", dependencies=[GERIR])
+def gravar_config(
+    request: Request, dados: ConfigImob, empresa: EmpresaAtual,
+    user: UtilizadorAtual, db: DB,
+) -> dict:
+    """Grava o diário e o documento das amortizações.
+
+    Não valida se o diário existe: o lançamento é que recusa, com a mensagem
+    do plano. Validar aqui duplicaria a regra em dois sítios, e é a do
+    lançamento que manda.
+    """
+    from src.db.models.tenancy import ConfigEmpresa
+
+    cfg = db.scalar(
+        select(ConfigEmpresa).where(ConfigEmpresa.empresa_id == empresa.id)
+    )
+    if cfg is None:
+        cfg = ConfigEmpresa(
+            empresa_id=empresa.id, modulos={}, parametrizacoes={}, agt={}
+        )
+        db.add(cfg)
+        db.flush()
+
+    # Cópia e reatribuição: o SQLAlchemy não dá pela alteração de um JSONB
+    # mexido no sítio, e a gravação passava sem gravar nada.
+    params = dict(cfg.parametrizacoes or {})
+    params["imob"] = {"diario": dados.diario, "documento": dados.documento}
+    cfg.parametrizacoes = params
+
+    auditar(
+        db, actor=user, accao="imobilizado.config", request=request,
+        alvo_tipo="empresa", alvo_id=empresa.id, alvo_desc=empresa.nome,
+        empresa_id=empresa.id, detalhes=params["imob"],
+    )
+    db.commit()
+    return svc.cfg_imob(db, empresa.id)
 
 
 @router.get("/metodos")

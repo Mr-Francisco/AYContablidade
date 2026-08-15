@@ -59,6 +59,25 @@ def base():
         ligacao.close()
 
 
+def _periodo_livre(db, empresa_id, exercicio_id, a_partir_de: str) -> str:
+    """O primeiro período por processar, a partir do indicado.
+
+    O teste corre contra a base de desenvolvimento, e essa tem trabalho real
+    lá dentro: bastou alguém processar Agosto pelo ecrã para o teste passar a
+    falhar com «este período já foi processado».
+
+    ESCOLHE-SE UM PERÍODO LIVRE em vez de reabrir o que está ocupado. Reabrir
+    apagaria um processamento verdadeiro — hoje o `rollback` do teste desfazia
+    isso, mas basta alguém acrescentar um `commit` no caminho para o teste
+    passar a destruir trabalho. Um teste não pode depender de sorte dessas.
+    """
+    for n in range(int(a_partir_de), 13):
+        mes = f"{n:02d}"
+        if svc.processo_de(db, empresa_id, exercicio_id, mes) is None:
+            return mes
+    pytest.skip("todos os períodos do exercício já estão processados")
+
+
 @pytest.fixture
 def cenario(base):
     """Um exercício com activos próprios, sem tocar nos de demonstração."""
@@ -101,8 +120,9 @@ def test_sem_contas_de_amortizacao_nao_amortiza_e_diz_porque(cenario):
     db, empresa_id, ex, _modelo = cenario
     a = _ativo(db, empresa_id, "TST-SEM-CONTAS")
 
+    mes = _periodo_livre(db, empresa_id, ex.id, "07")
     r = svc.processar_periodo(
-        db, empresa_id=empresa_id, exercicio_id=ex.id, mes="07",
+        db, empresa_id=empresa_id, exercicio_id=ex.id, mes=mes,
         data=date(2026, 7, 31),
     )
 
@@ -120,8 +140,9 @@ def test_lancamento_falhado_nao_deixa_a_ficha_amortizada(cenario):
         custo="ZZZZ9", acum="ZZZZ8",
     )
 
+    mes = _periodo_livre(db, empresa_id, ex.id, "08")
     r = svc.processar_periodo(
-        db, empresa_id=empresa_id, exercicio_id=ex.id, mes="08",
+        db, empresa_id=empresa_id, exercicio_id=ex.id, mes=mes,
         data=date(2026, 8, 31),
     )
 
@@ -139,8 +160,9 @@ def test_um_activo_mal_configurado_nao_trava_os_outros(cenario):
         custo=modelo.conta_custo_amort, acum=modelo.conta_amort_acum,
     )
 
+    mes = _periodo_livre(db, empresa_id, ex.id, "09")
     r = svc.processar_periodo(
-        db, empresa_id=empresa_id, exercicio_id=ex.id, mes="09",
+        db, empresa_id=empresa_id, exercicio_id=ex.id, mes=mes,
         data=date(2026, 9, 30),
     )
 
@@ -162,8 +184,9 @@ def test_todos_os_itens_gravados_tem_lancamento(cenario):
         custo=modelo.conta_custo_amort, acum=modelo.conta_amort_acum,
     )
 
+    mes = _periodo_livre(db, empresa_id, ex.id, "10")
     r = svc.processar_periodo(
-        db, empresa_id=empresa_id, exercicio_id=ex.id, mes="10",
+        db, empresa_id=empresa_id, exercicio_id=ex.id, mes=mes,
         data=date(2026, 10, 31),
     )
 

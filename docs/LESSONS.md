@@ -174,3 +174,7 @@
 - Filtrar no cliente sobre uma página curta é pior do que sobre uma longa: com 10 por página, a pesquisa procurava em 10 linhas e dizia «nada encontrado» com o movimento a existir.
 - Caixa de opções com um catálogo inteiro (plano de contas, clientes) é a solução que pior envelhece: 1600 opções × 3 campos = 4800 nós numa janela. Campo com procura (`CampoConta` F4) ou botão que abre um selector pesquisável.
 - `<datalist>` só se enche depois de o utilizador escrever algo, e com um tecto (50): a lista toda para um campo vazio não sugere nada e é o que faz a janela abrir devagar. Mediu-se 3011 → 80 elementos.
+- REGRA DE UX: `disabled` nunca é só «não funciona». Botão bloqueado explica o motivo em tooltip, e nos casos sensíveis também num aviso no ecrã. O `disabled` nativo mata o hover — a solução tem de manter o motivo acessível.
+- `Select.Value` do Radix sem filhos lê o rótulo do item escolhido e só o conhece se o item já existia quando o valor foi posto: numa janela que carrega o valor e as opções ao mesmo tempo, o campo fica vazio com o valor lá dentro. Passar o rótulo como filho.
+- Handler de `aoMudar` de um selector também dispara quando o valor lhe chega de fora: limpar um campo dependente nesse handler apaga o que se acabou de carregar. Comparar com o valor anterior antes de limpar.
+- Teste que corre contra a base de desenvolvimento não pode reabrir/apagar períodos reais: escolhe um período livre. Bastou alguém processar Agosto pelo ecrã para o teste falhar.

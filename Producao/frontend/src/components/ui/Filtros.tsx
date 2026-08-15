@@ -92,6 +92,13 @@ export function Selector({
   className?: string;
   larguraMinima?: string;
 }) {
+  // O rótulo da opção escolhida, ou o próprio valor quando a opção ainda não
+  // chegou: mais vale mostrar «713» do que nada.
+  const rotuloDoValor =
+    valor === undefined || valor === ""
+      ? null
+      : (opcoes.find((o) => o.valor === valor)?.rotulo ?? valor);
+
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: o label envolve o trigger do Radix Select, que ja recebe aria-label; o Biome nao reconhece o componente como controlo.
     <label className={cn("flex min-w-0 flex-col gap-1.5", className)}>
@@ -107,7 +114,18 @@ export function Selector({
           style={{ minWidth: larguraMinima }}
           aria-label={rotulo}
         >
-          <Select.Value placeholder={placeholder} />
+          {/* O RÓTULO É NOSSO, não do registo interno do Radix.
+              O `Select.Value` sem filhos lê o texto do item escolhido, e só o
+              conhece se o item já existia quando o valor foi posto. Numa
+              janela que carrega a configuração e as opções ao mesmo tempo, o
+              valor chega primeiro e o campo fica VAZIO para sempre — com o
+              valor lá dentro, pronto a ser gravado por cima sem ninguém ver o
+              que estava. Aconteceu no documento das amortizações. */}
+          <Select.Value placeholder={placeholder}>
+            {rotuloDoValor ?? (
+              <span className="text-texto-suave/70">{placeholder}</span>
+            )}
+          </Select.Value>
           <Select.Icon>
             <ChevronDown size={15} className="text-texto-suave" />
           </Select.Icon>

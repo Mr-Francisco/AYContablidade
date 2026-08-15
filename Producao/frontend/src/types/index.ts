@@ -651,6 +651,8 @@ export interface MapaPeriodoImob {
   linhas: LinhaPeriodoImob[];
   total_periodo: string;
   processado: boolean;
+  /** Data do processamento — para o ecrã dizer «Processado em 31/08/2026». */
+  processado_em: string | null;
 }
 
 export interface ProcessoAmortizacao {
