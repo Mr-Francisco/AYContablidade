@@ -134,6 +134,7 @@ export default function Pagamentos() {
             <Botao
               variante="primario"
               disabled={!podePagar}
+              motivoBloqueio="Só se pagam meses já processados. Processe a folha em Processamento e volte aqui."
               onClick={() => setConfirmar(true)}
             >
               <Banknote size={16} />

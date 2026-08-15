@@ -110,6 +110,11 @@ export default function ProcessamentoPagina() {
               <Botao
                 variante="primario"
                 disabled={jaProcessado || !folha?.linhas.length}
+                motivoBloqueio={
+                  jaProcessado
+                    ? "Este mês já foi processado. Para corrigir, reabra o mês e processe de novo."
+                    : "Não há colaboradores com salário para processar neste mês."
+                }
                 onClick={() => setConfirmar(true)}
               >
                 <PlayCircle size={16} />

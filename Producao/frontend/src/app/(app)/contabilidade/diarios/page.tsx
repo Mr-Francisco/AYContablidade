@@ -265,11 +265,7 @@ export default function Diarios() {
                             variante="neutro"
                             tamanho="pequeno"
                             disabled={!exercicio}
-                            title={
-                              exercicio
-                                ? undefined
-                                : "Crie um exercício em Contabilidade → Exercícios"
-                            }
+                            motivoBloqueio="Não há exercício para fechar períodos. Crie um em Contabilidade → Exercícios."
                             onClick={() => setAGerirFechos(d)}
                           >
                             {podeFechar ? "Gerir fechos" : "Ver fechos"}

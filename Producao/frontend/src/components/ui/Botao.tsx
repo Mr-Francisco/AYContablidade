@@ -1,7 +1,7 @@
 "use client";
 
-import { Slot } from "radix-ui";
-import { type ButtonHTMLAttributes, forwardRef } from "react";
+import { Slot, Tooltip } from "radix-ui";
+import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -37,6 +37,15 @@ export interface BotaoProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   bloco?: boolean;
   /** Renderiza no elemento filho — para envolver um <Link> sem <button> aninhado. */
   comoFilho?: boolean;
+  /**
+   * PORQUE É QUE ESTÁ BLOQUEADO. Regra do projecto: um botão desactivado tem
+   * de dizer o motivo — ver `docs/LESSONS.md`.
+   *
+   * Dando isto, o botão deixa de usar o `disabled` nativo (que mata o hover e
+   * com ele o tooltip) e passa a `aria-disabled`: continua a receber o rato,
+   * mostra a explicação, e o clique não faz nada.
+   */
+  motivoBloqueio?: ReactNode;
 }
 
 export const Botao = forwardRef<HTMLButtonElement, BotaoProps>(function Botao(
@@ -47,17 +56,30 @@ export const Botao = forwardRef<HTMLButtonElement, BotaoProps>(function Botao(
     bloco,
     comoFilho,
     type,
+    disabled,
+    motivoBloqueio,
+    onClick,
     ...props
   },
   ref,
 ) {
   const Comp = comoFilho ? Slot.Root : "button";
-  return (
+
+  // Bloqueado COM motivo: nada de `disabled` nativo. Um `<button disabled>`
+  // não dispara eventos de rato na maioria dos browsers — o tooltip nunca
+  // chegaria a aparecer, e o utilizador ficava com um botão que «simplesmente
+  // não funciona», que é exactamente o que a regra proíbe.
+  const bloqueadoComMotivo = Boolean(disabled && motivoBloqueio);
+
+  const botao = (
     <Comp
       ref={ref}
       // Um <button> sem `type` dentro de um <form> submete-o. Já causou
       // submissões acidentais em botões de acção secundária.
       type={comoFilho ? undefined : (type ?? "button")}
+      disabled={bloqueadoComMotivo ? undefined : disabled}
+      aria-disabled={disabled || undefined}
+      onClick={bloqueadoComMotivo ? undefined : onClick}
       className={cn(
         "inline-flex items-center justify-center gap-2 border font-bold",
         "cursor-pointer select-none",
@@ -66,6 +88,9 @@ export const Botao = forwardRef<HTMLButtonElement, BotaoProps>(function Botao(
         "hover:-translate-y-px active:translate-y-0 active:scale-[0.985]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento",
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0",
+        // O mesmo aspecto para o bloqueio explicado, que não usa `disabled`.
+        "aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
+        "aria-disabled:hover:translate-y-0 aria-disabled:active:scale-100",
         VARIANTES[variante],
         TAMANHOS[tamanho],
         bloco && "w-full",
@@ -73,5 +98,27 @@ export const Botao = forwardRef<HTMLButtonElement, BotaoProps>(function Botao(
       )}
       {...props}
     />
+  );
+
+  if (!bloqueadoComMotivo) return botao;
+
+  return (
+    <Tooltip.Provider delayDuration={150}>
+      <Tooltip.Root>
+        {/* `asChild` com um `<span>` à volta: o gatilho tem de ser um
+            elemento que receba eventos, e o botão bloqueado ainda os recebe
+            porque não leva `disabled` nativo. */}
+        <Tooltip.Trigger asChild>{botao}</Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            sideOffset={6}
+            className="z-[60] max-w-[280px] rounded-lg border border-borda bg-superficie px-3 py-2 text-[12.5px] leading-relaxed text-texto shadow-forte"
+          >
+            {motivoBloqueio}
+            <Tooltip.Arrow className="fill-[var(--color-borda)]" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
   );
 });

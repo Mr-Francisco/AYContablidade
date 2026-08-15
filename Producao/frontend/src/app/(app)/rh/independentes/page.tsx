@@ -77,6 +77,7 @@ export default function Independentes() {
                 variante="primario"
                 onClick={() => setHonorarioAberto(true)}
                 disabled={!independentes?.length}
+                motivoBloqueio="Ainda não há independentes registados. Crie um primeiro, para lhe poder processar honorários."
               >
                 <Receipt size={16} />
                 Registar honorário

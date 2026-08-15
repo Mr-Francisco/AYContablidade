@@ -157,6 +157,7 @@ export default function ContasDaPlataforma() {
             tamanho="pequeno"
             onClick={() => setACriar(true)}
             disabled={contas.length >= LIMITE}
+            motivoBloqueio={`Limite de ${LIMITE} contas de plataforma atingido. Remova uma conta antes de criar outra.`}
           >
             <UserPlus size={14} />
             Criar conta

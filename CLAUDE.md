@@ -128,6 +128,22 @@ módulos, e aplica-se antes de se escrever qualquer listagem nova.
 Usar `ListaPaginada` / `usePaginacao` (`components/ui/Paginacao.tsx`). Não
 reimplementar por página — foi assim que as listagens divergiram antes.
 
+## Regra de Botões Bloqueados
+
+**`disabled` nunca significa «o botão simplesmente não funciona».** Vale para
+todo o projecto, em todos os módulos.
+
+1. Um botão bloqueado **diz porquê** ao passar o rato: `motivoBloqueio` no
+   `Botao` (`components/ui/Botao.tsx`).
+2. Para casos sensíveis, além do tooltip, um **aviso no ecrã** com o motivo e,
+   quando aplicável, o que fazer para desbloquear.
+3. **Nunca usar o `disabled` nativo quando há motivo a explicar**: um
+   `<button disabled>` não dispara eventos de rato na maioria dos browsers, e o
+   tooltip nunca apareceria. O `Botao` trata disto — passa a `aria-disabled`,
+   mantém o aspecto de bloqueado e ignora o clique.
+4. O `title` nativo também não serve num botão com `disabled` nativo, pela
+   mesma razão. Já lá estava um em Diários e nunca ninguém o viu.
+
 ## Regra de Aprendizagem
 
 When I correct you or you catch yourself making a mistake, before continuing, add the lesson as a one-line rule em docs/LESSONS.md so it never happens again — or, if the situation is recurring and complex enough, create a skill in .claude/skills/ to reuse.

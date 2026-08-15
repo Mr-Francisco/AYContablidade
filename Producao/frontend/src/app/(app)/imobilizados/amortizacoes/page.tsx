@@ -178,6 +178,11 @@ export default function Amortizacoes() {
                 <Botao
                   variante="primario"
                   disabled={jaProcessado || ehAbertura}
+                  motivoBloqueio={
+                    ehAbertura
+                      ? "O período 00 é a Abertura do exercício, não é um mês: não tem amortização a processar."
+                      : `${nomePeriodo} já foi processado. Para corrigir, carregue em «Reabrir» e processe de novo.`
+                  }
                   onClick={() => setConfirmar(true)}
                 >
                   <PlayCircle size={16} />
