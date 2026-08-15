@@ -74,6 +74,16 @@
      diluído. Serve para o painel se ler como um ecrã inteiro e não como
      conteúdo solto na página. */
   --gradiente-painel: linear-gradient(155deg, #eef3fb 0%, #e4ecf8 100%);
+
+  /* Altura do cabeçalho. O próprio cabeçalho mede-se e reescreve isto sempre
+     que muda — recolhe, abre, ganha ou perde a faixa do módulo. Este valor é
+     só o do primeiro pintar, antes de o JavaScript correr: as páginas que
+     ocupam o ecrã todo precisam de um número desde o início, senão a primeira
+     imagem que o utilizador vê está com a altura errada. */
+  --altura-cabecalho: 150px;
+  /* E a faixa de aviso, que às vezes está e às vezes não. Zero é o caso
+     normal; o próprio aviso escreve a sua altura enquanto estiver no ecrã. */
+  --altura-aviso: 0px;
 }
 [data-theme="dark"] {
   --grafico-1: #ff3fa0;

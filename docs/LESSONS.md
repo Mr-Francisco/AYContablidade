@@ -191,3 +191,6 @@
 - Regras de visibilidade de navegação só podem existir num sítio: `useNavegacaoVisivel` serve a barra de topo e o acesso rápido, senão um esconde o que o outro oferece.
 - Histórico não é conversa: fica em coluna à parte, agrupado por dia, com a linha activa marcada — despejá-lo no fio obriga a rolar o passado para chegar ao presente.
 - No PATCH de um mestre, não excluir o campo que identifica o registo (o número): quem o corrige vê-o voltar ao antigo em silêncio.
+- Constantes do modelo (períodos 00–15) não podem vir só da rede: a sessão expira e o selector fica sem meses, calado. Ter o chão no cliente e avisar quando o servidor não confirma.
+- Quem mede o ecrã (carrossel) tem de observar TAMBÉM o cabeçalho: ele encolhe sem o corpo mudar de tamanho, e fica um vazio do tamanho exacto do que ele libertou.
+- `flex-1` + `overflow-auto` só encolhe com `min-h-0` E com o pai de altura fixa; com `min-h-` no pai, o filho empurra a página.

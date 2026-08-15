@@ -82,13 +82,45 @@ export function useCentros() {
   return { centros: data ?? [], isLoading, mutate };
 }
 
+/**
+ * Os dezasseis períodos contabilísticos — 00 abertura, 01–12 meses,
+ * 13 regularizações, 14 e 15 apuramentos.
+ *
+ * ESTÃO AQUI E NÃO SÓ NO SERVIDOR de propósito. Não são dados da empresa: são
+ * o modelo contabilístico, os mesmos em todas as empresas e em todos os anos,
+ * e no Piloto eram uma constante do ficheiro (`C.PERIODOS`). Enquanto vinham
+ * só da rede, bastava a sessão expirar ou o pedido falhar para o selector de
+ * data ficar sem um único mês — grelhas vazias, o nome do mês em branco, e
+ * nada no ecrã a dizer porquê. É o defeito que se viu em Movimentos.
+ *
+ * A lista do servidor continua a mandar quando chega; esta é o chão.
+ */
+export const PERIODOS: { codigo: string; nome: string }[] = [
+  { codigo: "00", nome: "Abertura" },
+  { codigo: "01", nome: "Janeiro" },
+  { codigo: "02", nome: "Fevereiro" },
+  { codigo: "03", nome: "Março" },
+  { codigo: "04", nome: "Abril" },
+  { codigo: "05", nome: "Maio" },
+  { codigo: "06", nome: "Junho" },
+  { codigo: "07", nome: "Julho" },
+  { codigo: "08", nome: "Agosto" },
+  { codigo: "09", nome: "Setembro" },
+  { codigo: "10", nome: "Outubro" },
+  { codigo: "11", nome: "Novembro" },
+  { codigo: "12", nome: "Dezembro" },
+  { codigo: "13", nome: "Regularizações" },
+  { codigo: "14", nome: "Apuramento de Resultados" },
+  { codigo: "15", nome: "Apuramento de Imposto e Resultado Líquido" },
+];
+
 export function usePeriodos() {
-  const { data } = useSWR<{ codigo: string; nome: string }[]>(
+  const { data, error } = useSWR<{ codigo: string; nome: string }[]>(
     "/api/contabilidade/periodos",
     buscador,
     { revalidateOnFocus: false },
   );
-  return { periodos: data ?? [] };
+  return { periodos: data?.length ? data : PERIODOS, falhou: Boolean(error) };
 }
 
 /** Artigos activos, para os selectores de linha de documento. */

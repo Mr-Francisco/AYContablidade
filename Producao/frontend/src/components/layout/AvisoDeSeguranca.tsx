@@ -2,7 +2,7 @@
 
 import { KeyRound, ShieldCheck, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -37,6 +37,29 @@ export function AvisoDeSeguranca() {
     setDispensado(sessionStorage.getItem(chave(id)) === "1");
   }, [id]);
 
+  /* A altura deste aviso, publicada em `--altura-aviso` — zero quando não
+     aparece. As páginas que ocupam o ecrã todo contam o que está por cima
+     delas, e esta faixa está: sem isto, o assistente ficava mais comprido do
+     que o ecrã exactamente nas contas que ainda não activaram o segundo factor
+     — as que veem o aviso. Não muda nada do que o aviso faz nem do que mostra. */
+  // `ref` de função e não `useEffect`: o sinal que interessa é o aviso entrar
+  // e sair do ecrã, e é exactamente quando isto corre. Com um efeito, as
+  // dependências teriam de repetir a condição de visibilidade — e o React 19
+  // deixa a função de `ref` devolver a limpeza, que repõe o zero ao sair.
+  const medir = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const raiz = document.documentElement;
+    const publicar = () =>
+      raiz.style.setProperty("--altura-aviso", `${el.offsetHeight}px`);
+    publicar();
+    const observador = new ResizeObserver(publicar);
+    observador.observe(el);
+    return () => {
+      observador.disconnect();
+      raiz.style.setProperty("--altura-aviso", "0px");
+    };
+  }, []);
+
   if (!relevante || dispensado || !id) return null;
 
   function dispensar() {
@@ -47,7 +70,10 @@ export function AvisoDeSeguranca() {
   }
 
   return (
-    <div className="border-b border-[var(--color-aviso)]/30 bg-[var(--color-aviso)]/10">
+    <div
+      ref={medir}
+      className="border-b border-[var(--color-aviso)]/30 bg-[var(--color-aviso)]/10"
+    >
       <div className="mx-auto flex max-w-[1360px] items-start gap-3 px-5 py-3">
         <span className="mt-0.5 shrink-0 text-[var(--color-aviso)]">
           <ShieldCheck size={17} />

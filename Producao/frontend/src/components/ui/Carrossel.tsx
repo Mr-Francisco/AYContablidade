@@ -133,6 +133,12 @@ export function Carrossel({
     // de tamanho: basta o aviso de segurança do topo ser dispensado. Sem isto,
     // a altura ficava a do sítio onde o carrossel estava antes.
     observador.observe(document.body);
+    // E o cabeçalho, que agora recolhe. Ao recolher liberta 139 px e o
+    // carrossel subia sem crescer — ficava uma faixa vazia por baixo, do
+    // tamanho exacto do que o cabeçalho tinha deixado de ocupar. O corpo não
+    // muda de tamanho nestes casos, por isso não chegava observá-lo.
+    const cabecalho = document.querySelector("header");
+    if (cabecalho) observador.observe(cabecalho);
     window.addEventListener("resize", medir);
     return () => {
       observador.disconnect();

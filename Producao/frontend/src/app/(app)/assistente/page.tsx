@@ -345,12 +345,12 @@ export default function Assistente() {
   return (
     /* DUAS COLUNAS: o histórico à esquerda, a conversa ao centro. Em ecrã
        estreito a coluna vira gaveta — a conversa não cabe ao lado de nada. */
-    <div className="flex min-h-[calc(100vh-140px)] min-w-0 gap-5">
-      <aside className="sticky top-2 hidden h-[calc(100vh-160px)] w-[264px] shrink-0 flex-col lg:flex">
+    <div className="flex h-[var(--altura-da-conversa)] min-h-[420px] min-w-0 gap-5 [--altura-da-conversa:calc(100vh-var(--altura-cabecalho)-var(--altura-aviso,0px)-3.75rem)]">
+      <aside className="hidden h-full w-[264px] shrink-0 flex-col lg:flex">
         {historicoDaColuna}
       </aside>
 
-      <div className="flex min-h-[calc(100vh-140px)] min-w-0 flex-1 flex-col">
+      <div className="flex h-full min-w-0 flex-1 flex-col">
         {/* ---------------------------------------------------------------
           Cabeçalho compacto. A conversa é o que importa nesta página, por
           isso o título não ocupa o espaço habitual de uma página de gestão.
@@ -392,7 +392,10 @@ export default function Assistente() {
           A CONVERSA. Cresce para baixo e ocupa o espaço todo — é o centro
           da página e não um cartão entre outros.
       ---------------------------------------------------------------- */}
-        <div className="min-w-0 flex-1 overflow-y-auto py-5">
+        {/* `min-h-0`: sem ele, uma caixa `flex-1` não encolhe abaixo do seu
+            conteúdo — o `overflow-y-auto` nunca chegava a agir e a conversa
+            empurrava a página para lá do ecrã. */}
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto py-5">
           {!fio.length ? (
             <Comeco
               indisponivel={Boolean(indisponivel)}

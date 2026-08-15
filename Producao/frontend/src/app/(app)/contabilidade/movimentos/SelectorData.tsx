@@ -89,7 +89,7 @@ export function SelectorData({
   aoMudarMes: (v: string) => void;
   aoMudarDia: (v: string) => void;
 }) {
-  const { periodos } = usePeriodos();
+  const { periodos, falhou } = usePeriodos();
   const [aberto, setAberto] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
 
@@ -165,6 +165,18 @@ export function SelectorData({
 
       {aberto && (
         <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-[262px] rounded-xl border border-borda bg-superficie p-2.5 shadow-forte">
+          {/* Os períodos que se mostram são sempre os mesmos — são o modelo
+              contabilístico, não dados da empresa. Quando o servidor não
+              confirma, diz-se: calar-se era deixar a pessoa a lançar sem saber
+              que a sessão pode já ter caído, e a descobri-lo ao gravar. */}
+          {falhou && (
+            <p className="mb-2 rounded-lg border border-[var(--color-aviso)]/40 bg-[var(--color-aviso)]/10 px-2 py-1.5 text-[11px] leading-relaxed text-texto">
+              Não foi possível confirmar os períodos com o servidor — a sessão
+              pode ter expirado. Estes são os períodos de sempre; verifique
+              antes de gravar.
+            </p>
+          )}
+
           <Seccao rotulo="Mês" extra={`${nDias} dias`}>
             <div className="grid grid-cols-4 gap-1">
               {meses.map((p) => (
