@@ -31,6 +31,7 @@ export function TabelaFolha({
       <Tabela>
         <thead>
           <tr>
+            <Th>Nº</Th>
             <Th>Colaborador</Th>
             <Th numerico>Base</Th>
             <Th numerico>Faltas</Th>
@@ -53,6 +54,7 @@ export function TabelaFolha({
                 aoEscolher ? () => aoEscolher(l.colaborador_id) : undefined
               }
             >
+              <Td className="tabular font-bold">{l.numero}</Td>
               <Td className="max-w-[220px] truncate font-semibold">
                 {l.colaborador}
               </Td>
@@ -86,6 +88,7 @@ export function TabelaFolha({
         <tfoot>
           <tr className="border-t-2 border-borda font-bold">
             <Td>Totais</Td>
+            <Td />
             <Td />
             <Td />
             <Td />

@@ -10,7 +10,7 @@ referência funcional: layout + comportamento + estados + filtros + carregamento
 | B | [Amortizações — configurações e estado](#b-amortizações) | ✅ feito |
 | 1 | [RH · Funcionários](#1-rh--funcionários) | ✅ feito |
 | 2 | [RH · Alterações mensais](#2-rh--alterações-mensais) | ✅ feito |
-| 3 | [RH · Processamento](#3-rh--processamento) | por fazer |
+| 3 | [RH · Processamento](#3-rh--processamento) | ✅ feito |
 | 4 | [RH · Pagamentos](#4-rh--pagamentos) | por fazer |
 | 5 | [RH · Recibos](#5-rh--recibos) | por fazer |
 | 6 | [RH · Simulação](#6-rh--simulação) | por fazer |
@@ -108,6 +108,16 @@ Duas regras ficaram explícitas, com o motivo à vista (regra A):
   `processar_mes`). A correcção faz-se por rectificação.
 
 ## 3. RH · Processamento
+
+✅ **Feito.** A tabela já tinha as colunas todas; faltava-lhe o **Nº** do
+colaborador, que é por onde o RH procura numa folha impressa — dois
+colaboradores podem ter o mesmo nome. O histórico passou a **separador ao mesmo
+nível** da folha, e voltaram o cabeçalho do mapa (empresa · Folha de Salários ·
+exercício · moeda) e a nota do Piloto a dizer em que contas o processamento vai
+cair, com a percentagem do INSS da empresa vinda da configuração e não fixa no
+código.
+
+Pedido original:
 
 - A tabela deve ser **exactamente a do Piloto**, mais a coluna «Faltas» que a
   Produção acrescentou.

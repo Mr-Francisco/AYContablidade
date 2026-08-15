@@ -516,6 +516,7 @@ export interface Colaborador {
 
 export interface LinhaRecibo {
   colaborador_id: string;
+  numero: string;
   colaborador: string;
   base: string;
   subs: string;

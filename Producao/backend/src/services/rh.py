@@ -359,6 +359,9 @@ def recibo_com(
 
     return {
         "colaborador_id": colaborador.id,
+        # O número, como no Piloto: é por ele que o RH procura na folha
+        # impressa, e dois colaboradores podem ter o mesmo nome.
+        "numero": colaborador.numero,
         "colaborador": colaborador.nome,
         "base": base,
         "subs": subs,
