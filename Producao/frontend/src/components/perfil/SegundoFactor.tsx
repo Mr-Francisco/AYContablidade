@@ -376,6 +376,11 @@ function PassoLer({
           type="submit"
           variante="primario"
           disabled={ocupado || codigo.length < 6}
+          motivoBloqueio={
+            ocupado
+              ? "A confirmar — aguarde."
+              : "Introduza os seis dígitos que a aplicação mostra."
+          }
         >
           {ocupado ? "A confirmar…" : "Confirmar e activar"}
         </Botao>
@@ -428,7 +433,12 @@ function PassoCodigos({
       </label>
 
       <div>
-        <Botao variante="primario" onClick={aoFechar} disabled={!confirmado}>
+        <Botao
+          variante="primario"
+          onClick={aoFechar}
+          disabled={!confirmado}
+          motivoBloqueio="Confirme, na caixa acima, que guardou os códigos — não voltam a ser mostrados."
+        >
           <Check size={15} />
           Concluir
         </Botao>
@@ -483,6 +493,11 @@ function PedirPassword({
           type="submit"
           variante={perigo ? "perigo" : "primario"}
           disabled={ocupado || !password}
+          motivoBloqueio={
+            ocupado
+              ? "A processar — aguarde."
+              : "Escreva a palavra-passe actual para confirmar."
+          }
         >
           {ocupado ? "A processar…" : rotuloBotao}
         </Botao>

@@ -184,3 +184,4 @@
 - Pré-visualização e cálculo definitivo partilham a função do servidor — nunca reescrever a fórmula no cliente «só para o preview».
 - Parametrização que muda o cálculo de toda a gente (taxas, contas da folha) exige perfil de administrador NO SERVIDOR, não só no ecrã.
 - Mestre com histórico não se apaga: recusar com 409 e mandar desactivar (independentes com honorários, como já era para clientes e artigos).
+- Regra do `disabled` verificada por teste (`test_nenhum_botao_bloqueia_sem_dizer_porque`) e por aviso na consola em dev — a regra sem guarda volta a partir-se no ficheiro seguinte.

@@ -6,7 +6,7 @@ referência funcional: layout + comportamento + estados + filtros + carregamento
 
 | # | Ponto | Estado |
 |---|-------|--------|
-| A | [Regra global: `disabled` explica-se sempre](#a-regra-global-disabled-explica-se-sempre) | por fazer |
+| A | [Regra global: `disabled` explica-se sempre](#a-regra-global-disabled-explica-se-sempre) | ✅ feito |
 | B | [Amortizações — configurações e estado](#b-amortizações) | ✅ feito |
 | 1 | [RH · Funcionários](#1-rh--funcionários) | ✅ feito |
 | 2 | [RH · Alterações mensais](#2-rh--alterações-mensais) | ✅ feito |
@@ -34,6 +34,23 @@ caso a caso.
   nunca apareceria. A solução tem de manter o motivo acessível.
 
 `disabled` nunca pode significar «o botão simplesmente não funciona».
+
+✅ **Feito e garantido.** O `Botao` deixa de usar o `disabled` nativo quando há
+`motivoBloqueio` — passa a `aria-disabled`, mantém o hover e mostra o tooltip
+(um `<button disabled>` não dispara eventos de rato e o tooltip nunca
+apareceria). Foram explicados todos os bloqueios reais da aplicação: primeira e
+última página, exportar/imprimir um mapa vazio, eliminar a própria conta,
+concluir sem confirmar que se copiou a palavra-passe, gravar um lançamento
+desequilibrado ou gerado automaticamente, remover a única linha de uma compra,
+processar/pagar um mês que não pode, alterar variáveis de um mês pago.
+
+Ficam de fora os estados **transitórios** (`aGravar`, `ocupado`): o rótulo muda
+para «A gravar…» e explica-se sozinho.
+
+Duas guardas para não voltar atrás: em desenvolvimento o `Botao` avisa na
+consola quando fica bloqueado sem motivo, e o teste
+`test_nenhum_botao_bloqueia_sem_dizer_porque` percorre o código todo e falha se
+aparecer um bloqueio de verdade por explicar.
 
 ## B. Amortizações
 

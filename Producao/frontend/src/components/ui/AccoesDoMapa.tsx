@@ -40,6 +40,7 @@ export function AccoesDoMapa({
           tamanho="pequeno"
           onClick={exportar}
           disabled={desactivado}
+          motivoBloqueio="Não há nada para exportar — o mapa está vazio."
           title="Descarregar em CSV, para abrir numa folha de cálculo"
         >
           <Download size={14} />
@@ -51,6 +52,7 @@ export function AccoesDoMapa({
         tamanho="pequeno"
         onClick={() => window.print()}
         disabled={desactivado}
+        motivoBloqueio="Não há nada para imprimir — o mapa está vazio."
         title="Imprimir ou guardar em PDF"
       >
         <Printer size={14} />

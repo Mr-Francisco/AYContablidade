@@ -137,6 +137,7 @@ export function BarraPaginacao({
           tamanho="pequeno"
           onClick={aoAnterior}
           disabled={!haAnterior}
+          motivoBloqueio="Já está na primeira página."
         >
           <ChevronLeft size={14} />
           Anterior
@@ -146,6 +147,7 @@ export function BarraPaginacao({
           tamanho="pequeno"
           onClick={aoSeguinte}
           disabled={!haSeguinte}
+          motivoBloqueio="Já está na última página."
         >
           Seguinte
           <ChevronRight size={14} />

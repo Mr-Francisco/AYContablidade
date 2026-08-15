@@ -455,6 +455,11 @@ function PassoDois({
             variante="primario"
             bloco
             disabled={aEntrar || codigo.trim().length < 6}
+            motivoBloqueio={
+              aEntrar
+                ? "A confirmar o código — aguarde."
+                : "Introduza os seis dígitos do código da aplicação."
+            }
           >
             {aEntrar ? "A verificar…" : "Confirmar"}
           </Botao>

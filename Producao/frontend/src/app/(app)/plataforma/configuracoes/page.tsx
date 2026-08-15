@@ -170,6 +170,13 @@ export default function ConfiguracoesDaPlataforma() {
                     type="submit"
                     variante="primario"
                     disabled={aGravar || !mudou || !valido}
+                    motivoBloqueio={
+                      aGravar
+                        ? "A gravar — aguarde."
+                        : !valido
+                          ? "Há valores por corrigir no formulário."
+                          : "Não há alterações para guardar."
+                    }
                   >
                     {aGravar ? (
                       "A gravar…"
@@ -475,6 +482,13 @@ function Retencao({
             type="submit"
             variante="primario"
             disabled={aGravar || !mudou || !valido}
+            motivoBloqueio={
+              aGravar
+                ? "A gravar — aguarde."
+                : !valido
+                  ? "Há valores por corrigir no formulário."
+                  : "Não há alterações para guardar."
+            }
           >
             {aGravar ? "A gravar…" : "Gravar prazos"}
           </Botao>

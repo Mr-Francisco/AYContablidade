@@ -428,6 +428,13 @@ export default function Assistente() {
                   disabled={
                     ocupado || !pergunta.trim() || Boolean(indisponivel)
                   }
+                  motivoBloqueio={
+                    indisponivel
+                      ? String(indisponivel)
+                      : ocupado
+                        ? "A responder — aguarde."
+                        : "Escreva a pergunta primeiro."
+                  }
                 >
                   <Send size={14} />
                   {ocupado ? "A perguntar…" : "Perguntar"}

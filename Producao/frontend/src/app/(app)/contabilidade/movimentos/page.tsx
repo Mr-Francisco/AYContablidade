@@ -329,11 +329,13 @@ export default function Movimentos() {
               tamanho="pequeno"
               onClick={gravar}
               disabled={!podeGravar || ocupado}
-              title={
+              motivoBloqueio={
                 podeGravar
-                  ? undefined
+                  ? ocupado
+                    ? "A gravar — aguarde."
+                    : undefined
                   : !editavel
-                    ? "Movimento gerado automaticamente — altera-se no documento que o originou"
+                    ? "Movimento gerado automaticamente — altera-se no documento que o originou."
                     : selo.texto
               }
             >

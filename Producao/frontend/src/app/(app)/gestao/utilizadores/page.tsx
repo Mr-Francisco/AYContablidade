@@ -288,9 +288,9 @@ export default function Utilizadores() {
                             tamanho="pequeno"
                             variante="perigo"
                             disabled={souEu}
-                            title={
+                            motivoBloqueio={
                               souEu
-                                ? "Não pode eliminar a sua própria conta"
+                                ? "Não pode eliminar a sua própria conta — peça a outro administrador."
                                 : undefined
                             }
                             onClick={() => setAEliminar(u)}

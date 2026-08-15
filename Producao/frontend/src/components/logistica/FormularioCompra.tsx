@@ -314,6 +314,7 @@ export function FormularioCompra({
                           variante="perigo"
                           aria-label="Remover linha"
                           disabled={linhas.length === 1}
+                          motivoBloqueio="A compra tem de ter pelo menos uma linha."
                           onClick={() =>
                             setLinhas((ls) =>
                               ls.filter((x) => x.chave !== l.chave),

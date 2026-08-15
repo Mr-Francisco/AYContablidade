@@ -71,6 +71,17 @@ export const Botao = forwardRef<HTMLButtonElement, BotaoProps>(function Botao(
   // não funciona», que é exactamente o que a regra proíbe.
   const bloqueadoComMotivo = Boolean(disabled && motivoBloqueio);
 
+  // Em desenvolvimento, apanha o esquecimento: um botão que fica bloqueado
+  // sem motivo é um botão que «simplesmente não funciona» para quem o vê.
+  // Só avisa — não muda o comportamento, e não corre em produção.
+  if (process.env.NODE_ENV !== "production" && disabled && !motivoBloqueio) {
+    console.warn(
+      "Botão bloqueado sem `motivoBloqueio` — regra do projecto: um botão " +
+        "desactivado diz porquê. Ver docs/LESSONS.md.",
+      { conteudo: props.children },
+    );
+  }
+
   const botao = (
     <Comp
       ref={ref}

@@ -12,6 +12,8 @@ explicitamente, com todos os campos, para não depender do ficheiro da máquina
 onde corre.
 """
 
+import re
+
 import pytest
 from pydantic import ValidationError
 
@@ -394,3 +396,41 @@ def test_os_mapas_imprimem_e_exportam():
     css = (base / "app" / "globals.css").read_text(encoding="utf-8")
     assert "@media print" in css
     assert ".sem-imprimir" in css
+
+
+# ---------------------------------------------------------------------------
+# Regra dos botões bloqueados
+# ---------------------------------------------------------------------------
+#: Condições que são um ESTADO TRANSITÓRIO — o botão troca o rótulo para «A
+#: gravar…» e explica-se sozinho. Tudo o resto é um bloqueio de verdade e tem
+#: de dizer porquê.
+_TRANSITORIAS = re.compile(
+    r"^(a[A-Z]\w*|ocupado|ocupado !== null|carregando|isLoading)$"
+)
+
+
+def test_nenhum_botao_bloqueia_sem_dizer_porque():
+    """REGRA DO PROJECTO: `disabled` nunca significa «não funciona».
+
+    Um botão desactivado sem explicação manda o utilizador procurar uma avaria
+    que não existe — aconteceu com o processamento já feito, com o mês por
+    processar e com a exportação de um mapa vazio.
+    """
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parents[2] / "frontend" / "src"
+    faltam = []
+    for ficheiro in list(raiz.rglob("*.tsx")):
+        fonte = ficheiro.read_text(encoding="utf-8")
+        for m in re.finditer(r"<Botao\b[^>]*?>", fonte, re.S):
+            bloco = m.group(0)
+            if "disabled" not in bloco or "motivoBloqueio" in bloco:
+                continue
+            cond = re.search(r"disabled=\{([^}]*)\}", bloco)
+            condicao = (cond.group(1) if cond else "").strip()
+            if _TRANSITORIAS.match(condicao):
+                continue
+            linha = fonte[: m.start()].count("\n") + 1
+            faltam.append(f"{ficheiro.name}:{linha} disabled={{{condicao}}}")
+
+    assert not faltam, "botões bloqueados sem motivo:\n" + "\n".join(faltam)

@@ -493,7 +493,12 @@ function DialogoSegredo({
         </label>
 
         <div>
-          <Botao variante="primario" onClick={aoFechar} disabled={!guardei}>
+          <Botao
+            variante="primario"
+            onClick={aoFechar}
+            disabled={!guardei}
+            motivoBloqueio="Confirme, na caixa acima, que já copiou a palavra-passe — depois de fechar não volta a ser mostrada."
+          >
             Concluir
           </Botao>
         </div>

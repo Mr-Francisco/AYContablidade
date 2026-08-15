@@ -280,6 +280,9 @@ export function ModelosIa() {
               <Botao
                 variante="perigo"
                 disabled={ocupado !== null}
+                motivoBloqueio={
+                  ocupado !== null ? "A processar — aguarde." : undefined
+                }
                 onClick={() => {
                   const alvo = aApagar;
                   if (!alvo) return;

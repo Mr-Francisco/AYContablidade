@@ -408,6 +408,11 @@ function Modulos({
         <Botao
           variante="primario"
           disabled={aGravar || activos === null}
+          motivoBloqueio={
+            aGravar
+              ? "A gravar — aguarde."
+              : "Ainda a carregar os módulos da licença."
+          }
           onClick={gravar}
         >
           <Save size={16} />
