@@ -130,6 +130,15 @@ class AlteracaoEntrada(BaseModel):
     descontos: list[dict] = Field(default_factory=list)
 
 
+class SimulacaoAlteracao(BaseModel):
+    """As variáveis do mês por gravar — para ver o líquido antes de decidir."""
+
+    colaborador_id: UUID
+    faltas: Decimal = Decimal("0")
+    abonos: list[dict] = Field(default_factory=list)
+    descontos: list[dict] = Field(default_factory=list)
+
+
 class ProcessarPedido(BaseModel):
     mes: str = Field(min_length=7, max_length=7)
     data: Date | None = None
@@ -325,12 +334,40 @@ def gravar_alteracao(
     db: DB,
 ) -> dict:
     _colab(db, empresa.id, colaborador_id)
+    # Mês pago é mês fechado. O Piloto só desactivava o botão; o ecrã não é
+    # sítio para guardar uma regra destas — alterar as variáveis depois de o
+    # dinheiro sair deixava os recibos emitidos a dizer uma coisa e a ficha
+    # outra, e ninguém dava por isso.
+    if svc.mes_pago(db, empresa.id, dados.mes):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"A folha de {dados.mes} já foi paga. As variáveis desse mês não "
+            "podem ser alteradas — corrige-se no mês seguinte.",
+        )
     a = svc.guardar_alteracao(
         db, empresa_id=empresa.id, colaborador_id=colaborador_id, mes=dados.mes,
         faltas=dados.faltas, abonos=dados.abonos, descontos=dados.descontos,
     )
     db.commit()
     return {"colaborador_id": colaborador_id, "mes": a.mes, "faltas": a.faltas}
+
+
+@router.post("/alteracoes/simular")
+def simular_alteracao(dados: SimulacaoAlteracao, empresa: EmpresaAtual, db: DB) -> dict:
+    """O recibo como ficaria com estas alterações. NÃO grava nada.
+
+    Existe para a janela das alterações poder mostrar o líquido enquanto se
+    escreve, sem repetir a fórmula do lado do cliente — a conta do IRT tem
+    escalões e parcela fixa, e uma segunda cópia acabaria por divergir.
+    """
+    c = _colab(db, empresa.id, dados.colaborador_id)
+    return svc.recibo_com(
+        c,
+        cfg=svc.cfg_rh(db, empresa.id),
+        faltas=dados.faltas,
+        abonos=dados.abonos,
+        descontos=dados.descontos,
+    )
 
 
 # ---------------------------------------------------------------------------

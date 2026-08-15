@@ -9,7 +9,7 @@ referência funcional: layout + comportamento + estados + filtros + carregamento
 | A | [Regra global: `disabled` explica-se sempre](#a-regra-global-disabled-explica-se-sempre) | por fazer |
 | B | [Amortizações — configurações e estado](#b-amortizações) | ✅ feito |
 | 1 | [RH · Funcionários](#1-rh--funcionários) | ✅ feito |
-| 2 | [RH · Alterações mensais](#2-rh--alterações-mensais) | por fazer |
+| 2 | [RH · Alterações mensais](#2-rh--alterações-mensais) | ✅ feito |
 | 3 | [RH · Processamento](#3-rh--processamento) | por fazer |
 | 4 | [RH · Pagamentos](#4-rh--pagamentos) | por fazer |
 | 5 | [RH · Recibos](#5-rh--recibos) | por fazer |
@@ -84,10 +84,28 @@ Pedido original:
 
 ## 2. RH · Alterações mensais
 
-O que está feito não tem boa experiência e não é fiel ao Piloto. Rever
-**lógica, campos e comportamento** contra o Piloto (ver imagem: faltas em dias,
-abonos que acrescem ao bruto, descontos que deduzem ao líquido, líquido
-resultante ao fundo).
+✅ **Feito.** A tabela é a do Piloto — Faltas · Abonos · Descontos · **Bruto** ·
+**Líquido** — e ocupa a página toda. As duas últimas colunas faltavam porque a
+lista estava espremida ao lado de um formulário fixo; são elas que mostram o
+efeito do que se está a lançar, que é a única razão para se estar nesta página.
+
+A edição passa a ser uma janela, como no Piloto: faltas em dias com a nota
+«Cada dia de falta desconta 1/30 do salário base», abonos «(acrescem ao bruto)»
+e descontos «(deduzem ao líquido)» em linhas com Descrição · Valor · ✕, e o
+**líquido resultante ao fundo**, a acompanhar o que se escreve.
+
+O líquido da pré-visualização vem do servidor (`POST /api/rh/alteracoes/
+simular`), da MESMA função que processa a folha. No Piloto a fórmula estava
+escrita duas vezes — `R.recibo` e `reciboComAlt` — e bastava mexer numa para o
+número que o utilizador via deixar de ser o que ia ser pago.
+
+Duas regras ficaram explícitas, com o motivo à vista (regra A):
+
+- **Mês pago**: não se altera. Agora também no servidor (409) — o Piloto só
+  desactivava o botão, e o dinheiro já saiu.
+- **Mês processado**: não se altera porque a Produção **não reprocessa** (o
+  Piloto reprocessava e duplicava o custo na contabilidade; ver
+  `processar_mes`). A correcção faz-se por rectificação.
 
 ## 3. RH · Processamento
 

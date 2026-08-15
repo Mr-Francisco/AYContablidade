@@ -311,31 +311,51 @@ def recibo(
     O desconto por faltas usa base 30 dias, independentemente do mês.
     """
     c2 = cfg or cfg_rh(db, empresa_id)
-    base0 = r2(d(colaborador.salario_base))
-    subs_base = r2(d(colaborador.subsidios))
-
     alt = (
         alteracao_de(db, empresa_id, colaborador.id, mes, exercicio_id)
         if mes
         else None
     )
-    faltas = d(alt.faltas) if alt else ZERO
+    return recibo_com(
+        colaborador,
+        cfg=c2,
+        faltas=d(alt.faltas) if alt else ZERO,
+        abonos=(alt.abonos or []) if alt else [],
+        descontos=(alt.descontos or []) if alt else [],
+    )
+
+
+def recibo_com(
+    colaborador: Colaborador,
+    *,
+    cfg: dict,
+    faltas: Decimal = ZERO,
+    abonos: list[dict] | None = None,
+    descontos: list[dict] | None = None,
+) -> dict:
+    """O recibo a partir de alterações que podem ainda não estar gravadas.
+
+    Isolado do `recibo` para que a pré-visualização — «como fica o líquido se
+    eu meter dois dias de falta?» — use exactamente a mesma fórmula do
+    processamento. O Piloto tinha-a escrita duas vezes, uma no recibo e outra
+    na janela das alterações; bastava mexer numa para o número que o
+    utilizador via deixar de ser o que ia ser pago.
+    """
+    base0 = r2(d(colaborador.salario_base))
+    subs_base = r2(d(colaborador.subsidios))
+
     desc_faltas = r2(base0 / 30 * faltas)
-    abonos_extra = (
-        r2(sum((d(x.get("valor")) for x in (alt.abonos or [])), ZERO)) if alt else ZERO
-    )
-    desc_extra = (
-        r2(sum((d(x.get("valor")) for x in (alt.descontos or [])), ZERO)) if alt else ZERO
-    )
+    abonos_extra = r2(sum((d(x.get("valor")) for x in (abonos or [])), ZERO))
+    desc_extra = r2(sum((d(x.get("valor")) for x in (descontos or [])), ZERO))
 
     base = r2(base0 - desc_faltas)
     subs = r2(subs_base + abonos_extra)
     bruto = r2(base + subs)
-    inss = r2(base * d(c2["inss_trab"]) / 100)
+    inss = r2(base * d(cfg["inss_trab"]) / 100)
     materia = r2(bruto - inss)
-    irt = calc_irt(materia, c2["irt"])
+    irt = calc_irt(materia, cfg["irt"])
     liquido = r2(bruto - inss - irt - desc_extra)
-    inss_empresa = r2(base * d(c2["inss_empr"]) / 100)
+    inss_empresa = r2(base * d(cfg["inss_empr"]) / 100)
 
     return {
         "colaborador_id": colaborador.id,

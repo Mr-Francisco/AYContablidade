@@ -180,3 +180,5 @@
 - Teste que corre contra a base de desenvolvimento não pode reabrir/apagar períodos reais: escolhe um período livre. Bastou alguém processar Agosto pelo ecrã para o teste falhar.
 - Um estado vazio nunca pode cobrir um erro: se o `useSWR` devolve `error`, mostrar `FalhaAoCarregar` antes de `Vazio` — «ainda não há registos» sobre um 403 manda o utilizador procurar o que existe e ele não vê.
 - Quando um formulário cresce para separadores, verificar o `PATCH` campo a campo: o que o schema não aceita perde-se em silêncio (aconteceu com trinta campos do cliente e com o número do colaborador).
+- Testes que refazem a aritmética à mão não provam que a função a aplica: pelo menos um teste tem de chamar a função real (uma troca de nome dentro de `recibo_com` passou por toda a suite).
+- Pré-visualização e cálculo definitivo partilham a função do servidor — nunca reescrever a fórmula no cliente «só para o preview».
