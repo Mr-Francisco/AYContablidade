@@ -85,8 +85,8 @@ def test_sem_chave_falha_fechado():
 # ---------------------------------------------------------------------------
 def test_codigo_valido_e_aceite():
     s = totp.gerar_segredo()
-    ok, contador = totp.verificar_codigo(s, pyotp.TOTP(s).now())
-    assert ok and contador is not None
+    r = totp.verificar_codigo(s, pyotp.TOTP(s).now())
+    assert r.valido and r.contador is not None and not r.repetido
 
 
 def test_codigo_de_outro_segredo_e_recusado():
@@ -116,11 +116,50 @@ def test_o_mesmo_codigo_nao_serve_duas_vezes():
     """
     s = totp.gerar_segredo()
     c = pyotp.TOTP(s).now()
-    ok, contador = totp.verificar_codigo(s, c)
-    assert ok
-    assert totp.verificar_codigo(s, c, ultimo_contador=contador)[0] is False
+    r = totp.verificar_codigo(s, c)
+    assert r.valido
+    assert totp.verificar_codigo(s, c, ultimo_contador=r.contador).valido is False
     # Um contador anterior não bloqueia: só se recusa o que já foi usado.
-    assert totp.verificar_codigo(s, c, ultimo_contador=contador - 5)[0] is True
+    assert totp.verificar_codigo(s, c, ultimo_contador=r.contador - 5).valido is True
+
+
+def test_codigo_ja_usado_diz_que_foi_usado_e_nao_que_esta_errado():
+    """REGRESSÃO: era este o defeito que trancava contas.
+
+    Um código certo mas já gasto vinha indistinguível de um código inventado.
+    A pessoa lia «código incorrecto» (não estava) e gastava uma das três
+    tentativas até ao bloqueio de quinze minutos. Acontecia sempre a quem
+    acabava de configurar o 2FA e entrava logo a seguir com o código que ainda
+    estava no ecrã, e a quem tivesse o telemóvel meio passo adiantado.
+    """
+    s = totp.gerar_segredo()
+    c = pyotp.TOTP(s).now()
+    r = totp.verificar_codigo(s, c)
+
+    repetido = totp.verificar_codigo(s, c, ultimo_contador=r.contador)
+    assert repetido.valido is False, "um código gasto continua a ser recusado"
+    assert repetido.repetido is True, "mas quem chama tem de saber porquê"
+
+    # Um código inventado NÃO é «repetido» — a distinção tem de ir nos dois
+    # sentidos, senão a excepção passa a ser a regra.
+    errado = totp.verificar_codigo(s, "000000", ultimo_contador=r.contador)
+    assert errado.valido is False and errado.repetido is False
+
+
+def test_o_contador_nao_depende_do_fuso_do_servidor():
+    """O TOTP conta segundos desde a época, iguais em qualquer fuso.
+
+    Chegou a calcular-se o passo a partir de um `datetime.now()` ingénuo, que
+    só dava certo porque a conversão de volta desfazia o desvio. Num processo
+    com `TZ` diferente do relógio isso partia-se, e partia-se para todos ao
+    mesmo tempo — o género de avaria que ninguém liga ao fuso horário.
+    """
+    import time as _time
+
+    s = totp.gerar_segredo()
+    esperado = int(_time.time()) // 30
+    r = totp.verificar_codigo(s, pyotp.TOTP(s).generate_otp(esperado))
+    assert r.valido and r.contador == esperado
 
 
 def test_a_janela_e_de_um_passo():
@@ -130,10 +169,10 @@ def test_a_janela_e_de_um_passo():
     s = totp.gerar_segredo()
     t = pyotp.TOTP(s)
     agora = t.timecode(__import__("datetime").datetime.now())
-    assert totp.verificar_codigo(s, t.generate_otp(agora - 1))[0] is True
-    assert totp.verificar_codigo(s, t.generate_otp(agora + 1))[0] is True
-    assert totp.verificar_codigo(s, t.generate_otp(agora - 2))[0] is False
-    assert totp.verificar_codigo(s, t.generate_otp(agora + 2))[0] is False
+    assert totp.verificar_codigo(s, t.generate_otp(agora - 1)).valido is True
+    assert totp.verificar_codigo(s, t.generate_otp(agora + 1)).valido is True
+    assert totp.verificar_codigo(s, t.generate_otp(agora - 2)).valido is False
+    assert totp.verificar_codigo(s, t.generate_otp(agora + 2)).valido is False
 
 
 # ---------------------------------------------------------------------------

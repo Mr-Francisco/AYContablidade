@@ -301,15 +301,31 @@ def login_2fa(request: Request, dados: Login2FaPedido, db: DB) -> TokenResposta:
             segredo = decifrar_segredo(user.totp_segredo)
         except ErroTotp as e:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from e
-        valido, contador = verificar_codigo(
+        r = verificar_codigo(
             segredo, codigo, ultimo_contador=user.totp_ultimo_contador
         )
-        if not valido:
+        # CÓDIGO CERTO MAS JÁ USADO não é código errado, e é o caso mais comum
+        # de todos: o código está no ecrã do telemóvel um minuto, e quem entra
+        # duas vezes seguidas — ou acabou de configurar o 2FA — escreve o
+        # mesmo. Tratá-lo como erro dizia à pessoa que o código estava mal
+        # (não estava) e gastava-lhe uma das três tentativas até ao bloqueio.
+        #
+        # Não conta como falha, de propósito: para chegar aqui é preciso já ter
+        # acertado na palavra-passe E ter um código válido nas mãos. Quem tem
+        # as duas coisas entra na tentativa seguinte de qualquer maneira — não
+        # há nada a proteger aqui, só uma pessoa a informar.
+        if r.repetido:
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                "Esse código já foi utilizado. Aguarde que a aplicação mostre "
+                "o próximo e tente com esse.",
+            )
+        if not r.valido:
             _registar_falha(db, user, request)
             raise recusa
         # Grava o passo de tempo usado: o mesmo código vale cerca de um minuto,
         # e sem isto quem o intercepte tem uma janela para o repetir.
-        user.totp_ultimo_contador = contador
+        user.totp_ultimo_contador = r.contador
     else:
         achou, restantes = consumir_codigo(codigo, user.totp_codigos_recuperacao or [])
         if not achou:

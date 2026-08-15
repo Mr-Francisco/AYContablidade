@@ -126,8 +126,8 @@ def confirmar(
     except totp.ErroTotp as e:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from e
 
-    valido, contador = totp.verificar_codigo(segredo, dados.codigo)
-    if not valido:
+    r = totp.verificar_codigo(segredo, dados.codigo)
+    if not r.valido:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "O código não está correcto. Confirme que está a ler o código mais "
@@ -139,7 +139,7 @@ def confirmar(
     user.totp_ativo = True
     user.totp_ativado_em = agora()
     # Grava o contador que acabou de validar: este código já não serve outra vez.
-    user.totp_ultimo_contador = contador
+    user.totp_ultimo_contador = r.contador
     user.totp_falhas = 0
     user.totp_bloqueado_ate = None
 

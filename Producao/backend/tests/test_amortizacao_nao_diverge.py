@@ -31,12 +31,32 @@ from src.services import imobilizados as svc
 
 @pytest.fixture
 def base():
-    from src.db.base import SessionLocal
+    """Sessão que NÃO CONSEGUE escrever na base de desenvolvimento.
 
-    db = SessionLocal()
-    yield db
-    db.rollback()
-    db.close()
+    Estes testes correm contra a base real — não há base de testes à parte — e
+    criam activos. Um `db.rollback()` no fim só limpa enquanto ninguém fizer
+    `commit` pelo caminho: hoje nenhum serviço o faz (quem faz `commit` são os
+    routers), mas isso é uma garantia por hábito, não por construção. Bastava
+    aparecer um `commit` dentro de `processar_periodo` — ou de `postar`, ou de
+    `notificar` — para os activos de ensaio ficarem gravados, e só se dava por
+    isso ao vê-los em /imobilizados/amortizacoes.
+
+    Por isso a transacção é aberta AQUI, na ligação, e a sessão entra nela por
+    SAVEPOINT (`join_transaction_mode="create_savepoint"`). Um `commit` lá
+    dentro liberta o savepoint e não sai da ligação; o `rollback` de fora
+    deita tudo abaixo na mesma. O teste passa a estar isolado por construção.
+    """
+    from src.db.base import SessionLocal, engine
+
+    ligacao = engine.connect()
+    transacao = ligacao.begin()
+    db = SessionLocal(bind=ligacao, join_transaction_mode="create_savepoint")
+    try:
+        yield db
+    finally:
+        db.close()
+        transacao.rollback()
+        ligacao.close()
 
 
 @pytest.fixture

@@ -8,7 +8,6 @@ TypeError/ForwardRef com anotações adiadas (ver docs/LESSONS.md).
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from src.api.json import RespostaJSON
@@ -20,6 +19,30 @@ settings = get_settings()
 # O limiter vive em `src/api/limites.py` para os routers o poderem importar
 # sem fechar um ciclo — este módulo importa-os a eles.
 from src.api.limites import limiter  # noqa: E402
+
+
+def _limite_excedido(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """Resposta ao limite de pedidos, em português e na chave certa.
+
+    O tratador que vem com o slowapi devolve `{"error": "Rate limit exceeded:
+    5 per 1 minute"}`. Duas coisas mal: está em inglês, e a interface lê a
+    mensagem de `detail` — não encontrando nada, mostrava «Erro 429» e mais
+    nada.
+
+    Isto apanhava sobretudo quem estava às voltas com o segundo factor: ao fim
+    de meia dúzia de tentativas o ecrã deixava de explicar o que quer que
+    fosse, e a impressão que fica é a de um sistema avariado.
+    """
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": (
+                "Demasiadas tentativas em pouco tempo. Aguarde um minuto e "
+                "volte a tentar."
+            )
+        },
+        headers={"Retry-After": "60"},
+    )
 
 
 def criar_app() -> FastAPI:
@@ -34,7 +57,7 @@ def criar_app() -> FastAPI:
     )
 
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(RateLimitExceeded, _limite_excedido)
 
     app.add_middleware(
         CORSMiddleware,

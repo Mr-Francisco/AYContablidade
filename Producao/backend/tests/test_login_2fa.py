@@ -10,6 +10,7 @@ sustenta o segundo factor e que se parte sem dar por isso:
 - um código usado não serve outra vez.
 """
 
+import json
 import os
 from uuid import uuid4
 
@@ -226,6 +227,77 @@ def test_o_mesmo_codigo_nao_serve_duas_vezes(ambiente):
     codigo = pyotp.TOTP(segredo).now()
     assert _passo2(cliente, _passo1(cliente).json()["desafio"], codigo).status_code == 200
     assert _passo2(cliente, _passo1(cliente).json()["desafio"], codigo).status_code == 401
+
+
+def test_repetir_o_codigo_nao_gasta_tentativas_nem_tranca_a_conta(ambiente):
+    """REGRESSÃO: era assim que a conta se trancava sozinha.
+
+    Um código certo mas já usado vinha indistinguível de um código inventado:
+    a pessoa lia «verifique o código» e perdia uma das TRÊS tentativas até ao
+    bloqueio de quinze minutos. Bastava entrar duas vezes seguidas — ou ter o
+    telemóvel meio passo adiantado, que leva o servidor a gravar um contador à
+    frente do relógio dele — para ficar de fora sem ter feito nada de errado.
+
+    Recusar continua a recusar. O que muda é que não conta como falha e que a
+    mensagem diz o que fazer: esperar pelo código seguinte.
+    """
+    cliente, user, _, segredo, _ = ambiente
+    codigo = pyotp.TOTP(segredo).now()
+    assert _passo2(cliente, _passo1(cliente).json()["desafio"], codigo).status_code == 200
+
+    for _ in range(5):
+        r = _passo2(cliente, _passo1(cliente).json()["desafio"], codigo)
+        assert r.status_code == 401
+        assert "já foi utilizado" in r.json()["detail"], r.json()["detail"]
+
+    assert not user.totp_falhas, "um código repetido não é uma tentativa falhada"
+    assert user.totp_bloqueado_ate is None, "a conta não podia ter sido trancada"
+
+    # E o código SEGUINTE entra, sem esperar por bloqueio nenhum.
+    seguinte = pyotp.TOTP(segredo).generate_otp(
+        pyotp.TOTP(segredo).timecode(__import__("datetime").datetime.now()) + 1
+    )
+    assert _passo2(cliente, _passo1(cliente).json()["desafio"], seguinte).status_code == 200
+
+
+def test_codigo_errado_continua_a_gastar_tentativas(ambiente):
+    """O outro lado da moeda: sem isto, a correcção acima abria a porta a
+    tentar códigos à sorte sem limite."""
+    cliente, user, _, _, _ = ambiente
+    for _ in range(3):
+        _passo2(cliente, _passo1(cliente).json()["desafio"], "000000")
+    assert user.totp_falhas >= 3
+    assert user.totp_bloqueado_ate is not None, "três códigos errados têm de trancar"
+
+
+def test_o_limite_de_pedidos_fala_portugues_e_na_chave_certa():
+    """REGRESSÃO: o tratador que vem com o slowapi devolve
+    `{"error": "Rate limit exceeded: 5 per 1 minute"}`.
+
+    Está em inglês, e a interface lê a mensagem de `detail` — não encontrando
+    nada, mostrava «Erro 429» e mais nada. Quem apanhava isto era justamente
+    quem andava às voltas com o segundo factor: ao fim de meia dúzia de
+    tentativas o ecrã deixava de explicar o que quer que fosse.
+    """
+    import inspect
+
+    from src.api import main
+
+    fonte = inspect.getsource(main)
+    assert "_rate_limit_exceeded_handler" not in fonte, (
+        "o tratador do slowapi responde em inglês e fora de `detail`"
+    )
+    assert "RateLimitExceeded, _limite_excedido" in fonte
+
+    class _Pedido:
+        pass
+
+    resposta = main._limite_excedido(_Pedido(), None)
+    assert resposta.status_code == 429
+    corpo = json.loads(bytes(resposta.body).decode())
+    assert "detail" in corpo, "a interface lê a mensagem de `detail`"
+    assert "Aguarde" in corpo["detail"]
+    assert resposta.headers.get("retry-after") == "60"
 
 
 def test_desafio_adulterado(ambiente):

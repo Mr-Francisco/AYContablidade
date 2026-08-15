@@ -18,12 +18,21 @@ TRÊS DECISÕES QUE VALE A PENA EXPLICAR:
 3. A janela de tolerância é de UM passo (±30 s). Chega para relógios
    desalinhados e mantém o código válido cerca de um minuto. Aumentá-la é
    alargar a janela em que um código interceptado ainda serve.
+
+4. Um código já usado é RECUSADO mas não é tratado como código errado. A
+   diferença parece de pormenor e não é: com a janela de ±30 s, um telemóvel
+   meio passo adiantado leva o servidor a gravar um contador à frente do
+   relógio dele, e a tentativa seguinte cai em cima do contador gravado. Quem
+   tratasse isso como erro trancava a conta de quem não fez nada de mal — foi
+   o que aconteceu.
 """
 
 import base64
 import hashlib
 import hmac
 import secrets
+import time
+from typing import NamedTuple
 
 import pyotp
 import segno
@@ -116,33 +125,55 @@ def qr_svg(uri: str) -> str:
     )
 
 
-def verificar_codigo(segredo: str, codigo: str, ultimo_contador: int | None = None):
+class ResultadoCodigo(NamedTuple):
+    """O que aconteceu a um código.
+
+    `repetido` distingue o código ERRADO do código CERTO MAS JÁ USADO. Sem essa
+    distinção os dois caminhos eram o mesmo, e isso custou caro: quem entrasse
+    logo a seguir a configurar o 2FA — com o código que ainda estava no ecrã do
+    telemóvel — era informado de que o código estava incorrecto, e a tentativa
+    contava para o bloqueio da conta. Três dessas e a conta ficava trancada
+    quinze minutos, sem nada de errado ter acontecido.
+    """
+
+    valido: bool
+    contador: int | None = None
+    repetido: bool = False
+
+
+def verificar_codigo(
+    segredo: str, codigo: str, ultimo_contador: int | None = None
+) -> ResultadoCodigo:
     """Verifica um código TOTP.
 
-    Devolve `(valido, contador)`. O contador é o passo de tempo que validou o
-    código e tem de ser GRAVADO: um código continua válido durante cerca de um
-    minuto, e sem guardar o contador o mesmo código serve duas vezes. Quem
-    intercepte um código usado tem uma janela para o repetir.
+    Devolve `(valido, contador, repetido)`. O contador é o passo de tempo que
+    validou o código e tem de ser GRAVADO: um código continua válido durante
+    cerca de um minuto, e sem guardar o contador o mesmo código serve duas
+    vezes. Quem intercepte um código usado tem uma janela para o repetir.
 
     A comparação é feita pelo `pyotp`, que usa `hmac.compare_digest` — o tempo
     de resposta não revela quantos dígitos estavam certos.
     """
     limpo = "".join(c for c in (codigo or "") if c.isdigit())
     if len(limpo) != 6:
-        return False, None
+        return ResultadoCodigo(False)
 
     totp = pyotp.TOTP(segredo)
-    agora_contador = totp.timecode(__import__("datetime").datetime.now())
+    # `time.time()` e não `datetime.now()`: o TOTP conta segundos desde a época,
+    # que é a mesma em qualquer fuso. O caminho pelo `datetime` ingénuo passava
+    # pelo fuso do processo e só dava certo por o `mktime` desfazer a conversão.
+    agora_contador = int(time.time()) // totp.interval
 
     for desvio in range(-JANELA, JANELA + 1):
         contador = agora_contador + desvio
         esperado = totp.generate_otp(contador)
         if hmac.compare_digest(esperado, limpo):
-            # Já usado: recusa, mesmo estando dentro da janela.
+            # Certo, mas já gasto. Recusa-se à mesma — é isto que impede a
+            # repetição — mas quem chama tem de saber que a diferença existe.
             if ultimo_contador is not None and contador <= ultimo_contador:
-                return False, None
-            return True, contador
-    return False, None
+                return ResultadoCodigo(False, None, repetido=True)
+            return ResultadoCodigo(True, contador)
+    return ResultadoCodigo(False)
 
 
 # ---------------------------------------------------------------------------

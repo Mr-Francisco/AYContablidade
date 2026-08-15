@@ -160,3 +160,9 @@
 - `usePaginacao` devolve `reiniciar`/`controlos` estáveis (`useCallback`/`useMemo`): recriados a cada render, entram em `useEffect` e dão ciclo de renderizações.
 - Mapa que se imprime não pagina nem revela por partes: as linhas escondidas não estão no DOM e o papel sai truncado por baixo do total certo. Caixa com scroll (`CaixaHistorico`) e `@media print` a abri-la.
 - Asserções sobre código-fonte procuram a CHAMADA (`useHistorico(`) e não a palavra: um comentário a explicar porque não se usa fazia falhar o teste.
+- Lixo na base de dev nem sempre vem dos testes: `por` com o nome de uma pessoa (`Ana Gerente`) diz que veio do router/UI, que faz `commit` — o pytest não preenche `por` e fica-se por `sistema`. Confirmar a origem antes de acusar o `rollback` do fixture.
+- Um teste que corre contra a base real e se defende só com `rollback` está limpo por hábito, não por construção: basta um `commit` aparecer num serviço. Abrir a transacção na LIGAÇÃO e entrar por SAVEPOINT (`SessionLocal(bind=ligacao, join_transaction_mode="create_savepoint")`) — aí um `commit` lá dentro não sai.
+- `notificar(..., alvo_id=obj.id)` antes do `flush` grava `alvo_id` nulo: o `default=uuid4` do `UUIDMixin` só corre no INSERT, e até lá `obj.id` é `None`.
+- Código TOTP certo mas já usado NÃO é código errado: recusa-se à mesma, mas não conta para o bloqueio e a mensagem diz para esperar pelo seguinte. Tratá-los como iguais trancava a conta de quem entrava logo a seguir a configurar o 2FA.
+- O tratador do slowapi responde `{"error": "..."}` em inglês; a interface lê `detail` e mostrava «Erro 429». Tratador próprio, em PT-PT, com `Retry-After`.
+- Contador TOTP a partir de `time.time()` e não de `datetime.now()` ingénuo: o passo conta segundos desde a época, iguais em qualquer fuso.
