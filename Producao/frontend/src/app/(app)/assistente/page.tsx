@@ -4,6 +4,7 @@ import {
   ChevronDown,
   Eye,
   Info,
+  PanelLeft,
   Send,
   ShieldCheck,
   Sparkles,
@@ -20,6 +21,7 @@ import {
 } from "react";
 import useSWR from "swr";
 
+import { HistoricoConversas } from "@/components/ia/HistoricoConversas";
 import { mesPorExtenso, ultimosMeses } from "@/components/rh/mes";
 import {
   Alerta,
@@ -78,6 +80,9 @@ export default function Assistente() {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [ajustesAbertos, setAjustesAbertos] = useState(false);
+  /** Conversa aberta ao centro: `null` é a nova, um id é uma do histórico. */
+  const [activa, setActiva] = useState<string | null>(null);
+  const [historicoAberto, setHistoricoAberto] = useState(false);
 
   const fim = useRef<HTMLDivElement | null>(null);
   const campo = useRef<HTMLTextAreaElement | null>(null);
@@ -97,7 +102,7 @@ export default function Assistente() {
     buscador,
     { revalidateOnFocus: false },
   );
-  const { data: historico } = useSWR<ConsultaIa[]>(
+  const { data: historico, mutate: mutarHistorico } = useSWR<ConsultaIa[]>(
     temEmpresa ? "/api/ia/historico?so_minhas=true&limite=20" : null,
     buscador,
     { revalidateOnFocus: false },
@@ -105,27 +110,38 @@ export default function Assistente() {
 
   const exId = exercicioId || activo?.id || "";
 
-  // O histórico entra na conversa em vez de viver numa coluna à parte: quem
-  // volta a esta página encontra o fio onde o deixou, e não um ecrã vazio.
-  // Mais antigo em cima, como em qualquer conversa.
-  const anteriores = useMemo<Troca[]>(
-    () =>
-      [...(historico ?? [])].reverse().map((c) => ({
-        id: c.id,
-        pergunta: c.pergunta,
-        resposta: c.resposta,
-        erro: c.erro,
-        modelo: c.modelo,
-        entidades: c.entidades_pseudonimizadas,
-        tokens: null,
-        duracao: c.duracao_ms,
-        ambitos: c.contexto?.ambitos ?? [],
-        quando: c.criado_em,
-      })),
-    [historico],
+  /**
+   * O QUE ESTÁ AO CENTRO — uma conversa, e só uma.
+   *
+   * Antes era o histórico inteiro despejado por cima da caixa de escrita:
+   * abrir a página dava vinte perguntas antigas para rolar antes de chegar à
+   * que se ia fazer. O histórico é navegação e vive na coluna da esquerda;
+   * aqui fica a conversa escolhida, ou a que está a decorrer.
+   */
+  const escolhida = useMemo(
+    () => (historico ?? []).find((c) => c.id === activa) ?? null,
+    [historico, activa],
   );
 
-  const fio = [...anteriores, ...trocas];
+  const fio = useMemo<Troca[]>(() => {
+    if (activa && escolhida) {
+      return [
+        {
+          id: escolhida.id,
+          pergunta: escolhida.pergunta,
+          resposta: escolhida.resposta,
+          erro: escolhida.erro,
+          modelo: escolhida.modelo,
+          entidades: escolhida.entidades_pseudonimizadas,
+          tokens: null,
+          duracao: escolhida.duracao_ms,
+          ambitos: escolhida.contexto?.ambitos ?? [],
+          quando: escolhida.criado_em,
+        },
+      ];
+    }
+    return trocas;
+  }, [activa, escolhida, trocas]);
 
   // Escolhe todos os âmbitos na primeira carga: perguntar é o que a pessoa vem
   // cá fazer, e obrigá-la a escolher contextos antes disso é um degrau à porta.
@@ -191,6 +207,9 @@ export default function Assistente() {
       );
     }
 
+    // Perguntar é sempre na conversa nova: se estivesse aberta uma do
+    // histórico, a resposta apareceria debaixo de outra pergunta.
+    setActiva(null);
     const temporario = `a-decorrer-${Date.now()}`;
     setTrocas((v) => [
       ...v,
@@ -217,6 +236,8 @@ export default function Assistente() {
 
     try {
       const r = await api.post<RespostaIa>("/api/ia/perguntar", corpo(limpo));
+      // A consulta ficou gravada: a coluna da esquerda tem de a mostrar.
+      mutarHistorico();
       setTrocas((v) =>
         v.map((t) =>
           t.id === temporario
@@ -303,176 +324,234 @@ export default function Assistente() {
     );
   }
 
+  const historicoDaColuna = (
+    <HistoricoConversas
+      consultas={historico ?? []}
+      activa={activa}
+      aAcontecer={trocas.length > 0}
+      aoEscolher={(id) => {
+        setActiva(id);
+        setHistoricoAberto(false);
+      }}
+      aoNova={() => {
+        setActiva(null);
+        setTrocas([]);
+        setHistoricoAberto(false);
+        campo.current?.focus();
+      }}
+    />
+  );
+
   return (
-    <div className="flex min-h-[calc(100vh-140px)] min-w-0 flex-col">
-      {/* ---------------------------------------------------------------
+    /* DUAS COLUNAS: o histórico à esquerda, a conversa ao centro. Em ecrã
+       estreito a coluna vira gaveta — a conversa não cabe ao lado de nada. */
+    <div className="flex min-h-[calc(100vh-140px)] min-w-0 gap-5">
+      <aside className="sticky top-2 hidden h-[calc(100vh-160px)] w-[264px] shrink-0 flex-col lg:flex">
+        {historicoDaColuna}
+      </aside>
+
+      <div className="flex min-h-[calc(100vh-140px)] min-w-0 flex-1 flex-col">
+        {/* ---------------------------------------------------------------
           Cabeçalho compacto. A conversa é o que importa nesta página, por
           isso o título não ocupa o espaço habitual de uma página de gestão.
       ---------------------------------------------------------------- */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borda pb-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-marca/10 text-marca">
-            <Sparkles size={16} />
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-[17px] font-bold leading-tight tracking-[-0.2px]">
-              Assistente
-            </h1>
-            <p className="truncate text-xs text-texto-suave">
-              Responde a partir dos dados a que tem acesso.
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borda pb-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              aria-label="Abrir o histórico de conversas"
+              onClick={() => setHistoricoAberto(true)}
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-borda text-texto-suave transition-colors hover:border-marca hover:text-marca lg:hidden"
+            >
+              <PanelLeft size={15} />
+            </button>
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-marca/10 text-marca">
+              <Sparkles size={16} />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-[17px] font-bold leading-tight tracking-[-0.2px]">
+                Assistente
+              </h1>
+              <p className="truncate text-xs text-texto-suave">
+                Responde a partir dos dados a que tem acesso.
+              </p>
+            </div>
           </div>
+          {estado && (
+            <Selo cor={estado.disponivel ? "#1a9c5f" : "#c98a10"}>
+              {estado.disponivel
+                ? `Operacional — ${estado.modelo}`
+                : estado.desligada_pela_plataforma
+                  ? "Desligado pela administração"
+                  : "Sem chave configurada"}
+            </Selo>
+          )}
         </div>
-        {estado && (
-          <Selo cor={estado.disponivel ? "#1a9c5f" : "#c98a10"}>
-            {estado.disponivel
-              ? `Operacional — ${estado.modelo}`
-              : estado.desligada_pela_plataforma
-                ? "Desligado pela administração"
-                : "Sem chave configurada"}
-          </Selo>
-        )}
-      </div>
 
-      {/* ---------------------------------------------------------------
+        {/* ---------------------------------------------------------------
           A CONVERSA. Cresce para baixo e ocupa o espaço todo — é o centro
           da página e não um cartão entre outros.
       ---------------------------------------------------------------- */}
-      <div className="min-w-0 flex-1 overflow-y-auto py-5">
-        {!fio.length ? (
-          <Comeco
-            indisponivel={Boolean(indisponivel)}
-            aoEscolher={(s) => {
-              setPergunta(s);
-              campo.current?.focus();
-            }}
-          />
-        ) : (
-          <div className="mx-auto flex min-w-0 max-w-[760px] flex-col gap-6">
-            {fio.map((t) => (
-              <TrocaNaConversa key={t.id} troca={t} nome={utilizador?.nome} />
-            ))}
-          </div>
-        )}
-        <div ref={fim} />
-      </div>
+        <div className="min-w-0 flex-1 overflow-y-auto py-5">
+          {!fio.length ? (
+            <Comeco
+              indisponivel={Boolean(indisponivel)}
+              aoEscolher={(s) => {
+                setPergunta(s);
+                campo.current?.focus();
+              }}
+            />
+          ) : (
+            <div className="mx-auto flex min-w-0 max-w-[760px] flex-col gap-6">
+              {fio.map((t) => (
+                <TrocaNaConversa key={t.id} troca={t} nome={utilizador?.nome} />
+              ))}
+            </div>
+          )}
+          <div ref={fim} />
+        </div>
 
-      {/* ---------------------------------------------------------------
+        {/* ---------------------------------------------------------------
           O campo fica em baixo e sempre à vista, como em qualquer conversa.
       ---------------------------------------------------------------- */}
-      <div className="sticky bottom-0 min-w-0 border-t border-borda bg-fundo pb-4 pt-3">
-        <div className="mx-auto min-w-0 max-w-[760px]">
-          {erro && (
-            <Alerta tipo="erro" className="mb-2">
-              {erro}
-            </Alerta>
-          )}
+        <div className="sticky bottom-0 min-w-0 border-t border-borda bg-fundo pb-4 pt-3">
+          <div className="mx-auto min-w-0 max-w-[760px]">
+            {erro && (
+              <Alerta tipo="erro" className="mb-2">
+                {erro}
+              </Alerta>
+            )}
 
-          {indisponivel && (
-            <Alerta tipo="aviso" className="mb-2">
-              {estado?.desligada_pela_plataforma
-                ? "O assistente foi desligado pela administração da plataforma."
-                : "Falta a chave da OpenAI nas variáveis de ambiente."}{" "}
-              O <b>Diagnóstico</b> continua a funcionar — corre inteiramente no
-              servidor, por regras, sem contactar nenhuma API externa.
-            </Alerta>
-          )}
+            {indisponivel && (
+              <Alerta tipo="aviso" className="mb-2">
+                {estado?.desligada_pela_plataforma
+                  ? "O assistente foi desligado pela administração da plataforma."
+                  : "Falta a chave da OpenAI nas variáveis de ambiente."}{" "}
+                O <b>Diagnóstico</b> continua a funcionar — corre inteiramente
+                no servidor, por regras, sem contactar nenhuma API externa.
+              </Alerta>
+            )}
 
-          <form onSubmit={submeter}>
-            <div className="rounded-2xl border border-borda bg-superficie p-2 shadow-suave focus-within:border-marca">
-              <textarea
-                ref={campo}
-                value={pergunta}
-                onChange={(e) => setPergunta(e.target.value)}
-                onKeyDown={teclas}
-                rows={2}
-                maxLength={2000}
-                disabled={ocupado}
-                placeholder="Escreva a sua pergunta…"
-                className="w-full resize-none bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-texto-suave disabled:opacity-60"
-              />
+            <form onSubmit={submeter}>
+              <div className="rounded-2xl border border-borda bg-superficie p-2 shadow-suave focus-within:border-marca">
+                <textarea
+                  ref={campo}
+                  value={pergunta}
+                  onChange={(e) => setPergunta(e.target.value)}
+                  onKeyDown={teclas}
+                  rows={2}
+                  maxLength={2000}
+                  disabled={ocupado}
+                  placeholder="Escreva a sua pergunta…"
+                  className="w-full resize-none bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-texto-suave disabled:opacity-60"
+                />
 
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1 pt-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setAjustesAbertos((a) => !a)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-borda px-2.5 py-1 text-xs font-semibold text-texto-suave transition-colors hover:border-marca hover:text-marca"
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1 pt-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setAjustesAbertos((a) => !a)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-borda px-2.5 py-1 text-xs font-semibold text-texto-suave transition-colors hover:border-marca hover:text-marca"
+                    >
+                      <ChevronDown
+                        size={13}
+                        className={
+                          ajustesAbertos
+                            ? "rotate-180 transition-transform"
+                            : "transition-transform"
+                        }
+                      />
+                      {plural(ambitos.length, "contexto")}
+                      {mes && ` · ${mesPorExtenso(`2000-${mes}`)}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={verContexto}
+                      disabled={ocupado}
+                      className="inline-flex items-center gap-1 rounded-lg border border-borda px-2.5 py-1 text-xs font-semibold text-texto-suave transition-colors hover:border-marca hover:text-marca disabled:opacity-50"
+                    >
+                      <Eye size={13} />
+                      Ver o que é enviado
+                    </button>
+                  </div>
+
+                  <Botao
+                    type="submit"
+                    variante="primario"
+                    tamanho="pequeno"
+                    disabled={
+                      ocupado || !pergunta.trim() || Boolean(indisponivel)
+                    }
+                    motivoBloqueio={
+                      indisponivel
+                        ? String(indisponivel)
+                        : ocupado
+                          ? "A responder — aguarde."
+                          : "Escreva a pergunta primeiro."
+                    }
                   >
-                    <ChevronDown
-                      size={13}
-                      className={
-                        ajustesAbertos
-                          ? "rotate-180 transition-transform"
-                          : "transition-transform"
-                      }
-                    />
-                    {plural(ambitos.length, "contexto")}
-                    {mes && ` · ${mesPorExtenso(`2000-${mes}`)}`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={verContexto}
-                    disabled={ocupado}
-                    className="inline-flex items-center gap-1 rounded-lg border border-borda px-2.5 py-1 text-xs font-semibold text-texto-suave transition-colors hover:border-marca hover:text-marca disabled:opacity-50"
-                  >
-                    <Eye size={13} />
-                    Ver o que é enviado
-                  </button>
+                    <Send size={14} />
+                    {ocupado ? "A perguntar…" : "Perguntar"}
+                  </Botao>
                 </div>
-
-                <Botao
-                  type="submit"
-                  variante="primario"
-                  tamanho="pequeno"
-                  disabled={
-                    ocupado || !pergunta.trim() || Boolean(indisponivel)
-                  }
-                  motivoBloqueio={
-                    indisponivel
-                      ? String(indisponivel)
-                      : ocupado
-                        ? "A responder — aguarde."
-                        : "Escreva a pergunta primeiro."
-                  }
-                >
-                  <Send size={14} />
-                  {ocupado ? "A perguntar…" : "Perguntar"}
-                </Botao>
               </div>
-            </div>
-          </form>
+            </form>
 
-          {ajustesAbertos && (
-            <Ajustes
-              disponiveis={disponiveis}
-              ambitos={ambitos}
-              setAmbitos={setAmbitos}
-              exercicios={exercicios}
-              exId={exId}
-              setExercicioId={setExercicioId}
-              mes={mes}
-              setMes={setMes}
-              incluirDiagnostico={incluirDiagnostico}
-              setIncluirDiagnostico={setIncluirDiagnostico}
-            />
-          )}
+            {ajustesAbertos && (
+              <Ajustes
+                disponiveis={disponiveis}
+                ambitos={ambitos}
+                setAmbitos={setAmbitos}
+                exercicios={exercicios}
+                exId={exId}
+                setExercicioId={setExercicioId}
+                mes={mes}
+                setMes={setMes}
+                incluirDiagnostico={incluirDiagnostico}
+                setIncluirDiagnostico={setIncluirDiagnostico}
+              />
+            )}
 
-          <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-texto-suave">
-            <Info size={12} className="mt-0.5 shrink-0" aria-hidden />
-            <span>
-              Nenhum dado pessoal sai do sistema — nomes viram pseudónimos e
-              NIF, IBAN, e-mail, telefone e morada são removidos antes de
-              qualquer envio. Cada pergunta é respondida por si só: o assistente
-              não recorda as anteriores.
-            </span>
-          </p>
+            <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-texto-suave">
+              <Info size={12} className="mt-0.5 shrink-0" aria-hidden />
+              <span>
+                Nenhum dado pessoal sai do sistema — nomes viram pseudónimos e
+                NIF, IBAN, e-mail, telefone e morada são removidos antes de
+                qualquer envio. Cada pergunta é respondida por si só: o
+                assistente não recorda as anteriores.
+              </span>
+            </p>
+          </div>
         </div>
+
+        {previa && (
+          <ModalPrevia previa={previa} aoFechar={() => setPrevia(null)} />
+        )}
       </div>
 
-      {previa && (
-        <ModalPrevia previa={previa} aoFechar={() => setPrevia(null)} />
-      )}
+      {/* Em ecrã estreito o histórico é uma gaveta — o mesmo conteúdo. */}
+      <Dialog.Root open={historicoAberto} onOpenChange={setHistoricoAberto}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 lg:hidden" />
+          <Dialog.Content className="fixed inset-y-0 left-0 z-50 flex w-[min(300px,88vw)] flex-col border-r border-borda bg-fundo p-4 shadow-forte lg:hidden">
+            <div className="mb-2 flex items-center justify-between">
+              <Dialog.Title className="text-[13px] font-bold">
+                Conversas
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  aria-label="Fechar"
+                  className="flex size-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+                >
+                  <X size={15} />
+                </button>
+              </Dialog.Close>
+            </div>
+            {historicoDaColuna}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

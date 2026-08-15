@@ -4,7 +4,7 @@ import { Menu, Moon, Sun, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog, DropdownMenu } from "radix-ui";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useState } from "react";
 
 import { EtiquetaExercicio } from "@/components/layout/EtiquetaExercicio";
 import { iconeNav } from "@/components/layout/iconesNav";
@@ -16,10 +16,9 @@ import {
   grupoDaRota,
   type ItemNav,
   itemActivo,
-  NAV,
 } from "@/lib/navegacao";
+import { useNavegacaoVisivel } from "@/lib/navegacaoVisivel";
 import { cn } from "@/lib/utils";
-import type { Modulo } from "@/types";
 
 const COR_PERFIL: Record<string, string> = {
   superadmin: "#6c2fb0",
@@ -45,48 +44,13 @@ const ROTULO_PERFIL: Record<string, string> = {
 
 export function Cabecalho() {
   const caminho = usePathname();
-  const { utilizador, empresa, pode, moduloAtivo, sair } = useAuth();
+  const { utilizador, empresa, sair } = useAuth();
   const { tema, alternar } = useTema();
   const [menuAberto, setMenuAberto] = useState(false);
 
-  const itemVisivel = useMemo(
-    () => (item: ItemNav) => {
-      if (item.perfis?.length) {
-        const p = utilizador?.perfil;
-        return (
-          !!p &&
-          (item.perfis.includes(p) ||
-            (p === "superadmin" && item.perfis.includes("admin")))
-        );
-      }
-      return item.cap ? pode(item.cap) : true;
-    },
-    [utilizador, pode],
-  );
-
-  const grupoVisivel = useMemo(
-    () => (g: GrupoNav) => {
-      // Uma conta de administração da plataforma não pertence a empresa
-      // nenhuma. Oferecer-lhe Contabilidade ou RH era oferecer portas que dão
-      // para uma parede: essas rotas consultam dados de uma empresa e
-      // respondem 400 a quem não tem nenhuma.
-      if (utilizador && !utilizador.empresa_id) return Boolean(g.daPlataforma);
-      if (g.modulo && !moduloAtivo(g.modulo as Modulo)) return false;
-      if (g.filhos) return g.filhos.some(itemVisivel);
-      if (g.perfis?.length) {
-        const p = utilizador?.perfil;
-        return (
-          !!p &&
-          (g.perfis.includes(p) ||
-            (p === "superadmin" && g.perfis.includes("admin")))
-        );
-      }
-      return true;
-    },
-    [moduloAtivo, itemVisivel, utilizador],
-  );
-
-  const grupos = useMemo(() => NAV.filter(grupoVisivel), [grupoVisivel]);
+  // As mesmas regras que o acesso rápido do assistente usa — uma cópia só
+  // (`lib/navegacaoVisivel.ts`), para a barra e o atalho nunca discordarem.
+  const { grupos, itemVisivel } = useNavegacaoVisivel();
   const grupoActivo = grupoDaRota(caminho);
 
   const iniciais =

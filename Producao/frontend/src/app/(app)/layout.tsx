@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { AcessoRapido } from "@/components/layout/AcessoRapido";
 import { AvisoDeSeguranca } from "@/components/layout/AvisoDeSeguranca";
 import { Cabecalho } from "@/components/layout/Cabecalho";
 import { ACarregar } from "@/components/ui";
@@ -48,6 +49,10 @@ export default function LayoutAplicacao({
           {children}
         </div>
       </main>
+
+      {/* O «+» dos módulos. Aqui, e não em cada página: é o mesmo atalho em
+          todo o lado, e num sítio só não há hipótese de divergir. */}
+      <AcessoRapido />
     </div>
   );
 }

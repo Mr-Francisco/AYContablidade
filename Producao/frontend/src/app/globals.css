@@ -83,7 +83,12 @@
   --grafico-5: #ff6fbb;
   --grafico-6: #2ec7a9;
   --grafico-7: #a1a1b8;
-  --gradiente-marca: linear-gradient(100deg, #16264a 0%, #2b5da8 100%);
+  /* O AZUL DO PILOTO, recuperado.
+     O Piloto usa `#0b3d91 → #3d7fe0` nos DOIS temas — é o azul que identifica
+     o produto. Aqui estava `#16264a → #2b5da8`, que no escuro lê como cinzento
+     azulado e não como a marca. Volta à mesma família, um passo mais claro
+     para não afundar no fundo escuro, e sem chegar ao lavado. */
+  --gradiente-marca: linear-gradient(100deg, #0e46a0 0%, #4a86e8 100%);
   /* No escuro fica ENTRE o fundo (#0c1220) e a superfície dos cartões
      (#141b2b): o painel destaca-se do fundo e os cartões destacam-se do
      painel. Ao contrário, os cartões afundavam. */

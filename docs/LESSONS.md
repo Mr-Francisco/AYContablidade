@@ -187,3 +187,7 @@
 - Regra do `disabled` verificada por teste (`test_nenhum_botao_bloqueia_sem_dizer_porque`) e por aviso na consola em dev — a regra sem guarda volta a partir-se no ficheiro seguinte.
 - Tabela larga (mapas fiscais): `min-width` na TABELA + `overflow-x` na caixa — nunca deixar a página ganhar scroll horizontal.
 - Cabeçalho de grupo em tabelas com colunas homónimas («Base Tributável» da SS e do IRT) não é decoração: sem ele a coluna não se identifica.
+- Um atalho global (o «+» dos módulos) vive no `layout`, não em cada página: nasceu no assistente e já teve de mudar de sítio.
+- Regras de visibilidade de navegação só podem existir num sítio: `useNavegacaoVisivel` serve a barra de topo e o acesso rápido, senão um esconde o que o outro oferece.
+- Histórico não é conversa: fica em coluna à parte, agrupado por dia, com a linha activa marcada — despejá-lo no fio obriga a rolar o passado para chegar ao presente.
+- No PATCH de um mestre, não excluir o campo que identifica o registo (o número): quem o corrige vê-o voltar ao antigo em silêncio.
