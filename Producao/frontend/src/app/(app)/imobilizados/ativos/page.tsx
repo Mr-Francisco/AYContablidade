@@ -4,7 +4,7 @@ import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { AlertDialog, Dialog } from "radix-ui";
 import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { CampoConta } from "@/components/contabilidade/CampoConta";
 import {
   ACarregar,
   Alerta,
@@ -27,7 +27,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
-import { useContas } from "@/lib/hooks";
+
 import { numeroLimpo } from "@/lib/texto";
 import type { Ativo } from "@/types";
 
@@ -339,7 +339,6 @@ function FormularioAtivo({
   aoFechar: () => void;
   aoGravar: () => void;
 }) {
-  const { contas } = useContas({ soMovimento: true });
   const { data: metodos } = useSWR<{ cod: string; nome: string }[]>(
     "/api/imobilizados/metodos",
     buscador,
@@ -425,11 +424,6 @@ function FormularioAtivo({
       setAGravar(false);
     }
   }
-
-  const opcoesContas = contas.map((c) => ({
-    valor: c.codigo,
-    rotulo: `${c.codigo} — ${c.nome}`,
-  }));
 
   return (
     <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
@@ -550,31 +544,34 @@ function FormularioAtivo({
               </Alerta>
             )}
 
+            {/* TRÊS CAMPOS DE CONTA, e não três caixas de opções.
+                Cada caixa desenhava o plano de contas inteiro — mil e
+                seiscentas entradas, três vezes, quase cinco mil elementos numa
+                janela só. Abria devagar e obrigava a rolar até encontrar.
+
+                O `CampoConta` é o que a Produção já usa nos lançamentos e no
+                extracto, e é o que o Piloto faz: escreve-se o código de cor, ou
+                carrega-se em F4 e procura-se na árvore. Valida enquanto se
+                escreve e diz o nome da conta por baixo. */}
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <Selector
-                rotulo="Conta do imobilizado"
-                valor={campos.conta_imob}
-                aoMudar={(v) => alterar("conta_imob", v)}
-                opcoes={opcoesContas}
-                placeholder="Escolher…"
-                larguraMinima="100%"
-              />
-              <Selector
-                rotulo="Amortizações acumuladas"
-                valor={campos.conta_amort_acum}
-                aoMudar={(v) => alterar("conta_amort_acum", v)}
-                opcoes={opcoesContas}
-                placeholder="Escolher…"
-                larguraMinima="100%"
-              />
-              <Selector
-                rotulo="Custo da amortização"
-                valor={campos.conta_custo_amort}
-                aoMudar={(v) => alterar("conta_custo_amort", v)}
-                opcoes={opcoesContas}
-                placeholder="Escolher…"
-                larguraMinima="100%"
-              />
+              <Campo rotulo="Conta do imobilizado" dica="F4 procura">
+                <CampoConta
+                  valor={campos.conta_imob}
+                  aoMudar={(v) => alterar("conta_imob", v)}
+                />
+              </Campo>
+              <Campo rotulo="Amortizações acumuladas" dica="F4 procura">
+                <CampoConta
+                  valor={campos.conta_amort_acum}
+                  aoMudar={(v) => alterar("conta_amort_acum", v)}
+                />
+              </Campo>
+              <Campo rotulo="Custo da amortização" dica="F4 procura">
+                <CampoConta
+                  valor={campos.conta_custo_amort}
+                  aoMudar={(v) => alterar("conta_custo_amort", v)}
+                />
+              </Campo>
             </div>
             <p className="mt-2 text-xs text-texto-suave">
               Sem a conta de custo e a de amortizações acumuladas, o activo

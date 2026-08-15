@@ -65,10 +65,29 @@ export function CampoConta({
 
   // Só as de movimento no datalist: são as únicas que o servidor aceita, e
   // sugerir uma integradora seria sugerir um erro.
-  const sugestoes = useMemo(
-    () => contas.filter((c) => c.ativa && ehMovimento(c, contas)),
-    [contas],
-  );
+  //
+  // E SÓ DEPOIS DE SE ESCREVER ALGO. O datalist tinha as mil e seiscentas
+  // contas de cada vez, em cada campo — na ficha de um activo eram três campos,
+  // três mil elementos numa janela que ainda nem se tinha usado, e a janela
+  // abria devagar por causa disso. Uma sugestão para um campo vazio também não
+  // sugere nada: é a lista toda por ordem de código.
+  //
+  // Cinquenta chega: é mais do que cabe na caixa de sugestões do browser, e
+  // quem tem mais do que cinquenta contas a começar pelo que escreveu escreve
+  // mais um algarismo.
+  const sugestoes = useMemo(() => {
+    const q = valor.trim().toLowerCase();
+    if (!q) return [];
+    return contas
+      .filter(
+        (c) =>
+          c.ativa &&
+          ehMovimento(c, contas) &&
+          (c.codigo.toLowerCase().startsWith(q) ||
+            c.nome.toLowerCase().includes(q)),
+      )
+      .slice(0, 50);
+  }, [contas, valor]);
 
   return (
     <div className={cn("min-w-0", className)}>

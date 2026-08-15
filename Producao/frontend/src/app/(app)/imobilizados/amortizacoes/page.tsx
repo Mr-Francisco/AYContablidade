@@ -74,6 +74,7 @@ export default function Amortizacoes() {
 
   const nomePeriodo =
     periodos.find((p) => p.codigo === mes)?.nome ?? `Período ${mes}`;
+  const exercicioNome = exercicios.find((e) => e.id === exId)?.nome ?? "";
   const jaProcessado = mapaPeriodo?.processado ?? false;
   // O período 00 é a Abertura, não é um mês: não tem amortização nenhuma.
   const ehAbertura = mes === "00";
@@ -263,9 +264,19 @@ export default function Amortizacoes() {
           )}
 
           <Cartao className="p-0">
-            <TituloCartao className="px-5 pt-5" extra={nomePeriodo}>
-              Quotas do período
-            </TituloCartao>
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-borda px-5 py-3.5">
+              <div>
+                <b>{empresa?.nome}</b>
+                <br />
+                <span className="text-[12.5px] text-texto-suave">
+                  Mapa de Amortizações — {exercicioNome}
+                  {nomePeriodo ? ` · ${nomePeriodo}` : ""}
+                </span>
+              </div>
+              <Selo cor={jaProcessado ? "#1a9c5f" : "#c98a10"}>
+                {jaProcessado ? "Processado" : "Por processar"}
+              </Selo>
+            </div>
             {aCarregarPeriodo ? (
               <ACarregar />
             ) : !mapaPeriodo?.linhas.length ? (
@@ -282,10 +293,11 @@ export default function Amortizacoes() {
                       <Th>Código</Th>
                       <Th>Designação</Th>
                       <Th>Conta</Th>
-                      <Th numerico>Valor bruto</Th>
-                      <Th numerico>Acum. actual</Th>
-                      <Th numerico>Líquido actual</Th>
-                      <Th numerico>Quota do período</Th>
+                      <Th>Método</Th>
+                      <Th numerico>Taxa</Th>
+                      <Th numerico>Amort. acumulada</Th>
+                      <Th numerico>Amort. do período</Th>
+                      <Th numerico>Valor líquido</Th>
                       <Th>Lançado</Th>
                     </tr>
                   </thead>
@@ -299,15 +311,22 @@ export default function Amortizacoes() {
                         <Td className="tabular text-texto-suave">
                           {l.conta || "—"}
                         </Td>
-                        <Td numerico>{formataMoeda(l.valor_bruto, moeda)}</Td>
+                        <Td className="text-texto-suave">
+                          {l.metodo === "decrescente"
+                            ? "Quotas Decrescentes"
+                            : "Quotas Constantes"}
+                        </Td>
+                        <Td numerico className="text-texto-suave">
+                          {l.taxa}%
+                        </Td>
                         <Td numerico>
                           {formataMoeda(l.amort_acumulada_atual, moeda)}
                         </Td>
-                        <Td numerico>
-                          {formataMoeda(l.valor_liquido_atual, moeda)}
-                        </Td>
                         <Td numerico className="font-semibold">
                           {formataMoeda(l.valor_periodo, moeda)}
+                        </Td>
+                        <Td numerico>
+                          {formataMoeda(l.valor_liquido_atual, moeda)}
                         </Td>
                         <Td>
                           {l.ja_processado ? (
@@ -323,11 +342,11 @@ export default function Amortizacoes() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-borda font-bold">
-                      <Td colSpan={6}>Total do período</Td>
+                      <Td colSpan={6}>TOTAL DO PERÍODO</Td>
                       <Td numerico>
                         {formataMoeda(mapaPeriodo.total_periodo, moeda)}
                       </Td>
-                      <Td />
+                      <Td colSpan={2} />
                     </tr>
                   </tfoot>
                 </Tabela>

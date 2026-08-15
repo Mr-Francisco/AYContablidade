@@ -172,3 +172,5 @@
 - «Não foi possível carregar X» é quase sempre mentira: o servidor respondeu e explicou (401 sessão, 400 conta sem empresa, 403 permissão, 402 licença). Mostrar `error.mensagemUtilizador` e nunca uma frase genérica — `components/ui/FalhaAoCarregar.tsx`.
 - Conjunto VAZIO não é erro: uma empresa nova ou um período sem movimentos pintado de vermelho faz duvidar do sistema no primeiro dia. Estado vazio em azul, com a frase do que falta.
 - Filtrar no cliente sobre uma página curta é pior do que sobre uma longa: com 10 por página, a pesquisa procurava em 10 linhas e dizia «nada encontrado» com o movimento a existir.
+- Caixa de opções com um catálogo inteiro (plano de contas, clientes) é a solução que pior envelhece: 1600 opções × 3 campos = 4800 nós numa janela. Campo com procura (`CampoConta` F4) ou botão que abre um selector pesquisável.
+- `<datalist>` só se enche depois de o utilizador escrever algo, e com um tecto (50): a lista toda para um campo vazio não sugere nada e é o que faz a janela abrir devagar. Mediu-se 3011 → 80 elementos.
