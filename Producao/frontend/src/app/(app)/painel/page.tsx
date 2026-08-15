@@ -5,7 +5,6 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
-  Info,
   Layers,
   Lightbulb,
   PieChart,
@@ -333,12 +332,7 @@ export default function Painel() {
 
   return (
     <div className="mt-5">
-      <Carrossel
-        paineis={paineis}
-        nota={
-        <div></div>
-        }
-      />
+      <Carrossel paineis={paineis} nota={<div></div>} />
     </div>
   );
 }
