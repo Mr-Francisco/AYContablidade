@@ -344,9 +344,13 @@ function Ribbon({
     s.itens.push(item);
   }
 
+  // `justify-center` com `min-w-max` por dentro: quando a faixa cabe, fica
+  // centrada; quando não cabe, o `min-w-max` manda e a barra de scroll aparece
+  // em vez de espremer os botões. Sem o `justify-center`, um módulo com poucos
+  // separadores ficava encostado à esquerda com meio ecrã vazio à direita.
   return (
-    <div className="sem-imprimir border-t border-borda bg-superficie-2 overflow-x-auto">
-      <div className="mx-auto flex min-w-max max-w-[1360px] items-stretch whitespace-nowrap px-2 pb-0.5 pt-1.5">
+    <div className="sem-imprimir flex justify-center overflow-x-auto border-t border-borda bg-superficie-2">
+      <div className="flex w-full max-w-[1360px] items-stretch whitespace-nowrap px-2 pb-0.5 pt-1.5">
         {seccoes.map((s, i) => (
           <Fragment key={s.nome}>
             {i > 0 && (
@@ -354,8 +358,8 @@ function Ribbon({
             )}
             {/* Coluna por secção: os botões em cima, o rótulo da secção por
                 baixo com um traço a separar — a forma do ribbon do Piloto. */}
-            <div className="flex flex-col items-center px-1">
-              <div className="flex flex-1 items-start gap-0.5">
+            <div className="flex grow flex-col items-center px-1">
+              <div className="flex w-full flex-1 items-start justify-center gap-0.5">
                 {s.itens.map((item) => {
                   const activo = itemActivo(caminho, item.href);
                   const traco = iconeNav(item.icone);
@@ -365,7 +369,7 @@ function Ribbon({
                       href={item.href}
                       title={item.rotulo}
                       className={cn(
-                        "flex w-[64px] shrink-0 flex-col items-center justify-start gap-[2px] rounded-lg px-0.5 py-1 text-center transition-colors",
+                        "flex min-w-[60px] max-w-[92px] flex-1 flex-col items-center justify-start gap-[2px] rounded-lg px-0.5 py-1 text-center transition-colors",
                         activo
                           ? "gradiente-marca text-white"
                           : "hover:bg-superficie",
@@ -373,7 +377,7 @@ function Ribbon({
                     >
                       <span
                         className={cn(
-                          "flex h-[21px] items-center justify-center",
+                          "flex h-[clamp(21px,1.7vw,26px)] items-center justify-center",
                           activo
                             ? "text-white"
                             : "text-texto-suave group-hover:text-acento",
@@ -383,17 +387,17 @@ function Ribbon({
                           <svg
                             viewBox="0 0 24 24"
                             aria-hidden="true"
-                            className="size-[19px] fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
+                            className="size-[clamp(19px,1.5vw,23px)] fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
                             // biome-ignore lint/security/noDangerouslySetInnerHtml: traçado SVG constante do nosso próprio iconesNav.ts — não há entrada de utilizador neste caminho.
                             dangerouslySetInnerHTML={{ __html: traco }}
                           />
                         ) : (
-                          <span className="size-[19px]" />
+                          <span className="size-[clamp(19px,1.5vw,23px)]" />
                         )}
                       </span>
                       <span
                         className={cn(
-                          "max-w-[62px] whitespace-normal text-[10.5px] font-semibold leading-[1.12]",
+                          "w-full whitespace-normal text-[clamp(10.5px,0.82vw,12px)] font-semibold leading-[1.12]",
                           activo ? "text-white" : "text-texto-suave",
                         )}
                       >
@@ -403,7 +407,7 @@ function Ribbon({
                   );
                 })}
               </div>
-              <div className="mt-0.5 w-full border-t border-borda pb-0.5 pt-[3px] text-center text-[9.5px] font-bold uppercase tracking-[0.6px] text-texto-suave">
+              <div className="mt-0.5 w-full border-t border-borda pb-0.5 pt-[3px] text-center text-[clamp(9.5px,0.72vw,11px)] font-bold uppercase tracking-[0.6px] text-texto-suave">
                 {s.nome}
               </div>
             </div>

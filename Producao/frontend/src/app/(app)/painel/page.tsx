@@ -336,11 +336,7 @@ export default function Painel() {
       <Carrossel
         paineis={paineis}
         nota={
-          <p className="mt-2 flex items-center justify-center gap-1.5 text-[12px] text-texto-suave">
-            <Info size={13} />
-            Utilize as setas laterais ou os indicadores para navegar entre os
-            painéis.
-          </p>
+        <div></div>
         }
       />
     </div>

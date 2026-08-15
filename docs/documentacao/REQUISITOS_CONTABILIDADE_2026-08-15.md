@@ -78,10 +78,22 @@ Piloto — visual e comportamento.
 Produção: «Não foi possível carregar o balancete do razão.» Mesmo
 comportamento do Piloto, incluindo como os dados são carregados.
 
-## 6. Balanço
+## 6. Balanço — ✅ aceite, com uma verificação adiada
 
-Ficar de acordo com a imagem e com o Piloto: estrutura, comportamento,
-componentes, filtros, dados e interacção. Não é só corrigir o erro visual.
+Estrutura, comportamento e apresentação conferidos contra o Piloto e a imagem:
+Activo à esquerda, Capital Próprio e Passivo à direita, com os números de nota,
+o selo «Equilibrado» e o filtro de período.
+
+**POR VERIFICAR — a coluna do exercício anterior.** A base tem hoje UM
+exercício por empresa, por isso essa coluna aparece a «—», tanto na Produção
+como na imagem de referência. Não se criaram dados fictícios só para a ver
+preenchida: um comparativo inventado não prova nada e fica na base a estorvar.
+
+Quando existir uma empresa com dois exercícios, confirmar:
+- a coluna do ano anterior traz os valores do exercício imediatamente anterior;
+- as linhas sem correspondência no ano anterior ficam a «—» e não a zero —
+  «0,00» diz que houve movimento nulo, «—» diz que não havia exercício;
+- o total do ano anterior fecha com o balanço desse ano.
 
 ## 7. Resultados
 
