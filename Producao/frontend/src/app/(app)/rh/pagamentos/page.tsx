@@ -1,6 +1,7 @@
 "use client";
 
 import { Banknote } from "lucide-react";
+import Link from "next/link";
 import { AlertDialog } from "radix-ui";
 import { useState } from "react";
 import useSWR from "swr";
@@ -8,6 +9,7 @@ import { GrelhaKpis } from "@/components/painel";
 import {
   ESTADOS_MES,
   mesActual,
+  mesDoExercicio,
   mesPorExtenso,
   ultimosMeses,
 } from "@/components/rh/mes";
@@ -38,7 +40,7 @@ import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
 import { useContas, useExercicios } from "@/lib/hooks";
 import { plural } from "@/lib/texto";
-import type { Folha, PagamentoSalarial } from "@/types";
+import type { Folha, MesAPagar } from "@/types";
 
 /** Os quatro números do topo, calculados sobre TUDO e não sobre a página. */
 interface ResumoPagamentos {
@@ -70,8 +72,11 @@ export default function Pagamentos() {
     buscador,
   );
   const pag = usePaginacao();
-  const { data: paginaPag, mutate } = useSWR<Pagina<PagamentoSalarial>>(
-    `/api/rh/pagamentos?${pag.query}`,
+  // Os MESES PROCESSADOS, e não só os pagamentos já feitos: quem entra aqui
+  // quer saber o que falta pagar. A lista de pagamentos mostrava o contrário —
+  // o que já estava resolvido.
+  const { data: paginaMeses, mutate } = useSWR<Pagina<MesAPagar>>(
+    `/api/rh/meses-a-pagar?${pag.query}`,
     buscador,
   );
 
@@ -110,7 +115,7 @@ export default function Pagamentos() {
     }
   }
 
-  const pagamentos = paginaPag?.linhas;
+  const meses = paginaMeses?.linhas;
 
   const kz = (v: string) => formataMoeda(v, moeda, 0);
   // Os quatro números do topo vêm do servidor e não desta página.
@@ -222,9 +227,15 @@ export default function Pagamentos() {
       )}
 
       <Cartao className="p-0">
-        <TituloCartao className="px-5 pt-5">Pagamentos registados</TituloCartao>
-        {!pagamentos?.length ? (
-          <Vazio>Ainda não há pagamentos registados.</Vazio>
+        <TituloCartao className="px-5 pt-5">Meses processados</TituloCartao>
+        {!meses?.length ? (
+          <Vazio>
+            Nenhum mês processado. A folha processa-se em{" "}
+            <Link href="/rh/processamento" className="font-semibold text-marca">
+              Processamento
+            </Link>
+            .
+          </Vazio>
         ) : (
           <>
             <EnvolveTabela className="rounded-none border-0 border-t">
@@ -232,40 +243,80 @@ export default function Pagamentos() {
                 <thead>
                   <tr>
                     <Th>Mês</Th>
-                    <Th numerico>Valor</Th>
+                    <Th numerico>Líquido</Th>
+                    <Th>Estado</Th>
                     <Th>Conta</Th>
-                    <Th>Lançado</Th>
-                    <Th>Nº Operação</Th>
+                    <Th>Lançamento</Th>
+                    {pode("rh.gerir") && <Th> </Th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {(pagamentos ?? []).map((p) => (
-                    <Tr key={p.id}>
-                      <Td className="font-semibold">{mesPorExtenso(p.mes)}</Td>
-                      <Td numerico className="font-semibold">
-                        {formataMoeda(p.valor, moeda)}
-                      </Td>
-                      <Td className="tabular">{p.conta || "—"}</Td>
-                      <Td>
-                        <Selo cor={p.lancado ? "#1a9c5f" : "#c98a10"}>
-                          {p.lancado ? "Sim" : "Não"}
-                        </Selo>
-                      </Td>
-                      <Td className="tabular text-texto-suave">
-                        {p.numero_op || "—"}
-                      </Td>
-                    </Tr>
-                  ))}
+                  {(meses ?? []).map((m) => {
+                    const chave = mesDoExercicio(m.mes, m.exercicio);
+                    const pago = m.estado === "pago";
+                    return (
+                      <Tr key={`${m.exercicio}-${m.mes}`}>
+                        <Td className="font-semibold">
+                          {mesPorExtenso(chave)}
+                        </Td>
+                        <Td numerico className="font-semibold">
+                          {formataMoeda(m.valor_pago ?? m.liquido, moeda)}
+                        </Td>
+                        <Td>
+                          <Selo cor={pago ? "#1a9c5f" : "#3d7fe0"}>
+                            {pago ? "Pago" : "Processado"}
+                          </Selo>
+                        </Td>
+                        <Td className="tabular">{m.conta || "—"}</Td>
+                        <Td className="tabular text-texto-suave">
+                          {m.lancamento_id ? (
+                            <Link
+                              href={`/contabilidade/movimentos?id=${m.lancamento_id}`}
+                              className="font-semibold text-marca"
+                            >
+                              {m.numero_op || "Ver"}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
+                        </Td>
+                        {pode("rh.gerir") && (
+                          <Td numerico>
+                            {pago ? (
+                              <span className="text-[12.5px] text-texto-suave">
+                                Pago
+                              </span>
+                            ) : (
+                              <Botao
+                                tamanho="pequeno"
+                                variante="primario"
+                                onClick={() => {
+                                  setMes(chave);
+                                  setConfirmar(true);
+                                }}
+                              >
+                                Pagar
+                              </Botao>
+                            )}
+                          </Td>
+                        )}
+                      </Tr>
+                    );
+                  })}
                 </tbody>
               </Tabela>
             </EnvolveTabela>
             <BarraPaginacao
-              pagina={paginaPag}
+              pagina={paginaMeses}
               {...pag.controlos}
-              nome="pagamentos"
+              nome="meses processados"
             />
           </>
         )}
+        <p className="px-5 pb-4 pt-3 text-[12.5px] text-texto-suave">
+          Só é possível pagar meses já processados. Um mês pago fica bloqueado
+          para reprocessamento.
+        </p>
       </Cartao>
 
       <AlertDialog.Root open={confirmar} onOpenChange={setConfirmar}>

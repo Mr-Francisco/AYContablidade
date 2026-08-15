@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from src.api.deps import DB, EmpresaAtual, exigir_cap
 from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.core.rh import IRPS_INFO, SUBS_NAO_SUJEITOS, SUBS_SUJEITOS
+from src.db.models.tenancy import Exercicio
 from src.db.models.rh import (
     AlteracaoMensal,
     Colaborador,
@@ -420,6 +421,59 @@ def processar(
     )
     db.commit()
     return r
+
+
+@router.get("/meses-a-pagar")
+def meses_a_pagar(
+    empresa: EmpresaAtual, db: DB, offset: int = 0, limite: int = LIMITE_OMISSAO
+) -> dict:
+    """Os meses processados e o que falta pagar em cada um — a lista do Piloto.
+
+    O ecrã de pagamentos mostrava só os pagamentos JÁ FEITOS. Quem lá entra
+    quer o contrário: saber o que está processado e ainda por pagar. Sem isso,
+    a única forma de descobrir era experimentar mês a mês no selector.
+
+    Um mês por linha, com o líquido processado, o estado e o lançamento — e o
+    valor efectivamente pago quando já houve pagamento (pode diferir do
+    processado se a folha foi corrigida entretanto).
+    """
+    consulta = (
+        select(ProcessamentoSalarial)
+        .where(ProcessamentoSalarial.empresa_id == empresa.id)
+        .order_by(ProcessamentoSalarial.mes.desc())
+    )
+    # A chave é (exercício, mês) e não só o mês: o período é de dois dígitos,
+    # e Agosto de 2026 e de 2027 são o mesmo "08". Foi por isso que o modelo
+    # guarda o exercício.
+    pagos = {
+        (p.exercicio_id, p.mes): p
+        for p in db.scalars(
+            select(PagamentoSalarial).where(
+                PagamentoSalarial.empresa_id == empresa.id
+            )
+        ).all()
+    }
+    exercicios = {
+        e.id: e.nome
+        for e in db.scalars(
+            select(Exercicio).where(Exercicio.empresa_id == empresa.id)
+        ).all()
+    }
+
+    def linha(p: ProcessamentoSalarial) -> dict:
+        pago = pagos.get((p.exercicio_id, p.mes))
+        return {
+            "mes": p.mes,
+            "exercicio": exercicios.get(p.exercicio_id),
+            "liquido": (p.totais or {}).get("liquido", "0"),
+            "estado": "pago" if pago else "processado",
+            "valor_pago": pago.valor if pago else None,
+            "conta": pago.conta if pago else None,
+            "numero_op": pago.numero_op if pago else None,
+            "lancamento_id": (pago.lancamento_id if pago else p.lancamento_id),
+        }
+
+    return pagina(db, consulta, offset=offset, limite=limite, formatar=linha)
 
 
 @router.get("/pagamentos")

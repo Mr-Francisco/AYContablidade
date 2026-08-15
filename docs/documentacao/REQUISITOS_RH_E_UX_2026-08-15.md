@@ -11,7 +11,7 @@ referência funcional: layout + comportamento + estados + filtros + carregamento
 | 1 | [RH · Funcionários](#1-rh--funcionários) | ✅ feito |
 | 2 | [RH · Alterações mensais](#2-rh--alterações-mensais) | ✅ feito |
 | 3 | [RH · Processamento](#3-rh--processamento) | ✅ feito |
-| 4 | [RH · Pagamentos](#4-rh--pagamentos) | por fazer |
+| 4 | [RH · Pagamentos](#4-rh--pagamentos) | ✅ feito |
 | 5 | [RH · Recibos](#5-rh--recibos) | por fazer |
 | 6 | [RH · Simulação](#6-rh--simulação) | por fazer |
 | 7 | [RH · Independentes e honorários](#7-rh--independentes-e-honorários) | por fazer |
@@ -129,8 +129,19 @@ Pedido original:
 
 ## 4. RH · Pagamentos
 
-Como a imagem e o Piloto, mantendo o layout que a Produção acrescentou (os
-quatro indicadores) e a UX.
+✅ **Feito.** A tabela passou a ser a do Piloto: **os meses processados**, com
+Mês · Líquido · Estado · Conta · Lançamento e um botão **Pagar** em cada linha
+por pagar. Listavam-se os pagamentos já feitos — o contrário do que quem entra
+nesta página quer saber; para descobrir o que faltava pagar só experimentando
+mês a mês no selector.
+
+Os quatro indicadores e a UX da Produção ficam como estavam. Nova rota
+`GET /api/rh/meses-a-pagar`, paginada, que cruza processamentos e pagamentos
+por **(exercício, mês)** — só pelo mês, «08» de 2026 e de 2027 seriam o mesmo.
+
+Pelo caminho: um `Selector` com uma opção de valor vazio («A da configuração de
+RH», «Todos») mostrava «Seleccionar…» mesmo com ela escolhida. A opção passa a
+ganhar ao placeholder.
 
 ## 5. RH · Recibos
 

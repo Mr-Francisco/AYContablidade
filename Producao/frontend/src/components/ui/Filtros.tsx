@@ -94,10 +94,15 @@ export function Selector({
 }) {
   // O rótulo da opção escolhida, ou o próprio valor quando a opção ainda não
   // chegou: mais vale mostrar «713» do que nada.
+  //
+  // A opção vem primeiro, mesmo quando o valor é "" — há listas em que o vazio
+  // É uma escolha («Todos», «A da configuração»), e tratá-lo sempre como
+  // «nada escolhido» punha o campo a dizer «Seleccionar…» com uma opção
+  // seleccionada. Só quando não existe opção nenhuma para o valor é que se
+  // mostra o placeholder.
+  const escolhida = opcoes.find((o) => o.valor === valor);
   const rotuloDoValor =
-    valor === undefined || valor === ""
-      ? null
-      : (opcoes.find((o) => o.valor === valor)?.rotulo ?? valor);
+    escolhida?.rotulo ?? (valor === undefined || valor === "" ? null : valor);
 
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: o label envolve o trigger do Radix Select, que ja recebe aria-label; o Biome nao reconhece o componente como controlo.

@@ -51,6 +51,19 @@ export function ultimosMeses(quantos = 24): string[] {
   return lista;
 }
 
+/**
+ * O período de dois dígitos com o ano do exercício: "08" + "2026" → "2026-08".
+ *
+ * A base guarda o PERÍODO (`08`) e o exercício à parte — é o que permite uma
+ * empresa ter dois anos. Quem lê a lista precisa do mês por extenso, e
+ * `mesPorExtenso("08")` devolve "08", que não diz nada a ninguém.
+ */
+export function mesDoExercicio(mes: string, exercicio?: string | null): string {
+  if (/^\d{4}-\d{2}$/.test(mes)) return mes;
+  const ano = /(\d{4})/.exec(exercicio ?? "")?.[1];
+  return ano ? `${ano}-${mes.padStart(2, "0")}` : mes;
+}
+
 export const ESTADOS_MES: Record<string, { rotulo: string; cor: string }> = {
   por_processar: { rotulo: "Por processar", cor: "#c98a10" },
   processado: { rotulo: "Processado", cor: "#3d7fe0" },

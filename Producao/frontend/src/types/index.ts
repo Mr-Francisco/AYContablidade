@@ -571,6 +571,19 @@ export interface PagamentoSalarial {
   numero_op: string | null;
 }
 
+/** Um mês processado e o seu estado de pagamento — a lista do Piloto. */
+export interface MesAPagar {
+  mes: string;
+  /** Nome do exercício ("2026"): o mês é o período de dois dígitos. */
+  exercicio: string | null;
+  liquido: string;
+  estado: "processado" | "pago";
+  valor_pago: string | null;
+  conta: string | null;
+  numero_op: string | null;
+  lancamento_id: string | null;
+}
+
 export interface Independente {
   id: string;
   nome: string;
