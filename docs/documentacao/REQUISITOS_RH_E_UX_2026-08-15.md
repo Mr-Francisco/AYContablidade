@@ -13,7 +13,7 @@ referência funcional: layout + comportamento + estados + filtros + carregamento
 | 3 | [RH · Processamento](#3-rh--processamento) | ✅ feito |
 | 4 | [RH · Pagamentos](#4-rh--pagamentos) | ✅ feito |
 | 5 | [RH · Recibos](#5-rh--recibos) | ✅ feito |
-| 6 | [RH · Simulação](#6-rh--simulação) | por fazer |
+| 6 | [RH · Simulação](#6-rh--simulação) | ✅ feito |
 | 7 | [RH · Independentes e honorários](#7-rh--independentes-e-honorários) | por fazer |
 | 8 | [RH · Tabelas](#8-rh--tabelas) | por fazer |
 
@@ -163,8 +163,19 @@ buscar mais tarde.
 
 ## 6. RH · Simulação
 
-Manter o que está, mas com o comportamento, a lógica e tudo o que existe no
-Piloto. Ver se ganha com um separador próprio.
+✅ **Feito**, com separador — porque são duas coisas diferentes e as duas fazem
+falta:
+
+- **Folha do mês** — o que a Produção já tinha: a folha inteira, só de leitura,
+  para conferir antes de processar.
+- **Simulador de salário** — o do Piloto: Colaborador (opcional) · Categoria ·
+  Salário base · Subsídios, o recibo ao lado, e ao fundo a taxa efectiva de
+  retenção, o INSS da empresa e o custo total. Não depende de mês nenhum e
+  serve para negociar um salário.
+
+A conta vem do servidor (`POST /api/rh/simular-salario`), da mesma função que
+processa a folha: um simulador que responda outra coisa não serve para
+simular.
 
 ## 7. RH · Independentes e honorários
 

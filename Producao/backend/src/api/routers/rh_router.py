@@ -140,6 +140,13 @@ class SimulacaoAlteracao(BaseModel):
     descontos: list[dict] = Field(default_factory=list)
 
 
+class SimulacaoSalario(BaseModel):
+    """Dois números, sem ficha nenhuma — o simulador do Piloto."""
+
+    salario_base: Decimal = Decimal("0")
+    subsidios: Decimal = Decimal("0")
+
+
 class ProcessarPedido(BaseModel):
     mes: str = Field(min_length=7, max_length=7)
     data: Date | None = None
@@ -380,6 +387,22 @@ def obter_folha(
 ) -> dict:
     """Simulação da folha do mês — não grava nem lança nada."""
     return svc.folha(db, empresa_id=empresa.id, mes=mes, so_ativos=so_ativos)
+
+
+@router.post("/simular-salario")
+def simular_salario(
+    dados: SimulacaoSalario, empresa: EmpresaAtual, db: DB
+) -> dict:
+    """«Quanto sobra de um bruto destes?» — o simulador do Piloto.
+
+    Não toca em ficha nenhuma e não grava. A conta é a mesma que processa a
+    folha: um simulador que responda outra coisa não serve para simular.
+    """
+    return svc.recibo_valores(
+        salario_base=dados.salario_base,
+        subsidios=dados.subsidios,
+        cfg=svc.cfg_rh(db, empresa.id),
+    )
 
 
 @router.get("/estado")

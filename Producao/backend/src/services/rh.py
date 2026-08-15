@@ -341,8 +341,40 @@ def recibo_com(
     na janela das alterações; bastava mexer numa para o número que o
     utilizador via deixar de ser o que ia ser pago.
     """
-    base0 = r2(d(colaborador.salario_base))
-    subs_base = r2(d(colaborador.subsidios))
+    return {
+        "colaborador_id": colaborador.id,
+        # O número, como no Piloto: é por ele que o RH procura na folha
+        # impressa, e dois colaboradores podem ter o mesmo nome.
+        "numero": colaborador.numero,
+        "colaborador": colaborador.nome,
+        **recibo_valores(
+            salario_base=d(colaborador.salario_base),
+            subsidios=d(colaborador.subsidios),
+            cfg=cfg,
+            faltas=faltas,
+            abonos=abonos,
+            descontos=descontos,
+        ),
+    }
+
+
+def recibo_valores(
+    *,
+    salario_base: Decimal,
+    subsidios: Decimal,
+    cfg: dict,
+    faltas: Decimal = ZERO,
+    abonos: list[dict] | None = None,
+    descontos: list[dict] | None = None,
+) -> dict:
+    """A conta do recibo, a partir de dois números e nada mais.
+
+    Sem ficha e sem base de dados: é o que o simulador do Piloto faz — «quanto
+    é que sobra de 250 000 mais 70 000?» — e não há razão para essa conta ser
+    outra que não a que processa a folha.
+    """
+    base0 = r2(salario_base)
+    subs_base = r2(subsidios)
 
     desc_faltas = r2(base0 / 30 * faltas)
     abonos_extra = r2(sum((d(x.get("valor")) for x in (abonos or [])), ZERO))
@@ -358,11 +390,6 @@ def recibo_com(
     inss_empresa = r2(base * d(cfg["inss_empr"]) / 100)
 
     return {
-        "colaborador_id": colaborador.id,
-        # O número, como no Piloto: é por ele que o RH procura na folha
-        # impressa, e dois colaboradores podem ter o mesmo nome.
-        "numero": colaborador.numero,
-        "colaborador": colaborador.nome,
         "base": base,
         "subs": subs,
         "bruto": bruto,
