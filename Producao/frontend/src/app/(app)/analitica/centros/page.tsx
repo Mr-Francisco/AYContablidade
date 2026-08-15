@@ -1,12 +1,13 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import useSWR from "swr";
 
 import {
   ACarregar,
   Alerta,
+  BarraFiltros,
   Botao,
   CabecalhoPagina,
   Campo,
@@ -45,6 +46,7 @@ export default function Centros() {
     mutate,
   } = useSWR<CentroCusto[]>(ROTA, buscador);
 
+  const [procura, setProcura] = useState("");
   const [emEdicao, setEmEdicao] = useState<CentroCusto | null>(null);
   const [aCriar, setACriar] = useState(false);
   const [aApagar, setAApagar] = useState<CentroCusto | null>(null);
@@ -82,6 +84,14 @@ export default function Centros() {
     (mapa?.linhas ?? []).map((l) => [l.codigo, l] as const),
   );
 
+  const filtrados = (centros ?? []).filter((c) => {
+    const q = procura.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      c.codigo.toLowerCase().includes(q) || c.nome.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <>
       <CabecalhoPagina
@@ -97,6 +107,28 @@ export default function Centros() {
         }
       />
 
+      {/* Pesquisa por código ou nome. É um catálogo — uma empresa tem uma
+          dúzia de centros e não cresce com o tempo —, por isso filtra-se aqui
+          e não no servidor: a excepção que a regra das listagens prevê. */}
+      <BarraFiltros className="mb-4">
+        <Campo rotulo="Pesquisar" className="min-w-[16rem] flex-1">
+          <div className="relative">
+            <Search
+              size={15}
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
+            />
+            <Entrada
+              type="search"
+              value={procura}
+              onChange={(e) => setProcura(e.target.value)}
+              placeholder="Código ou nome do centro…"
+              className="pl-9"
+            />
+          </div>
+        </Campo>
+      </BarraFiltros>
+
       {erro && (
         <div className="mb-4">
           <Alerta tipo="erro">{erro}</Alerta>
@@ -106,10 +138,11 @@ export default function Centros() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
-        ) : !centros?.length ? (
+        ) : !filtrados.length ? (
           <Vazio>
-            Ainda não há centros de custo definidos. Sem centros, todas as
-            linhas das classes 6 e 7 caem em "(Sem centro)" no mapa.
+            {procura.trim()
+              ? "Nenhum centro corresponde à pesquisa."
+              : 'Ainda não há centros de custo definidos. Sem centros, todas as linhas das classes 6 e 7 caem em "(Sem centro)" no mapa.'}
           </Vazio>
         ) : (
           <EnvolveTabela className="rounded-none border-0">
@@ -128,7 +161,7 @@ export default function Centros() {
                 </tr>
               </thead>
               <tbody>
-                {centros.map((c) => {
+                {filtrados.map((c) => {
                   const m = movimento.get(c.codigo);
                   return (
                     <Tr key={c.id}>

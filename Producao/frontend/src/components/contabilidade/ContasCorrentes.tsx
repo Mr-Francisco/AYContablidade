@@ -27,7 +27,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { compara, formataCompacto, formataMoeda } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
-import { plural } from "@/lib/texto";
 import type { ContasCorrentes as Dados } from "@/types";
 
 export interface ConfigContaCorrente {
@@ -42,6 +41,8 @@ export interface ConfigContaCorrente {
   rotuloSaldo: string;
   /** Onde o saldo positivo é bom e onde é mau, para a cor do KPI. */
   corSaldo: string;
+  /** Como se chamam as entidades: «clientes», «fornecedores». */
+  entidades: string;
 }
 
 /**
@@ -112,46 +113,41 @@ export function PaginaContasCorrentes({
         accoes={<AccoesDoMapa />}
       />
 
+      {/* OS QUATRO DO PILOTO, por esta ordem: quanto há a receber (ou a
+          pagar), quantas contas têm saldo, e os dois totais. Aqui estavam por
+          outra ordem e com o débito e o crédito em valor compacto — «5,1 M Kz»
+          onde o mapa diz «5 075 590,00». Num ecrã de contas correntes, os
+          totais lêem-se ao cêntimo: é com eles que se concilia. */}
       {data && (
         <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div className="min-w-0">
             <Kpi
-              rotulo={config.rotuloSaldo}
+              rotulo={`Total ${config.rotuloSaldo.toLowerCase()}`}
               valor={formataCompacto(data.totais.saldo, moeda)}
-              detalhe={`${plural(data.com_saldo, "conta")} com saldo`}
+              detalhe={config.entidades}
               cor={config.corSaldo}
             />
           </div>
           <div className="min-w-0">
             <Kpi
-              rotulo="Total a débito"
-              valor={formataCompacto(data.totais.debito, moeda)}
-              detalhe={
-                config.natureza === "D"
-                  ? "Facturado ao cliente"
-                  : "Pago ao fornecedor"
-              }
-              cor="var(--grafico-1)"
-            />
-          </div>
-          <div className="min-w-0">
-            <Kpi
-              rotulo="Total a crédito"
-              valor={formataCompacto(data.totais.credito, moeda)}
-              detalhe={
-                config.natureza === "D"
-                  ? "Recebido do cliente"
-                  : "Facturado pelo fornecedor"
-              }
+              rotulo="Contas com saldo"
+              valor={String(data.com_saldo)}
+              detalhe={`de ${data.linhas.length}`}
               cor="var(--grafico-2)"
             />
           </div>
           <div className="min-w-0">
             <Kpi
-              rotulo="Contas"
-              valor={String(data.linhas.length)}
-              detalhe={`${linhas.length} a mostrar`}
-              cor="var(--grafico-4)"
+              rotulo="Total débito"
+              valor={formataMoeda(data.totais.debito, moeda)}
+              cor="var(--grafico-6)"
+            />
+          </div>
+          <div className="min-w-0">
+            <Kpi
+              rotulo="Total crédito"
+              valor={formataMoeda(data.totais.credito, moeda)}
+              cor="var(--grafico-1)"
             />
           </div>
         </div>

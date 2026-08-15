@@ -12,6 +12,7 @@ const CONFIG: ConfigContaCorrente = {
   descricao:
     "Saldo de cada cliente a partir dos movimentos das contas 31. O saldo positivo é dívida do cliente.",
   rotuloSaldo: "A receber",
+  entidades: "clientes",
   corSaldo: "var(--grafico-6)",
 };
 

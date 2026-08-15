@@ -1133,3 +1133,19 @@ def obter_analitica(
     return svc.analitica_mapa(
         db, empresa_id=empresa.id, exercicio_id=exercicio_id, de=de, ate=ate
     )
+
+
+@router.get("/analitica/{centro}", dependencies=[VER])
+def obter_analitica_detalhe(
+    centro: str,
+    empresa: EmpresaAtual,
+    db: DB,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> dict:
+    """Os lançamentos de um centro — o duplo clique do mapa, no Piloto."""
+    return svc.analitica_detalhe(
+        db, empresa_id=empresa.id, centro=centro,
+        exercicio_id=exercicio_id, de=de, ate=ate,
+    )

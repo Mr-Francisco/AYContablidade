@@ -902,3 +902,71 @@ def analitica_mapa(
         "saldo": sum((l["saldo"] for l in linhas), Decimal("0")),
     }
     return {"linhas": linhas, "totais": totais}
+
+
+def analitica_detalhe(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    centro: str,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> dict:
+    """Os lançamentos que compõem o saldo de UM centro de custo.
+
+    É o que o Piloto abre com duplo clique na linha do mapa. Sem isto, o mapa
+    dá o número e não há forma de perguntar de onde é que ele vem — que é a
+    primeira pergunta de quem olha para um custo por centro.
+
+    Só classes 6 e 7, como no mapa: os mesmos filtros, para o detalhe somar
+    exactamente a linha de onde se veio. Se somasse outra coisa, o ecrã estava
+    a contradizer-se.
+    """
+    q = (
+        select(LancamentoLinha, Lancamento)
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(
+            Lancamento.empresa_id == empresa_id,
+            Lancamento.diferido.is_(False),
+            LancamentoLinha.centro_codigo == centro,
+        )
+        .order_by(Lancamento.data, Lancamento.numero)
+    )
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+    if de is not None:
+        q = q.where(Lancamento.data >= de)
+    if ate is not None:
+        q = q.where(Lancamento.data <= ate)
+
+    linhas = []
+    total_d = total_c = Decimal("0")
+    for linha, lanc in db.execute(q):
+        if not linha.conta_codigo or linha.conta_codigo[0] not in ("6", "7"):
+            continue
+        debito = linha.debito or Decimal("0")
+        credito = linha.credito or Decimal("0")
+        total_d += debito
+        total_c += credito
+        linhas.append(
+            {
+                "lancamento_id": lanc.id,
+                "data": lanc.data,
+                "diario": lanc.diario_codigo,
+                "conta": linha.conta_codigo,
+                "conta_nome": linha.conta_nome,
+                "descricao": linha.descricao or lanc.descricao,
+                "debito": debito,
+                "credito": credito,
+                "documento": lanc.documento_ref,
+                "numero_op": lanc.numero_op,
+            }
+        )
+
+    return {
+        "linhas": linhas,
+        "total_debito": total_d,
+        "total_credito": total_c,
+        "saldo": total_d - total_c,
+    }

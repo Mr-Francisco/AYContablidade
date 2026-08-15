@@ -12,6 +12,7 @@ const CONFIG: ConfigContaCorrente = {
   descricao:
     "Saldo de cada fornecedor a partir dos movimentos das contas 32. O saldo positivo é dívida da empresa.",
   rotuloSaldo: "A pagar",
+  entidades: "fornecedores",
   corSaldo: "var(--grafico-4)",
 };
 
