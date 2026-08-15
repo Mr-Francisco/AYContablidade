@@ -14,8 +14,8 @@ referência funcional: layout + comportamento + estados + filtros + carregamento
 | 4 | [RH · Pagamentos](#4-rh--pagamentos) | ✅ feito |
 | 5 | [RH · Recibos](#5-rh--recibos) | ✅ feito |
 | 6 | [RH · Simulação](#6-rh--simulação) | ✅ feito |
-| 7 | [RH · Independentes e honorários](#7-rh--independentes-e-honorários) | por fazer |
-| 8 | [RH · Tabelas](#8-rh--tabelas) | por fazer |
+| 7 | [RH · Independentes e honorários](#7-rh--independentes-e-honorários) | ✅ feito |
+| 8 | [RH · Tabelas](#8-rh--tabelas) | ✅ feito |
 
 ---
 
@@ -179,6 +179,27 @@ simular.
 
 ## 7. RH · Independentes e honorários
 
+✅ **Feito.** Os dois quadros passaram a separadores ao mesmo nível — estavam
+lado a lado, com metade da largura cada, e a tabela dos honorários tem sete
+colunas que não cabiam.
+
+A ficha do independente é a do Piloto: Nome · NIF · Retenção IRT (%) ·
+Actividade · **Estado**, com **Editar** e **Eliminar** por linha — a Produção
+só sabia criar. Eliminar recusa (409) quem já tem honorários processados: o IRT
+retido foi entregue ao Estado em nome dessa pessoa; nesse caso desactiva-se, e
+a mensagem di-lo. O Piloto apagava sempre e os honorários ficavam sem titular.
+
+«Processar honorário» ficou com os quatro campos do Piloto — Independente ·
+Valor bruto · Data · Descrição — e a retenção e o líquido ao fundo. O campo
+«Referência do documento», que a Produção tinha acrescentado, saiu por o pedido
+ser «totalmente igual, sem excepção»; o servidor continua a aceitá-lo, por isso
+volta a pôr-se num campo se fizer falta.
+
+A lista de honorários passou a **paginada com totais do mês** (não da página) e
+com o **link para o lançamento**, como no Piloto.
+
+Pedido original:
+
 - **Independentes: totalmente igual ao Piloto, sem excepção** (ver imagens:
   ficha com Nome · NIF · Retenção IRT (%) · Actividade · Estado; e «Processar
   honorário» com Independente · Valor bruto · Data · Descrição, e a retenção e
@@ -188,10 +209,22 @@ simular.
 
 ## 8. RH · Tabelas
 
-Separar em dois:
+✅ **Feito.** Dois separadores, e a página chama-se «Carreiras e Configuração»
+como no Piloto:
 
-- **Configurações** — só administrador: Segurança Social (INSS).
-- **Carreiras e tabelas** — o resto, igual ao Piloto.
+- **Carreiras e tabelas** — o **Resumo por Categoria** (Categoria · Colaboradores
+  · Massa salarial · Média), que faltava por completo; a tabela do IRT com as
+  colunas do Piloto (Até · Parcela fixa · Taxa s/ excesso · Excesso de) e o
+  escalão isento assinalado; e o IRPS completo, agora também com as **retenções
+  na fonte** e as **deduções à colecta**, que não estavam.
+- **Configurações** — só administrador: as taxas de INSS passam a ser
+  **editáveis** (eram só de leitura) e as contas de contabilização ficam à
+  vista. Quem não é administrador vê o separador com a explicação, e não um
+  separador que desaparece sem se perceber porquê.
+
+`PUT /api/rh/config` passou a exigir perfil de administrador além de
+`rh.gerir`: mudar a taxa do INSS muda o que se retém a toda a gente, todos os
+meses. O ecrã já o dizia; faltava o servidor exigi-lo.
 
 ---
 

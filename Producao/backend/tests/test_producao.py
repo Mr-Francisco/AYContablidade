@@ -172,6 +172,7 @@ LISTAS_PAGINADAS = [
     "plataforma/licencas",
     "rh/processamento",
     "rh/pagamentos",
+    "rh/independentes",
 ]
 
 #: Destas, as que têm filtro do lado do cliente. Mudar o filtro tem de voltar
@@ -192,8 +193,11 @@ LISTAS_PAGINADAS_COM_FILTRO = [
 LISTAS_EM_CAIXA = [
     "contabilidade/retencoes",
     "imobilizados/amortizacoes",
-    "rh/independentes",
 ]
+# Os honorários saíram daqui para as paginadas: a caixa era o remendo possível
+# enquanto a lista vinha inteira do servidor. Agora vem uma página de cada vez,
+# e os totais do rodapé são do mês filtrado e não da página — que era a única
+# razão para um mapa não poder paginar.
 
 
 @pytest.mark.parametrize("pagina", LISTAS_EM_CAIXA)

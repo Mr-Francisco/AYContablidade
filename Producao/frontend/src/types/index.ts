@@ -594,6 +594,8 @@ export interface Independente {
 }
 
 export interface Honorario {
+  /** O lançamento que o honorário gerou, para se poder abrir no diário. */
+  lancamento_id?: string | null;
   id: string;
   nome: string;
   data: string;

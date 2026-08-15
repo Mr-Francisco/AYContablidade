@@ -11,8 +11,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, select
 
-from src.api.deps import DB, EmpresaAtual, exigir_cap
+from src.api.deps import DB, EmpresaAtual, exigir_cap, exigir_perfil
 from src.api.paginacao import LIMITE_OMISSAO, pagina
+from src.core.constants import Perfil
 from src.core.rh import IRPS_INFO, SUBS_NAO_SUJEITOS, SUBS_SUJEITOS
 from src.db.models.tenancy import Exercicio
 from src.db.models.rh import (
@@ -597,14 +598,102 @@ def criar_independente(
     return {"id": i.id, "nome": i.nome, "taxa_ret": i.taxa_ret}
 
 
+def _independente(db: DB, empresa_id: UUID, ident: UUID) -> Independente:
+    i = db.scalar(
+        select(Independente).where(
+            Independente.id == ident, Independente.empresa_id == empresa_id
+        )
+    )
+    if i is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Independente não encontrado.")
+    return i
+
+
+@router.patch("/independentes/{independente_id}", dependencies=[GERIR])
+def actualizar_independente(
+    request: Request,
+    independente_id: UUID,
+    dados: IndependenteEntrada,
+    empresa: EmpresaAtual,
+    db: DB,
+) -> dict:
+    """Alterar a ficha — o Piloto tem «Editar» e a Produção só sabia criar."""
+    i = _independente(db, empresa.id, independente_id)
+    for campo, valor in dados.model_dump().items():
+        setattr(i, campo, valor)
+    db.commit()
+    return {"id": i.id, "nome": i.nome, "taxa_ret": i.taxa_ret}
+
+
+@router.delete(
+    "/independentes/{independente_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[GERIR],
+)
+def remover_independente(
+    request: Request, independente_id: UUID, empresa: EmpresaAtual, db: DB
+) -> None:
+    """Eliminar — mas não quem já tem honorários pagos.
+
+    O Piloto apagava sempre, e os honorários ficavam sem titular: o IRT retido
+    tinha sido entregue ao Estado em nome de alguém que já não existia na
+    aplicação. É a mesma regra dos outros mestres — o que já foi usado
+    desactiva-se, não se apaga.
+    """
+    i = _independente(db, empresa.id, independente_id)
+    tem = db.scalar(
+        select(func.count())
+        .select_from(Honorario)
+        .where(Honorario.independente_id == i.id)
+    )
+    if tem:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"{i.nome} tem {tem} honorário(s) processado(s) e não pode ser "
+            "eliminado — passe o estado a inactivo.",
+        )
+    db.delete(i)
+    db.commit()
+
+
 @router.get("/honorarios")
-def listar_honorarios(empresa: EmpresaAtual, db: DB, mes: str | None = None) -> list[dict]:
-    return [
-        {"id": h.id, "nome": h.nome, "data": h.data, "mes": h.mes,
-         "descricao": h.descricao, "bruto": h.bruto, "taxa": h.taxa,
-         "retencao": h.retencao, "liquido": h.liquido, "numero_op": h.numero_op}
-        for h in svc.listar_honorarios(db, empresa_id=empresa.id, mes=mes)
-    ]
+def listar_honorarios(
+    empresa: EmpresaAtual,
+    db: DB,
+    mes: str | None = None,
+    offset: int = 0,
+    limite: int = LIMITE_OMISSAO,
+) -> dict:
+    """Honorários processados, uma página de cada vez, com os totais.
+
+    Os totais são do CONJUNTO FILTRADO e não da página — a linha «TOTAIS» do
+    Piloto tem de continuar a somar tudo o que o filtro apanha, senão muda ao
+    carregar em «seguinte».
+    """
+    linhas = svc.listar_honorarios(db, empresa_id=empresa.id, mes=mes)
+    total = len(linhas)
+    limite = max(1, min(limite, 200))
+    offset = max(0, offset)
+
+    def formatar(h) -> dict:
+        return {
+            "id": h.id, "nome": h.nome, "data": h.data, "mes": h.mes,
+            "descricao": h.descricao, "bruto": h.bruto, "taxa": h.taxa,
+            "retencao": h.retencao, "liquido": h.liquido,
+            "numero_op": h.numero_op, "lancamento_id": h.lancamento_id,
+        }
+
+    return {
+        "linhas": [formatar(h) for h in linhas[offset : offset + limite]],
+        "total": total,
+        "offset": offset,
+        "limite": limite,
+        "totais": {
+            "bruto": sum((h.bruto for h in linhas), Decimal("0")),
+            "retencao": sum((h.retencao for h in linhas), Decimal("0")),
+            "liquido": sum((h.liquido for h in linhas), Decimal("0")),
+        },
+    }
 
 
 @router.post("/honorarios", status_code=status.HTTP_201_CREATED, dependencies=[GERIR])
@@ -683,10 +772,20 @@ def obter_config(empresa: EmpresaAtual, db: DB) -> dict:
     return svc.cfg_rh(db, empresa.id)
 
 
-@router.put("/config", dependencies=[GERIR])
+@router.put(
+    "/config",
+    dependencies=[GERIR, Depends(exigir_perfil(Perfil.ADMIN))],
+)
 def gravar_config(
     request: Request, dados: dict, empresa: EmpresaAtual, db: DB
 ) -> dict:
+    """As taxas e as contas de RH — só o administrador.
+
+    Mudar a taxa do INSS muda o que se retém a toda a gente, todos os meses,
+    e mudar as contas muda onde a folha cai na contabilidade. Não é trabalho
+    de quem processa a folha; é de quem responde pela parametrização da
+    empresa. O ecrã já o dizia — faltava o servidor exigi-lo.
+    """
     r = svc.guardar_cfg_rh(db, empresa.id, dados)
     db.commit()
     return r

@@ -1,7 +1,8 @@
 "use client";
 
 import { Plus, Receipt, X } from "lucide-react";
-import { Dialog } from "radix-ui";
+import Link from "next/link";
+import { Dialog, Tabs } from "radix-ui";
 import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 
@@ -26,61 +27,99 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
-import { CaixaHistorico } from "@/components/ui/Paginacao";
+import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import { BarraPaginacao, usePaginacao } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
-import { big, formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
+import { big, formataCompacto, formataMoeda } from "@/lib/dinheiro";
 import { useExercicios } from "@/lib/hooks";
+import { numeroLimpo, plural } from "@/lib/texto";
 import type { Honorario, Independente } from "@/types";
 
+/** A resposta paginada dos honorários, com os totais do conjunto filtrado. */
+interface PaginaHonorarios {
+  linhas: Honorario[];
+  total: number;
+  offset: number;
+  limite: number;
+  totais: { bruto: string; retencao: string; liquido: string };
+}
+
+/**
+ * Independentes e honorários — os dois quadros do Piloto, em separadores.
+ *
+ * Estavam lado a lado, cada um com metade da largura: a tabela dos honorários
+ * tem sete colunas e não cabia, e a dos independentes não tinha como editar
+ * nem desactivar ninguém. Passam a separador cada um, com a página inteira.
+ */
 export default function Independentes() {
   const { empresa, pode } = useAuth();
   const moeda = empresa?.moeda ?? "Kz";
+  const podeGerir = pode("rh.gerir");
 
+  const [aba, setAba] = useState("independentes");
   const [mes, setMes] = useState(mesActual());
+  const [emEdicao, setEmEdicao] = useState<Independente | null>(null);
   const [novoAberto, setNovoAberto] = useState(false);
   const [honorarioAberto, setHonorarioAberto] = useState(false);
+  const [aApagar, setAApagar] = useState<Independente | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
   const { data: independentes, mutate } = useSWR<Independente[]>(
     "/api/rh/independentes",
     buscador,
   );
+  const pag = usePaginacao();
   const {
-    data: honorarios,
+    data: pagina,
     isLoading,
     mutate: mutateHon,
-  } = useSWR<Honorario[]>(`/api/rh/honorarios?mes=${mes}`, buscador);
+  } = useSWR<PaginaHonorarios>(
+    `/api/rh/honorarios?mes=${mes}&${pag.query}`,
+    buscador,
+  );
 
-  const totais = useMemo(() => {
-    const lista = honorarios ?? [];
-    return {
-      bruto: soma(...lista.map((h) => h.bruto)),
-      retencao: soma(...lista.map((h) => h.retencao)),
-      liquido: soma(...lista.map((h) => h.liquido)),
-    };
-  }, [honorarios]);
+  const honorarios = pagina?.linhas ?? [];
+  const totais = pagina?.totais ?? { bruto: "0", retencao: "0", liquido: "0" };
+
+  async function eliminar() {
+    if (!aApagar) return;
+    setErro(null);
+    try {
+      await api.delete(`/api/rh/independentes/${aApagar.id}`);
+      mutate();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível eliminar.",
+      );
+    } finally {
+      setAApagar(null);
+    }
+  }
 
   return (
     <>
       <CabecalhoPagina
-        titulo="Independentes"
-        descricao="Prestadores de serviços e honorários com retenção de IRT na fonte."
+        titulo="Honorários — Trabalhadores Independentes"
+        descricao="Prestadores de serviços independentes com retenção de IRT na fonte. Processar lança o custo, o líquido a pagar e o IRT retido."
         accoes={
-          pode("rh.gerir") && (
+          podeGerir && (
             <div className="flex gap-2">
               <Botao onClick={() => setNovoAberto(true)}>
                 <Plus size={16} />
                 Novo independente
               </Botao>
               <Botao
-                variante="primario"
+                variante="acento"
                 onClick={() => setHonorarioAberto(true)}
                 disabled={!independentes?.length}
                 motivoBloqueio="Ainda não há independentes registados. Crie um primeiro, para lhe poder processar honorários."
               >
                 <Receipt size={16} />
-                Registar honorário
+                Processar honorário
               </Botao>
             </div>
           )
@@ -88,13 +127,14 @@ export default function Independentes() {
       />
 
       {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
+      {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
       <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="min-w-0">
           <Kpi
             rotulo="Honorários do mês"
             valor={formataCompacto(totais.bruto, moeda)}
-            detalhe={`${honorarios?.length ?? 0} registos`}
+            detalhe={plural(pagina?.total ?? 0, "registo")}
             cor="var(--grafico-1)"
           />
         </div>
@@ -118,32 +158,38 @@ export default function Independentes() {
           <Kpi
             rotulo="Independentes"
             valor={String(independentes?.length ?? 0)}
-            detalhe={`${(independentes ?? []).filter((i) => i.estado === "activo").length} activos`}
+            detalhe={plural(
+              (independentes ?? []).filter((i) => i.estado === "activo").length,
+              "activo",
+            )}
             cor="var(--grafico-4)"
           />
         </div>
       </div>
 
-      <BarraFiltros className="mb-4">
-        <Selector
-          rotulo="Mês"
-          valor={mes}
-          aoMudar={setMes}
-          opcoes={ultimosMeses().map((m) => ({
-            valor: m,
-            rotulo: mesPorExtenso(m),
-          }))}
-          larguraMinima="14rem"
-        />
-      </BarraFiltros>
+      <Tabs.Root value={aba} onValueChange={setAba}>
+        <Tabs.List className="mb-4 flex flex-wrap gap-1 border-b-2 border-borda">
+          {[
+            { v: "independentes", r: "Independentes" },
+            { v: "honorarios", r: "Honorários processados" },
+          ].map((x) => (
+            <Tabs.Trigger
+              key={x.v}
+              value={x.v}
+              className="-mb-0.5 rounded-t-lg border-b-2 border-transparent px-4 py-2 text-[13.5px] font-semibold text-texto-suave hover:text-texto data-[state=active]:border-acento data-[state=active]:text-texto"
+            >
+              {x.r}
+            </Tabs.Trigger>
+          ))}
+        </Tabs.List>
+      </Tabs.Root>
 
-      <div className="grid min-w-0 gap-4 lg:grid-cols-[1fr_1.4fr]">
-        <Cartao className="min-w-0 p-0">
-          <TituloCartao className="px-5 pt-5">Independentes</TituloCartao>
+      {aba === "independentes" ? (
+        <Cartao className="p-0">
           {!independentes?.length ? (
-            <Vazio>Ainda não há independentes registados.</Vazio>
+            <Vazio>Sem independentes.</Vazio>
           ) : (
-            <EnvolveTabela className="rounded-none border-0 border-t">
+            <EnvolveTabela className="rounded-none border-0">
               <Tabela>
                 <thead>
                   <tr>
@@ -152,17 +198,18 @@ export default function Independentes() {
                     <Th>Actividade</Th>
                     <Th numerico>Retenção</Th>
                     <Th>Estado</Th>
+                    {podeGerir && <Th> </Th>}
                   </tr>
                 </thead>
                 <tbody>
                   {independentes.map((i) => (
                     <Tr key={i.id}>
-                      <Td className="max-w-[180px] truncate font-semibold">
+                      <Td className="max-w-[240px] truncate font-semibold">
                         {i.nome}
                       </Td>
                       <Td className="tabular">{i.nif || "—"}</Td>
                       <Td className="text-texto-suave">{i.atividade || "—"}</Td>
-                      <Td numerico>{i.taxa_ret} %</Td>
+                      <Td numerico>{numeroLimpo(i.taxa_ret)} %</Td>
                       <Td>
                         <Selo
                           cor={i.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}
@@ -170,6 +217,15 @@ export default function Independentes() {
                           {i.estado === "activo" ? "Activo" : "Inactivo"}
                         </Selo>
                       </Td>
+                      {podeGerir && (
+                        <Td numerico>
+                          <AccoesDaLinha
+                            nome={i.nome}
+                            aoEditar={() => setEmEdicao(i)}
+                            aoApagar={() => setAApagar(i)}
+                          />
+                        </Td>
+                      )}
                     </Tr>
                   ))}
                 </tbody>
@@ -177,72 +233,119 @@ export default function Independentes() {
             </EnvolveTabela>
           )}
         </Cartao>
+      ) : (
+        <>
+          <BarraFiltros className="mb-4">
+            <Selector
+              rotulo="Mês"
+              valor={mes}
+              aoMudar={(m) => {
+                setMes(m);
+                pag.reiniciar();
+              }}
+              opcoes={ultimosMeses().map((m) => ({
+                valor: m,
+                rotulo: mesPorExtenso(m),
+              }))}
+              larguraMinima="14rem"
+            />
+          </BarraFiltros>
 
-        <Cartao className="min-w-0 p-0">
-          <TituloCartao className="px-5 pt-5" extra={mesPorExtenso(mes)}>
-            Honorários
-          </TituloCartao>
-          {isLoading ? (
-            <ACarregar />
-          ) : !honorarios?.length ? (
-            <Vazio>Sem honorários registados neste mês.</Vazio>
-          ) : (
-            // O pedido já está limitado ao mês escolhido; o que faltava era o
-            // scroll ser DESTA caixa e não da página.
-            <CaixaHistorico altura={420}>
-              <EnvolveTabela className="rounded-none border-0 border-t">
-                <Tabela>
-                  <thead>
-                    <tr>
-                      <Th>Data</Th>
-                      <Th>Prestador</Th>
-                      <Th>Descrição</Th>
-                      <Th numerico>Bruto</Th>
-                      <Th numerico>Retenção</Th>
-                      <Th numerico>Líquido</Th>
-                      <Th>Nº Op.</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(honorarios ?? []).map((h) => (
-                      <Tr key={h.id}>
-                        <Td className="tabular">
-                          {new Date(h.data).toLocaleDateString("pt-PT")}
-                        </Td>
-                        <Td className="max-w-[160px] truncate font-semibold">
-                          {h.nome}
-                        </Td>
-                        <Td className="max-w-[180px] truncate text-texto-suave">
-                          {h.descricao || "—"}
-                        </Td>
-                        <Td numerico>{formataMoeda(h.bruto, moeda)}</Td>
-                        <Td numerico>
-                          {formataMoeda(h.retencao, moeda)}
-                          <span className="ml-1 text-xs text-texto-suave">
-                            ({h.taxa} %)
-                          </span>
-                        </Td>
-                        <Td numerico className="font-semibold">
-                          {formataMoeda(h.liquido, moeda)}
-                        </Td>
-                        <Td className="tabular text-texto-suave">
-                          {h.numero_op || "—"}
-                        </Td>
-                      </Tr>
-                    ))}
-                  </tbody>
-                </Tabela>
-              </EnvolveTabela>
-            </CaixaHistorico>
-          )}
-        </Cartao>
-      </div>
+          <Cartao className="p-0">
+            <TituloCartao className="px-5 pt-5" extra={mesPorExtenso(mes)}>
+              Honorários processados
+            </TituloCartao>
+            {isLoading ? (
+              <ACarregar />
+            ) : !honorarios.length ? (
+              <Vazio>Sem honorários processados.</Vazio>
+            ) : (
+              <>
+                <EnvolveTabela className="rounded-none border-0 border-t">
+                  <Tabela>
+                    <thead>
+                      <tr>
+                        <Th>Data</Th>
+                        <Th>Independente</Th>
+                        <Th>Descrição</Th>
+                        <Th numerico>Bruto</Th>
+                        <Th numerico>Retenção</Th>
+                        <Th numerico>Líquido</Th>
+                        <Th>Lançamento</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {honorarios.map((h) => (
+                        <Tr key={h.id}>
+                          <Td className="tabular">
+                            {new Date(h.data).toLocaleDateString("pt-PT")}
+                          </Td>
+                          <Td className="max-w-[200px] truncate font-semibold">
+                            {h.nome}
+                          </Td>
+                          <Td className="max-w-[240px] truncate text-texto-suave">
+                            {h.descricao || "—"}
+                          </Td>
+                          <Td numerico>{formataMoeda(h.bruto, moeda)}</Td>
+                          <Td numerico>
+                            {formataMoeda(h.retencao, moeda)}
+                            <span className="ml-1 text-xs text-texto-suave">
+                              ({numeroLimpo(h.taxa)} %)
+                            </span>
+                          </Td>
+                          <Td numerico className="font-bold">
+                            {formataMoeda(h.liquido, moeda)}
+                          </Td>
+                          <Td className="tabular text-texto-suave">
+                            {h.lancamento_id ? (
+                              <Link
+                                href={`/contabilidade/movimentos?id=${h.lancamento_id}`}
+                                className="font-semibold text-marca"
+                              >
+                                {h.numero_op || "Ver"}
+                              </Link>
+                            ) : (
+                              "—"
+                            )}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      {/* Os totais são do mês filtrado, não da página. */}
+                      <tr className="border-t-2 border-borda font-bold">
+                        <Td>Totais</Td>
+                        <Td />
+                        <Td />
+                        <Td numerico>{formataMoeda(totais.bruto, moeda)}</Td>
+                        <Td numerico>{formataMoeda(totais.retencao, moeda)}</Td>
+                        <Td numerico>{formataMoeda(totais.liquido, moeda)}</Td>
+                        <Td />
+                      </tr>
+                    </tfoot>
+                  </Tabela>
+                </EnvolveTabela>
+                <BarraPaginacao
+                  pagina={pagina}
+                  {...pag.controlos}
+                  nome="honorários"
+                />
+              </>
+            )}
+          </Cartao>
+        </>
+      )}
 
-      {novoAberto && (
+      {(novoAberto || emEdicao) && (
         <FormularioIndependente
-          aoFechar={() => setNovoAberto(false)}
+          registo={emEdicao}
+          aoFechar={() => {
+            setNovoAberto(false);
+            setEmEdicao(null);
+          }}
           aoGravar={() => {
             setNovoAberto(false);
+            setEmEdicao(null);
             mutate();
           }}
         />
@@ -250,34 +353,51 @@ export default function Independentes() {
 
       {honorarioAberto && (
         <FormularioHonorario
-          independentes={independentes ?? []}
+          independentes={(independentes ?? []).filter(
+            (i) => i.estado !== "inactivo",
+          )}
           mes={mes}
           moeda={moeda}
           aoFechar={() => setHonorarioAberto(false)}
           aoGravar={(msg) => {
             setHonorarioAberto(false);
             setAviso(msg);
+            setAba("honorarios");
             mutateHon();
           }}
         />
       )}
+
+      <ConfirmarEliminar
+        aberto={aApagar !== null}
+        aoMudar={(a) => !a && setAApagar(null)}
+        titulo={`Eliminar ${aApagar?.nome ?? ""}?`}
+        aoConfirmar={eliminar}
+      >
+        A ficha desaparece. Quem já tem honorários processados não pode ser
+        eliminado — o IRT retido foi entregue ao Estado em nome dele; nesse
+        caso, ponha o estado a inactivo.
+      </ConfirmarEliminar>
     </>
   );
 }
 
 function FormularioIndependente({
+  registo,
   aoFechar,
   aoGravar,
 }: {
+  registo: Independente | null;
   aoFechar: () => void;
   aoGravar: () => void;
 }) {
+  const novo = registo === null;
   const [campos, setCampos] = useState({
-    nome: "",
-    nif: "",
-    atividade: "",
-    taxa_ret: "6.5",
-    estado: "activo",
+    nome: registo?.nome ?? "",
+    nif: registo?.nif ?? "",
+    atividade: registo?.atividade ?? "",
+    taxa_ret: registo?.taxa_ret ?? "6.5",
+    estado: registo?.estado ?? "activo",
   });
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
@@ -286,13 +406,15 @@ function FormularioIndependente({
     e.preventDefault();
     setErro(null);
     setAGravar(true);
+    const corpo = {
+      ...campos,
+      nome: campos.nome.trim(),
+      nif: campos.nif.trim() || null,
+      atividade: campos.atividade.trim() || null,
+    };
     try {
-      await api.post("/api/rh/independentes", {
-        ...campos,
-        nome: campos.nome.trim(),
-        nif: campos.nif.trim() || null,
-        atividade: campos.atividade.trim() || null,
-      });
+      if (novo) await api.post("/api/rh/independentes", corpo);
+      else await api.patch(`/api/rh/independentes/${registo.id}`, corpo);
       aoGravar();
     } catch (e2) {
       setErro(
@@ -306,7 +428,10 @@ function FormularioIndependente({
   }
 
   return (
-    <Modal titulo="Novo independente" aoFechar={aoFechar}>
+    <Modal
+      titulo={novo ? "Novo independente" : `Editar ${registo.nome}`}
+      aoFechar={aoFechar}
+    >
       <form onSubmit={submeter} className="flex flex-col gap-3 p-5">
         <Campo rotulo="Nome">
           <Entrada
@@ -327,12 +452,12 @@ function FormularioIndependente({
             />
           </Campo>
           <Campo
-            rotulo="Taxa de retenção (%)"
+            rotulo="Retenção IRT (%)"
             dica="6,5% é a taxa corrente para prestação de serviços."
           >
             <Entrada
               type="number"
-              step="0.01"
+              step="0.5"
               min="0"
               value={campos.taxa_ret}
               onChange={(e) =>
@@ -350,13 +475,28 @@ function FormularioIndependente({
             }
           />
         </Campo>
+        <Selector
+          rotulo="Estado"
+          valor={campos.estado}
+          aoMudar={(v) => setCampos((c) => ({ ...c, estado: v }))}
+          opcoes={[
+            { valor: "activo", rotulo: "Activo" },
+            { valor: "inactivo", rotulo: "Inactivo" },
+          ]}
+          larguraMinima="100%"
+        />
 
         {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
         <div className="mt-1 flex justify-end gap-2">
           <Botao onClick={aoFechar}>Cancelar</Botao>
-          <Botao type="submit" variante="primario" disabled={aGravar}>
-            {aGravar ? "A gravar…" : "Gravar"}
+          <Botao
+            type="submit"
+            variante="primario"
+            disabled={aGravar}
+            motivoBloqueio={aGravar ? "A gravar — aguarde." : undefined}
+          >
+            {aGravar ? "A gravar…" : "Guardar"}
           </Botao>
         </div>
       </form>
@@ -378,11 +518,12 @@ function FormularioHonorario({
   aoGravar: (mensagem: string) => void;
 }) {
   const { activo } = useExercicios();
-  const [independenteId, setIndependenteId] = useState("");
-  const [valor, setValor] = useState("0");
-  const [data, setData] = useState(`${mes}-01`);
+  const [independenteId, setIndependenteId] = useState(
+    independentes[0]?.id ?? "",
+  );
+  const [valor, setValor] = useState("");
+  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [descricao, setDescricao] = useState("");
-  const [ref, setRef] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
 
@@ -399,8 +540,8 @@ function FormularioHonorario({
   async function submeter(e: FormEvent) {
     e.preventDefault();
     setErro(null);
-    if (!independenteId) return setErro("Escolha o prestador.");
-    if (!Number(valor)) return setErro("Indique o valor do honorário.");
+    if (!independenteId) return setErro("Escolha o independente.");
+    if (!Number(valor)) return setErro("Indique um valor válido.");
     setAGravar(true);
     try {
       const r = await api.post<{ liquido: string; numero_op?: string }>(
@@ -411,18 +552,17 @@ function FormularioHonorario({
           data,
           mes,
           descricao: descricao.trim() || null,
-          ref: ref.trim() || null,
           exercicio_id: activo?.id,
         },
       );
       aoGravar(
-        `Honorário registado — líquido de ${formataMoeda(r.liquido, moeda)}${r.numero_op ? ` (operação ${r.numero_op})` : ""}.`,
+        `Honorário processado — líquido de ${formataMoeda(r.liquido, moeda)}${r.numero_op ? ` · lançamento ${r.numero_op}` : ""}.`,
       );
     } catch (e2) {
       setErro(
         e2 instanceof ErroApi
           ? e2.mensagemUtilizador
-          : "Não foi possível registar.",
+          : "Não foi possível processar.",
       );
     } finally {
       setAGravar(false);
@@ -430,28 +570,29 @@ function FormularioHonorario({
   }
 
   return (
-    <Modal titulo="Registar honorário" aoFechar={aoFechar}>
+    <Modal titulo="Processar honorário" aoFechar={aoFechar}>
       <form onSubmit={submeter} className="flex flex-col gap-3 p-5">
         <Selector
-          rotulo="Prestador"
+          rotulo="Independente"
           valor={independenteId}
           aoMudar={setIndependenteId}
           opcoes={independentes.map((i) => ({
             valor: i.id,
-            rotulo: `${i.nome} (${i.taxa_ret} %)`,
+            rotulo: `${i.nome} (${numeroLimpo(i.taxa_ret)} %)`,
           }))}
-          placeholder="Escolher prestador…"
+          placeholder="Escolher independente…"
           larguraMinima="100%"
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <Campo rotulo="Valor bruto">
             <Entrada
               type="number"
-              step="0.01"
+              step="1000"
               min="0"
               value={valor}
               onChange={(e) => setValor(e.target.value)}
               className="text-right tabular"
+              required
             />
           </Campo>
           <Campo rotulo="Data">
@@ -466,42 +607,38 @@ function FormularioHonorario({
         <Campo rotulo="Descrição">
           <Entrada
             value={descricao}
+            placeholder="Ex.: Serviços de consultoria — Julho"
             onChange={(e) => setDescricao(e.target.value)}
           />
         </Campo>
-        <Campo rotulo="Referência do documento">
-          <Entrada value={ref} onChange={(e) => setRef(e.target.value)} />
-        </Campo>
 
-        {previsao && (
-          <dl className="rounded-xl border border-borda bg-fundo p-3 text-sm">
-            <div className="flex justify-between py-0.5">
-              <dt className="text-texto-suave">Bruto</dt>
-              <dd className="tabular">{formataMoeda(previsao.bruto, moeda)}</dd>
-            </div>
-            <div className="flex justify-between py-0.5">
-              <dt className="text-texto-suave">
-                Retenção ({escolhido?.taxa_ret} %)
-              </dt>
-              <dd className="tabular text-perigo">
-                {formataMoeda(previsao.retencao, moeda)}
-              </dd>
-            </div>
-            <div className="mt-1 flex justify-between border-t border-borda pt-1.5 font-bold">
-              <dt>Líquido a pagar</dt>
-              <dd className="tabular">
-                {formataMoeda(previsao.liquido, moeda)}
-              </dd>
-            </div>
-          </dl>
-        )}
+        {/* Retenção e líquido ao fundo, como no Piloto. */}
+        <div className="flex flex-wrap justify-end gap-5 rounded-xl border border-borda bg-fundo px-4 py-2.5 text-sm">
+          <span className="text-texto-suave">
+            Retenção{escolhido ? ` (${numeroLimpo(escolhido.taxa_ret)} %)` : ""}{" "}
+            <b className="tabular text-texto">
+              {formataMoeda(previsao?.retencao ?? "0", moeda)}
+            </b>
+          </span>
+          <span className="text-texto-suave">
+            Líquido{" "}
+            <b className="tabular text-texto">
+              {formataMoeda(previsao?.liquido ?? "0", moeda)}
+            </b>
+          </span>
+        </div>
 
         {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
         <div className="mt-1 flex justify-end gap-2">
           <Botao onClick={aoFechar}>Cancelar</Botao>
-          <Botao type="submit" variante="primario" disabled={aGravar}>
-            {aGravar ? "A registar…" : "Registar e lançar"}
+          <Botao
+            type="submit"
+            variante="primario"
+            disabled={aGravar}
+            motivoBloqueio={aGravar ? "A processar — aguarde." : undefined}
+          >
+            {aGravar ? "A processar…" : "Processar e lançar"}
           </Botao>
         </div>
       </form>
