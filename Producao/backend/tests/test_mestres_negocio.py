@@ -358,7 +358,22 @@ def test_as_paginas_deixaram_de_ser_so_de_criar(pagina, rota, cap):
         / "frontend" / "src" / "app" / "(app)" / pagina / "page.tsx"
     )
     fonte = caminho.read_text(encoding="utf-8")
-    assert "api.patch" in fonte, f"{pagina} não altera"
+
+    # A ALTERAÇÃO pode estar na página ou numa ficha partilhada que ela use —
+    # os clientes passaram a usar a `FichaTerceiro`, com os sete separadores do
+    # Piloto. O que se exige é que exista caminho para alterar, não onde ele
+    # está escrito.
+    ficha = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "components" / "comercial" / "FichaTerceiro.tsx"
+    )
+    usa_ficha = "FichaTerceiro" in fonte
+    altera = "api.patch" in fonte or (
+        usa_ficha and "api.patch" in ficha.read_text(encoding="utf-8")
+    )
+    assert altera, f"{pagina} não altera"
+    if usa_ficha:
+        assert "emEdicao" in fonte, f"{pagina} não abre a ficha para alterar"
     # `api.delete` com o caminho literal ou por constante — as duas formas
     # existem nas páginas e as duas servem.
     assert "api.delete(" in fonte, f"{pagina} não elimina"

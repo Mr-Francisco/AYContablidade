@@ -61,22 +61,84 @@ class VendedorEntrada(BaseModel):
 
 
 class TerceiroEntrada(BaseModel):
+    """A ficha de terceiro do Piloto, inteira.
+
+    O modelo já tinha todos estes campos; era esta porta que só deixava passar
+    dez deles. A ficha do Piloto tem sete separadores — moradas, dados fiscais,
+    bancos, dados comerciais, crédito, contabilidade e observações — e o que
+    ficasse de fora daqui não havia forma de gravar: o utilizador preenchia e o
+    campo desaparecia sem aviso, que é a pior maneira de perder trabalho.
+    """
+
     nome: str = Field(min_length=1, max_length=200)
     numero: str | None = None
-    nif: str | None = None
+
+    # ---- Moradas ----
     morada: str | None = None
+    morada2: str | None = None
     localidade: str | None = None
+    codigo_postal: str | None = None
     provincia: str | None = None
     pais: str = "Angola"
     telefone: str | None = None
+    telefone2: str | None = None
+    fax: str | None = None
     email: str | None = None
-    conta: str | None = None
+    web: str | None = None
+    tipo_terceiro: str | None = None
+
+    # ---- Dados fiscais ----
+    nif: str | None = None
     regime_iva: str | None = None
+    isento_iva: bool = False
+    retencao_fonte: bool = False
+    reparticao_fiscal: str | None = None
+
+    # ---- Bancos ----
+    banco: str | None = None
+    iban: str | None = None
+    swift: str | None = None
+
+    # ---- Dados comerciais ----
     condicoes_pagamento: str | None = None
+    desconto_comercial: Decimal = Decimal("0")
+    moeda: str = "AKZ"
+    responsavel: str | None = None
+
+    # ---- Crédito ----
     limite_credito: Decimal = Decimal("0")
     dias_credito: int = 30
     estado: str = "activo"
+
+    # ---- Contabilidade e notas ----
+    conta: str | None = None
     observacoes: str | None = None
+
+
+def _terceiro_publico(c: Terceiro) -> dict:
+    """A ficha toda.
+
+    Devolvia-se um punhado de campos, e abrir um cliente para alterar trazia o
+    formulário meio vazio — gravar por cima apagava o resto. Devolver tudo o
+    que se pode gravar é a única forma de a ficha ser reversível.
+    """
+    return {
+        "id": c.id, "numero": c.numero, "nome": c.nome, "estado": c.estado,
+        "morada": c.morada, "morada2": c.morada2, "localidade": c.localidade,
+        "codigo_postal": c.codigo_postal, "provincia": c.provincia,
+        "pais": c.pais, "telefone": c.telefone, "telefone2": c.telefone2,
+        "fax": c.fax, "email": c.email, "web": c.web,
+        "tipo_terceiro": c.tipo_terceiro,
+        "nif": c.nif, "regime_iva": c.regime_iva, "isento_iva": c.isento_iva,
+        "retencao_fonte": c.retencao_fonte,
+        "reparticao_fiscal": c.reparticao_fiscal,
+        "banco": c.banco, "iban": c.iban, "swift": c.swift,
+        "condicoes_pagamento": c.condicoes_pagamento,
+        "desconto_comercial": c.desconto_comercial, "moeda": c.moeda,
+        "responsavel": c.responsavel,
+        "limite_credito": c.limite_credito, "dias_credito": c.dias_credito,
+        "conta": c.conta, "observacoes": c.observacoes,
+    }
 
 
 def _proximo_numero_terceiro(db: DB, empresa_id: UUID, tipo: str) -> str:
@@ -119,25 +181,21 @@ def listar_clientes(empresa: EmpresaAtual, db: DB, procura: str | None = None) -
     if procura:
         termo = f"%{procura}%"
         q = q.where(Terceiro.nome.ilike(termo) | Terceiro.nif.ilike(termo))
-    return [
-        {"id": c.id, "numero": c.numero, "nome": c.nome, "nif": c.nif,
-         "localidade": c.localidade, "telefone": c.telefone, "conta": c.conta,
-         "estado": c.estado,
-         # Acrescentados para o formulário de alteração poder vir preenchido.
-         # Aditivo: quem já consumia a rota não nota diferença.
-         "morada": c.morada, "provincia": c.provincia, "email": c.email}
-        for c in db.scalars(q.order_by(Terceiro.numero)).all()
-    ]
+    return [_terceiro_publico(c) for c in db.scalars(q.order_by(Terceiro.numero)).all()]
 
 
 @router.post("/clientes", status_code=status.HTTP_201_CREATED, dependencies=[GERIR])
 def criar_cliente(
     request: Request, dados: TerceiroEntrada, empresa: EmpresaAtual, db: DB
 ) -> dict:
+    # `tipo_terceiro` é escolhido na ficha («Cliente», «Cliente e Fornecedor»,
+    # …) e por isso sai do `model_dump` — passá-lo aqui e lá dava argumento
+    # repetido. Sem escolha, fica «Cliente», que é o que esta rota cria.
     c = Terceiro(
-        empresa_id=empresa.id, tipo="cliente", tipo_terceiro="Cliente",
+        empresa_id=empresa.id, tipo="cliente",
+        tipo_terceiro=dados.tipo_terceiro or "Cliente",
         numero=dados.numero or _proximo_numero_terceiro(db, empresa.id, "cliente"),
-        **dados.model_dump(exclude={"numero"}),
+        **dados.model_dump(exclude={"numero", "tipo_terceiro"}),
     )
     db.add(c)
     db.commit()
@@ -168,19 +226,51 @@ def criar_vendedor(
 
 
 class TerceiroAtualizar(BaseModel):
-    """O NÚMERO não se altera: é o que identifica o cliente nos documentos já
-    emitidos e o que forma a conta corrente."""
+    """A ficha inteira, opcional campo a campo.
+
+    O NÚMERO não se altera: é o que identifica o cliente nos documentos já
+    emitidos e o que forma a conta corrente.
+
+    Tudo o resto entra. Aceitar só dez dos trinta campos fazia com que alterar
+    a ficha perdesse silenciosamente o que não coubesse — e o que se perde numa
+    ficha de cliente é o IBAN, a repartição fiscal ou o desconto acordado.
+    """
 
     nome: str | None = Field(default=None, min_length=1, max_length=200)
-    nif: str | None = None
     morada: str | None = None
+    morada2: str | None = None
     localidade: str | None = None
+    codigo_postal: str | None = None
     provincia: str | None = None
     pais: str | None = None
     telefone: str | None = None
+    telefone2: str | None = None
+    fax: str | None = None
     email: str | None = None
-    conta: str | None = None
+    web: str | None = None
+    tipo_terceiro: str | None = None
+
+    nif: str | None = None
+    regime_iva: str | None = None
+    isento_iva: bool | None = None
+    retencao_fonte: bool | None = None
+    reparticao_fiscal: str | None = None
+
+    banco: str | None = None
+    iban: str | None = None
+    swift: str | None = None
+
+    condicoes_pagamento: str | None = None
+    desconto_comercial: Decimal | None = None
+    moeda: str | None = None
+    responsavel: str | None = None
+
+    limite_credito: Decimal | None = None
+    dias_credito: int | None = None
     estado: str | None = None
+
+    conta: str | None = None
+    observacoes: str | None = None
 
 
 class VendedorAtualizar(BaseModel):
