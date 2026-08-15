@@ -60,7 +60,7 @@ export default function ExistenciasPagina() {
       />
 
       {data && (
-        <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div className="min-w-0">
             <Kpi
               rotulo="Valor das existências"
@@ -85,6 +85,14 @@ export default function ExistenciasPagina() {
               cor={
                 data.em_rutura > 0 ? "var(--color-perigo)" : "var(--grafico-4)"
               }
+            />
+          </div>
+          <div className="min-w-0">
+            <Kpi
+              rotulo="Armazéns"
+              valor={String(armazens?.length ?? 0)}
+              detalhe="com ficha"
+              cor="var(--grafico-3)"
             />
           </div>
         </div>
@@ -134,53 +142,67 @@ export default function ExistenciasPagina() {
               : "Sem existências para mostrar."}
           </Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Código</Th>
-                  <Th>Descrição</Th>
-                  <Th>Un.</Th>
-                  <Th numerico>Stock</Th>
-                  <Th numerico>Stock mín.</Th>
-                  <Th numerico>Custo médio</Th>
-                  <Th numerico>Valor</Th>
-                  <Th>Estado</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {linhas.map((l) => (
-                  <Tr key={l.artigo_id}>
-                    <Td className="tabular font-bold">{l.codigo}</Td>
-                    <Td className="max-w-[300px] truncate font-semibold">
-                      {l.descricao}
-                    </Td>
-                    <Td>{l.unidade || "—"}</Td>
-                    <Td numerico className={l.rutura ? "text-perigo" : ""}>
-                      {l.stock}
-                    </Td>
-                    <Td numerico className="text-texto-suave">
-                      {l.stock_min}
-                    </Td>
-                    <Td numerico>{formataMoeda(l.custo_medio, moeda)}</Td>
-                    <Td numerico className="font-semibold">
-                      {formataMoeda(l.valor, moeda)}
-                    </Td>
-                    <Td>
-                      {l.rutura ? (
-                        <Selo cor="#c62828">
-                          <AlertTriangle size={11} aria-hidden />
-                          Ruptura
-                        </Selo>
-                      ) : (
-                        <Selo cor="#1a9c5f">Normal</Selo>
-                      )}
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <>
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-borda px-4 py-3">
+              <div>
+                <b>{empresa?.nome}</b>
+                <br />
+                <span className="text-[12.5px] text-texto-suave">
+                  Mapa de Existências
+                </span>
+              </div>
+              <span className="text-[12.5px] text-texto-suave">
+                Valores em {moeda}
+              </span>
+            </div>
+            <EnvolveTabela className="rounded-none border-0">
+              <Tabela>
+                <thead>
+                  <tr>
+                    <Th>Código</Th>
+                    <Th>Descrição</Th>
+                    <Th>Un.</Th>
+                    <Th numerico>Stock</Th>
+                    <Th numerico>Stock mín.</Th>
+                    <Th numerico>Custo médio</Th>
+                    <Th numerico>Valor</Th>
+                    <Th>Estado</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {linhas.map((l) => (
+                    <Tr key={l.artigo_id}>
+                      <Td className="tabular font-bold">{l.codigo}</Td>
+                      <Td className="max-w-[300px] truncate font-semibold">
+                        {l.descricao}
+                      </Td>
+                      <Td>{l.unidade || "—"}</Td>
+                      <Td numerico className={l.rutura ? "text-perigo" : ""}>
+                        {l.stock}
+                      </Td>
+                      <Td numerico className="text-texto-suave">
+                        {l.stock_min}
+                      </Td>
+                      <Td numerico>{formataMoeda(l.custo_medio, moeda)}</Td>
+                      <Td numerico className="font-semibold">
+                        {formataMoeda(l.valor, moeda)}
+                      </Td>
+                      <Td>
+                        {l.rutura ? (
+                          <Selo cor="#c62828">
+                            <AlertTriangle size={11} aria-hidden />
+                            Ruptura
+                          </Selo>
+                        ) : (
+                          <Selo cor="#1a9c5f">Normal</Selo>
+                        )}
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Tabela>
+            </EnvolveTabela>
+          </>
         )}
       </Cartao>
     </>

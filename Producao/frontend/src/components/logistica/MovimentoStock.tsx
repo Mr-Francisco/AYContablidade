@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Undo2 } from "lucide-react";
+import { Boxes, Search, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -449,6 +449,8 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
       {aberto && (
         <DialogoMestre
           titulo={config.titulo}
+          subtitulo={config.descricao}
+          icone={<Boxes size={18} />}
           aoFechar={() => {
             setAberto(false);
             setErro(null);
@@ -473,7 +475,7 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
               {/* O «resumo» do Piloto: stock actual, CUMP e valor, os três
                   números que dizem se o movimento faz sentido antes de o
                   gravar. */}
-              <div className="flex flex-wrap justify-end gap-4 text-[13px] text-texto-suave">
+              <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1 rounded-xl border border-borda bg-superficie-2 px-4 py-2.5 text-[13px] text-texto-suave">
                 <span>
                   Stock actual{" "}
                   <b className="tabular text-texto">

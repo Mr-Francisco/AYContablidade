@@ -141,6 +141,8 @@ export function ConfirmarEliminar(
 /** Formulário em diálogo, com o rodapé de acções já feito. */
 export function DialogoMestre({
   titulo,
+  subtitulo,
+  icone,
   aoFechar,
   aoSubmeter,
   aGravar,
@@ -150,6 +152,11 @@ export function DialogoMestre({
   rotuloGravar = "Gravar",
 }: {
   titulo: string;
+  /** Uma linha a dizer o que a janela faz. O título sozinho («Transferência»)
+   *  não diz o que vai acontecer ao stock. */
+  subtitulo?: string;
+  /** Símbolo da operação, num disco. Dá identidade à janela sem uma imagem. */
+  icone?: ReactNode;
   aoFechar: () => void;
   aoSubmeter: (e: FormEvent) => void;
   aGravar?: boolean;
@@ -163,10 +170,30 @@ export function DialogoMestre({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(560px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
-          <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
-            <Dialog.Title className="truncate text-[15px] font-bold">
-              {titulo}
-            </Dialog.Title>
+          {/* Cabeçalho com o símbolo da operação e uma linha a dizer o que ela
+              faz. Antes era um título solto sobre uma grelha de campos, e
+              todas as janelas se pareciam umas com as outras. */}
+          <div className="flex items-start justify-between gap-3 border-b border-borda bg-superficie-2 px-5 py-3.5">
+            <div className="flex min-w-0 items-center gap-3">
+              {icone && (
+                <span
+                  aria-hidden
+                  className="grid size-9 shrink-0 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--color-marca)_14%,transparent)] text-marca"
+                >
+                  {icone}
+                </span>
+              )}
+              <div className="min-w-0">
+                <Dialog.Title className="truncate text-[15px] font-bold">
+                  {titulo}
+                </Dialog.Title>
+                {subtitulo && (
+                  <p className="mt-0.5 truncate text-[12.5px] text-texto-suave">
+                    {subtitulo}
+                  </p>
+                )}
+              </div>
+            </div>
             <Dialog.Close asChild>
               <button
                 type="button"
@@ -183,8 +210,8 @@ export function DialogoMestre({
             onSubmit={aoSubmeter}
             className="min-w-0 flex-1 overflow-auto p-5"
           >
-            <div className="grid gap-3 sm:grid-cols-2">{children}</div>
-            {aviso && <div className="mt-3">{aviso}</div>}
+            <div className="grid gap-3.5 sm:grid-cols-2">{children}</div>
+            {aviso && <div className="mt-4 flex flex-col gap-2">{aviso}</div>}
             {erro && (
               <div className="mt-3">
                 <Alerta tipo="erro">{erro}</Alerta>
@@ -192,7 +219,7 @@ export function DialogoMestre({
             )}
           </form>
 
-          <div className="flex justify-end gap-2 border-t border-borda px-5 py-3.5">
+          <div className="flex justify-end gap-2 border-t border-borda bg-superficie-2 px-5 py-3.5">
             <Dialog.Close asChild>
               <Botao variante="neutro">Cancelar</Botao>
             </Dialog.Close>
