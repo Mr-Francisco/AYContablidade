@@ -20,7 +20,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import { CaixaHistorico } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -70,7 +70,6 @@ export default function Retencoes() {
   );
 
   // A lista cresce com o exercício; o rodapé diz quantos são.
-  const historico = useHistorico(data?.linhas);
 
   const tipos = Object.entries(data?.por_tipo ?? {});
 
@@ -143,7 +142,12 @@ export default function Retencoes() {
             {data.linhas.length === 0 ? (
               <Vazio>Sem retenções.</Vazio>
             ) : (
-              <>
+              // Caixa com scroll próprio e NÃO revelação por partes: este
+              // mapa imprime-se. Com `useHistorico`, o papel saía com as
+              // primeiras vinte e cinco linhas e o total de trezentas — um
+              // documento fiscal que se contradiz a si próprio. A caixa abre-se
+              // toda no `@media print`.
+              <CaixaHistorico altura={460}>
                 <EnvolveTabela className="rounded-none border-0">
                   <Tabela>
                     <thead>
@@ -158,7 +162,7 @@ export default function Retencoes() {
                       </tr>
                     </thead>
                     <tbody>
-                      {historico.visiveis.map((l) => (
+                      {data.linhas.map((l) => (
                         <Tr key={`${l.lancamento_id}-${l.conta}-${l.valor}`}>
                           <Td className="tabular">
                             {new Date(l.data).toLocaleDateString("pt-PT")}
@@ -194,8 +198,7 @@ export default function Retencoes() {
                     </tfoot>
                   </Tabela>
                 </EnvolveTabela>
-                <RodapeHistorico {...historico} nome="retenções" />
-              </>
+              </CaixaHistorico>
             )}
           </Cartao>
         </>

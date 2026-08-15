@@ -81,7 +81,10 @@ export function CaixaHistorico({
 }) {
   return (
     <div
-      className={`overflow-y-auto overscroll-contain ${className ?? ""}`}
+      // `caixa-historico` existe para o `@media print`: no papel a caixa
+      // abre-se e imprime tudo. Uma tabela cortada pela altura de um ecrã não
+      // é um documento.
+      className={`caixa-historico overflow-y-auto overscroll-contain ${className ?? ""}`}
       style={{ maxHeight: altura }}
     >
       {children}

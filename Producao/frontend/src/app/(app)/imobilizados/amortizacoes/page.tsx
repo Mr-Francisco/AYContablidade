@@ -24,7 +24,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import { CaixaHistorico } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -135,8 +135,6 @@ export default function Amortizacoes() {
       setReabrir(false);
     }
   }
-
-  const historico = useHistorico(processos);
 
   return (
     <>
@@ -435,38 +433,43 @@ export default function Amortizacoes() {
             {!processos?.length ? (
               <Vazio>Ainda não foi processado nenhum período.</Vazio>
             ) : (
-              <EnvolveTabela className="rounded-none border-0 border-t">
-                <Tabela>
-                  <thead>
-                    <tr>
-                      <Th>Período</Th>
-                      <Th>Data</Th>
-                      <Th numerico>Activos</Th>
-                      <Th numerico>Total amortizado</Th>
-                      <Th>Processado por</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historico.visiveis.map((p) => (
-                      <Tr key={p.id}>
-                        <Td className="font-semibold">
-                          {p.mes} —{" "}
-                          {periodos.find((x) => x.codigo === p.mes)?.nome ?? ""}
-                        </Td>
-                        <Td className="tabular">
-                          {new Date(p.data).toLocaleDateString("pt-PT")}
-                        </Td>
-                        <Td numerico>{p.itens}</Td>
-                        <Td numerico className="font-semibold">
-                          {formataMoeda(p.total_amort, moeda)}
-                        </Td>
-                        <Td className="text-texto-suave">{p.por || "—"}</Td>
-                      </Tr>
-                    ))}
-                  </tbody>
-                </Tabela>
-                <RodapeHistorico {...historico} nome="períodos" />
-              </EnvolveTabela>
+              // Caixa com scroll próprio: um exercício tem dezasseis períodos
+              // no máximo, mas a página não é dona do scroll de lista nenhuma.
+              // No papel a caixa abre-se — ver `@media print`.
+              <CaixaHistorico altura={420}>
+                <EnvolveTabela className="rounded-none border-0 border-t">
+                  <Tabela>
+                    <thead>
+                      <tr>
+                        <Th>Período</Th>
+                        <Th>Data</Th>
+                        <Th numerico>Activos</Th>
+                        <Th numerico>Total amortizado</Th>
+                        <Th>Processado por</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(processos ?? []).map((p) => (
+                        <Tr key={p.id}>
+                          <Td className="font-semibold">
+                            {p.mes} —{" "}
+                            {periodos.find((x) => x.codigo === p.mes)?.nome ??
+                              ""}
+                          </Td>
+                          <Td className="tabular">
+                            {new Date(p.data).toLocaleDateString("pt-PT")}
+                          </Td>
+                          <Td numerico>{p.itens}</Td>
+                          <Td numerico className="font-semibold">
+                            {formataMoeda(p.total_amort, moeda)}
+                          </Td>
+                          <Td className="text-texto-suave">{p.por || "—"}</Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                  </Tabela>
+                </EnvolveTabela>
+              </CaixaHistorico>
             )}
           </Cartao>
         </Tabs.Content>

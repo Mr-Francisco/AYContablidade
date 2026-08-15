@@ -209,6 +209,15 @@
     print-color-adjust: exact;
   }
 
+  /* No papel não há scroll: uma caixa de histórico imprime-se inteira.
+     Sem isto, um mapa de retenções com trezentas linhas saía com as oito que
+     coubessem na caixa — e uma folha fiscal truncada em silêncio é pior do que
+     nenhuma. */
+  .caixa-historico {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   /* Papel: preto sobre branco, seja qual for o tema escolhido no ecrã. */
   :root,
   [data-theme="dark"] {

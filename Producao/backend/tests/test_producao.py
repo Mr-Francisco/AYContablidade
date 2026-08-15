@@ -169,24 +169,76 @@ LISTAS_PAGINADAS = [
     "comercial/vendas",
     "comercial/consulta-faturas",
     "logistica/compras",
+    "plataforma/licencas",
+    "rh/processamento",
+    "rh/pagamentos",
 ]
 
-#: Ainda com o mecanismo antigo: revelam por partes no cliente, mas pedem tudo
-#: ao servidor. Cumprem metade da regra — a página não cresce — e falham a
-#: outra metade. A conversão está registada em
-#: `docs/documentacao/PENDENCIAS_PRIORITARIAS.md`, ponto 9.
+#: Destas, as que têm filtro do lado do cliente. Mudar o filtro tem de voltar
+#: à primeira página — ficar na página 3 de um conjunto que a pesquisa reduziu
+#: a duas linhas dá uma lista vazia sem explicação nenhuma.
+LISTAS_PAGINADAS_COM_FILTRO = [
+    "comercial/vendas",
+    "comercial/consulta-faturas",
+    "logistica/compras",
+    "plataforma/licencas",
+]
+
+#: Mapas e listas já limitadas por um filtro de negócio (o mês, o exercício, o
+#: período). Não paginam — três destas imprimem-se, e um mapa fiscal que sai no
+#: papel com vinte e cinco das trezentas linhas é pior do que não sair. O que
+#: cumprem é a outra metade da regra: o scroll é da CAIXA e não da página, e no
+#: `@media print` a caixa abre-se e imprime tudo.
+LISTAS_EM_CAIXA = [
+    "contabilidade/retencoes",
+    "imobilizados/amortizacoes",
+    "rh/independentes",
+]
+
+
+@pytest.mark.parametrize("pagina", LISTAS_EM_CAIXA)
+def test_os_mapas_ficam_em_caixa_com_scroll_proprio(pagina):
+    """REGRESSÃO: `useHistorico` num mapa que se imprime.
+
+    A revelação por partes não desenha as linhas escondidas — não estão no DOM.
+    Ao imprimir saíam vinte e cinco linhas debaixo de um total de trezentas: um
+    documento a contradizer-se a si próprio. A caixa mostra tudo e limita-se em
+    altura, e no papel abre-se.
+    """
+    from pathlib import Path
+
+    fonte = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "app" / "(app)" / pagina / "page.tsx"
+    ).read_text(encoding="utf-8")
+    assert "CaixaHistorico" in fonte, f"{pagina} não tem caixa própria"
+    assert "useHistorico(" not in fonte, f"{pagina} ainda esconde linhas do DOM"
+
+
+def test_a_caixa_abre_se_no_papel():
+    """A regra que faz a de cima funcionar: sem ela, a caixa corta na
+    impressão exactamente como cortava a revelação."""
+    from pathlib import Path
+
+    css = (
+        Path(__file__).resolve().parents[2] / "frontend" / "src" / "app" / "globals.css"
+    ).read_text(encoding="utf-8")
+    i = css.index("@media print")
+    assert ".caixa-historico" in css[i:], "o `@media print` não abre a caixa"
+
+#: As duas que faltam. Revelam por partes no cliente mas pedem tudo ao
+#: servidor: cumprem metade da regra e falham a outra.
+#:
+#: São as mais trabalhosas de propósito — as linhas do razão e do extracto
+#: levam saldo acumulado, calculado ao longo da lista. Paginar sem passar essa
+#: conta para o servidor daria uma segunda página a começar o saldo do zero.
+#: Registado em `docs/documentacao/PENDENCIAS_PRIORITARIAS.md`, ponto 9.
 #:
 #: `contabilidade/movimentos` não está em nenhuma das duas: a lista mudou-se
 #: para `ListaLancamentos.tsx` e tem teste próprio mais abaixo.
 LISTAS_CRONOLOGICAS = [
     "contabilidade/razao",
     "contabilidade/extrato",
-    "contabilidade/retencoes",
-    "plataforma/licencas",
-    "rh/independentes",
-    "rh/processamento",
-    "rh/pagamentos",
-    "imobilizados/amortizacoes",
 ]
 
 
@@ -206,10 +258,18 @@ def test_as_listas_convertidas_pedem_uma_janela_ao_servidor(pagina):
     ).read_text(encoding="utf-8")
     assert "usePaginacao" in fonte, f"{pagina} não gere o offset"
     assert "BarraPaginacao" in fonte, f"{pagina} não diz onde vai nem quantos há"
-    assert "useHistorico" not in fonte, f"{pagina} ainda revela no cliente"
+    assert "useHistorico(" not in fonte, f"{pagina} ainda revela no cliente"
     assert "LIMITE_PEDIDO" not in fonte, f"{pagina} ainda pede um lote grande"
-    # Mudar de filtro tem de voltar à primeira página: ficar na página 3 de um
-    # conjunto que encolheu dá uma lista vazia sem explicação.
+
+
+@pytest.mark.parametrize("pagina", LISTAS_PAGINADAS_COM_FILTRO)
+def test_mudar_de_filtro_volta_a_primeira_pagina(pagina):
+    from pathlib import Path
+
+    fonte = (
+        Path(__file__).resolve().parents[2]
+        / "frontend" / "src" / "app" / "(app)" / pagina / "page.tsx"
+    ).read_text(encoding="utf-8")
     assert "reiniciar()" in fonte, f"{pagina} não volta ao início ao filtrar"
 
 

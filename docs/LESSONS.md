@@ -158,3 +158,5 @@
 - Numa coluna flex, os filhos encolhem por omissão: sem `shrink-0` o gráfico ficava esmagado a 9 px em vez de a caixa fazer scroll.
 - Filtrar no cliente sobre uma resposta cortada mente duas vezes: procura só nos primeiros N e conta só o que apanhou. Filtro e agregados vão para o servidor, e os totais são do conjunto filtrado — nunca da página.
 - `usePaginacao` devolve `reiniciar`/`controlos` estáveis (`useCallback`/`useMemo`): recriados a cada render, entram em `useEffect` e dão ciclo de renderizações.
+- Mapa que se imprime não pagina nem revela por partes: as linhas escondidas não estão no DOM e o papel sai truncado por baixo do total certo. Caixa com scroll (`CaixaHistorico`) e `@media print` a abri-la.
+- Asserções sobre código-fonte procuram a CHAMADA (`useHistorico(`) e não a palavra: um comentário a explicar porque não se usa fazia falhar o teste.

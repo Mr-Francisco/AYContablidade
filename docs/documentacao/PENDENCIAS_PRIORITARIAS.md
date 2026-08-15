@@ -15,7 +15,7 @@ implementado** e não consta deste documento. Ver `PILOTO_VS_PRODUCAO.md`.
 | 1 | [Factura legal](#1-factura-legal) | **ALTA** | Facturar a clientes reais |
 | 3 | [Configurações da empresa](#3-configurações-da-empresa) | MÉDIA/ALTA | Parametrização por empresa |
 | 4 | [Recuperação de palavra-passe](#4-recuperação-de-palavra-passe-por-e-mail) | POSTERIOR | Nada — há alternativa manual |
-| 9 | [Paginação nas listagens que faltam](#9-paginação-nas-listagens-que-faltam) | ALTA | Nada, mas piora todos os dias |
+| 9 | [Paginação nas listagens](#9-paginação-nas-listagens--quase-toda-feita) | ALTA | Falta o razão e o extracto |
 | 10 | [Carrossel do painel inicial](#10-carrossel-do-painel-inicial) | ✅ FEITO | — |
 | 11 | [Página inicial ao estilo Primavera](#11-página-inicial-ao-estilo-primavera) | MÉDIA | Nada |
 
@@ -598,32 +598,32 @@ avisa do que importa. A lista curta é a decisão mais importante deste ponto.
 
 ---
 
-## 9. Paginação nas listagens que faltam
+## 9. Paginação nas listagens — quase toda feita
 
 **Pedido em:** 14 de Agosto de 2026 — regra do projecto, ver `CLAUDE.md`.
-**Estado:** o mecanismo está feito e aplicado a quatro listagens. Faltam as
-restantes.
+**Estado:** feito em todas menos duas.
 
-Feito: `src/api/paginacao.py`, `components/ui/Paginacao.tsx`, e aplicado a
-lançamentos, movimentos de stock, auditoria, notificações, **vendas, consulta
-de facturas e compras** — estas três com o filtro e os totais também do lado
-do servidor.
+**Paginam no servidor** (`{linhas, total, offset, limite}`): lançamentos,
+movimentos de stock, auditoria, notificações, vendas, consulta de facturas,
+compras, licenças, processamentos e pagamentos de salários. Vendas, facturas,
+licenças e pagamentos levam também os **agregados do conjunto filtrado**, para
+os indicadores do topo não passarem a contar só a página.
 
-Falta, ainda com o mecanismo antigo (`useHistorico`, que revela no cliente mas
-pede tudo ao servidor):
+**Ficam em caixa com scroll próprio**, sem paginar: retenções, amortizações e
+honorários. São mapas ou listas já limitadas por um filtro de negócio (o
+período, o exercício, o mês) e **três delas imprimem-se** — paginar um mapa
+fiscal faria sair no papel vinte e cinco das trezentas linhas. A caixa abre-se
+no `@media print`.
 
-- `contabilidade/razao`, `contabilidade/extrato`, `contabilidade/retencoes`
-- `plataforma/licencas`
-- `rh/independentes`, `rh/processamento`, `rh/pagamentos`
-- `imobilizados/amortizacoes`
+**Falta:** `contabilidade/razao` e `contabilidade/extrato`.
 
-Nota sobre o razão e o extracto: as linhas levam saldo acumulado, que se
-calcula ao longo da lista. Paginar sem passar esse cálculo para o servidor
-daria uma segunda página a começar o saldo do zero — é a única do grupo que
-precisa de trabalho no serviço e não só na rota.
+São as mais trabalhosas de propósito: as linhas levam **saldo acumulado**,
+calculado ao longo da lista. Paginar sem passar essa conta para o servidor
+daria uma segunda página a começar o saldo do zero — um extracto que mente. É
+a única do grupo que precisa de trabalho no serviço e não só na rota.
 
 **Como se confirma:** abrir cada ecrã com mais registos do que uma página e ver
-«1–25 de N» com o «seguinte» a funcionar; e o pedido na consola a levar
+«1–25 de N» com o «seguinte» a funcionar; e o pedido, na consola, a levar
 `offset`.
 
 ---

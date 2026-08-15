@@ -31,7 +31,11 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import {
+  BarraPaginacao,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
@@ -57,8 +61,9 @@ export default function ProcessamentoPagina() {
     `/api/rh/estado?mes=${mes}`,
     buscador,
   );
-  const { data: processamentos, mutate } = useSWR<Processamento[]>(
-    "/api/rh/processamentos",
+  const pag = usePaginacao();
+  const { data: paginaProc, mutate } = useSWR<Pagina<Processamento>>(
+    `/api/rh/processamentos?${pag.query}`,
     buscador,
   );
 
@@ -92,7 +97,7 @@ export default function ProcessamentoPagina() {
     }
   }
 
-  const historico = useHistorico(processamentos);
+  const processamentos = paginaProc?.linhas;
 
   return (
     <>
@@ -218,7 +223,7 @@ export default function ProcessamentoPagina() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.visiveis.map((p) => (
+                  {(processamentos ?? []).map((p) => (
                     <Tr key={p.id}>
                       <Td className="font-semibold">{mesPorExtenso(p.mes)}</Td>
                       <Td numerico>
@@ -243,7 +248,11 @@ export default function ProcessamentoPagina() {
                 </tbody>
               </Tabela>
             </EnvolveTabela>
-            <RodapeHistorico {...historico} nome="meses processados" />
+            <BarraPaginacao
+              pagina={paginaProc}
+              {...pag.controlos}
+              nome="meses processados"
+            />
           </>
         )}
       </Cartao>

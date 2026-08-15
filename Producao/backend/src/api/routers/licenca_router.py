@@ -26,6 +26,7 @@ from sqlalchemy import func, select
 from src.api.deps import DB, UtilizadorAtual, exigir_superadmin
 from src.core.config import get_settings
 from src.api.limites import LIMITE_LOGIN, limiter
+from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.auth.security import hash_password, validar_forca_password, verificar_password
 from src.core.constants import EstadoEmpresa, EstadoLicenca, Perfil
 from src.db.models.tenancy import Empresa, Licenca
@@ -181,12 +182,22 @@ def gerar(
     )
 
 
-@router.get("", response_model=list[LicencaPublica])
-def listar(db: DB, estado: str | None = None) -> list[LicencaPublica]:
-    """Licenças da plataforma.
+@router.get("")
+def listar(
+    db: DB,
+    estado: str | None = None,
+    offset: int = 0,
+    limite: int = LIMITE_OMISSAO,
+) -> dict:
+    """Licenças da plataforma, uma página de cada vez.
 
     Marca as pendentes fora de prazo antes de listar, para a lista dizer a
     verdade — a verificação que conta é a da activação, esta é arrumação.
+
+    `por_estado` conta TODAS as licenças e não as da página nem as do filtro.
+    Os três indicadores no topo são um retrato da plataforma: com o filtro em
+    «activas», dizer «0 pendentes» seria uma afirmação falsa sobre o negócio, e
+    não apenas um número escondido.
     """
     lic_svc.caducar_pendentes(db)
     db.commit()
@@ -194,10 +205,18 @@ def listar(db: DB, estado: str | None = None) -> list[LicencaPublica]:
     q = select(Licenca)
     if estado:
         q = q.where(Licenca.estado == estado)
-    return [
-        LicencaPublica.model_validate(l)
-        for l in db.scalars(q.order_by(Licenca.criado_em.desc())).all()
-    ]
+
+    p = pagina(
+        db,
+        q.order_by(Licenca.criado_em.desc()),
+        offset=offset,
+        limite=limite,
+        formatar=lambda l: LicencaPublica.model_validate(l).model_dump(),
+    )
+    contagens = db.execute(
+        select(Licenca.estado, func.count()).group_by(Licenca.estado)
+    ).all()
+    return {**p, "por_estado": {e: n for e, n in contagens}}
 
 
 @router.get("/empresas", response_model=list[EmpresaPublica])

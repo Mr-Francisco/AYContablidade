@@ -24,10 +24,19 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import {
+  BarraPaginacao,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { plural } from "@/lib/texto";
 import type { LicencaGerada, LicencaPlataforma } from "@/types";
+
+/** A resposta da listagem: uma página, e a contagem por estado de todas. */
+interface PaginaLicencas extends Pagina<LicencaPlataforma> {
+  por_estado: Record<string, number>;
+}
 
 const CORES: Record<string, string> = {
   pendente: "#c98a10",
@@ -46,13 +55,17 @@ export default function Licencas() {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
-  const { data, isLoading, mutate } = useSWR<LicencaPlataforma[]>(
-    `/api/licencas${estado !== "todos" ? `?estado=${estado}` : ""}`,
+  const p = usePaginacao();
+  const { data, isLoading, mutate } = useSWR<PaginaLicencas>(
+    `/api/licencas?${p.query}${estado !== "todos" ? `&estado=${estado}` : ""}`,
     buscador,
   );
 
-  const todas = data ?? [];
-  const porEstado = (e: string) => todas.filter((l) => l.estado === e).length;
+  const todas = data?.linhas ?? [];
+  // Do servidor e sobre TODAS as licenças: com o filtro em «activas», contar
+  // as pendentes da página dava sempre zero — uma afirmação falsa sobre a
+  // plataforma, e não só um número em falta.
+  const porEstado = (e: string) => data?.por_estado[e] ?? 0;
 
   async function revogar(l: LicencaPlataforma) {
     setOcupado(true);
@@ -71,8 +84,6 @@ export default function Licencas() {
       setARevogar(null);
     }
   }
-
-  const historico = useHistorico(todas);
 
   return (
     <>
@@ -128,7 +139,10 @@ export default function Licencas() {
         <Selector
           rotulo="Estado"
           valor={estado}
-          aoMudar={setEstado}
+          aoMudar={(v) => {
+            setEstado(v);
+            p.reiniciar();
+          }}
           opcoes={[
             { valor: "todos", rotulo: "Todos" },
             { valor: "pendente", rotulo: "Por activar" },
@@ -163,7 +177,7 @@ export default function Licencas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.visiveis.map((l) => (
+                  {todas.map((l) => (
                     <Tr key={l.id}>
                       <Td className="tabular font-bold">{l.chave_prefixo}…</Td>
                       <Td className="max-w-[220px] truncate font-semibold">
@@ -213,7 +227,7 @@ export default function Licencas() {
                 </tbody>
               </Tabela>
             </EnvolveTabela>
-            <RodapeHistorico {...historico} nome="licenças" />
+            <BarraPaginacao pagina={data} {...p.controlos} nome="licenças" />
           </>
         )}
       </Cartao>

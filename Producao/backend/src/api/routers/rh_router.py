@@ -9,9 +9,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from src.api.deps import DB, EmpresaAtual, exigir_cap
+from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.core.rh import IRPS_INFO, SUBS_NAO_SUJEITOS, SUBS_SUJEITOS
 from src.db.models.rh import (
     AlteracaoMensal,
@@ -234,17 +235,27 @@ def estado_mes(empresa: EmpresaAtual, db: DB, mes: str) -> dict:
 
 
 @router.get("/processamentos")
-def listar_processamentos(empresa: EmpresaAtual, db: DB) -> list[dict]:
-    regs = db.scalars(
+def listar_processamentos(
+    empresa: EmpresaAtual, db: DB, offset: int = 0, limite: int = LIMITE_OMISSAO
+) -> dict:
+    """Processamentos, uma página de cada vez.
+
+    Doze por ano parece pouco — mas uma empresa com dez anos de histórico tem
+    cento e vinte, e a lista nunca deixa de crescer. A regra não abre excepção
+    para listas que crescem devagar; abre para as que não crescem.
+    """
+    return pagina(
+        db,
         select(ProcessamentoSalarial)
         .where(ProcessamentoSalarial.empresa_id == empresa.id)
-        .order_by(ProcessamentoSalarial.mes.desc())
-    ).all()
-    return [
-        {"id": p.id, "mes": p.mes, "totais": p.totais, "lancado": p.lancado,
-         "lancamento_id": p.lancamento_id, "criado_em": p.criado_em}
-        for p in regs
-    ]
+        .order_by(ProcessamentoSalarial.mes.desc()),
+        offset=offset,
+        limite=limite,
+        formatar=lambda p: {
+            "id": p.id, "mes": p.mes, "totais": p.totais, "lancado": p.lancado,
+            "lancamento_id": p.lancamento_id, "criado_em": p.criado_em,
+        },
+    )
 
 
 @router.post("/processamentos", dependencies=[GERIR])
@@ -260,17 +271,64 @@ def processar(
 
 
 @router.get("/pagamentos")
-def listar_pagamentos(empresa: EmpresaAtual, db: DB) -> list[dict]:
-    regs = db.scalars(
+def listar_pagamentos(
+    empresa: EmpresaAtual, db: DB, offset: int = 0, limite: int = LIMITE_OMISSAO
+) -> dict:
+    return pagina(
+        db,
         select(PagamentoSalarial)
         .where(PagamentoSalarial.empresa_id == empresa.id)
-        .order_by(PagamentoSalarial.mes.desc())
+        .order_by(PagamentoSalarial.mes.desc()),
+        offset=offset,
+        limite=limite,
+        formatar=lambda p: {
+            "id": p.id, "mes": p.mes, "valor": p.valor, "conta": p.conta,
+            "lancado": p.lancado, "numero_op": p.numero_op,
+        },
+    )
+
+
+@router.get("/resumo-pagamentos")
+def resumo_pagamentos(empresa: EmpresaAtual, db: DB) -> dict:
+    """Os quatro números do topo do ecrã de pagamentos.
+
+    Vêm do servidor porque a lista passou a ser paginada: somados no cliente,
+    o «total pago» passaria a ser o total da PÁGINA — e um total de salários
+    que muda quando se carrega em «seguinte» não é um total, é um acidente.
+
+    «Por pagar» é o que foi processado e ainda não tem pagamento: cruza os dois
+    conjuntos pelo mês, que é a chave por que a folha se organiza.
+    """
+    pagos = select(PagamentoSalarial.mes).where(
+        PagamentoSalarial.empresa_id == empresa.id
+    )
+    total_pago, n_pagamentos = db.execute(
+        select(
+            func.coalesce(func.sum(PagamentoSalarial.valor), 0), func.count()
+        ).where(PagamentoSalarial.empresa_id == empresa.id)
+    ).one()
+
+    processados = db.scalars(
+        select(ProcessamentoSalarial).where(
+            ProcessamentoSalarial.empresa_id == empresa.id
+        )
     ).all()
-    return [
-        {"id": p.id, "mes": p.mes, "valor": p.valor, "conta": p.conta,
-         "lancado": p.lancado, "numero_op": p.numero_op}
-        for p in regs
-    ]
+    meses_pagos = set(db.scalars(pagos).all())
+    por_pagar = sum(
+        (
+            Decimal(str((p.totais or {}).get("liquido") or 0))
+            for p in processados
+            if p.mes not in meses_pagos
+        ),
+        Decimal("0"),
+    )
+
+    return {
+        "total_pago": total_pago,
+        "n_pagamentos": n_pagamentos,
+        "meses_processados": len(processados),
+        "por_pagar": por_pagar,
+    }
 
 
 @router.post("/pagamentos", dependencies=[GERIR])

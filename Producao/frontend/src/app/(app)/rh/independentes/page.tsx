@@ -26,7 +26,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import { CaixaHistorico } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { big, formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
@@ -60,8 +60,6 @@ export default function Independentes() {
       liquido: soma(...lista.map((h) => h.liquido)),
     };
   }, [honorarios]);
-
-  const historico = useHistorico(honorarios);
 
   return (
     <>
@@ -188,50 +186,53 @@ export default function Independentes() {
           ) : !honorarios?.length ? (
             <Vazio>Sem honorários registados neste mês.</Vazio>
           ) : (
-            <EnvolveTabela className="rounded-none border-0 border-t">
-              <Tabela>
-                <thead>
-                  <tr>
-                    <Th>Data</Th>
-                    <Th>Prestador</Th>
-                    <Th>Descrição</Th>
-                    <Th numerico>Bruto</Th>
-                    <Th numerico>Retenção</Th>
-                    <Th numerico>Líquido</Th>
-                    <Th>Nº Op.</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historico.visiveis.map((h) => (
-                    <Tr key={h.id}>
-                      <Td className="tabular">
-                        {new Date(h.data).toLocaleDateString("pt-PT")}
-                      </Td>
-                      <Td className="max-w-[160px] truncate font-semibold">
-                        {h.nome}
-                      </Td>
-                      <Td className="max-w-[180px] truncate text-texto-suave">
-                        {h.descricao || "—"}
-                      </Td>
-                      <Td numerico>{formataMoeda(h.bruto, moeda)}</Td>
-                      <Td numerico>
-                        {formataMoeda(h.retencao, moeda)}
-                        <span className="ml-1 text-xs text-texto-suave">
-                          ({h.taxa} %)
-                        </span>
-                      </Td>
-                      <Td numerico className="font-semibold">
-                        {formataMoeda(h.liquido, moeda)}
-                      </Td>
-                      <Td className="tabular text-texto-suave">
-                        {h.numero_op || "—"}
-                      </Td>
-                    </Tr>
-                  ))}
-                </tbody>
-              </Tabela>
-              <RodapeHistorico {...historico} nome="honorários" />
-            </EnvolveTabela>
+            // O pedido já está limitado ao mês escolhido; o que faltava era o
+            // scroll ser DESTA caixa e não da página.
+            <CaixaHistorico altura={420}>
+              <EnvolveTabela className="rounded-none border-0 border-t">
+                <Tabela>
+                  <thead>
+                    <tr>
+                      <Th>Data</Th>
+                      <Th>Prestador</Th>
+                      <Th>Descrição</Th>
+                      <Th numerico>Bruto</Th>
+                      <Th numerico>Retenção</Th>
+                      <Th numerico>Líquido</Th>
+                      <Th>Nº Op.</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(honorarios ?? []).map((h) => (
+                      <Tr key={h.id}>
+                        <Td className="tabular">
+                          {new Date(h.data).toLocaleDateString("pt-PT")}
+                        </Td>
+                        <Td className="max-w-[160px] truncate font-semibold">
+                          {h.nome}
+                        </Td>
+                        <Td className="max-w-[180px] truncate text-texto-suave">
+                          {h.descricao || "—"}
+                        </Td>
+                        <Td numerico>{formataMoeda(h.bruto, moeda)}</Td>
+                        <Td numerico>
+                          {formataMoeda(h.retencao, moeda)}
+                          <span className="ml-1 text-xs text-texto-suave">
+                            ({h.taxa} %)
+                          </span>
+                        </Td>
+                        <Td numerico className="font-semibold">
+                          {formataMoeda(h.liquido, moeda)}
+                        </Td>
+                        <Td className="tabular text-texto-suave">
+                          {h.numero_op || "—"}
+                        </Td>
+                      </Tr>
+                    ))}
+                  </tbody>
+                </Tabela>
+              </EnvolveTabela>
+            </CaixaHistorico>
           )}
         </Cartao>
       </div>

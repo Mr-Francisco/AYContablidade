@@ -28,13 +28,25 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
-import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
+import {
+  BarraPaginacao,
+  type Pagina,
+  usePaginacao,
+} from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
-import { formataMoeda, soma } from "@/lib/dinheiro";
+import { formataMoeda } from "@/lib/dinheiro";
 import { useContas, useExercicios } from "@/lib/hooks";
 import { plural } from "@/lib/texto";
 import type { Folha, PagamentoSalarial } from "@/types";
+
+/** Os quatro números do topo, calculados sobre TUDO e não sobre a página. */
+interface ResumoPagamentos {
+  total_pago: string;
+  n_pagamentos: number;
+  meses_processados: number;
+  por_pagar: string;
+}
 
 export default function Pagamentos() {
   const { empresa, pode } = useAuth();
@@ -57,8 +69,9 @@ export default function Pagamentos() {
     `/api/rh/folha?mes=${mes}&so_ativos=true`,
     buscador,
   );
-  const { data: pagamentos, mutate } = useSWR<PagamentoSalarial[]>(
-    "/api/rh/pagamentos",
+  const pag = usePaginacao();
+  const { data: paginaPag, mutate } = useSWR<Pagina<PagamentoSalarial>>(
+    `/api/rh/pagamentos?${pag.query}`,
     buscador,
   );
 
@@ -97,20 +110,18 @@ export default function Pagamentos() {
     }
   }
 
-  const historico = useHistorico(pagamentos);
+  const pagamentos = paginaPag?.linhas;
 
   const kz = (v: string) => formataMoeda(v, moeda, 0);
-  const { data: processamentos } = useSWR<{ mes: string; total: string }[]>(
-    "/api/rh/processamentos",
+  // Os quatro números do topo vêm do servidor e não desta página.
+  //
+  // Somados aqui, passariam a ser os da PÁGINA — um total de salários que muda
+  // ao carregar em «seguinte» não é um total. E «Por pagar» estava sempre a
+  // zero por outra razão: lia `p.total` de uma resposta que traz `totais`, um
+  // dicionário. O campo nunca existiu, e o KPI nunca mostrou outra coisa.
+  const { data: resumo } = useSWR<ResumoPagamentos>(
+    "/api/rh/resumo-pagamentos",
     buscador,
-  );
-  const totalPago = soma(...(pagamentos ?? []).map((p) => p.valor));
-  // Por pagar: o que foi processado e ainda não tem pagamento registado.
-  const mesesPagos = new Set((pagamentos ?? []).map((p) => p.mes));
-  const porPagar = soma(
-    ...(processamentos ?? [])
-      .filter((p) => !mesesPagos.has(p.mes))
-      .map((p) => p.total ?? "0"),
   );
 
   return (
@@ -140,19 +151,23 @@ export default function Pagamentos() {
       <GrelhaKpis>
         <Kpi
           rotulo="Total pago"
-          valor={kz(totalPago.toString())}
-          detalhe={plural(pagamentos?.length ?? 0, "pagamento")}
+          valor={kz(resumo?.total_pago ?? "0")}
+          detalhe={plural(resumo?.n_pagamentos ?? 0, "pagamento")}
           cor="#16a085"
         />
         <Kpi
           rotulo="Por pagar"
-          valor={kz(porPagar.toString())}
-          detalhe={`${processamentos?.length ?? 0} ${(processamentos?.length ?? 0) === 1 ? "mês processado" : "meses processados"}`}
+          valor={kz(resumo?.por_pagar ?? "0")}
+          detalhe={plural(
+            resumo?.meses_processados ?? 0,
+            "mês processado",
+            "meses processados",
+          )}
           cor="var(--grafico-1)"
         />
         <Kpi
           rotulo="Meses processados"
-          valor={String(processamentos?.length ?? 0)}
+          valor={String(resumo?.meses_processados ?? 0)}
           cor="var(--color-azul)"
         />
         <Kpi
@@ -223,7 +238,7 @@ export default function Pagamentos() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.visiveis.map((p) => (
+                  {(pagamentos ?? []).map((p) => (
                     <Tr key={p.id}>
                       <Td className="font-semibold">{mesPorExtenso(p.mes)}</Td>
                       <Td numerico className="font-semibold">
@@ -243,7 +258,11 @@ export default function Pagamentos() {
                 </tbody>
               </Tabela>
             </EnvolveTabela>
-            <RodapeHistorico {...historico} nome="pagamentos" />
+            <BarraPaginacao
+              pagina={paginaPag}
+              {...pag.controlos}
+              nome="pagamentos"
+            />
           </>
         )}
       </Cartao>
