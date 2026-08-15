@@ -359,17 +359,23 @@ def test_as_paginas_deixaram_de_ser_so_de_criar(pagina, rota, cap):
     )
     fonte = caminho.read_text(encoding="utf-8")
 
-    # A ALTERAÇÃO pode estar na página ou numa ficha partilhada que ela use —
-    # os clientes passaram a usar a `FichaTerceiro`, com os sete separadores do
-    # Piloto. O que se exige é que exista caminho para alterar, não onde ele
-    # está escrito.
-    ficha = (
-        Path(__file__).resolve().parents[2]
-        / "frontend" / "src" / "components" / "comercial" / "FichaTerceiro.tsx"
-    )
-    usa_ficha = "FichaTerceiro" in fonte
-    altera = "api.patch" in fonte or (
-        usa_ficha and "api.patch" in ficha.read_text(encoding="utf-8")
+    # A ALTERAÇÃO pode estar na página ou numa ficha que ela importe — os
+    # clientes usam a `FichaTerceiro` e os colaboradores a `FichaColaborador`,
+    # cada uma com os separadores do Piloto. O que se exige é que exista
+    # caminho para alterar, não onde ele está escrito; por isso segue-se o que
+    # a página importa em vez de fixar nomes, que é o que obrigava a mexer
+    # neste teste sempre que uma ficha nova nascia.
+    import re
+
+    src = Path(__file__).resolve().parents[2] / "frontend" / "src"
+    importadas = [
+        src / f"{m}.tsx"
+        for m in re.findall(r'from "@/(components/[\w/]+)"', fonte)
+    ]
+    usa_ficha = any("Ficha" in f.name for f in importadas)
+    altera = "api.patch" in fonte or any(
+        f.exists() and "api.patch" in f.read_text(encoding="utf-8")
+        for f in importadas
     )
     assert altera, f"{pagina} não altera"
     if usa_ficha:

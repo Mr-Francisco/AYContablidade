@@ -17,6 +17,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Integer,
     Numeric,
     String,
     Text,
@@ -49,11 +50,51 @@ class Colaborador(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     data_admissao: Mapped[date | None] = mapped_column(Date)
     iban: Mapped[str | None] = mapped_column(String(60))
 
-    # Identificação exigida pelo Mapa de Remunerações (Modelo IRT A2.1 da AGT).
+    # ---- Identificação ----
+    # A ficha do Piloto (`pessoal.html`) tem oito separadores. Estavam aqui
+    # quinze campos dos trinta, e os que faltavam não havia sequer onde os
+    # guardar — quem preenchesse a morada ou o contacto perdia-os ao gravar.
+    nome_abreviado: Mapped[str | None] = mapped_column(String(80))
+    genero: Mapped[str | None] = mapped_column(String(20))
+    data_nascimento: Mapped[date | None] = mapped_column(Date)
+    nacionalidade: Mapped[str | None] = mapped_column(String(60))
+    naturalidade: Mapped[str | None] = mapped_column(String(120))
+    morada: Mapped[str | None] = mapped_column(String(300))
+    localidade: Mapped[str | None] = mapped_column(String(120))
+    codigo_postal: Mapped[str | None] = mapped_column(String(20))
+    pais: Mapped[str | None] = mapped_column(String(60))
+    comuna: Mapped[str | None] = mapped_column(String(80))
+    email: Mapped[str | None] = mapped_column(String(200))
+    telefone: Mapped[str | None] = mapped_column(String(40))
+    telemovel: Mapped[str | None] = mapped_column(String(40))
+
+    # ---- Documentos ----
+    tipo_documento: Mapped[str | None] = mapped_column(String(40))
+    num_documento: Mapped[str | None] = mapped_column(String(40))
+    validade_documento: Mapped[date | None] = mapped_column(Date)
+
+    # ---- Dados fiscais ----
+    # Exigidos pelo Mapa de Remunerações (Modelo IRT A2.1 da AGT).
     nif: Mapped[str | None] = mapped_column(String(20))
     num_ss: Mapped[str | None] = mapped_column(String(30))
+    estado_civil: Mapped[str | None] = mapped_column(String(30))
+    dependentes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    regime_irt: Mapped[str | None] = mapped_column(String(80))
     provincia: Mapped[str | None] = mapped_column(String(40))
     municipio: Mapped[str | None] = mapped_column(String(80))
+
+    # ---- Contrato ----
+    tipo_contrato: Mapped[str | None] = mapped_column(String(40))
+    data_fim: Mapped[date | None] = mapped_column(Date)
+
+    # ---- Pagamento ----
+    forma_pagamento: Mapped[str | None] = mapped_column(String(40))
+    banco: Mapped[str | None] = mapped_column(String(120))
+
+    # ---- Férias e habilitações ----
+    dias_ferias: Mapped[int] = mapped_column(Integer, default=22, nullable=False)
+    habilitacoes: Mapped[str | None] = mapped_column(String(200))
+    notas: Mapped[str | None] = mapped_column(Text)
 
     estado: Mapped[str] = mapped_column(String(20), default="activo", nullable=False)
 

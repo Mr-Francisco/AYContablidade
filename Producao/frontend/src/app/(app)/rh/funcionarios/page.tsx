@@ -1,10 +1,10 @@
 "use client";
 
-import { Plus, Search, X } from "lucide-react";
-import { Dialog, Tabs } from "radix-ui";
-import { type FormEvent, useMemo, useState } from "react";
+import { Plus, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { GrelhaKpis } from "@/components/painel";
+import { FichaColaborador } from "@/components/rh/FichaColaborador";
 import {
   ACarregar,
   Alerta,
@@ -25,12 +25,13 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
-import { formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
+import { formataMoeda, soma } from "@/lib/dinheiro";
 import type { Colaborador, Folha } from "@/types";
 
-const SEPARADOR =
+const _SEPARADOR =
   "rounded-lg px-3 py-1.5 text-sm font-semibold text-texto-suave data-[state=active]:bg-superficie data-[state=active]:text-texto data-[state=active]:shadow-suave";
 
 export default function Funcionarios() {
@@ -39,6 +40,7 @@ export default function Funcionarios() {
 
   const [procura, setProcura] = useState("");
   const [estado, setEstado] = useState("todos");
+  const [categoria, setCategoria] = useState("todas");
   const [novoAberto, setNovoAberto] = useState(false);
   const [emEdicao, setEmEdicao] = useState<Colaborador | null>(null);
   const [aApagar, setAApagar] = useState<Colaborador | null>(null);
@@ -66,25 +68,37 @@ export default function Funcionarios() {
     }
   }
 
-  const { data, isLoading, mutate } = useSWR<Colaborador[]>(
+  const { data, isLoading, error, mutate } = useSWR<Colaborador[]>(
     "/api/rh/colaboradores",
     buscador,
   );
+
+  // As carreiras que existem mesmo, tiradas das fichas — uma lista fixa
+  // ficaria desactualizada no dia em que o RH criasse uma categoria nova.
+  const categorias = useMemo(() => {
+    const vistas = new Set<string>();
+    for (const c of data ?? []) if (c.categoria) vistas.add(c.categoria);
+    return [...vistas].sort((a, b) => a.localeCompare(b, "pt"));
+  }, [data]);
 
   const filtrados = useMemo(() => {
     const t = procura.trim().toLowerCase();
     return (data ?? []).filter((c) => {
       if (estado !== "todos" && c.estado !== estado) return false;
+      if (categoria !== "todas" && (c.categoria ?? "") !== categoria)
+        return false;
       if (!t) return true;
       return (
         c.nome.toLowerCase().includes(t) ||
         c.numero.toLowerCase().includes(t) ||
+        (c.nif ?? "").toLowerCase().includes(t) ||
+        (c.num_ss ?? "").toLowerCase().includes(t) ||
         (c.categoria ?? "").toLowerCase().includes(t)
       );
     });
-  }, [data, procura, estado]);
+  }, [data, procura, estado, categoria]);
 
-  const totalBase = useMemo(
+  const _totalBase = useMemo(
     () => soma(...filtrados.map((c) => c.salario_base)),
     [filtrados],
   );
@@ -150,7 +164,7 @@ export default function Funcionarios() {
               type="search"
               value={procura}
               onChange={(e) => setProcura(e.target.value)}
-              placeholder="Nome, número ou categoria…"
+              placeholder="Nome, número, NIF, Nº SS ou categoria…"
               className="pl-9"
             />
           </div>
@@ -165,6 +179,17 @@ export default function Funcionarios() {
             { valor: "inactivo", rotulo: "Inactivos" },
           ]}
         />
+        {/* Categoria/carreira: o filtro que faltava. Quem processa a folha
+            trabalha por carreira, não por lista inteira. */}
+        <Selector
+          rotulo="Categoria"
+          valor={categoria}
+          aoMudar={setCategoria}
+          opcoes={[
+            { valor: "todas", rotulo: "Todas" },
+            ...categorias.map((c) => ({ valor: c, rotulo: c })),
+          ]}
+        />
         <span className="flex-1" />
         {pode("rh.gerir") && (
           <Botao variante="acento" onClick={() => setNovoAberto(true)}>
@@ -177,9 +202,16 @@ export default function Funcionarios() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
+        ) : error ? (
+          // Um 403 pintado de «ainda não há funcionários» manda o utilizador
+          // procurar fichas que existem e ele não pode ver. O servidor já
+          // tinha dito qual era o problema.
+          <div className="p-4">
+            <FalhaAoCarregar erro={error} oQue="os funcionários" />
+          </div>
         ) : !filtrados.length ? (
           <Vazio>
-            {procura.trim() || estado !== "todos"
+            {procura.trim() || estado !== "todos" || categoria !== "todas"
               ? "Nenhum funcionário corresponde aos filtros."
               : "Ainda não há funcionários registados."}
           </Vazio>
@@ -190,6 +222,7 @@ export default function Funcionarios() {
                 <tr>
                   <Th>Nº</Th>
                   <Th>Nome</Th>
+                  <Th>NIF</Th>
                   <Th>Categoria</Th>
                   <Th numerico>Salário base</Th>
                   <Th numerico>Subsídios</Th>
@@ -205,6 +238,20 @@ export default function Funcionarios() {
                     <Td className="tabular font-bold">{c.numero}</Td>
                     <Td className="max-w-[240px] truncate font-semibold">
                       {c.nome}
+                    </Td>
+                    {/* O NIF em falta. É o que identifica o trabalhador
+                        perante a AGT, e sem ele não há Mapa de Remunerações —
+                        ver a lista sem esta coluna era não ver quem falta
+                        completar. */}
+                    <Td className="tabular">
+                      {c.nif || (
+                        <span
+                          className="text-aviso"
+                          title="Sem NIF nem documento no Mapa de Remunerações"
+                        >
+                          em falta
+                        </span>
+                      )}
                     </Td>
                     <Td className="text-texto-suave">{c.categoria || "—"}</Td>
                     <Td numerico>{formataMoeda(c.salario_base, moeda)}</Td>
@@ -239,8 +286,8 @@ export default function Funcionarios() {
       </Cartao>
 
       {(novoAberto || emEdicao) && (
-        <FormularioColaborador
-          colaborador={emEdicao}
+        <FichaColaborador
+          registo={emEdicao}
           aoFechar={() => {
             setNovoAberto(false);
             setEmEdicao(null);
@@ -271,306 +318,5 @@ export default function Funcionarios() {
         ficha. Para o tirar do processamento sem apagar, ponha-o inactivo.
       </ConfirmarEliminar>
     </>
-  );
-}
-
-function FormularioColaborador({
-  colaborador,
-  aoFechar,
-  aoGravar,
-}: {
-  colaborador: Colaborador | null;
-  aoFechar: () => void;
-  aoGravar: () => void;
-}) {
-  const novo = colaborador === null;
-  const { data: provincias } = useSWR<string[]>(
-    "/api/comercial/provincias",
-    buscador,
-    { revalidateOnFocus: false },
-  );
-
-  const [campos, setCampos] = useState({
-    numero: colaborador?.numero ?? "",
-    nome: colaborador?.nome ?? "",
-    categoria: colaborador?.categoria ?? "",
-    salario_base: colaborador?.salario_base ?? "0",
-    subsidios: colaborador?.subsidios ?? "0",
-    subsidio_ferias: colaborador?.subsidio_ferias ?? "0",
-    subsidio_natal: colaborador?.subsidio_natal ?? "0",
-    subs_nao_sujeitos: colaborador?.subs_nao_sujeitos ?? "0",
-    data_admissao:
-      colaborador?.data_admissao ?? new Date().toISOString().slice(0, 10),
-    nif: colaborador?.nif ?? "",
-    num_ss: colaborador?.num_ss ?? "",
-    iban: colaborador?.iban ?? "",
-    provincia: colaborador?.provincia ?? "Luanda",
-    municipio: colaborador?.municipio ?? "",
-    estado: colaborador?.estado ?? "activo",
-  });
-  const [erro, setErro] = useState<string | null>(null);
-  const [aGravar, setAGravar] = useState(false);
-
-  function alterar(campo: string, valor: string) {
-    setCampos((c) => ({ ...c, [campo]: valor }));
-  }
-
-  async function submeter(e: FormEvent) {
-    e.preventDefault();
-    setErro(null);
-    if (!campos.nome.trim()) return setErro("Indique o nome.");
-    setAGravar(true);
-    try {
-      const corpo = {
-        ...campos,
-        nome: campos.nome.trim(),
-        categoria: campos.categoria.trim() || null,
-        nif: campos.nif.trim() || null,
-        num_ss: campos.num_ss.trim() || null,
-        iban: campos.iban.trim() || null,
-        municipio: campos.municipio.trim() || null,
-        data_admissao: campos.data_admissao || null,
-      };
-      if (novo) {
-        await api.post("/api/rh/colaboradores", {
-          ...corpo,
-          numero: campos.numero.trim() || null,
-        });
-      } else {
-        // O número fica de fora: é o que identifica o colaborador na folha e
-        // nos recibos já processados.
-        const { numero: _numero, ...semNumero } = corpo;
-        await api.patch(`/api/rh/colaboradores/${colaborador.id}`, semNumero);
-      }
-      aoGravar();
-    } catch (e2) {
-      setErro(
-        e2 instanceof ErroApi
-          ? e2.mensagemUtilizador
-          : "Não foi possível gravar.",
-      );
-    } finally {
-      setAGravar(false);
-    }
-  }
-
-  return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(760px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
-          <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
-            <Dialog.Title className="text-[15px] font-bold">
-              {novo ? "Novo funcionário" : `Alterar ${colaborador.nome}`}
-            </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
-              >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
-          </div>
-
-          <form
-            onSubmit={submeter}
-            id="form-colaborador"
-            className="min-w-0 flex-1 overflow-auto p-5"
-          >
-            <Tabs.Root defaultValue="geral">
-              <Tabs.List className="mb-4 inline-flex gap-1 rounded-xl bg-fundo p-1">
-                <Tabs.Trigger value="geral" className={SEPARADOR}>
-                  Geral
-                </Tabs.Trigger>
-                <Tabs.Trigger value="remuneracao" className={SEPARADOR}>
-                  Remuneração
-                </Tabs.Trigger>
-                <Tabs.Trigger value="fiscal" className={SEPARADOR}>
-                  Fiscal e bancário
-                </Tabs.Trigger>
-              </Tabs.List>
-
-              <Tabs.Content value="geral">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Campo
-                    rotulo="Número"
-                    dica="Em branco atribui o próximo livre."
-                  >
-                    <Entrada
-                      value={campos.numero}
-                      onChange={(e) => alterar("numero", e.target.value)}
-                      className="tabular"
-                    />
-                  </Campo>
-                  <Campo rotulo="Categoria">
-                    <Entrada
-                      value={campos.categoria}
-                      onChange={(e) => alterar("categoria", e.target.value)}
-                    />
-                  </Campo>
-                  <Campo rotulo="Nome completo" className="sm:col-span-2">
-                    <Entrada
-                      value={campos.nome}
-                      onChange={(e) => alterar("nome", e.target.value)}
-                      required
-                      autoFocus
-                    />
-                  </Campo>
-                  <Campo rotulo="Data de admissão">
-                    <Entrada
-                      type="date"
-                      value={campos.data_admissao}
-                      onChange={(e) => alterar("data_admissao", e.target.value)}
-                    />
-                  </Campo>
-                  <Selector
-                    rotulo="Estado"
-                    valor={campos.estado}
-                    aoMudar={(v) => alterar("estado", v)}
-                    opcoes={[
-                      { valor: "activo", rotulo: "Activo" },
-                      { valor: "inactivo", rotulo: "Inactivo" },
-                    ]}
-                  />
-                  <Selector
-                    rotulo="Província"
-                    valor={campos.provincia}
-                    aoMudar={(v) => alterar("provincia", v)}
-                    opcoes={(provincias ?? []).map((p) => ({
-                      valor: p,
-                      rotulo: p,
-                    }))}
-                  />
-                  <Campo rotulo="Município">
-                    <Entrada
-                      value={campos.municipio}
-                      onChange={(e) => alterar("municipio", e.target.value)}
-                    />
-                  </Campo>
-                </div>
-              </Tabs.Content>
-
-              <Tabs.Content value="remuneracao">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Campo
-                    rotulo="Salário base"
-                    dica="É só sobre este valor que incide o INSS."
-                  >
-                    <Entrada
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={campos.salario_base}
-                      onChange={(e) => alterar("salario_base", e.target.value)}
-                      className="text-right tabular"
-                    />
-                  </Campo>
-                  <Campo
-                    rotulo="Subsídios mensais"
-                    dica="Entram no bruto e no IRT, mas não na base do INSS."
-                  >
-                    <Entrada
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={campos.subsidios}
-                      onChange={(e) => alterar("subsidios", e.target.value)}
-                      className="text-right tabular"
-                    />
-                  </Campo>
-                  <Campo rotulo="Subsídio de férias">
-                    <Entrada
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={campos.subsidio_ferias}
-                      onChange={(e) =>
-                        alterar("subsidio_ferias", e.target.value)
-                      }
-                      className="text-right tabular"
-                    />
-                  </Campo>
-                  <Campo rotulo="Subsídio de Natal">
-                    <Entrada
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={campos.subsidio_natal}
-                      onChange={(e) =>
-                        alterar("subsidio_natal", e.target.value)
-                      }
-                      className="text-right tabular"
-                    />
-                  </Campo>
-                  <Campo
-                    rotulo="Subsídios não sujeitos"
-                    className="sm:col-span-2"
-                    dica="Alimentação, transporte, abono de família e reembolsos — fora da matéria colectável."
-                  >
-                    <Entrada
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={campos.subs_nao_sujeitos}
-                      onChange={(e) =>
-                        alterar("subs_nao_sujeitos", e.target.value)
-                      }
-                      className="text-right tabular"
-                    />
-                  </Campo>
-                </div>
-                <Alerta tipo="info" className="mt-3">
-                  O INSS incide apenas sobre o salário base; a matéria
-                  colectável do IRT é o bruto menos o INSS do trabalhador,
-                  porque a contribuição é dedutível.
-                </Alerta>
-              </Tabs.Content>
-
-              <Tabs.Content value="fiscal">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Campo rotulo="NIF">
-                    <Entrada
-                      value={campos.nif}
-                      onChange={(e) => alterar("nif", e.target.value)}
-                      className="tabular"
-                    />
-                  </Campo>
-                  <Campo rotulo="Nº de Segurança Social">
-                    <Entrada
-                      value={campos.num_ss}
-                      onChange={(e) => alterar("num_ss", e.target.value)}
-                      className="tabular"
-                    />
-                  </Campo>
-                  <Campo rotulo="IBAN" className="sm:col-span-2">
-                    <Entrada
-                      value={campos.iban}
-                      onChange={(e) => alterar("iban", e.target.value)}
-                      className="tabular"
-                    />
-                  </Campo>
-                </div>
-              </Tabs.Content>
-            </Tabs.Root>
-
-            {erro && <Alerta tipo="erro">{erro}</Alerta>}
-          </form>
-
-          <div className="flex justify-end gap-2 border-t border-borda px-5 py-3.5">
-            <Botao onClick={aoFechar}>Cancelar</Botao>
-            <Botao
-              type="submit"
-              form="form-colaborador"
-              variante="primario"
-              disabled={aGravar}
-            >
-              {aGravar ? "A gravar…" : "Gravar funcionário"}
-            </Botao>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
   );
 }

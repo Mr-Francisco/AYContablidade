@@ -8,7 +8,7 @@ referência funcional: layout + comportamento + estados + filtros + carregamento
 |---|-------|--------|
 | A | [Regra global: `disabled` explica-se sempre](#a-regra-global-disabled-explica-se-sempre) | por fazer |
 | B | [Amortizações — configurações e estado](#b-amortizações) | ✅ feito |
-| 1 | [RH · Funcionários](#1-rh--funcionários) | por fazer |
+| 1 | [RH · Funcionários](#1-rh--funcionários) | ✅ feito |
 | 2 | [RH · Alterações mensais](#2-rh--alterações-mensais) | por fazer |
 | 3 | [RH · Processamento](#3-rh--processamento) | por fazer |
 | 4 | [RH · Pagamentos](#4-rh--pagamentos) | por fazer |
@@ -48,6 +48,28 @@ havia nada a dizê-lo a ninguém — agora notifica quem tem `contab.ver`.
 ---
 
 ## 1. RH · Funcionários
+
+✅ **Feito.** A ficha passou de nove campos para os trinta do Piloto, em oito
+separadores; a tabela mostra o NIF (e diz «em falta» a vermelho quando não há);
+os filtros ganharam **Categoria**, tirada das fichas que existem; a pesquisa
+passou a incluir NIF e Nº de Segurança Social.
+
+Três coisas que apareceram pelo caminho e ficaram resolvidas:
+
+- **A migração `a7f3c19d84b2`**: os vinte e seis campos que faltavam não tinham
+  coluna onde ser guardados — quem preenchesse a morada ou o contacto
+  perdia-os ao gravar, sem aviso.
+- **O `PATCH` ignorava o número do funcionário**: corrigi-lo não fazia nada.
+  Agora altera, e um número repetido responde 409 a dizer qual é.
+- **O 403 aparecia como «Ainda não há funcionários registados»**: um perfil sem
+  `rh.ver` era mandado procurar fichas que existem e ele não pode ver. Passa
+  pelo `FalhaAoCarregar`, como os mapas da contabilidade.
+
+Fica em aberto, para quando se tocar no cabeçalho: um perfil só de RH leva 403
+em `/api/empresa` e `/api/contabilidade/exercicios`, que o topo da página pede
+sempre. Não parte nada — o nome da empresa vem do cartão — mas enche a consola.
+
+Pedido original:
 
 - **Falta a coluna NIF na tabela.**
 - **Campos obrigatórios a sério**: NIF (ou o número do BI quando não há NIF),

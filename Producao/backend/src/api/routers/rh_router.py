@@ -8,7 +8,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, select
 
 from src.api.deps import DB, EmpresaAtual, exigir_cap
@@ -38,21 +38,89 @@ GERIR = Depends(exigir_cap("rh.gerir"))
 # Esquemas
 # ---------------------------------------------------------------------------
 class ColaboradorEntrada(BaseModel):
+    """A ficha do Piloto, inteira — os oito separadores.
+
+    IDENTIFICAÇÃO OBRIGATÓRIA: um trabalhador tem de ser identificável perante
+    a AGT e a Segurança Social. Exige-se o NIF **ou** o número do documento —
+    e um contacto, porque uma ficha sem forma de contactar a pessoa é uma ficha
+    incompleta no dia em que faz falta. A validação está no `model_validator`,
+    e não só no ecrã: o ecrã ajuda, mas quem garante é o servidor.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nome: str = Field(min_length=1, max_length=200)
     numero: str | None = Field(default=None, max_length=20)
-    categoria: str | None = None
-    salario_base: Decimal = Decimal("0")
-    subsidios: Decimal = Decimal("0")
-    subsidio_ferias: Decimal = Decimal("0")
-    subsidio_natal: Decimal = Decimal("0")
-    subs_nao_sujeitos: Decimal = Decimal("0")
-    data_admissao: Date | None = None
-    iban: str | None = None
-    nif: str | None = None
-    num_ss: str | None = None
+
+    # ---- Identificação ----
+    nome_abreviado: str | None = None
+    genero: str | None = None
+    data_nascimento: Date | None = None
+    nacionalidade: str | None = None
+    naturalidade: str | None = None
+    morada: str | None = None
+    localidade: str | None = None
+    codigo_postal: str | None = None
+    pais: str | None = None
     provincia: str | None = None
     municipio: str | None = None
+    comuna: str | None = None
+    email: str | None = None
+    telefone: str | None = None
+    telemovel: str | None = None
+
+    # ---- Documentos ----
+    tipo_documento: str | None = None
+    num_documento: str | None = None
+    validade_documento: Date | None = None
+
+    # ---- Dados fiscais ----
+    nif: str | None = None
+    num_ss: str | None = None
+    estado_civil: str | None = None
+    dependentes: int = 0
+    regime_irt: str | None = None
+
+    # ---- Contrato ----
+    categoria: str | None = None
+    tipo_contrato: str | None = None
+    data_admissao: Date | None = None
+    data_fim: Date | None = None
+
+    # ---- Processamento ----
+    salario_base: Decimal = Decimal("0")
+    subsidios: Decimal = Decimal("0")
+    subs_nao_sujeitos: Decimal = Decimal("0")
     estado: str = "activo"
+
+    # ---- Pagamento ----
+    forma_pagamento: str | None = None
+    banco: str | None = None
+    iban: str | None = None
+
+    # ---- Subsídios e férias ----
+    dias_ferias: int = 22
+    subsidio_ferias: Decimal = Decimal("0")
+    subsidio_natal: Decimal = Decimal("0")
+
+    # ---- Habilitações ----
+    habilitacoes: str | None = None
+    notas: str | None = None
+
+    @model_validator(mode="after")
+    def _identificacao_minima(self):
+        if not (self.nif or self.num_documento):
+            raise ValueError(
+                "Indique o NIF ou o número do documento de identificação — "
+                "sem um dos dois, o colaborador não pode entrar no Mapa de "
+                "Remunerações."
+            )
+        if not (self.telefone or self.telemovel or self.email):
+            raise ValueError(
+                "Indique pelo menos um contacto: telefone, telemóvel ou "
+                "e-mail."
+            )
+        return self
 
 
 class AlteracaoEntrada(BaseModel):
@@ -123,9 +191,56 @@ def _proximo_numero(db: DB, empresa_id: UUID) -> str:
     return f"{maximo + 1:03d}"
 
 
+def _numero_livre(
+    db: DB, empresa_id: UUID, numero: str, excepto: UUID | None = None
+) -> None:
+    """O número é único por empresa. Chocar dava um 500 sem explicação."""
+    q = select(Colaborador.id).where(
+        Colaborador.empresa_id == empresa_id, Colaborador.numero == numero
+    )
+    if excepto is not None:
+        q = q.where(Colaborador.id != excepto)
+    if db.scalar(q) is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Já existe um colaborador com o número {numero}.",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Colaboradores
 # ---------------------------------------------------------------------------
+def _colaborador_publico(c: Colaborador) -> dict:
+    """A ficha toda.
+
+    Devolvia-se metade dos campos, e abrir um colaborador para alterar trazia o
+    formulário com o resto em branco — gravar por cima apagava-o. Devolver tudo
+    o que se pode gravar é a única forma de a ficha ser reversível.
+    """
+    return {
+        "id": c.id, "numero": c.numero, "nome": c.nome, "estado": c.estado,
+        "nome_abreviado": c.nome_abreviado, "genero": c.genero,
+        "data_nascimento": c.data_nascimento, "nacionalidade": c.nacionalidade,
+        "naturalidade": c.naturalidade, "morada": c.morada,
+        "localidade": c.localidade, "codigo_postal": c.codigo_postal,
+        "pais": c.pais, "provincia": c.provincia, "municipio": c.municipio,
+        "comuna": c.comuna, "email": c.email, "telefone": c.telefone,
+        "telemovel": c.telemovel,
+        "tipo_documento": c.tipo_documento, "num_documento": c.num_documento,
+        "validade_documento": c.validade_documento,
+        "nif": c.nif, "num_ss": c.num_ss, "estado_civil": c.estado_civil,
+        "dependentes": c.dependentes, "regime_irt": c.regime_irt,
+        "categoria": c.categoria, "tipo_contrato": c.tipo_contrato,
+        "data_admissao": c.data_admissao, "data_fim": c.data_fim,
+        "salario_base": c.salario_base, "subsidios": c.subsidios,
+        "subs_nao_sujeitos": c.subs_nao_sujeitos,
+        "forma_pagamento": c.forma_pagamento, "banco": c.banco, "iban": c.iban,
+        "dias_ferias": c.dias_ferias, "subsidio_ferias": c.subsidio_ferias,
+        "subsidio_natal": c.subsidio_natal,
+        "habilitacoes": c.habilitacoes, "notas": c.notas,
+    }
+
+
 @router.get("/colaboradores")
 def listar_colaboradores(
     empresa: EmpresaAtual, db: DB, so_ativos: bool = False
@@ -134,15 +249,7 @@ def listar_colaboradores(
     if so_ativos:
         q = q.where(Colaborador.estado == "activo")
     return [
-        {
-            "id": c.id, "numero": c.numero, "nome": c.nome, "categoria": c.categoria,
-            "salario_base": c.salario_base, "subsidios": c.subsidios,
-            "subsidio_ferias": c.subsidio_ferias, "subsidio_natal": c.subsidio_natal,
-            "subs_nao_sujeitos": c.subs_nao_sujeitos,
-            "data_admissao": c.data_admissao, "iban": c.iban, "nif": c.nif,
-            "num_ss": c.num_ss, "provincia": c.provincia, "municipio": c.municipio,
-            "estado": c.estado,
-        }
+        _colaborador_publico(c)
         for c in db.scalars(q.order_by(Colaborador.numero)).all()
     ]
 
@@ -151,6 +258,8 @@ def listar_colaboradores(
 def criar_colaborador(
     request: Request, dados: ColaboradorEntrada, empresa: EmpresaAtual, db: DB
 ) -> dict:
+    if dados.numero:
+        _numero_livre(db, empresa.id, dados.numero)
     c = Colaborador(
         empresa_id=empresa.id,
         numero=dados.numero or _proximo_numero(db, empresa.id),
@@ -171,6 +280,12 @@ def atualizar_colaborador(
     db: DB,
 ) -> dict:
     c = _colab(db, empresa.id, colaborador_id)
+    # O número também se altera. Vinha excluído, e quem o corrigisse na ficha
+    # via-o voltar ao antigo sem aviso — o mesmo silêncio que já custou caro
+    # nos campos dos clientes. Em branco mantém-se o que já lá está.
+    if dados.numero and dados.numero != c.numero:
+        _numero_livre(db, empresa.id, dados.numero, excepto=c.id)
+        c.numero = dados.numero
     for campo, valor in dados.model_dump(exclude_unset=True, exclude={"numero"}).items():
         setattr(c, campo, valor)
     db.commit()

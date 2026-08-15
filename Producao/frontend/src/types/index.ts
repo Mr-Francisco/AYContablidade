@@ -483,6 +483,35 @@ export interface Colaborador {
   provincia: string | null;
   municipio: string | null;
   estado: string;
+  // Os restantes separadores da ficha (Piloto, `pessoal.html`). Opcionais
+  // porque as fichas antigas foram criadas com nove campos e vão sendo
+  // completadas à medida que forem abertas.
+  nome_abreviado?: string | null;
+  genero?: string | null;
+  data_nascimento?: string | null;
+  nacionalidade?: string | null;
+  naturalidade?: string | null;
+  morada?: string | null;
+  localidade?: string | null;
+  codigo_postal?: string | null;
+  pais?: string | null;
+  comuna?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+  telemovel?: string | null;
+  tipo_documento?: string | null;
+  num_documento?: string | null;
+  validade_documento?: string | null;
+  estado_civil?: string | null;
+  dependentes?: number;
+  regime_irt?: string | null;
+  tipo_contrato?: string | null;
+  data_fim?: string | null;
+  forma_pagamento?: string | null;
+  banco?: string | null;
+  dias_ferias?: number;
+  habilitacoes?: string | null;
+  notas?: string | null;
 }
 
 export interface LinhaRecibo {

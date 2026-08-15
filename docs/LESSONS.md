@@ -178,3 +178,5 @@
 - `Select.Value` do Radix sem filhos lê o rótulo do item escolhido e só o conhece se o item já existia quando o valor foi posto: numa janela que carrega o valor e as opções ao mesmo tempo, o campo fica vazio com o valor lá dentro. Passar o rótulo como filho.
 - Handler de `aoMudar` de um selector também dispara quando o valor lhe chega de fora: limpar um campo dependente nesse handler apaga o que se acabou de carregar. Comparar com o valor anterior antes de limpar.
 - Teste que corre contra a base de desenvolvimento não pode reabrir/apagar períodos reais: escolhe um período livre. Bastou alguém processar Agosto pelo ecrã para o teste falhar.
+- Um estado vazio nunca pode cobrir um erro: se o `useSWR` devolve `error`, mostrar `FalhaAoCarregar` antes de `Vazio` — «ainda não há registos» sobre um 403 manda o utilizador procurar o que existe e ele não vê.
+- Quando um formulário cresce para separadores, verificar o `PATCH` campo a campo: o que o schema não aceita perde-se em silêncio (aconteceu com trinta campos do cliente e com o número do colaborador).
