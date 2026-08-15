@@ -12,7 +12,7 @@ referência funcional: layout + comportamento + estados + filtros + carregamento
 | 2 | [RH · Alterações mensais](#2-rh--alterações-mensais) | ✅ feito |
 | 3 | [RH · Processamento](#3-rh--processamento) | ✅ feito |
 | 4 | [RH · Pagamentos](#4-rh--pagamentos) | ✅ feito |
-| 5 | [RH · Recibos](#5-rh--recibos) | por fazer |
+| 5 | [RH · Recibos](#5-rh--recibos) | ✅ feito |
 | 6 | [RH · Simulação](#6-rh--simulação) | por fazer |
 | 7 | [RH · Independentes e honorários](#7-rh--independentes-e-honorários) | por fazer |
 | 8 | [RH · Tabelas](#8-rh--tabelas) | por fazer |
@@ -145,7 +145,21 @@ ganhar ao placeholder.
 
 ## 5. RH · Recibos
 
-**Exactamente igual ao Piloto, sem nenhuma diferença.**
+✅ **Feito.** O recibo é o do Piloto, linha a linha: cabeçalho com empresa ·
+«Recibo de Vencimento — mês» · moeda; identificação com nome, número,
+categoria e admissão; **estado do mês** ao lado; e a tabela com Salário base ·
+Subsídios · Desconto por faltas · Abonos do mês · **Remuneração bruta** ·
+INSS (3%) · Matéria colectável IRT · IRT · Outros descontos · **Líquido a
+receber**, com os valores a subtrair entre parênteses. Ao fundo, o INSS da
+empresa e a linha da assinatura.
+
+O que estava era outro documento: dois blocos («Remunerações» e «Descontos»),
+um «Total de descontos» que o Piloto não tem, e o INSS da empresa numa caixa
+de aviso azul. Um recibo é um papel que se assina.
+
+Também: o selector passa a listar **todos** os colaboradores e a folha vem com
+`so_ativos=false` — quem saiu em Março tem recibo de Março, e é esse que se vai
+buscar mais tarde.
 
 ## 6. RH · Simulação
 
