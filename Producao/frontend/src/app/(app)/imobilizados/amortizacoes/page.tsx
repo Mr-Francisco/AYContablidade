@@ -75,6 +75,10 @@ export default function Amortizacoes() {
   const nomePeriodo =
     periodos.find((p) => p.codigo === mes)?.nome ?? `Período ${mes}`;
   const exercicioNome = exercicios.find((e) => e.id === exId)?.nome ?? "";
+
+  /** Valor sem a moeda: o cabeçalho do mapa já diz em que moeda está, e
+   *  repeti-la em cada célula rouba largura a uma tabela de oito colunas. */
+  const valor = (v: string) => formataMoeda(v, "");
   const jaProcessado = mapaPeriodo?.processado ?? false;
   // O período 00 é a Abertura, não é um mês: não tem amortização nenhuma.
   const ehAbertura = mes === "00";
@@ -298,7 +302,6 @@ export default function Amortizacoes() {
                       <Th numerico>Amort. acumulada</Th>
                       <Th numerico>Amort. do período</Th>
                       <Th numerico>Valor líquido</Th>
-                      <Th>Lançado</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -317,41 +320,37 @@ export default function Amortizacoes() {
                             : "Quotas Constantes"}
                         </Td>
                         <Td numerico className="text-texto-suave">
-                          {l.taxa}%
+                          {numeroLimpo(l.taxa)}%
                         </Td>
-                        <Td numerico>
-                          {formataMoeda(l.amort_acumulada_atual, moeda)}
-                        </Td>
+                        <Td numerico>{valor(l.amort_acumulada_atual)}</Td>
                         <Td numerico className="font-semibold">
-                          {formataMoeda(l.valor_periodo, moeda)}
+                          {valor(l.valor_periodo)}
                         </Td>
-                        <Td numerico>
-                          {formataMoeda(l.valor_liquido_atual, moeda)}
-                        </Td>
-                        <Td>
-                          {l.ja_processado ? (
-                            <Selo cor={l.lancamento_id ? "#1a9c5f" : "#c98a10"}>
-                              {l.lancamento_id ? "Sim" : "Só na ficha"}
-                            </Selo>
-                          ) : (
-                            <span className="text-texto-suave">—</span>
-                          )}
-                        </Td>
+                        <Td numerico>{valor(l.valor_liquido_atual)}</Td>
                       </Tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-borda font-bold">
                       <Td colSpan={6}>TOTAL DO PERÍODO</Td>
-                      <Td numerico>
-                        {formataMoeda(mapaPeriodo.total_periodo, moeda)}
-                      </Td>
-                      <Td colSpan={2} />
+                      <Td numerico>{valor(mapaPeriodo.total_periodo)}</Td>
+                      <Td />
                     </tr>
                   </tfoot>
                 </Tabela>
               </EnvolveTabela>
             )}
+            {/* A nota do Piloto, por baixo do mapa: diz como sai a quota e
+                porque é que processar duas vezes não duplica nada. Sem ela, o
+                número da coluna «Amort. do período» é um número sem origem. */}
+            <p className="border-t border-borda px-5 py-3 text-[12.5px] leading-relaxed text-texto-suave">
+              A quota mensal (Quotas Constantes: valor de aquisição × taxa ÷ 12;
+              Quotas Decrescentes: valor líquido × taxa × coeficiente ÷ 12) é
+              lançada na contabilidade ao processar o período (débito custo ·
+              crédito amort. acumulada). Processamento idempotente — cada
+              exercício/período só pode ser processado uma vez; reabra para
+              corrigir e processar de novo.
+            </p>
           </Cartao>
         </Tabs.Content>
 
