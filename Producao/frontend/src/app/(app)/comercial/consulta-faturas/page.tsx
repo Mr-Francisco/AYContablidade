@@ -4,6 +4,7 @@ import { Search, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useDeferredValue, useState } from "react";
 import useSWR from "swr";
+import { SelectorDeCliente } from "@/components/comercial/SelectorDeCliente";
 import { GrelhaKpis } from "@/components/painel";
 import {
   ACarregar,
@@ -50,6 +51,7 @@ export default function ConsultaFaturas() {
 
   const [procura, setProcura] = useState("");
   const [tipo, setTipo] = useState("todos");
+  const [clienteId, setClienteId] = useState("");
   const [detalhe, setDetalhe] = useState<string | null>(null);
   const procuraAdiada = useDeferredValue(procura);
 
@@ -67,7 +69,7 @@ export default function ConsultaFaturas() {
   const p = usePaginacao();
   const chave = `/api/comercial/vendas?estado=emitida&${p.query}${
     tipo !== "todos" ? `&tipo_doc=${encodeURIComponent(tipo)}` : ""
-  }${procuraAdiada.trim() ? `&procura=${encodeURIComponent(procuraAdiada.trim())}` : ""}`;
+  }${clienteId ? `&cliente_id=${clienteId}` : ""}${procuraAdiada.trim() ? `&procura=${encodeURIComponent(procuraAdiada.trim())}` : ""}`;
   const { data: pagina, isLoading } = useSWR<PaginaVendas>(chave, buscador);
   const visiveis = pagina?.linhas ?? [];
 
@@ -129,6 +131,16 @@ export default function ConsultaFaturas() {
             />
           </div>
         </Campo>
+        {/* Selector com procura, e não uma caixa de opções: numa empresa com
+            quatrocentos clientes, a caixa obriga a rolar uma lista que não se
+            pode filtrar. */}
+        <SelectorDeCliente
+          valor={clienteId}
+          aoMudar={(id) => {
+            setClienteId(id);
+            p.reiniciar();
+          }}
+        />
         <Selector
           rotulo="Tipo"
           valor={tipo}

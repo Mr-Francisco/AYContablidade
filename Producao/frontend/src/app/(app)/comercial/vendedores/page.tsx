@@ -73,7 +73,7 @@ export default function Vendedores() {
     <>
       <CabecalhoPagina
         titulo="Vendedores"
-        descricao="Vendedores e comissões sobre o subtotal das vendas facturadas."
+        descricao="Equipa comercial e apuramento de comissões sobre as vendas."
         accoes={
           pode("comercial.gerir") && (
             <Botao variante="primario" onClick={() => setNovoAberto(true)}>
@@ -84,9 +84,9 @@ export default function Vendedores() {
         }
       />
 
-      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+      <div className="flex min-w-0 flex-col gap-4">
         <Cartao className="min-w-0 p-0">
-          <TituloCartao className="px-5 pt-5">Vendedores</TituloCartao>
+          <TituloCartao className="px-5 pt-5">Equipa comercial</TituloCartao>
           {isLoading ? (
             <ACarregar />
           ) : !vendedores?.length ? (
@@ -97,8 +97,7 @@ export default function Vendedores() {
                 <thead>
                   <tr>
                     <Th>Nome</Th>
-                    <Th>Tipo de comissão</Th>
-                    <Th numerico>Valor</Th>
+                    <Th numerico>Comissão</Th>
                     <Th>Estado</Th>
                     {podeGerir && <Th> </Th>}
                   </tr>
@@ -109,12 +108,14 @@ export default function Vendedores() {
                       <Td className="max-w-[220px] truncate font-semibold">
                         {v.nome}
                       </Td>
-                      <Td className="text-texto-suave">
-                        {v.tipo_comissao === "fixo"
-                          ? "Valor fixo por venda"
-                          : "Percentagem do subtotal"}
-                      </Td>
-                      <Td numerico>
+                      <Td
+                        numerico
+                        title={
+                          v.tipo_comissao === "fixo"
+                            ? "Valor fixo por venda"
+                            : "Percentagem do subtotal"
+                        }
+                      >
                         {v.tipo_comissao === "fixo"
                           ? formataMoeda(v.comissao_perc, moeda)
                           : `${v.comissao_perc} %`}
@@ -146,7 +147,7 @@ export default function Vendedores() {
 
         <Cartao className="min-w-0 p-0">
           <TituloCartao className="px-5 pt-5" extra="Só vendas facturadas">
-            Comissões apuradas
+            Comissões (sobre vendas facturadas)
           </TituloCartao>
           {!comissoes?.length ? (
             <Vazio>
@@ -160,7 +161,8 @@ export default function Vendedores() {
                   <tr>
                     <Th>Vendedor</Th>
                     <Th numerico>Vendas</Th>
-                    <Th numerico>Base</Th>
+                    <Th numerico>Base (subtotal)</Th>
+                    <Th numerico>%</Th>
                     <Th numerico>Comissão</Th>
                   </tr>
                 </thead>
@@ -172,12 +174,30 @@ export default function Vendedores() {
                       </Td>
                       <Td numerico>{c.vendas}</Td>
                       <Td numerico>{formataMoeda(c.base, moeda)}</Td>
+                      <Td numerico className="text-texto-suave">
+                        {c.tipo === "fixo"
+                          ? formataMoeda(c.perc, moeda)
+                          : `${c.perc}%`}
+                      </Td>
                       <Td numerico className="font-semibold">
                         {formataMoeda(c.comissao, moeda)}
                       </Td>
                     </Tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-borda font-bold">
+                    <Td colSpan={4}>Total comissões</Td>
+                    <Td numerico>
+                      {formataMoeda(
+                        comissoes
+                          .reduce((s, c) => s + Number(c.comissao), 0)
+                          .toFixed(2),
+                        moeda,
+                      )}
+                    </Td>
+                  </tr>
+                </tfoot>
               </Tabela>
             </EnvolveTabela>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Plus, Search, Trash2 } from "lucide-react";
 import { AlertDialog } from "radix-ui";
 import { useState } from "react";
 import useSWR from "swr";
@@ -11,7 +11,9 @@ import {
   BarraFiltros,
   Botao,
   CabecalhoPagina,
+  Campo,
   Cartao,
+  Entrada,
   EnvolveTabela,
   Kpi,
   Selector,
@@ -47,6 +49,8 @@ export default function Vendas() {
   const moeda = empresa?.moeda ?? "Kz";
 
   const [estado, setEstado] = useState("todos");
+  const [procura, setProcura] = useState("");
+  const [tipoDoc, setTipoDoc] = useState("todos");
   const [novoAberto, setNovoAberto] = useState(false);
   const [aEmitir, setAEmitir] = useState<Venda | null>(null);
   const [aEliminar, setAEliminar] = useState<Venda | null>(null);
@@ -55,8 +59,13 @@ export default function Vendas() {
   const [ocupado, setOcupado] = useState(false);
 
   const p = usePaginacao();
+  // Procura e tipo VÃO AO SERVIDOR. O Piloto filtra em memória porque tem
+  // tudo em memória; aqui a lista vem paginada, e filtrar o que já veio
+  // procurava dentro de vinte e cinco linhas.
   const chave = `/api/comercial/vendas?${p.query}${
     estado !== "todos" ? `&estado=${estado}` : ""
+  }${tipoDoc !== "todos" ? `&tipo_doc=${encodeURIComponent(tipoDoc)}` : ""}${
+    procura.trim() ? `&procura=${encodeURIComponent(procura.trim())}` : ""
   }`;
   const {
     data: pagina,
@@ -64,6 +73,11 @@ export default function Vendas() {
     mutate,
   } = useSWR<Pagina<Venda>>(chave, buscador);
   const vendas = pagina?.linhas;
+  const { data: tipos } = useSWR<{ cod: string; nome: string }[]>(
+    "/api/comercial/tipos-documento",
+    buscador,
+    { revalidateOnFocus: false },
+  );
   const { data: resumo, mutate: mutateResumo } = useSWR<ResumoComercial>(
     "/api/comercial/resumo",
     buscador,
@@ -171,6 +185,41 @@ export default function Vendas() {
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
       <BarraFiltros className="mb-4">
+        <Campo rotulo="Pesquisar" className="min-w-[15rem] flex-1">
+          <div className="relative">
+            <Search
+              size={15}
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
+            />
+            <Entrada
+              type="search"
+              value={procura}
+              onChange={(e) => {
+                setProcura(e.target.value);
+                p.reiniciar();
+              }}
+              placeholder="Nº, cliente ou código…"
+              className="pl-9"
+            />
+          </div>
+        </Campo>
+        <Selector
+          rotulo="Tipo"
+          valor={tipoDoc}
+          aoMudar={(v) => {
+            setTipoDoc(v);
+            p.reiniciar();
+          }}
+          opcoes={[
+            { valor: "todos", rotulo: "Todos os tipos" },
+            ...(tipos ?? []).map((td) => ({
+              valor: td.cod,
+              rotulo: `${td.cod} — ${td.nome}`,
+            })),
+          ]}
+          larguraMinima="14rem"
+        />
         <Selector
           rotulo="Estado"
           valor={estado}
@@ -185,7 +234,6 @@ export default function Vendas() {
           ]}
           larguraMinima="12rem"
         />
-        <span className="flex-1" />
         {pode("comercial.gerir") && (
           <Botao variante="acento" onClick={() => setNovoAberto(true)}>
             <Plus size={16} />
@@ -209,7 +257,7 @@ export default function Vendas() {
                     <Th>Tipo</Th>
                     <Th>Data</Th>
                     <Th>Cliente</Th>
-                    <Th numerico>Subtotal</Th>
+                    <Th numerico>Incidência</Th>
                     <Th numerico>IVA</Th>
                     <Th numerico>Total</Th>
                     <Th>Estado</Th>

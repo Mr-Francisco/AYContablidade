@@ -15,6 +15,11 @@ from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.api.deps import DB, EmpresaAtual, exigir_cap
 from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.db.models.comercial import Compra, CompraLinha
+from src.api.routers.comercial_router import (
+    TerceiroAtualizar,
+    TerceiroEntrada,
+    _terceiro_publico,
+)
 from src.db.models.terceiros import Terceiro
 from src.services import compras as svc
 
@@ -45,16 +50,13 @@ class CompraEntrada(BaseModel):
     linhas: list[LinhaEntrada] = Field(min_length=1)
 
 
-class FornecedorEntrada(BaseModel):
-    nome: str = Field(min_length=1, max_length=200)
-    numero: str | None = None
-    nif: str | None = None
-    localidade: str | None = None
-    telefone: str | None = None
-    email: str | None = None
-    conta: str | None = None
-    condicoes_pagamento: str | None = None
-    estado: str = "activo"
+#: A ficha do fornecedor é a MESMA do cliente — no Piloto é literalmente o
+#: mesmo componente sobre a mesma tabela. Reaproveitam-se os esquemas em vez de
+#: os duplicar: dois esquemas para a mesma tabela divergem à primeira alteração
+#: que só um deles receba, e foi assim que o fornecedor ficou com nove campos
+#: enquanto o cliente tinha dez.
+FornecedorEntrada = TerceiroEntrada
+FornecedorAtualizar = TerceiroAtualizar
 
 
 class EmitirPedido(BaseModel):
@@ -81,12 +83,7 @@ def listar_fornecedores(
         termo = f"%{procura}%"
         q = q.where(Terceiro.nome.ilike(termo) | Terceiro.nif.ilike(termo))
     return [
-        {"id": f.id, "numero": f.numero, "nome": f.nome, "nif": f.nif,
-         "localidade": f.localidade, "telefone": f.telefone, "conta": f.conta,
-         "estado": f.estado,
-         # Acrescentados para o formulário de alteração poder vir preenchido.
-         "morada": f.morada, "provincia": f.provincia, "email": f.email}
-        for f in db.scalars(q.order_by(Terceiro.numero)).all()
+        _terceiro_publico(f) for f in db.scalars(q.order_by(Terceiro.numero)).all()
     ]
 
 
@@ -101,29 +98,16 @@ def criar_fornecedor(
     ).all()
     proximo = f"{max((int(n) for n in numeros if n and n.isdigit()), default=0) + 1:03d}"
     f = Terceiro(
-        empresa_id=empresa.id, tipo="fornecedor", tipo_terceiro="Fornecedor",
-        numero=dados.numero or proximo, **dados.model_dump(exclude={"numero"}),
+        empresa_id=empresa.id, tipo="fornecedor",
+        tipo_terceiro=dados.tipo_terceiro or "Fornecedor",
+        numero=dados.numero or proximo,
+        **dados.model_dump(exclude={"numero", "tipo_terceiro"}),
     )
     db.add(f)
     db.commit()
     db.refresh(f)
     return {"id": f.id, "numero": f.numero, "nome": f.nome}
 
-
-class FornecedorAtualizar(BaseModel):
-    """O NÚMERO não se altera: identifica o fornecedor nos documentos já
-    registados e forma a conta corrente."""
-
-    nome: str | None = Field(default=None, min_length=1, max_length=200)
-    nif: str | None = None
-    morada: str | None = None
-    localidade: str | None = None
-    provincia: str | None = None
-    pais: str | None = None
-    telefone: str | None = None
-    email: str | None = None
-    conta: str | None = None
-    estado: str | None = None
 
 
 @router.patch("/fornecedores/{fornecedor_id}", dependencies=[GERIR])

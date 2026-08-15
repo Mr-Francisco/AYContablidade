@@ -359,6 +359,7 @@ def listar_vendas(
     db: DB,
     estado: str | None = None,
     tipo_doc: str | None = None,
+    cliente_id: UUID | None = None,
     procura: str | None = None,
     offset: int = 0,
     limite: int = LIMITE_OMISSAO,
@@ -382,6 +383,8 @@ def listar_vendas(
         q = q.where(Venda.estado == estado)
     if tipo_doc:
         q = q.where(Venda.tipo_doc == tipo_doc)
+    if cliente_id is not None:
+        q = q.where(Venda.cliente_id == cliente_id)
     if procura and procura.strip():
         termo = f"%{procura.strip()}%"
         q = q.where(
