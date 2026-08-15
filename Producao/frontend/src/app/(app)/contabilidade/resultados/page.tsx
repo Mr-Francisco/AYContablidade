@@ -28,6 +28,7 @@ import {
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { Confirmar } from "@/components/ui/CrudMestre";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import {
@@ -53,7 +54,7 @@ export default function Resultados() {
   if (exId) p.set("exercicio_id", exId);
   if (mes) p.set("mes", mes);
 
-  const { data, isLoading, mutate } = useSWR<DemonstracaoResultados>(
+  const { data, isLoading, mutate, error } = useSWR<DemonstracaoResultados>(
     `/api/relatorios/demonstracao-resultados?${p}`,
     buscador,
   );
@@ -207,7 +208,7 @@ export default function Resultados() {
       {isLoading ? (
         <ACarregar />
       ) : !data ? (
-        <Alerta tipo="erro">Não foi possível carregar a demonstração.</Alerta>
+        <FalhaAoCarregar erro={error} oQue="a demonstração de resultados" />
       ) : (
         <div className="grid min-w-0 gap-4 xl:grid-cols-[1.15fr_1fr]">
           <Cartao className="min-w-0 overflow-hidden p-0">

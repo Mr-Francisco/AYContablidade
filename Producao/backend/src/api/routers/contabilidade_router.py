@@ -9,7 +9,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from src.api.paginacao import LIMITE_MAXIMO, LIMITE_OMISSAO, pagina
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
@@ -791,7 +791,9 @@ def listar_lancamentos(
     de: Date | None = None,
     ate: Date | None = None,
     diario: str | None = None,
+    procura: str | None = None,
     incluir_diferidos: bool = False,
+    apenas_diferidos: bool = False,
     offset: int = 0,
     limite: int = Query(default=LIMITE_OMISSAO, le=LIMITE_MAXIMO),
 ) -> dict:
@@ -799,13 +801,22 @@ def listar_lancamentos(
 
     Devolve `{linhas, total, offset, limite}` e não uma lista: sem o total, o
     ecrã não sabe se há mais nada — ver a regra de listagens em `CLAUDE.md`.
+
+    `procura` cobre o nº de operação, a descrição, a referência do documento e
+    o número do lançamento — e vai ao SERVIDOR de propósito. Procurar só no que
+    já veio encontrava o movimento de ontem e não o do mês passado, que é
+    precisamente o que se anda a procurar.
     """
     q = (
         select(Lancamento)
         .where(Lancamento.empresa_id == empresa.id)
         .order_by(Lancamento.data.desc(), Lancamento.numero.desc())
     )
-    if not incluir_diferidos:
+    if apenas_diferidos:
+        # O ecrã tem um interruptor «só por integrar»: com o filtro no cliente,
+        # ele só via os diferidos da página à vista.
+        q = q.where(Lancamento.diferido.is_(True))
+    elif not incluir_diferidos:
         q = q.where(Lancamento.diferido.is_(False))
     if exercicio_id is not None:
         q = q.where(Lancamento.exercicio_id == exercicio_id)
@@ -815,6 +826,18 @@ def listar_lancamentos(
         q = q.where(Lancamento.data <= ate)
     if diario:
         q = q.where(Lancamento.diario_codigo == diario)
+    if procura and procura.strip():
+        termo = f"%{procura.strip()}%"
+        alvos = [
+            Lancamento.numero_op.ilike(termo),
+            Lancamento.descricao.ilike(termo),
+            Lancamento.documento_ref.ilike(termo),
+        ]
+        # Só se compara o número quando o que se escreveu É um número: o
+        # PostgreSQL recusa comparar inteiro com texto, e a pesquisa rebentava.
+        if procura.strip().isdigit():
+            alvos.append(Lancamento.numero == int(procura.strip()))
+        q = q.where(or_(*alvos))
 
     return pagina(
         db, q, offset=offset, limite=limite,

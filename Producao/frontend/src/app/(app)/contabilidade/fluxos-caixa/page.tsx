@@ -22,6 +22,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
@@ -63,7 +64,7 @@ export default function FluxosCaixa() {
   if (de) p.set("de", de);
   if (ate) p.set("ate", ate);
 
-  const { data, isLoading } = useSWR<DemonstracaoFluxos>(
+  const { data, isLoading, error } = useSWR<DemonstracaoFluxos>(
     `/api/relatorios/fluxos-caixa?${p}`,
     buscador,
   );
@@ -116,9 +117,7 @@ export default function FluxosCaixa() {
       {isLoading ? (
         <ACarregar />
       ) : !data ? (
-        <Alerta tipo="erro">
-          Não foi possível carregar os fluxos de caixa.
-        </Alerta>
+        <FalhaAoCarregar erro={error} oQue="os fluxos de caixa" />
       ) : (
         <>
           <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">

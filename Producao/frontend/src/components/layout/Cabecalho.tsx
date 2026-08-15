@@ -346,15 +346,15 @@ function Ribbon({
 
   return (
     <div className="sem-imprimir border-t border-borda bg-superficie-2 overflow-x-auto">
-      <div className="mx-auto flex min-w-max max-w-[1360px] items-stretch whitespace-nowrap px-4 pb-0.5 pt-1.5">
+      <div className="mx-auto flex min-w-max max-w-[1360px] items-stretch whitespace-nowrap px-2 pb-0.5 pt-1.5">
         {seccoes.map((s, i) => (
           <Fragment key={s.nome}>
             {i > 0 && (
-              <span aria-hidden className="mx-0.5 mb-5 mt-1 w-px bg-borda" />
+              <span aria-hidden className="mx-px mb-5 mt-1 w-px bg-borda" />
             )}
             {/* Coluna por secção: os botões em cima, o rótulo da secção por
                 baixo com um traço a separar — a forma do ribbon do Piloto. */}
-            <div className="flex flex-col items-center px-1.5">
+            <div className="flex flex-col items-center px-1">
               <div className="flex flex-1 items-start gap-0.5">
                 {s.itens.map((item) => {
                   const activo = itemActivo(caminho, item.href);
@@ -365,7 +365,7 @@ function Ribbon({
                       href={item.href}
                       title={item.rotulo}
                       className={cn(
-                        "flex w-[74px] shrink-0 flex-col items-center justify-start gap-[3px] rounded-lg px-1 py-1.5 text-center transition-colors",
+                        "flex w-[64px] shrink-0 flex-col items-center justify-start gap-[2px] rounded-lg px-0.5 py-1 text-center transition-colors",
                         activo
                           ? "gradiente-marca text-white"
                           : "hover:bg-superficie",
@@ -373,7 +373,7 @@ function Ribbon({
                     >
                       <span
                         className={cn(
-                          "flex h-6 items-center justify-center",
+                          "flex h-[21px] items-center justify-center",
                           activo
                             ? "text-white"
                             : "text-texto-suave group-hover:text-acento",
@@ -383,17 +383,17 @@ function Ribbon({
                           <svg
                             viewBox="0 0 24 24"
                             aria-hidden="true"
-                            className="size-[22px] fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
+                            className="size-[19px] fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
                             // biome-ignore lint/security/noDangerouslySetInnerHtml: traçado SVG constante do nosso próprio iconesNav.ts — não há entrada de utilizador neste caminho.
                             dangerouslySetInnerHTML={{ __html: traco }}
                           />
                         ) : (
-                          <span className="size-[22px]" />
+                          <span className="size-[19px]" />
                         )}
                       </span>
                       <span
                         className={cn(
-                          "max-w-[70px] whitespace-normal text-[11px] font-semibold leading-[1.15]",
+                          "max-w-[62px] whitespace-normal text-[10.5px] font-semibold leading-[1.12]",
                           activo ? "text-white" : "text-texto-suave",
                         )}
                       >

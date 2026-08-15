@@ -20,6 +20,7 @@ import {
   Tr,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -68,7 +69,7 @@ export default function BalanceteRazao() {
   if (de) p.set("de", de);
   if (mes) p.set("mes", mes);
 
-  const { data, isLoading } = useSWR<BalanceteRazao>(
+  const { data, isLoading, error } = useSWR<BalanceteRazao>(
     `/api/relatorios/balancete-razao?${p}`,
     buscador,
   );
@@ -126,9 +127,7 @@ export default function BalanceteRazao() {
       {isLoading ? (
         <ACarregar />
       ) : !data ? (
-        <Alerta tipo="erro">
-          Não foi possível carregar o balancete do razão.
-        </Alerta>
+        <FalhaAoCarregar erro={error} oQue="o balancete do razão" />
       ) : (
         <Cartao className="p-0">
           <EnvolveTabela className="rounded-none border-0">

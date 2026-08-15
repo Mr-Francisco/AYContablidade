@@ -14,6 +14,7 @@ import {
   Selo,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda, subtrai } from "@/lib/dinheiro";
@@ -34,7 +35,7 @@ export default function PaginaBalanco() {
   if (exId) p.set("exercicio_id", exId);
   if (mes) p.set("mes", mes);
 
-  const { data, isLoading } = useSWR<Balanco>(
+  const { data, isLoading, error } = useSWR<Balanco>(
     `/api/relatorios/balanco?${p}`,
     buscador,
   );
@@ -85,7 +86,7 @@ export default function PaginaBalanco() {
       {isLoading ? (
         <ACarregar />
       ) : !data ? (
-        <Alerta tipo="erro">Não foi possível carregar o balanço.</Alerta>
+        <FalhaAoCarregar erro={error} oQue="o balanço" />
       ) : (
         <>
           {!data.equilibrado && (

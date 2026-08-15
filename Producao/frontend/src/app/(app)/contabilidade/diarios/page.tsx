@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Info, Plus, Search } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
 import {
   DialogoFechos,
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ErroApi } from "@/lib/api";
-import { useDiarios, useExercicios } from "@/lib/hooks";
+import { useDiarios, useDocumentos, useExercicios } from "@/lib/hooks";
 import type { Diario } from "@/types";
 
 const CATEGORIAS: Record<string, { rotulo: string; cor: string }> = {
@@ -50,6 +50,7 @@ export default function Diarios() {
   const { exercicios, activo } = useExercicios();
   const { pode } = useAuth();
   const [categoria, setCategoria] = useState("todas");
+  const [procura, setProcura] = useState("");
   const [emEdicao, setEmEdicao] = useState<Diario | null>(null);
   const [aCriar, setACriar] = useState(false);
   const [aApagar, setAApagar] = useState<Diario | null>(null);
@@ -58,6 +59,10 @@ export default function Diarios() {
   const [ocupado, setOcupado] = useState(false);
 
   const podeGerir = pode("contab.plano");
+  // A coluna «Documentos» existe no Piloto e faltava aqui. É o número que
+  // responde à pergunta que se faz antes de mexer num diário: quantos tipos de
+  // documento dependem dele.
+  const { documentos } = useDocumentos();
   const podeFechar = pode("contab.fechar");
 
   // Exercício escolhido para a coluna de fechos. Começa no activo, porque é
@@ -72,13 +77,19 @@ export default function Diarios() {
   // quinze pedidos para desenhar uma coluna.
   const { fechos } = useFechos(exercicio?.id);
 
-  const filtrados = useMemo(
-    () =>
-      categoria === "todas"
-        ? diarios
-        : diarios.filter((d) => d.categoria === categoria),
-    [diarios, categoria],
-  );
+  // A pesquisa é do cliente e aqui pode ser: a tabela de diários é um
+  // CATÁLOGO — uma empresa tem uma dúzia deles e não cresce com o tempo. É a
+  // excepção que a regra das listagens prevê (ver `CLAUDE.md`).
+  const filtrados = useMemo(() => {
+    const q = procura.trim().toLowerCase();
+    return diarios.filter((d) => {
+      if (categoria !== "todas" && d.categoria !== categoria) return false;
+      if (!q) return true;
+      return (
+        d.codigo.toLowerCase().includes(q) || d.nome.toLowerCase().includes(q)
+      );
+    });
+  }, [diarios, categoria, procura]);
 
   async function eliminar() {
     if (!aApagar) return;
@@ -119,6 +130,22 @@ export default function Diarios() {
       />
 
       <BarraFiltros className="mb-4">
+        <Campo rotulo="Pesquisar" className="min-w-[15rem] flex-1">
+          <div className="relative">
+            <Search
+              size={15}
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
+            />
+            <Entrada
+              type="search"
+              value={procura}
+              onChange={(e) => setProcura(e.target.value)}
+              placeholder="Código ou designação…"
+              className="pl-9"
+            />
+          </div>
+        </Campo>
         <Selector
           rotulo="Categoria"
           valor={categoria}
@@ -146,6 +173,20 @@ export default function Diarios() {
         )}
       </BarraFiltros>
 
+      {/* A frase do Piloto, palavra por palavra: é ela que explica o que a
+          coluna «Fechos» faz. Sem ela, «Gerir fechos» é um botão que ninguém
+          sabe se pode carregar. */}
+      <div className="mb-4">
+        <Alerta tipo="info">
+          <Info size={16} />
+          <span>
+            Pode fechar um diário num <b>mês/período concreto</b> do exercício
+            acima — deixa de aceitar novos lançamentos nesse diário e período
+            até ser reaberto.
+          </span>
+        </Alerta>
+      </div>
+
       {exercicio?.estado === "fechado" && (
         <div className="mb-4">
           <Alerta tipo="info">
@@ -166,7 +207,11 @@ export default function Diarios() {
         {isLoading ? (
           <ACarregar />
         ) : filtrados.length === 0 ? (
-          <Vazio>Nenhum diário nesta categoria.</Vazio>
+          <Vazio>
+            {procura.trim()
+              ? "Nenhum diário corresponde à pesquisa."
+              : "Nenhum diário nesta categoria."}
+          </Vazio>
         ) : (
           <EnvolveTabela className="rounded-none border-0">
             <Tabela>
@@ -176,6 +221,7 @@ export default function Diarios() {
                   <Th>Designação</Th>
                   <Th>Categoria</Th>
                   <Th>Estado</Th>
+                  <Th numerico>Documentos</Th>
                   <Th>Fechos {exercicio ? `(${exercicio.nome})` : ""}</Th>
                   {podeGerir && <Th> </Th>}
                 </tr>
@@ -200,6 +246,13 @@ export default function Diarios() {
                         <Selo cor={d.ativo ? "#1a9c5f" : "#8a8a8a"}>
                           {d.ativo ? "Activo" : "Inactivo"}
                         </Selo>
+                      </Td>
+                      <Td numerico className="text-texto-suave">
+                        {
+                          documentos.filter(
+                            (doc) => doc.diario_codigo === d.codigo,
+                          ).length
+                        }
                       </Td>
                       <Td>
                         <div className="flex flex-wrap items-center gap-2">

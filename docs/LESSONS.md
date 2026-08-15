@@ -169,3 +169,6 @@
 - QR com logótipo: a marca tem de ser CLARA (chapa branca, letras da cor da marca). Uma chapa escura com letras claras ao centro parece um padrão do próprio QR e o leitor agarra-se a ela — mediu-se 36/36 a 9 módulos e 1/36 a 11, só por mudar o tamanho. Clara, lê sempre.
 - Nunca dar um QR com logótipo por bom "porque se vê bem": passá-lo por um leitor a sério (pyzbar) sobre dezenas de dados diferentes. A olho, todos os que falhavam pareciam perfeitos.
 - Ao cortar um ficheiro por índices para reescrever um bloco, confirmar o que fica entre os dois pontos: apaguei o `verificar_codigo` sem dar por isso, e só os testes o apanharam.
+- «Não foi possível carregar X» é quase sempre mentira: o servidor respondeu e explicou (401 sessão, 400 conta sem empresa, 403 permissão, 402 licença). Mostrar `error.mensagemUtilizador` e nunca uma frase genérica — `components/ui/FalhaAoCarregar.tsx`.
+- Conjunto VAZIO não é erro: uma empresa nova ou um período sem movimentos pintado de vermelho faz duvidar do sistema no primeiro dia. Estado vazio em azul, com a frase do que falta.
+- Filtrar no cliente sobre uma página curta é pior do que sobre uma longa: com 10 por página, a pesquisa procurava em 10 linhas e dizia «nada encontrado» com o movimento a existir.

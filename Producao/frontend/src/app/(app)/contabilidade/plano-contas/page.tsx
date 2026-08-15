@@ -62,6 +62,7 @@ export default function PlanoDeContas() {
   const podeGerir = pode("contab.plano");
 
   const [procura, setProcura] = useState("");
+  const [procuraCodigo, setProcuraCodigo] = useState("");
   const [classe, setClasse] = useState("");
   const [natureza, setNatureza] = useState("");
   const [tipo, setTipo] = useState("");
@@ -80,8 +81,14 @@ export default function PlanoDeContas() {
 
   const arvore = useMemo(() => construirArvore(contas), [contas]);
   const visiveis = useMemo(
-    () => visiveisComFiltros(contas, arvore, { procura, natureza, tipo }),
-    [contas, arvore, procura, natureza, tipo],
+    () =>
+      visiveisComFiltros(contas, arvore, {
+        procura,
+        codigo: procuraCodigo,
+        natureza,
+        tipo,
+      }),
+    [contas, arvore, procura, procuraCodigo, natureza, tipo],
   );
 
   // A filtrar, está tudo aberto: um resultado escondido num ramo fechado é um
@@ -282,7 +289,24 @@ export default function PlanoDeContas() {
                   classificação fixas para não dançarem entre páginas. */}
               <thead>
                 <tr>
-                  <Th className="w-[30%]">Código</Th>
+                  {/* PESQUISA INLINE na própria coluna: escreve-se «43» e a
+                      árvore fica no ramo do 43. É por prefixo, que é como se
+                      pensa um código de conta, e convive com a pesquisa geral
+                      da barra de cima — esta filtra o código, aquela procura
+                      também no nome. */}
+                  <Th className="w-[30%] align-top">
+                    <div className="flex flex-col gap-1">
+                      <span>Código</span>
+                      <input
+                        type="search"
+                        value={procuraCodigo}
+                        onChange={(e) => setProcuraCodigo(e.target.value)}
+                        placeholder="Filtrar…"
+                        aria-label="Filtrar por código de conta"
+                        className="w-[7.5rem] rounded-md border border-borda bg-superficie px-2 py-1 text-[12px] font-normal normal-case tracking-normal text-texto outline-none focus:border-acento"
+                      />
+                    </div>
+                  </Th>
                   <Th>Designação</Th>
                   <Th className="w-[110px]">Cl. IVA</Th>
                   <Th className="w-[110px]">Natureza</Th>

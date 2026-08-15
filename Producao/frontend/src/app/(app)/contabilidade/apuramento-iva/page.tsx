@@ -25,6 +25,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { big, formataCompacto, formataMoeda } from "@/lib/dinheiro";
@@ -73,6 +74,7 @@ export default function ApuramentoIva() {
   const {
     data: ap,
     isLoading,
+    error,
     mutate,
   } = useSWR<ApuramentoIVA>(`/api/apuramentos/iva?${p}`, buscador);
 
@@ -178,7 +180,7 @@ export default function ApuramentoIva() {
       {isLoading ? (
         <ACarregar />
       ) : !ap ? (
-        <Alerta tipo="erro">Não foi possível carregar o apuramento.</Alerta>
+        <FalhaAoCarregar erro={error} oQue="o apuramento do IVA" />
       ) : semMovimento ? (
         <Alerta tipo="info">
           Sem IVA no período seleccionado — nada a apurar.

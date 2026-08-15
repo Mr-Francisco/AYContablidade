@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
 import {
@@ -23,6 +23,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
@@ -77,14 +78,29 @@ function Conteudo() {
   const exId = exercicioId ?? activo?.id;
   const moeda = empresa?.moeda ?? "Kz";
 
+  // TODAS as contas activas, de movimento E de integração — é o que o Piloto
+  // põe na caixa. Uma integradora sem subcontas ligadas não mostra nada, mas
+  // com «incluir subcontas» é exactamente como se vê o razão de um grupo
+  // inteiro, e era um uso que aqui não existia.
   const opcoesConta = useMemo(
     () =>
       contas
-        .filter((c) => c.tipo === "M" && c.ativa)
+        .filter((c) => c.ativa)
         .slice(0, 2000)
         .map((c) => ({ valor: c.codigo, rotulo: `${c.codigo} — ${c.nome}` })),
     [contas],
   );
+
+  // ABRE JÁ NUMA CONTA, como o Piloto. Lá a caixa é um `<select>` com as
+  // opções todas, e um `<select>` nasce com a primeira escolhida — abrir o
+  // razão mostra logo um razão. Aqui ficava «Escolha uma conta» e não se
+  // carregava nada, o que faz o ecrã parecer avariado a quem vem do Piloto.
+  //
+  // O `?conta=` do endereço continua a mandar: é por aí que o balancete abre a
+  // conta em que se fez duplo clique.
+  useEffect(() => {
+    if (!conta && opcoesConta.length > 0) setConta(opcoesConta[0].valor);
+  }, [conta, opcoesConta]);
 
   const nomeConta = contas.find((c) => c.codigo === conta)?.nome;
 
@@ -94,7 +110,7 @@ function Conteudo() {
   if (ate) p.set("ate", ate);
   if (incluirSubcontas) p.set("incluir_subcontas", "true");
 
-  const { data, isLoading } = useSWR<Razao>(
+  const { data, isLoading, error } = useSWR<Razao>(
     conta ? `/api/contabilidade/razao/${conta}?${p}` : null,
     buscador,
   );
@@ -169,7 +185,7 @@ function Conteudo() {
       ) : isLoading ? (
         <ACarregar />
       ) : !data ? (
-        <Alerta tipo="erro">Não foi possível carregar o razão.</Alerta>
+        <FalhaAoCarregar erro={error} oQue="o razão" />
       ) : (
         <>
           <div className="revelar-grelha mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">

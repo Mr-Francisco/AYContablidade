@@ -130,12 +130,19 @@ export function visiveisNaPesquisa(
 export function visiveisComFiltros(
   contas: Conta[],
   arvore: ArvorePlano,
-  filtros: { procura?: string; natureza?: string; tipo?: string },
+  filtros: {
+    procura?: string;
+    /** Só o código, para a pesquisa inline na coluna «Código». */
+    codigo?: string;
+    natureza?: string;
+    tipo?: string;
+  },
 ): Set<string> | null {
   const q = (filtros.procura ?? "").toLowerCase().trim();
+  const cod = (filtros.codigo ?? "").toLowerCase().trim();
   const nat = filtros.natureza ?? "";
   const tipo = filtros.tipo ?? "";
-  if (!q && !nat && !tipo) return null;
+  if (!q && !cod && !nat && !tipo) return null;
 
   const visiveis = new Set<string>();
   for (const c of contas) {
@@ -145,6 +152,9 @@ export function visiveisComFiltros(
       !c.nome.toLowerCase().includes(q)
     )
       continue;
+    // A pesquisa da coluna é por PREFIXO e não por conter: escrever «43» quer
+    // dizer «o ramo do 43», e não toda a conta que tenha um 43 pelo meio.
+    if (cod && !c.codigo.toLowerCase().startsWith(cod)) continue;
     if (nat && (c.natureza || "D") !== nat) continue;
     if (tipo) {
       const mov = ehMovimento(c, contas);

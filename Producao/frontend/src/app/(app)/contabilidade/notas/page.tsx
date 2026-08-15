@@ -16,6 +16,7 @@ import {
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { Confirmar } from "@/components/ui/CrudMestre";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { ehZero, formata } from "@/lib/dinheiro";
@@ -69,7 +70,7 @@ export default function Notas() {
   const anterior = exercicioAnterior(exercicios, exercicio);
 
   const q = exId ? `?exercicio_id=${exId}` : "";
-  const { data, isLoading, mutate } = useSWR<Nota[]>(
+  const { data, isLoading, mutate, error } = useSWR<Nota[]>(
     `/api/relatorios/notas${q}`,
     buscador,
   );
@@ -170,7 +171,7 @@ export default function Notas() {
       {isLoading ? (
         <ACarregar />
       ) : !data ? (
-        <Alerta tipo="erro">Não foi possível carregar as notas.</Alerta>
+        <FalhaAoCarregar erro={error} oQue="as notas" />
       ) : (
         <div className="flex flex-col gap-4">
           {visiveis.map((n) => (

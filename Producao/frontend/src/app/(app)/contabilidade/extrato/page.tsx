@@ -2,9 +2,9 @@
 
 import { Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 import useSWR from "swr";
-
+import { CampoConta } from "@/components/contabilidade/CampoConta";
 import {
   ACarregar,
   Alerta,
@@ -23,11 +23,12 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { RodapeHistorico, useHistorico } from "@/components/ui/Historico";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
-import { useContas, useExercicios } from "@/lib/hooks";
+import { useExercicios } from "@/lib/hooks";
 
 interface LinhaExtrato {
   lancamento_id: string;
@@ -65,7 +66,6 @@ function Conteudo() {
   const parametros = useSearchParams();
   const { empresa } = useAuth();
   const { exercicios, activo } = useExercicios();
-  const { contas } = useContas();
 
   const [conta, setConta] = useState(parametros.get("conta") ?? "");
   const [entidade, setEntidade] = useState(parametros.get("entidade") ?? "");
@@ -80,17 +80,6 @@ function Conteudo() {
   const exId = exercicioId ?? activo?.id;
   const moeda = empresa?.moeda ?? "Kz";
 
-  // As contas correntes de terceiros são o uso típico do extracto, por isso
-  // ficam à cabeça da lista.
-  const opcoesConta = useMemo(() => {
-    const movimento = contas.filter((c) => c.tipo === "M" && c.ativa);
-    const terceiros = movimento.filter((c) => c.codigo.startsWith("3"));
-    const resto = movimento.filter((c) => !c.codigo.startsWith("3"));
-    return [...terceiros, ...resto]
-      .slice(0, 2000)
-      .map((c) => ({ valor: c.codigo, rotulo: `${c.codigo} — ${c.nome}` }));
-  }, [contas]);
-
   const p = new URLSearchParams();
   if (exId) p.set("exercicio_id", exId);
   if (de) p.set("de", de);
@@ -98,7 +87,7 @@ function Conteudo() {
   if (entidade.trim()) p.set("entidade", entidade.trim());
   if (incluirSubcontas) p.set("incluir_subcontas", "true");
 
-  const { data, isLoading } = useSWR<Extrato>(
+  const { data, isLoading, error } = useSWR<Extrato>(
     conta ? `/api/contabilidade/razao/${conta}?${p}` : null,
     buscador,
   );
@@ -114,16 +103,47 @@ function Conteudo() {
         accoes={<AccoesDoMapa />}
       />
 
+      {/* A ORDEM É A DO PILOTO: conta, datas, entidade, subcontas. Aqui
+          estavam a entidade e o exercício no meio, entre a conta e as datas —
+          quem faz um extracto escolhe a conta e a seguir o período, e tinha de
+          saltar dois campos pelo caminho. O exercício fica à frente porque é o
+          contexto, como em todos os outros mapas da Produção. */}
       <BarraFiltros className="mb-4">
         <Selector
-          rotulo="Conta"
-          valor={conta}
-          aoMudar={setConta}
-          opcoes={opcoesConta}
-          placeholder="Escolher conta…"
-          larguraMinima="20rem"
-          className="flex-1"
+          rotulo="Exercício"
+          valor={exId ?? ""}
+          aoMudar={setExercicioId}
+          opcoes={exercicios.map((e) => ({
+            valor: e.id,
+            rotulo: `${e.nome}${e.ativo ? " · activo" : ""}`,
+          }))}
+          larguraMinima="13rem"
         />
+        <Campo
+          rotulo="Conta"
+          dica="F4 ou duplo clique procura no plano de contas."
+          className="min-w-[16rem] flex-1"
+        >
+          <CampoConta
+            valor={conta}
+            aoMudar={setConta}
+            placeholder="Código da conta · F4 procura"
+          />
+        </Campo>
+        <Campo rotulo="De">
+          <Entrada
+            type="date"
+            value={de}
+            onChange={(e) => setDe(e.target.value)}
+          />
+        </Campo>
+        <Campo rotulo="Até">
+          <Entrada
+            type="date"
+            value={ate}
+            onChange={(e) => setAte(e.target.value)}
+          />
+        </Campo>
         <Campo rotulo="Entidade" className="min-w-[180px]">
           <div className="relative">
             <Search
@@ -139,30 +159,6 @@ function Conteudo() {
               className="pl-9"
             />
           </div>
-        </Campo>
-        <Selector
-          rotulo="Exercício"
-          valor={exId ?? ""}
-          aoMudar={setExercicioId}
-          opcoes={exercicios.map((e) => ({
-            valor: e.id,
-            rotulo: `${e.nome}${e.ativo ? " · activo" : ""}`,
-          }))}
-          larguraMinima="13rem"
-        />
-        <Campo rotulo="De">
-          <Entrada
-            type="date"
-            value={de}
-            onChange={(e) => setDe(e.target.value)}
-          />
-        </Campo>
-        <Campo rotulo="Até">
-          <Entrada
-            type="date"
-            value={ate}
-            onChange={(e) => setAte(e.target.value)}
-          />
         </Campo>
         <label className="flex cursor-pointer items-center gap-2 self-end pb-2.5 text-sm">
           <input
@@ -183,7 +179,7 @@ function Conteudo() {
       ) : isLoading ? (
         <ACarregar />
       ) : !data ? (
-        <Alerta tipo="erro">Não foi possível carregar o extracto.</Alerta>
+        <FalhaAoCarregar erro={error} oQue="o extracto" />
       ) : (
         <>
           <div className="revelar-grelha mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">

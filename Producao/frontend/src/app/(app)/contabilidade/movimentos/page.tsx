@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, FilePlus2, Save, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import useSWR from "swr";
 
 import { CriarContaEmFalta } from "@/components/contabilidade/CriarContaEmFalta";
@@ -29,7 +29,9 @@ import { type EstadoEditor, estadoDe, estadoNovo, linhaVazia } from "./tipos";
  * JSON a cada abertura do ecrã mais usado do sistema. Passam a cinquenta, com
  * paginação — a regra de listagens do projecto (ver `CLAUDE.md`).
  */
-const LIMITE_PEDIDO = 50;
+/** Dez por página na lista lateral, como pedido: é o que cabe sem a coluna
+ *  crescer para lá do editor ao lado. */
+const LIMITE_PEDIDO = 10;
 
 /**
  * Movimentos — o editor em página do Piloto (`movimentos.html`).
@@ -70,9 +72,17 @@ export default function Movimentos() {
 
   // A lista traz sempre os diferidos: são precisamente os que é preciso
   // encontrar para integrar. Filtram-se aqui, não no pedido.
+  // FILTROS NO SERVIDOR, e não sobre o que já veio. Com dez por página, uma
+  // pesquisa filtrada no cliente procurava em dez linhas e dava «nada
+  // encontrado» com o movimento a existir — o defeito é tanto maior quanto
+  // menor for a página.
   const parametros = new URLSearchParams();
   if (exId) parametros.set("exercicio_id", exId);
   parametros.set("incluir_diferidos", "true");
+  if (soDiferidos) parametros.set("apenas_diferidos", "true");
+  if (filtroDiario) parametros.set("diario", filtroDiario);
+  const termo = procura.trim();
+  if (termo) parametros.set("procura", termo);
   parametros.set("limite", String(LIMITE_PEDIDO));
   parametros.set("offset", String(pag.offset));
   const chave = `/api/contabilidade/lancamentos?${parametros}`;
@@ -83,19 +93,7 @@ export default function Movimentos() {
   } = useSWR<Pagina<Lancamento>>(chave, buscador);
   const todos = pagina?.linhas;
 
-  const lista = useMemo(() => {
-    const q = procura.toLowerCase().trim();
-    return (todos ?? []).filter((l) => {
-      if (filtroDiario && l.diario_codigo !== filtroDiario) return false;
-      if (soDiferidos && !l.diferido) return false;
-      if (!q) return true;
-      return (
-        (l.descricao ?? "").toLowerCase().includes(q) ||
-        (l.documento_ref ?? "").toLowerCase().includes(q) ||
-        (l.numero_op ?? "").toLowerCase().includes(q)
-      );
-    });
-  }, [todos, filtroDiario, soDiferidos, procura]);
+  const lista = todos ?? [];
 
   // ---- Estado do movimento, pela ordem do Piloto ----
   const preenchidas = estado.linhas.filter(linhaPreenchida);
@@ -392,11 +390,20 @@ export default function Movimentos() {
           seleccionado={estado.editId}
           aoEscolher={carregar}
           filtroDiario={filtroDiario}
-          aoMudarFiltroDiario={setFiltroDiario}
+          aoMudarFiltroDiario={(v) => {
+            setFiltroDiario(v);
+            pag.reiniciar();
+          }}
           procura={procura}
-          aoMudarProcura={setProcura}
+          aoMudarProcura={(v) => {
+            setProcura(v);
+            pag.reiniciar();
+          }}
           soDiferidos={soDiferidos}
-          aoMudarSoDiferidos={setSoDiferidos}
+          aoMudarSoDiferidos={(v) => {
+            setSoDiferidos(v);
+            pag.reiniciar();
+          }}
           aCarregar={isLoading}
           pagina={pagina}
           controlos={pag.controlos}

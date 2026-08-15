@@ -20,6 +20,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { CaixaHistorico } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
@@ -64,7 +65,7 @@ export default function Retencoes() {
   if (exId) p.set("exercicio_id", exId);
   if (mes) p.set("mes", mes);
 
-  const { data, isLoading } = useSWR<MapaRetencoes>(
+  const { data, isLoading, error } = useSWR<MapaRetencoes>(
     `/api/apuramentos/retencoes?${p}`,
     buscador,
   );
@@ -119,7 +120,7 @@ export default function Retencoes() {
       {isLoading ? (
         <ACarregar />
       ) : !data ? (
-        <Alerta tipo="erro">Não foi possível carregar as retenções.</Alerta>
+        <FalhaAoCarregar erro={error} oQue="as retenções" />
       ) : data.linhas.length === 0 ? (
         <Alerta tipo="info">Sem retenções no período seleccionado.</Alerta>
       ) : (
