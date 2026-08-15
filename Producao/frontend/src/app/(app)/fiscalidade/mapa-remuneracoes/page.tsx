@@ -1,90 +1,126 @@
 "use client";
 
-import { Download, Printer } from "lucide-react";
-import { useState } from "react";
+import { Download, FileSpreadsheet, Pencil, Printer } from "lucide-react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 
-import { mesActual, mesPorExtenso, ultimosMeses } from "@/components/rh/mes";
+import { RubricasDoMapa } from "@/components/fiscalidade/RubricasDoMapa";
+import { mesActual } from "@/components/rh/mes";
 import {
   ACarregar,
   Alerta,
-  BarraFiltros,
   Botao,
   CabecalhoPagina,
+  Campo,
   Cartao,
+  Entrada,
   EnvolveTabela,
-  Kpi,
   Selector,
-  Tabela,
-  Td,
-  Th,
-  Tr,
-  Vazio,
 } from "@/components/ui";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
-import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
+import { formataMoeda } from "@/lib/dinheiro";
+import { plural } from "@/lib/texto";
+import { descarregar, preencherXlsx } from "@/lib/xlsx";
+import type { LinhaMapaIrt, MapaIrt } from "@/types";
 
-interface LinhaMapa {
-  colaborador_id: string;
-  nif: string;
-  nome: string;
-  num_ss: string;
-  provincia: string;
-  municipio: string;
-  salario_base: string;
-  descontos_falta: string;
-  sub_nao_suj: string;
-  sub_suj: string;
-  salario_iliquido: string;
-  base_ss: string;
-  contrib_ss: string;
-  base_irt: string;
-  irt: string;
-  isento_irt: boolean;
-  nao_sujeito_ss: boolean;
-  [chave: string]: unknown;
-}
+/**
+ * Mapa de Remunerações — Modelo IRT A2.1 (AGT).
+ *
+ * A tabela é a do Piloto, coluna a coluna e grupo a grupo. Os grupos não são
+ * decoração: há DUAS colunas chamadas «Base Tributável», uma da Segurança
+ * Social e outra do IRT, e é o cabeçalho colorido por cima que diz qual é
+ * qual. Catorze colunas não cabem em nenhum ecrã — o scroll é da tabela, com
+ * largura mínima própria, e nunca da página.
+ */
 
-interface MapaIrt {
-  mes: string;
-  rubricas_nao_sujeitas: string[];
-  rubricas_sujeitas: string[];
-  linhas: LinhaMapa[];
-  totais: Record<string, string>;
-}
+//: Código de província de duas letras exigido pelo modelo oficial (folha
+//: «Auxiliar» do template da AGT). Sem ele o ficheiro é recusado no upload.
+const PROVINCIA_COD: Record<string, string> = {
+  Bengo: "BO",
+  Benguela: "BA",
+  Bié: "BE",
+  Cabinda: "CA",
+  "Cuando Cubango": "CC",
+  "Cuanza Norte": "CN",
+  "Cuanza Sul": "CS",
+  Cunene: "CE",
+  Huambo: "HO",
+  Huíla: "HA",
+  Luanda: "LA",
+  "Lunda Norte": "LN",
+  "Lunda Sul": "LS",
+  Malanje: "ME",
+  Moxico: "MO",
+  Namibe: "NE",
+  Uíge: "UE",
+  Zaire: "ZE",
+};
+
+const MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+/** O modelo oficial aceita 1001 trabalhadores por período. */
+const LIMITE_MODELO = 1001;
 
 export default function MapaRemuneracoes() {
-  const { empresa } = useAuth();
+  const { empresa, pode } = useAuth();
   const moeda = empresa?.moeda ?? "Kz";
+  const podeGerir = pode("rh.gerir");
 
-  const [mes, setMes] = useState(mesActual());
-  const [soAtivos, setSoAtivos] = useState("true");
+  const [periodo, setPeriodo] = useState(mesActual().slice(5)); // "08"
+  const [ano, setAno] = useState(mesActual().slice(0, 4));
+  const [nif, setNif] = useState("");
+  const [emRubricas, setEmRubricas] = useState<LinhaMapaIrt | null>(null);
+  const [aGerar, setAGerar] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const { data, isLoading } = useSWR<MapaIrt>(
-    `/api/rh/mapa-irt?mes=${mes}&so_ativos=${soAtivos}`,
+  // O NIF do contribuinte é o da empresa, e fica editável: quem entrega o mapa
+  // por conta de outra entidade escreve outro sem lhe mexer na ficha.
+  useEffect(() => {
+    if (empresa?.nif) setNif(empresa.nif);
+  }, [empresa?.nif]);
+
+  const mes = `${ano}-${periodo}`;
+  const { data, isLoading, error, mutate } = useSWR<MapaIrt>(
+    `/api/rh/mapa-irt?mes=${mes}&so_ativos=true`,
     buscador,
   );
 
+  const linhas = data?.linhas ?? [];
+  const t = data?.totais ?? {};
+
   function exportarCsv() {
-    if (!data) return;
-    const cabecalho = [
-      "NIF",
+    const cab = [
+      "NIF Trabalhador",
       "Nome",
-      "Nº Seg. Social",
+      "Nº Segurança Social",
       "Província",
       "Município",
-      "Salário base",
-      "Descontos por falta",
-      "Subsídios não sujeitos",
-      "Subsídios sujeitos",
-      "Salário ilíquido",
-      "Base SS",
-      "Contribuição SS",
-      "Base IRT",
-      "IRT",
+      "Salário Base",
+      "Descontos por Falta",
+      "Subsídios Não Sujeitos a IRT",
+      "Subsídios Sujeitos a IRT",
+      "Salário Ilíquido",
+      "Base Tributável Segurança Social",
+      "Contribuição Segurança Social",
+      "Base Tributável IRT",
+      "IRT Apurado",
     ];
-    const linhas = data.linhas.map((l) => [
+    const corpo = linhas.map((l) => [
       l.nif,
       l.nome,
       l.num_ss,
@@ -100,216 +136,404 @@ export default function MapaRemuneracoes() {
       l.base_irt,
       l.irt,
     ]);
-    // Ponto e vírgula: o Excel em português usa-o como separador, e com vírgula
-    // abriria tudo numa coluna só. O BOM é o que faz os acentos aparecerem.
-    const csv = [cabecalho, ...linhas]
+    corpo.push([
+      "",
+      "TOTAIS",
+      "",
+      "",
+      "",
+      t.salario_base ?? "0",
+      t.descontos_falta ?? "0",
+      t.sub_nao_suj ?? "0",
+      t.sub_suj ?? "0",
+      t.salario_iliquido ?? "0",
+      t.base_ss ?? "0",
+      t.contrib_ss ?? "0",
+      t.base_irt ?? "0",
+      t.irt ?? "0",
+    ]);
+    const linhasCsv = [
+      ["NIF do Contribuinte", nif],
+      ["Período (AAAA-MM)", mes],
+      [],
+      cab,
+      ...corpo,
+    ];
+    // Ponto e vírgula: o Excel em português usa-o como separador. O BOM é o
+    // que faz os acentos aparecerem.
+    const texto = linhasCsv
       .map((r) =>
-        r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";"),
+        r
+          .map((v) => {
+            const s = String(v ?? "");
+            return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+          })
+          .join(";"),
       )
       .join("\r\n");
-    const url = URL.createObjectURL(
-      new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" }),
+    descarregar(
+      new Blob([`﻿${texto}`], { type: "text/csv;charset=utf-8" }),
+      `Mapa_Remuneracoes_${mes}_interno.csv`,
     );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `mapa-remuneracoes-${mes}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
+
+  /** O ficheiro oficial: o modelo da AGT com as células preenchidas. */
+  async function gerarXlsx() {
+    setErro(null);
+    if (linhas.length > LIMITE_MODELO) {
+      setErro(
+        `O modelo suporta até ${LIMITE_MODELO} trabalhadores por período — este mês tem ${linhas.length}.`,
+      );
+      return;
+    }
+    setAGerar(true);
+    try {
+      const celulas: Record<string, string | number> = {
+        C1: nif.trim(),
+        C2: mes,
+      };
+      const n = (v: unknown) => Number(v ?? 0);
+      linhas.forEach((l, i) => {
+        const r = 5 + i; // as linhas de dados do modelo começam na 5
+        Object.assign(celulas, {
+          [`A${r}`]: l.nif || "",
+          [`B${r}`]: l.nome || "",
+          [`C${r}`]: l.num_ss || "",
+          [`D${r}`]: PROVINCIA_COD[l.provincia] || "",
+          [`E${r}`]: l.municipio || "",
+          [`F${r}`]: n(l.salario_base),
+          [`G${r}`]: n(l.descontos_falta),
+          [`H${r}`]: n(l.sub_alimentacao),
+          [`I${r}`]: n(l.sub_transporte),
+          [`J${r}`]: n(l.abono_familia),
+          [`K${r}`]: n(l.reembolso_despesas),
+          [`L${r}`]: n(l.outros_nao_sujeitos),
+          [`M${r}`]: l.calc_manual_excesso ? "S" : "N",
+          [`N${r}`]: n(l.excesso_subsidios_nao_sujeitos),
+          [`O${r}`]: n(l.abono_falhas),
+          [`P${r}`]: n(l.sub_renda_casa),
+          [`Q${r}`]: n(l.compensacao_rescisao),
+          [`R${r}`]: n(l.sub_ferias),
+          [`S${r}`]: n(l.horas_extras),
+          [`T${r}`]: n(l.sub_atavio),
+          [`U${r}`]: n(l.sub_representacao),
+          [`V${r}`]: n(l.premios),
+          [`W${r}`]: n(l.sub_natal),
+          [`X${r}`]: n(l.outros_sujeitos),
+          [`Y${r}`]: n(l.salario_iliquido),
+          [`Z${r}`]: l.registo_manual_ss ? "S" : "N",
+          [`AA${r}`]: n(l.base_ss),
+          [`AB${r}`]: l.nao_sujeito_ss ? "S" : "N",
+          [`AC${r}`]: n(l.contrib_ss),
+          [`AD${r}`]: n(l.base_irt),
+          [`AE${r}`]: l.isento_irt ? "S" : "N",
+          [`AF${r}`]: n(l.irt),
+        });
+      });
+      const blob = await preencherXlsx("/modelos/mapa-irt-a2.1.xlsx", {
+        folha: "sheet1",
+        celulas,
+      });
+      descarregar(blob, `Mapa_Remuneracoes_IRT_A2.1_${mes}.xlsx`);
+    } catch (e) {
+      setErro(
+        `Não foi possível gerar o ficheiro: ${e instanceof Error ? e.message : "erro desconhecido"}`,
+      );
+    } finally {
+      setAGerar(false);
+    }
+  }
+
+  function imprimir() {
+    // Catorze colunas não cabem em retrato — o Piloto vira a folha.
+    document.body.classList.add("imprimir-deitado");
+    window.print();
+    setTimeout(() => document.body.classList.remove("imprimir-deitado"), 500);
+  }
+
+  const semLinhas = !linhas.length;
 
   return (
     <>
       <CabecalhoPagina
         titulo="Mapa de Remunerações"
-        descricao="Modelo IRT A2.1 (AGT) — remunerações, base contributiva e IRT retido, por colaborador."
-        accoes={
-          data?.linhas.length ? (
-            <div className="flex gap-2">
-              <Botao onClick={exportarCsv}>
-                <Download size={16} />
-                Exportar CSV
-              </Botao>
-              <Botao onClick={() => window.print()}>
-                <Printer size={16} />
-                Imprimir
-              </Botao>
-            </div>
-          ) : undefined
-        }
+        descricao="Modelo IRT A2.1 (AGT) — gera o ficheiro .xlsx exatamente no modelo oficial, pronto a anexar."
       />
 
-      <BarraFiltros className="mb-4">
-        <Selector
-          rotulo="Mês"
-          valor={mes}
-          aoMudar={setMes}
-          opcoes={ultimosMeses().map((m) => ({
-            valor: m,
-            rotulo: mesPorExtenso(m),
-          }))}
-          larguraMinima="14rem"
-        />
-        <Selector
-          rotulo="Colaboradores"
-          valor={soAtivos}
-          aoMudar={setSoAtivos}
-          opcoes={[
-            { valor: "true", rotulo: "Só activos" },
-            { valor: "false", rotulo: "Todos" },
-          ]}
-        />
-      </BarraFiltros>
+      {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
-      {data && (
-        <div className="revelar-grelha mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="min-w-0">
-            <Kpi
-              rotulo="Salário ilíquido"
-              valor={formataCompacto(
-                data.totais.salario_iliquido ?? "0",
-                moeda,
-              )}
-              detalhe={`${data.linhas.length} colaboradores`}
-              cor="var(--grafico-1)"
+      <Cartao className="sem-imprimir mb-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <Campo rotulo="NIF do Contribuinte" className="w-[11rem]">
+            <Entrada
+              value={nif}
+              onChange={(e) => setNif(e.target.value)}
+              className="tabular"
             />
-          </div>
-          <div className="min-w-0">
-            <Kpi
-              rotulo="Base contributiva"
-              valor={formataCompacto(data.totais.base_ss ?? "0", moeda)}
-              detalhe="Sobre a qual incide a SS"
-              cor="var(--grafico-2)"
+          </Campo>
+          <Selector
+            rotulo="Período"
+            valor={periodo}
+            aoMudar={setPeriodo}
+            opcoes={MESES.map((nome, i) => ({
+              valor: String(i + 1).padStart(2, "0"),
+              rotulo: `${String(i + 1).padStart(2, "0")} · ${nome}`,
+            }))}
+            larguraMinima="13rem"
+          />
+          <Campo rotulo="Ano" className="w-[7rem]">
+            <Entrada
+              type="number"
+              min="2000"
+              max="2100"
+              value={ano}
+              onChange={(e) => setAno(e.target.value)}
+              className="tabular"
             />
-          </div>
-          <div className="min-w-0">
-            <Kpi
-              rotulo="Contribuição SS"
-              valor={formataCompacto(data.totais.contrib_ss ?? "0", moeda)}
-              detalhe="Parte do trabalhador"
-              cor="var(--grafico-4)"
-            />
-          </div>
-          <div className="min-w-0">
-            <Kpi
-              rotulo="IRT retido"
-              valor={formataCompacto(data.totais.irt ?? "0", moeda)}
-              detalhe="A entregar ao Estado"
-              cor="var(--grafico-6)"
-            />
+          </Campo>
+          <p className="pb-2.5 text-[12.5px] text-texto-suave">
+            {plural(linhas.length, "trabalhador", "trabalhadores")} · valores em{" "}
+            {moeda}
+          </p>
+
+          <span className="flex-1" />
+
+          <div className="flex flex-wrap gap-2 pb-0.5">
+            <Botao
+              tamanho="pequeno"
+              onClick={exportarCsv}
+              disabled={semLinhas}
+              motivoBloqueio={
+                semLinhas ? "Não há trabalhadores neste período." : undefined
+              }
+            >
+              <Download size={14} />
+              CSV (interno)
+            </Botao>
+            <Botao
+              tamanho="pequeno"
+              onClick={imprimir}
+              disabled={semLinhas}
+              motivoBloqueio={
+                semLinhas ? "Não há trabalhadores neste período." : undefined
+              }
+            >
+              <Printer size={14} />
+              Imprimir
+            </Botao>
+            <Botao
+              variante="primario"
+              tamanho="pequeno"
+              onClick={gerarXlsx}
+              disabled={semLinhas || aGerar}
+              motivoBloqueio={
+                aGerar
+                  ? "A preencher o modelo oficial — aguarde."
+                  : semLinhas
+                    ? "Não há trabalhadores neste período."
+                    : undefined
+              }
+            >
+              <FileSpreadsheet size={14} />
+              {aGerar ? "A gerar…" : "Gerar .xlsx (modelo AGT)"}
+            </Botao>
           </div>
         </div>
-      )}
+      </Cartao>
 
-      <Alerta tipo="info" className="mb-4">
-        As colunas seguem o modelo da AGT. Repare que a{" "}
-        <b>base do IRT não é o salário ilíquido</b>: os subsídios não sujeitos
-        ficam de fora e a contribuição para a Segurança Social é deduzida. É
-        essa diferença que o modelo pede que fique visível.
-      </Alerta>
+      <Cartao>
+        {/* Cabeçalho do mapa — é o que sai no papel. */}
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <b className="text-[15px]">{empresa?.nome}</b>
+            <p className="text-[12.5px] text-texto-suave">
+              Mapa de Remunerações — Modelo IRT A2.1
+            </p>
+          </div>
+          <div className="text-right text-[12.5px] text-texto-suave">
+            <p>
+              NIF do Contribuinte: <b className="text-texto">{nif || "—"}</b>
+            </p>
+            <p>
+              Período: <b className="text-texto">{mes}</b>
+            </p>
+          </div>
+        </div>
 
-      <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
-        ) : !data?.linhas.length ? (
-          <Vazio>Sem colaboradores para {mesPorExtenso(mes)}.</Vazio>
+        ) : error ? (
+          <FalhaAoCarregar erro={error} oQue="o mapa de remunerações" />
         ) : (
-          <EnvolveTabela className="rounded-none border-0">
-            <Tabela>
+          <EnvolveTabela>
+            <table className="mapa-remun w-full border-collapse text-left">
               <thead>
-                <tr>
-                  <Th>NIF</Th>
-                  <Th>Nome</Th>
-                  <Th>Nº Seg. Social</Th>
-                  <Th>Localização</Th>
-                  <Th numerico>Salário base</Th>
-                  <Th numerico>Faltas</Th>
-                  <Th numerico>Subs. não sujeitos</Th>
-                  <Th numerico>Subs. sujeitos</Th>
-                  <Th numerico>Ilíquido</Th>
-                  <Th numerico>Base SS</Th>
-                  <Th numerico>Contrib. SS</Th>
-                  <Th numerico>Base IRT</Th>
-                  <Th numerico>IRT</Th>
+                <tr className="grupos">
+                  <th colSpan={5} className="g-id">
+                    Identificação do Trabalhador
+                  </th>
+                  <th colSpan={2}> </th>
+                  <th className="g-nao">Não Sujeito a IRT</th>
+                  <th className="g-sim">Sujeito a IRT</th>
+                  <th> </th>
+                  <th colSpan={2} className="g-ss">
+                    Segurança Social
+                  </th>
+                  <th colSpan={2} className="g-irt">
+                    IRT
+                  </th>
+                  {podeGerir && <th className="sem-imprimir"> </th>}
+                </tr>
+                <tr className="text-[11px] uppercase tracking-[0.3px] text-texto-suave">
+                  <th>NIF</th>
+                  <th>Nome</th>
+                  <th>Nº Seg. Social</th>
+                  <th>Província</th>
+                  <th>Município</th>
+                  <th className="text-right">Salário Base</th>
+                  <th className="text-right">Descontos p/ Falta</th>
+                  <th className="text-right">Subsídios Não Sujeitos</th>
+                  <th className="text-right">Subsídios Sujeitos</th>
+                  <th className="text-right">Salário Ilíquido</th>
+                  <th className="text-right">Base Tributável</th>
+                  <th className="text-right">Contribuição (3%)</th>
+                  <th className="text-right">Base Tributável</th>
+                  <th className="text-right">IRT Apurado</th>
+                  {podeGerir && <th className="sem-imprimir"> </th>}
                 </tr>
               </thead>
               <tbody>
-                {data.linhas.map((l) => (
-                  <Tr key={l.colaborador_id}>
-                    <Td className="tabular">{l.nif || "—"}</Td>
-                    <Td className="max-w-[200px] truncate font-semibold">
-                      {l.nome}
-                    </Td>
-                    <Td className="tabular">{l.num_ss || "—"}</Td>
-                    <Td className="max-w-[160px] truncate text-texto-suave">
-                      {[l.municipio, l.provincia].filter(Boolean).join(", ") ||
-                        "—"}
-                    </Td>
-                    <Td numerico>{formataMoeda(l.salario_base, moeda)}</Td>
-                    <Td numerico className="text-texto-suave">
-                      {l.descontos_falta === "0.00"
-                        ? "—"
-                        : formataMoeda(l.descontos_falta, moeda)}
-                    </Td>
-                    <Td numerico>{formataMoeda(l.sub_nao_suj, moeda)}</Td>
-                    <Td numerico>{formataMoeda(l.sub_suj, moeda)}</Td>
-                    <Td numerico className="font-semibold">
-                      {formataMoeda(l.salario_iliquido, moeda)}
-                    </Td>
-                    <Td numerico>{formataMoeda(l.base_ss, moeda)}</Td>
-                    <Td numerico>
-                      {l.nao_sujeito_ss ? (
-                        <span className="text-texto-suave">não sujeito</span>
-                      ) : (
-                        formataMoeda(l.contrib_ss, moeda)
+                {semLinhas ? (
+                  <tr>
+                    <td
+                      colSpan={podeGerir ? 15 : 14}
+                      className="py-8 text-center text-texto-suave"
+                    >
+                      Sem colaboradores activos. Registe em RH → Funcionários.
+                    </td>
+                  </tr>
+                ) : (
+                  linhas.map((l) => (
+                    <tr key={l.colaborador_id}>
+                      <td className="tabular">{l.nif || "—"}</td>
+                      <td className="font-semibold">{l.nome}</td>
+                      <td className="tabular">{l.num_ss || "—"}</td>
+                      <td>{l.provincia || "—"}</td>
+                      <td>{l.municipio || "—"}</td>
+                      <Numero valor={l.salario_base} moeda={moeda} />
+                      <Numero valor={l.descontos_falta} moeda={moeda} />
+                      <Numero valor={l.sub_nao_suj} moeda={moeda} />
+                      <Numero valor={l.sub_suj} moeda={moeda} />
+                      <Numero valor={l.salario_iliquido} moeda={moeda} forte />
+                      <Numero valor={l.base_ss} moeda={moeda} />
+                      <Numero valor={l.contrib_ss} moeda={moeda} />
+                      <Numero valor={l.base_irt} moeda={moeda} />
+                      <Numero valor={l.irt} moeda={moeda} forte />
+                      {podeGerir && (
+                        <td className="sem-imprimir text-right">
+                          <Botao
+                            tamanho="pequeno"
+                            onClick={() => setEmRubricas(l)}
+                          >
+                            <Pencil size={12} />
+                            Rubricas
+                          </Botao>
+                        </td>
                       )}
-                    </Td>
-                    <Td numerico>{formataMoeda(l.base_irt, moeda)}</Td>
-                    <Td numerico className="font-bold">
-                      {l.isento_irt ? (
-                        <span className="font-normal text-texto-suave">
-                          isento
-                        </span>
-                      ) : (
-                        formataMoeda(l.irt, moeda)
-                      )}
-                    </Td>
-                  </Tr>
-                ))}
+                    </tr>
+                  ))
+                )}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-borda font-bold">
-                  <Td colSpan={4}>Totais</Td>
-                  <Td numerico>
-                    {formataMoeda(data.totais.salario_base ?? "0", moeda)}
-                  </Td>
-                  <Td />
-                  <Td numerico>
-                    {formataMoeda(data.totais.sub_nao_suj ?? "0", moeda)}
-                  </Td>
-                  <Td numerico>
-                    {formataMoeda(data.totais.sub_suj ?? "0", moeda)}
-                  </Td>
-                  <Td numerico>
-                    {formataMoeda(data.totais.salario_iliquido ?? "0", moeda)}
-                  </Td>
-                  <Td numerico>
-                    {formataMoeda(data.totais.base_ss ?? "0", moeda)}
-                  </Td>
-                  <Td numerico>
-                    {formataMoeda(data.totais.contrib_ss ?? "0", moeda)}
-                  </Td>
-                  <Td numerico>
-                    {formataMoeda(data.totais.base_irt ?? "0", moeda)}
-                  </Td>
-                  <Td numerico>
-                    {formataMoeda(data.totais.irt ?? "0", moeda)}
-                  </Td>
+                <tr className="font-bold">
+                  <td colSpan={5}>TOTAIS</td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.salario_base ?? "0", "")}
+                  </td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.descontos_falta ?? "0", "")}
+                  </td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.sub_nao_suj ?? "0", "")}
+                  </td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.sub_suj ?? "0", "")}
+                  </td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.salario_iliquido ?? "0", "")}
+                  </td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.base_ss ?? "0", "")}
+                  </td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.contrib_ss ?? "0", "")}
+                  </td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.base_irt ?? "0", "")}
+                  </td>
+                  <td className="tabular text-right">
+                    {formataMoeda(t.irt ?? "0", "")}
+                  </td>
+                  {podeGerir && <td className="sem-imprimir"> </td>}
                 </tr>
               </tfoot>
-            </Tabela>
+            </table>
           </EnvolveTabela>
         )}
+
+        {/* Sem mapa não há totais: mostrá-los por baixo de «a sessão
+            expirou» era o ecrã a contradizer-se. */}
+        {!error && (
+          <p className="mt-3 text-[12.5px] leading-relaxed text-texto-suave">
+            Total de IRT a entregar:{" "}
+            <b className="tabular text-texto">
+              {formataMoeda(t.irt ?? "0", moeda)}
+            </b>{" "}
+            · Contribuição para a Segurança Social (trabalhador):{" "}
+            <b className="tabular text-texto">
+              {formataMoeda(t.contrib_ss ?? "0", moeda)}
+            </b>
+            . Use <b>Rubricas</b> por trabalhador para classificar os subsídios
+            nas categorias exactas do modelo da AGT.
+          </p>
+        )}
       </Cartao>
+
+      {emRubricas && (
+        <RubricasDoMapa
+          linha={emRubricas}
+          mes={mes}
+          rotuloMes={`${periodo} · ${MESES[Number(periodo) - 1] ?? ""}`}
+          moeda={moeda}
+          aoFechar={() => setEmRubricas(null)}
+          aoGravar={() => {
+            setEmRubricas(null);
+            mutate();
+          }}
+        />
+      )}
     </>
+  );
+}
+
+/** Célula numérica: zero mostra-se como «—», como no Piloto. */
+function Numero({
+  valor,
+  moeda,
+  forte,
+}: {
+  valor: string;
+  moeda: string;
+  forte?: boolean;
+}) {
+  const zero = !Number(valor);
+  return (
+    <td className={`tabular text-right ${forte ? "font-bold" : ""}`}>
+      {zero && !forte ? (
+        <span className="text-texto-suave">—</span>
+      ) : (
+        formataMoeda(valor, moeda === "Kz" ? "" : moeda)
+      )}
+    </td>
   );
 }

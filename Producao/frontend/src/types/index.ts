@@ -571,6 +571,62 @@ export interface PagamentoSalarial {
   numero_op: string | null;
 }
 
+/** Uma linha do Mapa de Remunerações — Modelo IRT A2.1 (AGT). */
+export interface LinhaMapaIrt {
+  colaborador_id: string;
+  nif: string;
+  nome: string;
+  num_ss: string;
+  provincia: string;
+  municipio: string;
+
+  // Apuramentos
+  salario_base: string;
+  descontos_falta: string;
+  sub_nao_suj: string;
+  sub_suj: string;
+  salario_iliquido: string;
+  base_ss: string;
+  contrib_ss: string;
+  base_irt: string;
+  irt: string;
+
+  // Rubricas não sujeitas a IRT (Art. 2º do CIRT)
+  sub_alimentacao: string;
+  sub_transporte: string;
+  abono_familia: string;
+  reembolso_despesas: string;
+  outros_nao_sujeitos: string;
+
+  // Rubricas sujeitas a IRT
+  abono_falhas: string;
+  sub_renda_casa: string;
+  compensacao_rescisao: string;
+  sub_ferias: string;
+  horas_extras: string;
+  sub_atavio: string;
+  sub_representacao: string;
+  premios: string;
+  sub_natal: string;
+  outros_sujeitos: string;
+
+  // Marcas do modelo oficial
+  calc_manual_excesso: boolean;
+  excesso_subsidios_nao_sujeitos: string;
+  registo_manual_ss: boolean;
+  base_tributavel_ss_manual: string;
+  nao_sujeito_ss: boolean;
+  isento_irt: boolean;
+}
+
+export interface MapaIrt {
+  mes: string;
+  rubricas_nao_sujeitas: string[];
+  rubricas_sujeitas: string[];
+  linhas: LinhaMapaIrt[];
+  totais: Record<string, string>;
+}
+
 /** Um mês processado e o seu estado de pagamento — a lista do Piloto. */
 export interface MesAPagar {
   mes: string;

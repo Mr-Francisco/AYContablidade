@@ -314,3 +314,68 @@
     margin: 14mm 12mm;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Mapa de Remunerações — Modelo IRT A2.1 (AGT).
+
+   Catorze colunas em cinco grupos, e os grupos são o que torna a tabela
+   legível: sem eles ninguém sabe qual das duas «Base Tributável» é a da
+   Segurança Social e qual é a do IRT. As cores são as do Piloto, uma por
+   grupo, e a tabela tem largura mínima própria — o scroll é DA TABELA, não da
+   página.
+--------------------------------------------------------------------------- */
+.mapa-remun {
+  font-size: 12px;
+  min-width: 1180px;
+}
+.mapa-remun th,
+.mapa-remun td {
+  padding: 6px 8px;
+  border: 1px solid var(--color-borda);
+  white-space: nowrap;
+}
+.mapa-remun thead tr.grupos th {
+  text-align: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: color-mix(in srgb, var(--color-borda) 40%, transparent);
+}
+.mapa-remun thead tr.grupos th.g-id {
+  background: color-mix(in srgb, var(--color-indigo) 18%, transparent);
+}
+.mapa-remun thead tr.grupos th.g-nao {
+  background: color-mix(in srgb, var(--color-sucesso) 22%, transparent);
+}
+.mapa-remun thead tr.grupos th.g-sim {
+  background: color-mix(in srgb, var(--color-rosa) 16%, transparent);
+}
+.mapa-remun thead tr.grupos th.g-ss {
+  background: color-mix(in srgb, var(--color-roxo) 18%, transparent);
+}
+.mapa-remun thead tr.grupos th.g-irt {
+  background: color-mix(in srgb, var(--color-magenta) 16%, transparent);
+}
+.mapa-remun tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--color-borda) 14%, transparent);
+}
+.mapa-remun tfoot tr {
+  position: sticky;
+  bottom: 0;
+  background: var(--color-superficie-2);
+}
+
+@media print {
+  /* Catorze colunas não cabem em retrato. */
+  .mapa-remun {
+    font-size: 8pt;
+    min-width: 0;
+  }
+  .imprimir-deitado {
+    page: deitado;
+  }
+  @page deitado {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+}
