@@ -1,7 +1,8 @@
 "use client";
 
-import { CheckCircle2, Plus, Trash2 } from "lucide-react";
-import { AlertDialog } from "radix-ui";
+import { CheckCircle2, Plus, Search, Settings, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { AlertDialog, Tabs } from "radix-ui";
 import { useState } from "react";
 import useSWR from "swr";
 
@@ -12,7 +13,9 @@ import {
   BarraFiltros,
   Botao,
   CabecalhoPagina,
+  Campo,
   Cartao,
+  Entrada,
   EnvolveTabela,
   Kpi,
   Selector,
@@ -39,7 +42,14 @@ export default function Compras() {
   const { activo } = useExercicios();
   const moeda = empresa?.moeda ?? "Kz";
 
+  const [aba, setAba] = useState("lancamento");
   const [estado, setEstado] = useState("todos");
+  const [procura, setProcura] = useState("");
+  const [fornecedorId, setFornecedorId] = useState("");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const [valorMin, setValorMin] = useState("");
+  const [valorMax, setValorMax] = useState("");
   const [novoAberto, setNovoAberto] = useState(false);
   const [aEmitir, setAEmitir] = useState<Compra | null>(null);
   const [aEliminar, setAEliminar] = useState<Compra | null>(null);
@@ -47,15 +57,47 @@ export default function Compras() {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
+  const { data: fornecedores } = useSWR<{ id: string; nome: string }[]>(
+    "/api/compras/fornecedores",
+    buscador,
+    { revalidateOnFocus: false },
+  );
   const p = usePaginacao();
+
+  // O SEPARADOR MANDA NO PEDIDO. «Lançamento» é a bancada de trabalho: só os
+  // rascunhos, o que está por confirmar. «Consultas» é o arquivo: tudo, com os
+  // filtros todos. Era isto que faltava — uma lista só, com um filtro de
+  // estado, obrigava a procurar o trabalho de hoje no meio do histórico.
+  const emLancamento = aba === "lancamento";
+  const filtros = new URLSearchParams(p.query);
+  if (emLancamento) {
+    filtros.set("estado", "rascunho");
+  } else {
+    if (estado !== "todos") filtros.set("estado", estado);
+    if (fornecedorId) filtros.set("fornecedor_id", fornecedorId);
+    if (de) filtros.set("de", de);
+    if (ate) filtros.set("ate", ate);
+    if (valorMin) filtros.set("valor_min", valorMin);
+    if (valorMax) filtros.set("valor_max", valorMax);
+  }
+  if (procura.trim()) filtros.set("procura", procura.trim());
+  const chaveDaLista = `/api/compras?${filtros}`;
+
+  function limparFiltros() {
+    setProcura("");
+    setFornecedorId("");
+    setDe("");
+    setAte("");
+    setValorMin("");
+    setValorMax("");
+    setEstado("todos");
+    p.reiniciar();
+  }
   const {
     data: pagina,
     isLoading,
     mutate,
-  } = useSWR<Pagina<Compra>>(
-    `/api/compras?${p.query}${estado !== "todos" ? `&estado=${estado}` : ""}`,
-    buscador,
-  );
+  } = useSWR<Pagina<Compra>>(chaveDaLista, buscador);
   const compras = pagina?.linhas;
   const { data: resumo, mutate: mutateResumo } = useSWR<ResumoCompras>(
     "/api/compras/resumo",
@@ -162,28 +204,167 @@ export default function Compras() {
       {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
-      <BarraFiltros className="mb-4">
-        <Selector
-          rotulo="Estado"
-          valor={estado}
-          aoMudar={(v) => {
-            setEstado(v);
-            p.reiniciar();
-          }}
-          opcoes={[
-            { valor: "todos", rotulo: "Todos" },
-            { valor: "rascunho", rotulo: "Rascunhos" },
-            { valor: "emitida", rotulo: "Emitidos" },
-          ]}
-          larguraMinima="12rem"
-        />
+      {/* Os dois separadores do Piloto. */}
+      <Tabs.Root
+        value={aba}
+        onValueChange={(v) => {
+          setAba(v);
+          p.reiniciar();
+        }}
+      >
+        <Tabs.List className="mb-4 flex flex-wrap gap-1 border-b-2 border-borda">
+          {[
+            { v: "lancamento", r: "Lançamento" },
+            { v: "consultas", r: "Consultas" },
+          ].map((x) => (
+            <Tabs.Trigger
+              key={x.v}
+              value={x.v}
+              className="-mb-0.5 rounded-t-lg border-b-2 border-transparent px-4 py-2 text-[13.5px] font-semibold text-texto-suave hover:text-texto data-[state=active]:border-acento data-[state=active]:text-texto"
+            >
+              {x.r}
+            </Tabs.Trigger>
+          ))}
+        </Tabs.List>
+      </Tabs.Root>
+
+      <BarraFiltros className="mb-2">
+        <Campo rotulo="Pesquisar" className="min-w-[15rem] flex-1">
+          <div className="relative">
+            <Search
+              size={15}
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
+            />
+            <Entrada
+              type="search"
+              value={procura}
+              onChange={(e) => {
+                setProcura(e.target.value);
+                p.reiniciar();
+              }}
+              placeholder="Nº ou fornecedor…"
+              className="pl-9"
+            />
+          </div>
+        </Campo>
+
+        {!emLancamento && (
+          <>
+            <Campo rotulo="De">
+              <Entrada
+                type="date"
+                value={de}
+                onChange={(e) => {
+                  setDe(e.target.value);
+                  p.reiniciar();
+                }}
+              />
+            </Campo>
+            <Campo rotulo="Até">
+              <Entrada
+                type="date"
+                value={ate}
+                onChange={(e) => {
+                  setAte(e.target.value);
+                  p.reiniciar();
+                }}
+              />
+            </Campo>
+            <Selector
+              rotulo="Fornecedor"
+              valor={fornecedorId}
+              aoMudar={(v) => {
+                setFornecedorId(v);
+                p.reiniciar();
+              }}
+              opcoes={[
+                { valor: "", rotulo: "Todos" },
+                ...(fornecedores ?? []).map((f) => ({
+                  valor: f.id,
+                  rotulo: f.nome,
+                })),
+              ]}
+              larguraMinima="14rem"
+            />
+            <Selector
+              rotulo="Estado"
+              valor={estado}
+              aoMudar={(v) => {
+                setEstado(v);
+                p.reiniciar();
+              }}
+              opcoes={[
+                { valor: "todos", rotulo: "Todos" },
+                { valor: "rascunho", rotulo: "Rascunho" },
+                { valor: "emitida", rotulo: "Emitida" },
+              ]}
+              larguraMinima="11rem"
+            />
+            <Campo rotulo="Valor mín.">
+              <Entrada
+                type="number"
+                min="0"
+                value={valorMin}
+                onChange={(e) => {
+                  setValorMin(e.target.value);
+                  p.reiniciar();
+                }}
+                className="w-[7rem] text-right tabular"
+              />
+            </Campo>
+            <Campo rotulo="Valor máx.">
+              <Entrada
+                type="number"
+                min="0"
+                value={valorMax}
+                onChange={(e) => {
+                  setValorMax(e.target.value);
+                  p.reiniciar();
+                }}
+                className="w-[7rem] text-right tabular"
+              />
+            </Campo>
+            <Botao className="self-end" onClick={limparFiltros}>
+              Limpar filtros
+            </Botao>
+          </>
+        )}
+
+        {emLancamento && pode("logistica.gerir") && (
+          <>
+            <span className="flex-1" />
+            <Botao
+              comoFilho
+              variante="neutro"
+              className="self-end"
+              title="Diário, documento e contas usados ao emitir uma compra"
+            >
+              <Link href="/configuracoes?acordeao=parametrizacoes">
+                <Settings size={15} />
+                Configurações
+              </Link>
+            </Botao>
+          </>
+        )}
       </BarraFiltros>
+
+      {/* A frase do Piloto, que explica porque é que esta lista é curta. */}
+      <p className="mb-4 text-[13px] text-texto-suave">
+        {emLancamento
+          ? "Documentos por confirmar (rascunho) — os já emitidos ficam disponíveis em Consultas."
+          : "Pesquisa sobre todo o histórico de compras (rascunho e emitidas)."}
+      </p>
 
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
         ) : !compras?.length ? (
-          <Vazio>Sem documentos de compra.</Vazio>
+          <Vazio>
+            {emLancamento
+              ? "Sem compras por confirmar."
+              : "Nenhuma compra corresponde aos filtros."}
+          </Vazio>
         ) : (
           <>
             <EnvolveTabela className="rounded-none border-0">

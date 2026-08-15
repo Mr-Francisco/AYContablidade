@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type FormEvent, useState } from "react";
 import useSWR from "swr";
@@ -8,6 +8,7 @@ import useSWR from "swr";
 import {
   ACarregar,
   Alerta,
+  BarraFiltros,
   Botao,
   CabecalhoPagina,
   Campo,
@@ -23,12 +24,14 @@ import {
 import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
+import { formataMoeda } from "@/lib/dinheiro";
 import type { Armazem } from "@/types";
 
 const ROTA = "/api/logistica/armazens";
 
 export default function Armazens() {
-  const { pode } = useAuth();
+  const { pode, empresa } = useAuth();
+  const moeda = empresa?.moeda ?? "Kz";
   const [novoAberto, setNovoAberto] = useState(false);
   const [emEdicao, setEmEdicao] = useState<Armazem | null>(null);
   const [aApagar, setAApagar] = useState<Armazem | null>(null);
@@ -38,6 +41,21 @@ export default function Armazens() {
   const podeGerir = pode("logistica.gerir");
 
   const { data, isLoading, mutate } = useSWR<Armazem[]>(ROTA, buscador);
+  const { data: resumo } = useSWR<
+    { codigo: string; artigos: number; valor: string }[]
+  >("/api/logistica/armazens/resumo", buscador, { revalidateOnFocus: false });
+
+  const [procura, setProcura] = useState("");
+  const conteudo = new Map((resumo ?? []).map((r) => [r.codigo, r] as const));
+  const visiveis = (data ?? []).filter((a) => {
+    const q = procura.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      a.codigo.toLowerCase().includes(q) ||
+      a.nome.toLowerCase().includes(q) ||
+      (a.localizacao ?? "").toLowerCase().includes(q)
+    );
+  });
 
   async function eliminar() {
     if (!aApagar) return;
@@ -73,6 +91,25 @@ export default function Armazens() {
         }
       />
 
+      <BarraFiltros className="mb-4">
+        <Campo rotulo="Pesquisar" className="min-w-[16rem] flex-1">
+          <div className="relative">
+            <Search
+              size={15}
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
+            />
+            <Entrada
+              type="search"
+              value={procura}
+              onChange={(e) => setProcura(e.target.value)}
+              placeholder="Código, nome ou localização…"
+              className="pl-9"
+            />
+          </div>
+        </Campo>
+      </BarraFiltros>
+
       {erro && (
         <div className="mb-4">
           <Alerta tipo="erro">{erro}</Alerta>
@@ -82,8 +119,12 @@ export default function Armazens() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
-        ) : !data?.length ? (
-          <Vazio>Ainda não há armazéns registados.</Vazio>
+        ) : !visiveis.length ? (
+          <Vazio>
+            {procura.trim()
+              ? "Nenhum armazém corresponde à pesquisa."
+              : "Ainda não há armazéns registados."}
+          </Vazio>
         ) : (
           <EnvolveTabela className="rounded-none border-0">
             <Tabela>
@@ -92,15 +133,29 @@ export default function Armazens() {
                   <Th>Código</Th>
                   <Th>Nome</Th>
                   <Th>Localização</Th>
+                  <Th numerico>Artigos</Th>
+                  <Th numerico>Valor em stock</Th>
                   {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
-                {data.map((a) => (
+                {visiveis.map((a) => (
                   <Tr key={a.id}>
                     <Td className="tabular font-bold">{a.codigo}</Td>
                     <Td className="font-semibold">{a.nome}</Td>
                     <Td className="text-texto-suave">{a.localizacao || "—"}</Td>
+                    {/* O que o armazém tem lá dentro. Uma lista de armazéns
+                        sem isto responde «onde» e não responde «o quê» — e é a
+                        segunda a pergunta que se faz. */}
+                    <Td numerico className="text-texto-suave">
+                      {conteudo.get(a.codigo)?.artigos ?? 0}
+                    </Td>
+                    <Td numerico className="font-semibold">
+                      {formataMoeda(
+                        conteudo.get(a.codigo)?.valor ?? "0",
+                        moeda,
+                      )}
+                    </Td>
                     {podeGerir && (
                       <Td>
                         <AccoesDaLinha

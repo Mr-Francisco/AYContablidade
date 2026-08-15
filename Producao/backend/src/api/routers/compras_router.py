@@ -160,6 +160,11 @@ def listar_compras(
     db: DB,
     estado: str | None = None,
     procura: str | None = None,
+    fornecedor_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+    valor_min: Decimal | None = None,
+    valor_max: Decimal | None = None,
     offset: int = 0,
     limite: int = LIMITE_OMISSAO,
 ) -> dict:
@@ -181,6 +186,19 @@ def listar_compras(
                 Compra.documento_nome.ilike(termo),
             )
         )
+    # Os filtros do separador «Consultas» do Piloto: fornecedor, intervalo de
+    # datas e intervalo de valor. Vão ao servidor porque a lista é paginada —
+    # filtrar o que já veio procurava dentro de vinte e cinco linhas.
+    if fornecedor_id is not None:
+        q = q.where(Compra.fornecedor_id == fornecedor_id)
+    if de is not None:
+        q = q.where(Compra.data >= de)
+    if ate is not None:
+        q = q.where(Compra.data <= ate)
+    if valor_min is not None:
+        q = q.where(Compra.total >= valor_min)
+    if valor_max is not None:
+        q = q.where(Compra.total <= valor_max)
 
     return pagina(
         db,

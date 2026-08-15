@@ -311,6 +311,43 @@ def anular_movimento(
     }
 
 
+@router.get("/armazens/resumo")
+def resumo_dos_armazens(empresa: EmpresaAtual, db: DB) -> list[dict]:
+    """Quantos artigos e quanto vale o stock de cada armazém.
+
+    Uma lista de armazéns responde «onde» e não responde «o quê» — e é a
+    segunda a pergunta que se faz ao olhar para ela.
+
+    Percorre os armazéns e reaproveita o cálculo das existências em vez de o
+    reescrever agrupado: o custo médio ponderado é por artigo E armazém, e uma
+    segunda implementação divergiria da primeira à primeira correcção. Os
+    armazéns de uma empresa contam-se pelos dedos; se algum dia forem centenas,
+    é aqui que se muda.
+    """
+    from src.db.models.logistica import Armazem
+
+    saida = []
+    for a in db.scalars(
+        select(Armazem)
+        .where(Armazem.empresa_id == empresa.id)
+        .order_by(Armazem.codigo)
+    ).all():
+        linhas = [
+            l
+            for l in svc.existencias(db, empresa_id=empresa.id, armazem_id=a.id)
+            if l["stock"] > 0
+        ]
+        saida.append(
+            {
+                "armazem_id": a.id,
+                "codigo": a.codigo,
+                "artigos": len(linhas),
+                "valor": sum((l["valor"] for l in linhas), Decimal("0")),
+            }
+        )
+    return saida
+
+
 @router.get("/existencias")
 def listar_existencias(
     empresa: EmpresaAtual, db: DB, armazem_id: UUID | None = None,
