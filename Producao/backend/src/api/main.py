@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 
 from src.api.json import RespostaJSON
 from src.core.config import get_settings
+from src.auth.security import ErroPolitica
 from src.services.contabilidade import ErroContabilistico
 
 settings = get_settings()
@@ -85,6 +86,19 @@ def criar_app() -> FastAPI:
     def _erro_contabilistico(request: Request, exc: ErroContabilistico) -> JSONResponse:
         """Uma violação de regra contabilística é um erro do pedido, não do
         servidor: devolve 422 com a mensagem, em vez de um 500 opaco."""
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(ErroPolitica)
+    def _erro_politica(request: Request, exc: ErroPolitica) -> JSONResponse:
+        """Palavra-passe fora da política: é o pedido que está errado.
+
+        REGRESSÃO CORRIGIDA: isto rebentava com 500 em cinco rotas — activar
+        licença, criar utilizador, repor palavra-passe, alterar a própria e o
+        registo. E um 500 por excepção não tratada sai sem os cabeçalhos de
+        CORS: o browser bloqueia a resposta e mostra «não foi possível
+        contactar o servidor», que manda a pessoa verificar a ligação à
+        Internet por causa de uma palavra-passe curta.
+        """
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
     return app

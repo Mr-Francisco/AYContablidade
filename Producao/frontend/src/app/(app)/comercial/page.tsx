@@ -12,6 +12,7 @@ import {
   ListaPainel,
 } from "@/components/painel";
 import { ACarregar, Cartao, Kpi, TituloCartao } from "@/components/ui";
+import type { Pagina } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, formataMoeda } from "@/lib/dinheiro";
@@ -34,7 +35,14 @@ export default function PainelComercial() {
     "/api/comercial/resumo",
     buscador,
   );
-  const { data: vendas } = useSWR<Venda[]>("/api/comercial/vendas", buscador);
+  // `/api/comercial/vendas` devolve UMA PÁGINA — `{linhas, total, …}`, como
+  // manda a regra de listagens. Tratada como lista, a página rebentava com
+  // «is not iterable» e o painel do módulo não abria de todo. Pede-se o máximo
+  // por pedido (200): o que se mostra aqui é o resumo do que há.
+  const { data: vendas } = useSWR<Pagina<Venda>>(
+    "/api/comercial/vendas?limite=200",
+    buscador,
+  );
   const { data: clientes } = useSWR<Terceiro[]>(
     "/api/comercial/clientes",
     buscador,
@@ -49,7 +57,7 @@ export default function PainelComercial() {
   const porCliente = new Map<string, ReturnType<typeof big>>();
   let produtos = big("0");
   let servicos = big("0");
-  for (const v of vendas ?? []) {
+  for (const v of vendas?.linhas ?? []) {
     const nome = v.cliente_nome || "—";
     porCliente.set(nome, (porCliente.get(nome) ?? big("0")).plus(v.total));
     if (v.tipo === "servicos") servicos = servicos.plus(v.total);
@@ -67,7 +75,7 @@ export default function PainelComercial() {
     cor: "var(--grafico-5)",
   }));
 
-  const recentes = (vendas ?? [])
+  const recentes = (vendas?.linhas ?? [])
     .slice()
     .sort((a, b) => (b.data || "").localeCompare(a.data || ""))
     .slice(0, 6);

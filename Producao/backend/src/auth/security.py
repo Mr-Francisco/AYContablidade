@@ -44,14 +44,28 @@ def verificar_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def validar_forca_password(password: str) -> None:
-    """Levanta ValueError se a palavra-passe não cumprir a política.
+class ErroPolitica(ValueError):
+    """A palavra-passe não cumpre a política da instalação.
 
-    O Piloto exigia 4 caracteres; a Produção exige 8 (docs/SECURITY.md).
+    Tem tipo próprio para a API a poder distinguir de um `ValueError` qualquer
+    e responder 422 com a explicação. Enquanto era um `ValueError` simples,
+    ninguém a apanhava: a rota rebentava com 500, e um 500 por excepção não
+    tratada sai SEM os cabeçalhos de CORS — o browser bloqueia a resposta e o
+    utilizador lê «não foi possível contactar o servidor» quando o servidor
+    está bem e só a palavra-passe é que era curta.
+    """
+
+
+def validar_forca_password(password: str) -> None:
+    """Levanta `ErroPolitica` se a palavra-passe não cumprir a política.
+
+    O Piloto exigia 4 caracteres; a Produção exige 8 (docs/SECURITY.md), e a
+    instalação pode exigir mais — a mensagem diz o número real, porque um
+    «demasiado curta» sem número obriga a adivinhar.
     """
     minimo = get_settings().PASSWORD_MIN_CARACTERES
     if len(password) < minimo:
-        raise ValueError(
+        raise ErroPolitica(
             f"A palavra-passe deve ter pelo menos {minimo} caracteres."
         )
 

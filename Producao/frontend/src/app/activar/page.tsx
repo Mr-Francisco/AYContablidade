@@ -196,7 +196,10 @@ export default function Activar() {
             />
           </Campo>
 
-          <Campo rotulo="Palavra-passe" dica="Mínimo 8 caracteres.">
+          <Campo
+            rotulo="Palavra-passe"
+            dica="No mínimo 8 caracteres — a sua instalação pode exigir mais, e o servidor di-lo se for o caso."
+          >
             <Entrada
               type="password"
               value={campos.admin_password}

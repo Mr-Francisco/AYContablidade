@@ -23,6 +23,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import type { Pagina } from "@/components/ui/Paginacao";
 import { buscador } from "@/lib/api";
 import { formataCompacto, soma } from "@/lib/dinheiro";
 import type {
@@ -39,8 +40,19 @@ export default function Empresas() {
     isLoading,
     mutate,
   } = useSWR<EmpresaPlataforma[]>("/api/licencas/empresas", buscador);
-  const { data: licencas } = useSWR<LicencaPlataforma[]>(
-    "/api/licencas",
+  /*
+   * `/api/licencas` devolve UMA PÁGINA — `{linhas, total, …}` — desde que a
+   * regra de listagens do projecto passou a valer também aqui. Esta página
+   * continuava a tratar a resposta como uma lista e rebentava com
+   * «is not iterable» ao percorrê-la: o ecrã inteiro da plataforma deixava de
+   * abrir por causa do plano que aparece numa coluna.
+   *
+   * Pede-se só as activas e o máximo por pedido (200, o tecto do servidor):
+   * o que se quer é o plano de cada empresa, e as licenças caducadas ou
+   * pendentes não têm empresa a funcionar do outro lado.
+   */
+  const { data: licencas } = useSWR<Pagina<LicencaPlataforma>>(
+    "/api/licencas?estado=activa&limite=200",
     buscador,
   );
   const { data: consumo } = useSWR<ConsumoEmpresa[]>(
@@ -53,7 +65,7 @@ export default function Empresas() {
   // plataforma.
   const porEmpresa = useMemo(() => {
     const lic = new Map<string, LicencaPlataforma>();
-    for (const l of licencas ?? []) {
+    for (const l of licencas?.linhas ?? []) {
       if (l.empresa_id && l.estado === "activa") lic.set(l.empresa_id, l);
     }
     const cons = new Map<string, ConsumoEmpresa>();
