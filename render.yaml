@@ -90,3 +90,9 @@ services:
       # que o Render dá ao serviço de cima.
       - key: NEXT_PUBLIC_API_URL
         sync: false
+      # O endereço público DESTE serviço. Sem ele, a etiqueta canónica, o
+      # `og:url` e o `sitemap.xml` apontam para `localhost` — e uma partilha do
+      # sistema numa conversa manda quem a recebe para a máquina dele.
+      # Mudar aqui no dia em que houver domínio próprio.
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://aycontabilidade-web.onrender.com

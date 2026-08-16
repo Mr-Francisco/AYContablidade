@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { DADOS_INSTITUCIONAIS, SITE } from "@/lib/institucional";
+import {
+  AUTOR,
+  CONTRIBUICAO,
+  DADOS_INSTITUCIONAIS,
+  SITE,
+} from "@/lib/institucional";
 
 /* ---------------------------------------------------------------------------
    Página de apresentação — pública.
@@ -66,6 +71,16 @@ const DADOS_ESTRUTURADOS = {
       operatingSystem: "Web",
       inLanguage: "pt-PT",
       areaServed: { "@type": "Country", name: "Angola" },
+      // Quem fez. Nos dados estruturados e não só no rodapé: é assim que um
+      // motor de busca liga o produto ao autor em vez de o ler como texto.
+      author: {
+        "@type": "Person",
+        name: AUTOR.nome,
+        url: AUTOR.github,
+        sameAs: [AUTOR.github],
+      },
+      creator: { "@type": "Person", name: AUTOR.nome, url: AUTOR.github },
+      contributor: { "@type": "Person", name: CONTRIBUICAO.nome },
       description:
         "ERP de contabilidade para empresas em Angola: PGC-AR, apuramento de " +
         "IVA, retenções na fonte, processamento salarial com IRT e INSS, " +
@@ -716,8 +731,23 @@ export default function Apresentacao() {
             </dl>
           </div>
 
+          {/* Autoria e contribuição. Ficam no rodapé e nos metadados, das
+              mesmas constantes — dois sítios a escrever nomes à mão acabam
+              sempre com um deles desactualizado. */}
           <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-borda pt-6 text-[13px] text-texto-suave">
-            <span>© {new Date().getFullYear()} SGD</span>
+            <span>
+              © {new Date().getFullYear()} SGD · Desenvolvido por{" "}
+              <a
+                href={AUTOR.github}
+                target="_blank"
+                rel="noopener noreferrer me author"
+                className="font-semibold text-texto hover:text-marca"
+              >
+                {AUTOR.nome}
+              </a>
+              <span className="mx-1.5 opacity-50">·</span>
+              {CONTRIBUICAO.papel} de {CONTRIBUICAO.nome}
+            </span>
             <nav aria-label="Acesso" className="-my-2 flex gap-5">
               <Link href="/entrar" className="py-2 hover:text-marca">
                 Entrar

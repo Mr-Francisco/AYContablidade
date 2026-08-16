@@ -33,3 +33,29 @@ export const DADOS_INSTITUCIONAIS: DadoInstitucional[] = [
 export const SITE =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
   "http://localhost:3000";
+
+/**
+ * Quem fez isto.
+ *
+ * Vive aqui e não espalhado pelos metadados, pelo rodapé e pelos dados
+ * estruturados: são três sítios a dizer o mesmo, e três sítios a dizer o mesmo
+ * é a garantia de que um dia dizem coisas diferentes.
+ */
+export const AUTOR = {
+  nome: "Francisco André",
+  github: "https://github.com/Mr-Francisco",
+} as const;
+
+/** Contribuição reconhecida no produto. */
+export const CONTRIBUICAO = {
+  nome: "Acácio Lemos",
+  papel: "Contribuição",
+} as const;
+
+/** Nome por extenso do produto, usado em títulos e dados estruturados. */
+export const PRODUTO = {
+  nome: "SGD",
+  nomeCompleto: "SGD — Software de Gestão Dirigida",
+  descricaoCurta:
+    "ERP de contabilidade para empresas em Angola, em conformidade com o PGC-AR.",
+} as const;

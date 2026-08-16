@@ -199,3 +199,5 @@
 - Next standalone atende em `process.env.HOSTNAME`, e as plataformas sobre Kubernetes põem lá o nome do contentor: sem `HOSTNAME=0.0.0.0` o site dá 502 com os registos a dizer «Ready».
 - Excepção não tratada = 500 SEM cabeçalhos de CORS: o browser bloqueia a resposta e o utilizador lê «não foi possível contactar o servidor». Todo o erro de pedido tem de ter tipo próprio e tratador.
 - Rota paginada no servidor (`{linhas, total}`) lida como lista no cliente rebenta com «is not iterable» e leva o ecrã inteiro. Verificar as duas pontas quando se acrescenta paginação.
+- O guarda de rotas tem de deixar passar `opengraph-image`, `manifest.webmanifest` e afins: quem lê uma pré-visualização chega sem sessão e apanhava 307 — a partilha ficava sem imagem.
+- `NEXT_PUBLIC_SITE_URL` em produção não é opcional: sem ele, canónica, `og:url` e sitemap apontam para `localhost`.

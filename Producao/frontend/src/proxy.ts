@@ -60,9 +60,17 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Tudo excepto ficheiros estáticos, imagens e os ficheiros que os motores
-    // de busca vão buscar. O `robots.txt` e o `sitemap.xml` TÊM de responder a
-    // quem chega sem sessão: apanhados por esta guarda, devolviam um
-    // redireccionamento para o login e a apresentação deixava de ser indexada.
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // de busca e as redes sociais vão buscar. O `robots.txt` e o `sitemap.xml`
+    // TÊM de responder a quem chega sem sessão: apanhados por esta guarda,
+    // devolviam um redireccionamento para o login e a apresentação deixava de
+    // ser indexada.
+    //
+    // `opengraph-image` e `manifest.webmanifest` entraram na lista à custa de
+    // um erro: quem lê uma pré-visualização — o WhatsApp, o LinkedIn, o
+    // Slack — chega SEM SESSÃO, apanhava o redireccionamento e a partilha
+    // ficava sem imagem nenhuma. Não têm extensão de ficheiro, por isso a
+    // regra das imagens não os apanhava. Verificado com um pedido real: davam
+    // 307.
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|opengraph-image|twitter-image|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
