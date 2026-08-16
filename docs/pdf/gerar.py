@@ -1,4 +1,4 @@
-"""Documentos do projecto em PDF, sem instalar nada.
+r"""Documentos do projecto em PDF, sem instalar nada.
 
     python docs/pdf/gerar.py docs/LANCAMENTO_V1.md docs/pdf/lancamento.html "Titulo"
 
