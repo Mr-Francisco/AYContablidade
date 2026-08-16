@@ -11,6 +11,7 @@ import {
   ListaPainel,
 } from "@/components/painel";
 import { ACarregar, Cartao, Kpi, TituloCartao } from "@/components/ui";
+import type { Pagina } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, formataMoeda } from "@/lib/dinheiro";
@@ -37,12 +38,21 @@ export default function PainelRh() {
     "/api/rh/colaboradores",
     buscador,
   );
-  const { data: processamentos } = useSWR<unknown[]>(
-    "/api/rh/processamentos",
+  /*
+   * Estas duas rotas devolvem UMA PÁGINA — `{linhas, total, …}`. Lidas como
+   * lista, o `.length` dava `undefined` e o ecrã dizia sempre «0 meses
+   * processados · 0 pagos». Não rebentava, o que é pior: um zero errado
+   * parece um facto.
+   *
+   * `limite=1` porque o que se quer é o TOTAL, e o total vem na mesma sem
+   * trazer as linhas todas para as contar.
+   */
+  const { data: processamentos } = useSWR<Pagina<unknown>>(
+    "/api/rh/processamentos?limite=1",
     buscador,
   );
-  const { data: pagamentos } = useSWR<unknown[]>(
-    "/api/rh/pagamentos",
+  const { data: pagamentos } = useSWR<Pagina<unknown>>(
+    "/api/rh/pagamentos?limite=1",
     buscador,
   );
 
@@ -153,7 +163,7 @@ export default function PainelRh() {
 
       <Cartao>
         <TituloCartao
-          extra={`${plural(processamentos?.length ?? 0, "mês", "meses")} processado(s) · ${pagamentos?.length ?? 0} pago(s)`}
+          extra={`${plural(processamentos?.total ?? 0, "mês", "meses")} processado(s) · ${pagamentos?.total ?? 0} pago(s)`}
         >
           Maiores Vencimentos
         </TituloCartao>
