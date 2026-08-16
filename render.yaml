@@ -29,9 +29,11 @@ services:
     rootDir: Producao/backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
-    # `/docs` fecha em produção (devolve 404), o que serve na mesma para o
-    # Render saber que o processo está de pé — responder 404 já é responder.
-    healthCheckPath: /docs
+    # `/api/health` e não `/docs`: a documentação da API FECHA em produção e
+    # devolve 404, e o Render trata uma sonda que não responde 200 como serviço
+    # doente — reiniciava-o em ciclo e a instalação nunca chegava a subir.
+    # `/api/health` é a única rota sem autenticação do sistema, e é para isto.
+    healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
