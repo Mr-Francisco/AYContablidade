@@ -196,3 +196,4 @@
 - `flex-1` + `overflow-auto` só encolhe com `min-h-0` E com o pai de altura fixa; com `min-h-` no pai, o filho empurra a página.
 - Alojamentos dão `postgresql://`; este projecto usa psycopg 3. Normalizar a URL no motor e no Alembic — colar a linha do fornecedor tem de bastar.
 - `output: standalone` não copia `.next/static` nem `public/`: sem as duas cópias no build, o site sobe sem CSS e o modelo .xlsx da AGT dá 404.
+- Next standalone atende em `process.env.HOSTNAME`, e as plataformas sobre Kubernetes põem lá o nome do contentor: sem `HOSTNAME=0.0.0.0` o site dá 502 com os registos a dizer «Ready».

@@ -75,7 +75,13 @@ services:
       npm ci && npm run build &&
       cp -r .next/static .next/standalone/.next/static &&
       cp -r public .next/standalone/public
-    startCommand: node .next/standalone/server.js
+    # `HOSTNAME=0.0.0.0` NÃO é decoração. O servidor do Next em modo standalone
+    # faz `process.env.HOSTNAME || '0.0.0.0'`, e o Render — como qualquer
+    # plataforma sobre Kubernetes — define `HOSTNAME` com o nome do contentor.
+    # O Next passava a atender só nesse nome; o encaminhador do Render liga por
+    # outro caminho, encontrava a porta fechada, e o site respondia 502 com a
+    # aplicação viva e a dizer «Ready» nos registos.
+    startCommand: HOSTNAME=0.0.0.0 node .next/standalone/server.js
     healthCheckPath: /entrar
     envVars:
       - key: NODE_VERSION

@@ -212,6 +212,17 @@ Fixar 8001 faz o serviço subir e nunca receber um pedido.
 reiniciava-o em ciclo. `/api/health` é a única rota sem autenticação, e existe
 para isto.
 
+**O Next standalone atende no nome do contentor.** O `server.js` faz
+`process.env.HOSTNAME || '0.0.0.0'`, e o Render — como qualquer plataforma
+sobre Kubernetes — define `HOSTNAME` com o nome do pod. O Next passa a atender
+só nesse nome, o encaminhador não lhe chega, e o site responde **502 com os
+registos a dizer «Ready»**. Daí o `HOSTNAME=0.0.0.0` no `startCommand`.
+
+Como se reconhece sem adivinhar: `curl -D- https://…` e olhar para o
+`x-render-origin-server`. Se disser o nome do servidor da aplicação (`uvicorn`,
+`Next.js`), é a aplicação a responder; se disser `Render`, não há nada a
+atender e o problema é de arranque ou de ligação, não de código.
+
 **O `output: standalone` do Next não copia tudo.** Faltam o `.next/static` e a
 `public/`, e sem as duas cópias no build o site sobe sem CSS nenhum e os
 ficheiros de `public/` dão 404. Daí as duas linhas de `cp` no `buildCommand`.
