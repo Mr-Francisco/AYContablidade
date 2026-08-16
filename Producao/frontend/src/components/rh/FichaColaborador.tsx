@@ -6,6 +6,7 @@ import { type FormEvent, type ReactNode, useState } from "react";
 import useSWR from "swr";
 
 import { Alerta, Botao, Campo, Entrada, Selector } from "@/components/ui";
+import { CampoNif, type RespostaNif } from "@/components/ui/CampoNif";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +30,7 @@ interface CampoDaFicha {
   k: string;
   l: string;
   full?: boolean;
-  t?: "texto" | "email" | "num" | "inteiro" | "data" | "sel" | "moeda";
+  t?: "texto" | "email" | "num" | "inteiro" | "data" | "sel" | "moeda" | "nif";
   opcoes?: { valor: string; rotulo: string }[];
   dica?: string;
 }
@@ -101,7 +102,13 @@ function separadores(provincias: string[]) {
       id: "fiscais",
       rotulo: "Dados Fiscais",
       campos: [
-        { k: "nif", l: "NIF", dica: "Obrigatório se não houver documento." },
+        {
+          k: "nif",
+          l: "NIF",
+          t: "nif",
+          full: true,
+          dica: "Obrigatório se não houver documento. Confirme na AGT para trazer o nome.",
+        },
         { k: "num_ss", l: "Nº Segurança Social" },
         {
           k: "estado_civil",
@@ -304,6 +311,19 @@ export function FichaColaborador({
     setValores((antes) => ({ ...antes, [k]: v }));
   }
 
+  /**
+   * O que a AGT devolveu, aplicado à ficha — sem escrever por cima do que já
+   * lá estiver. De um colaborador vem o nome; morada e contactos não vêm da
+   * AGT e continuam a ser escritos aqui.
+   */
+  function preencherDaAgt(r: RespostaNif) {
+    setValores((antes) => ({
+      ...antes,
+      nif: r.nif || antes.nif,
+      nome: r.nome && !antes.nome.trim() ? r.nome : antes.nome,
+    }));
+  }
+
   /** O que falta para a ficha poder ser gravada, na linguagem de quem a lê. */
   function emFalta(): { mensagem: string; separador: string } | null {
     if (!valores.nome.trim())
@@ -417,6 +437,7 @@ export function FichaColaborador({
                         campo={c}
                         valor={valores[c.k] ?? ""}
                         aoMudar={(v) => alterar(c.k, v)}
+                        aoConfirmarNif={preencherDaAgt}
                       />
                     ))}
                   </div>
@@ -455,12 +476,27 @@ function CampoFicha({
   campo,
   valor,
   aoMudar,
+  aoConfirmarNif,
 }: {
   campo: CampoDaFicha;
   valor: string;
   aoMudar: (v: string) => void;
+  aoConfirmarNif?: (r: RespostaNif) => void;
 }): ReactNode {
   const largura = campo.full ? "sm:col-span-2 lg:col-span-3" : undefined;
+
+  if (campo.t === "nif") {
+    return (
+      <CampoNif
+        rotulo={campo.l}
+        valor={valor}
+        aoMudar={aoMudar}
+        aoConfirmar={aoConfirmarNif}
+        className={largura}
+        dica={campo.dica}
+      />
+    );
+  }
 
   if (campo.t === "sel") {
     return (

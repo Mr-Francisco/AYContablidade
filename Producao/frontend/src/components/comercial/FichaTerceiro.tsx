@@ -7,6 +7,7 @@ import useSWR from "swr";
 
 import { CampoConta } from "@/components/contabilidade/CampoConta";
 import { Alerta, Botao, Campo, Entrada, Selector } from "@/components/ui";
+import { CampoNif, type RespostaNif } from "@/components/ui/CampoNif";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ interface CampoDaFichaDef {
   l: string;
   /** Ocupa a linha toda. */
   full?: boolean;
-  t?: "texto" | "email" | "num" | "sel" | "conta" | "texto-longo";
+  t?: "texto" | "email" | "num" | "sel" | "conta" | "texto-longo" | "nif";
   opcoes?: { valor: string; rotulo: string }[];
 }
 
@@ -80,7 +81,7 @@ function separadores(provincias: string[]) {
       id: "fiscais",
       rotulo: "Dados Fiscais",
       campos: [
-        { k: "nif", l: "NIF (Contribuinte)" },
+        { k: "nif", l: "NIF (Contribuinte)", t: "nif", full: true },
         {
           k: "regime_iva",
           l: "Regime de IVA",
@@ -268,6 +269,25 @@ export function FichaTerceiro({
     setValores((v) => ({ ...v, [k]: valor }));
   }
 
+  /**
+   * O que a AGT devolveu, aplicado à ficha.
+   *
+   * NÃO ESCREVE POR CIMA do que já lá está. Quem escreveu o nome à mão pode
+   * tê-lo escrito como a empresa se apresenta e não como está registada, e
+   * apagá-lo sem pedir seria decidir por essa pessoa. Preenche o que está
+   * vazio; o resto fica visível no cartão da resposta para ela comparar.
+   */
+  function preencherDaAgt(r: RespostaNif) {
+    setValores((v) => {
+      const novo = { ...v };
+      if (r.nome && !v.nome?.trim()) novo.nome = r.nome;
+      if (r.regime_na_ficha && !v.regime_iva?.trim())
+        novo.regime_iva = r.regime_na_ficha;
+      if (r.nif) novo.nif = r.nif;
+      return novo;
+    });
+  }
+
   async function submeter(e: FormEvent) {
     e.preventDefault();
     setErro(null);
@@ -375,6 +395,7 @@ export function FichaTerceiro({
                         campo={c}
                         valor={valores[c.k] ?? ""}
                         aoMudar={(v) => alterar(c.k, v)}
+                        aoConfirmarNif={preencherDaAgt}
                       />
                     ))}
                   </div>
@@ -410,12 +431,27 @@ function CampoDaFicha({
   campo,
   valor,
   aoMudar,
+  aoConfirmarNif,
 }: {
   campo: CampoDaFichaDef;
   valor: string;
   aoMudar: (v: string) => void;
+  aoConfirmarNif?: (r: RespostaNif) => void;
 }): ReactNode {
   const largura = campo.full ? "sm:col-span-2" : undefined;
+
+  if (campo.t === "nif") {
+    return (
+      <CampoNif
+        rotulo={campo.l}
+        valor={valor}
+        aoMudar={aoMudar}
+        aoConfirmar={aoConfirmarNif}
+        className={largura}
+        dica="Confirme na AGT para trazer o nome e o regime de IVA."
+      />
+    );
+  }
 
   if (campo.t === "sel") {
     return (

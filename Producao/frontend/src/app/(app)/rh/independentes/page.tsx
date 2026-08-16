@@ -27,6 +27,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { CampoNif } from "@/components/ui/CampoNif";
 import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { BarraPaginacao, usePaginacao } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
@@ -442,15 +443,18 @@ function FormularioIndependente({
           />
         </Campo>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Campo rotulo="NIF">
-            <Entrada
-              value={campos.nif}
-              onChange={(e) =>
-                setCampos((c) => ({ ...c, nif: e.target.value }))
-              }
-              className="tabular"
-            />
-          </Campo>
+          <CampoNif
+            rotulo="NIF"
+            valor={campos.nif}
+            aoMudar={(v) => setCampos((c) => ({ ...c, nif: v }))}
+            aoConfirmar={(r) =>
+              setCampos((c) => ({
+                ...c,
+                nif: r.nif || c.nif,
+                nome: r.nome && !c.nome.trim() ? r.nome : c.nome,
+              }))
+            }
+          />
           <Campo
             rotulo="Retenção IRT (%)"
             dica="6,5% é a taxa corrente para prestação de serviços."

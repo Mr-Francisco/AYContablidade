@@ -24,6 +24,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { CampoNif } from "@/components/ui/CampoNif";
 import {
   BarraPaginacao,
   type Pagina,
@@ -436,15 +437,22 @@ function FormularioLicenca({
         </Alerta>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Campo rotulo="NIF da empresa">
-            <Entrada
-              value={campos.nif}
-              onChange={(e) => alterar("nif", e.target.value)}
-              required
-              autoFocus
-              className="tabular"
-            />
-          </Campo>
+          {/* Confirmar aqui é o sítio que mais rende: o NIF e o nome ficam
+              GRAVADOS na licença e são conferidos na activação. Um nome
+              escrito à mão com um erro obriga a emitir a licença outra vez. */}
+          <CampoNif
+            rotulo="NIF da empresa"
+            valor={campos.nif}
+            autoFocus
+            aoMudar={(v) => alterar("nif", v)}
+            aoConfirmar={(r) => {
+              if (r.nome && !campos.nome_empresa.trim())
+                alterar("nome_empresa", r.nome);
+              alterar("nif", r.nif);
+            }}
+            className="sm:col-span-2"
+            dica="Confirme na AGT — traz o nome com que a empresa está registada."
+          />
           <Campo rotulo="Nome da empresa">
             <Entrada
               value={campos.nome_empresa}
