@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Validar Documento :: Facturação Electrónica</title>
+    <meta name="generator" content="Antora 3.1.14">
+    <link rel="stylesheet" href="../../../_/css/custom.css">
+
+    <link rel="stylesheet" href="../../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-brand" style="background-color: #0077b6;">
+      <img src="../../../_/img/logo.png" alt="Gesforma Logo" style="height: 60px; margin-right: 8px;">
+      </a>
+           <div class="form-controler">
+                <div class="nif-input-wrapper">
+                    <input id="search-input" type="text" placeholder="Pesquisar" />
+                    <div class="search">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="#667085" width="24px"
+                            height="24px">
+                            <path
+                                d="M15.5,14h-.79l-.28-.27C15.41,12.59,16,11.11,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-.59,4.23-1.57l.27.28v.79l5,4.99L20.49,19l-4.99-5ZM9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5s4.5,2.01,4.5,4.5S11.99,14,9.5,14Z" />
+                        </svg>
+                    </div>
+                    <ul id="search-results" class="search-results"></ul>
+                </div>
+            </div>
+      <p class="navbar-item" style="color: #fff;" href="../../..">Facturação Electrónica</p>
+    </div>
+   
+  </nav>
+</header>
+
+
+<div class="body">
+<div class="nav-container" data-component="faturacao-electronica" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+    <div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="../index.html">Facturação Electrónica</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introdução</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../api.html">Autenticação &amp; Autorização</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../estrutura.html">Estrutura das Assinaturas Digitais</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Serviços Disponíveis</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="solicitar.html">Solicitar Criação de Série</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="listar.html">Listar Séries</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="registar.html">Registar Fatura Eletrónica</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consultar.html">Consultar Estado da Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consultar_fatura.html">Consultar Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="listar_faturas.html">Listar Facturas Electrónicas</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="validar.html">Validar Documento</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../modelo.html">Modelo de Processamento Assíncrono</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../gestao.html">Gestão de Certificados e Chaves</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../qrcode.html">Especificações do QR Code</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    <div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Facturação Electrónica</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="../index.html">Facturação Electrónica</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Facturação Electrónica</a></li>
+    <li>Serviços Disponíveis</li>
+    <li><a href="validar.html">Validar Documento</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Nesta página" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Validar Documento</h1>
+
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Serviço destinado a transmitir a confirmação ou rejeição de uma factura
+ou documento equivalente em que o solicitante é indicado como adquirente
+e definir a percentagem IVA Dedutível a considerar sempre que aplicável.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_características_do_serviço"><a class="anchor" href="#_características_do_serviço"></a>Características do Serviço</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Endereço de homologação</strong></p>
+</div>
+<div class="endpoint-card">
+  <span class="http-method post">POST</span>
+  <span class="endpoint-url">https://sifphml.minfin.gov.ao/sigt/fe/v1/validarDocumento</span>
+</div>
+<div class="paragraph">
+<p><strong>Endereço de produção</strong></p>
+</div>
+<div class="endpoint-card">
+  <span class="http-method post">POST</span>
+  <span class="endpoint-url">https://sifp.minfin.gov.ao/sigt/fe/v1/validarDocumento</span>
+</div>
+<div class="sect2">
+<h3 id="_payload_de_entrada_para_solicitar_criação_de_série"><a class="anchor" href="#_payload_de_entrada_para_solicitar_criação_de_série"></a>Payload de entrada para solicitar criação de série</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-JSON hljs" data-lang="JSON"> {
+    "schemaVersion": "1.2",
+    "submissionTimeStamp": "2025-10-28T18:51:10.178Z",
+    "taxRegistrationNumber": "5001636863",
+    "softwareInfo": {
+    "softwareInfoDetail": {
+            "productId": "Meu ERP CERTO",
+            "productVersion": "1.0.1",
+            "softwareValidationNumber": "C_134"
+        },
+        "jwsSoftwareSignature": "eyJ0eXAiOiJKT1NFIiwiYWxnIjoiUlMyNTYifQ.eyJwcm9kdWN0SWQiOiJNZXUgRVJQIENFUlRPIiwicHJvZHVjdFZlcnNpb24iOiIxLjAuMSIsInNvZnR3YXJlVmFsaWRhdGlvbk51bWJlciI6IkNfMTM0In0.VE3zkvOJOpqBfz4wpx4KCgcwOGgzGUP3MSMbaHCDnHhwOaeA6jlccBW9HjgQvg2tYCVVq0imrU_z0grEHNthhG4xD3afSOD1_RzvHs8Tc45dvztHJzB4gF0CAX-yIDwi7XcHiMRY0vkXOETBeHKewg0ktWSnZ7SLf4GxGzE7ry2u_pmhqhCPhxpa0oGQ_rBJUYkEAFg1OwaqjwvzCFgdT11r-XsHmnkcfJX_ktj59RWR_zgbytiCRtwCK9LNUflveS5GzUaCXbPn2deQ3F2hPldLECEa_ahwoapoK1LhkgOAVyPLJf6M1Cm09Le7rkdSaWQSW5BI_sPx5YaUaXkeqg"
+  },
+  "jwsSignature": "string",
+  "documentNo": "FT FT6325S2C/7",
+  "action": "C",
+  "deductibleVATPercentage": "72.5",
+  "nonDeductibleAmount": "200.00"
+ }</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Payload assinatura Validar Documento</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-JSON hljs" data-lang="JSON"> {
+    "taxRegistrationNumber": "...",
+    "documentNo": "FT FT6325S2C/7",
+    "action": "C",
+    "deductibleVATPercentage": "72.5",
+    "nonDeductibleAmount": "200.00"
+ }</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_parâmetros_de_entrada"><a class="anchor" href="#_parâmetros_de_entrada"></a>Parâmetros de entrada</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">schemaVersion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Versão do <em>schema</em> do serviço, exemplo
+“1.0”.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxRegistrationNumber</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 15</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número fiscal de
+contribuinte emissor da factura.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">submissionTimeStamp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Timestamp de submissão do pedido no formato ISO 8601. Exemplos:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>"2025-05-27T14:30:00Z" (em UTC);</p>
+</li>
+<li>
+<p>"2025-05-27T14:30:00-03:00" (com informação de timezone).</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">softwareInfo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Objecto com os dados do <em>Software</em> de Facturação</p>
+</div>
+<div class="paragraph">
+<p>(ver formato em 5.1.2.1)</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jwsSignature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tamanho variável em Base64URL (dependendo do
+tamanho da chave usada)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Assinatura digital da solicitação usando a chave privada do emissor
+através do algoritmo RS256 (RSA + SHA-256). Os campos a serem utilizados
+na assinatura são:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>taxRegistrationNumber - NIF do contribuinte adquirente que pretende
+validar a factura (só esse NIF terá essa possibilidade junta da AGT)</p>
+</li>
+<li>
+<p>documentNo.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>O resultado é codificado em Base64URL, sendo que o tamanho final da
+string varia conforme o tamanho da chave usada (2048, 3072 ou 4096
+bits).</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentNo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 60</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Identificador do documento de
+facturação que se pretende confirmar/rejeitar.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">action</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 1</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Acção que o adquirente pretende aplicar ao documento de facturação
+emitido, com os seguintes valores possíveis e significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>C</strong> – Confirmação do documento</p>
+</li>
+<li>
+<p><strong>R</strong> – Rejeição do documento</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">deductibleVATPercentage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minimum”: 0</p>
+</div>
+<div class="paragraph">
+<p>“maximum”: 100</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Percentagem de IVA dedutível a considerar para o documento em análise
+sendo utilizado quando <strong>action</strong> for <strong>“C”</strong> (confirmação do documento) e o
+tipo de documento não for considerado recibo nem nota de crédito. Caso
+este campo não esteja preenchido será considerado que o contribuinte não
+tem direito a dedução.</p>
+</div>
+<div class="paragraph">
+<p>Só um dos campos <strong>deductibleVATPercentage</strong> e <strong>nonDeductibleAmount</strong>
+poderá estar preenchido.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nonDeductibleAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum”: 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Valor do documento que não é sujeito a dedução de IVA. Este campo deve
+ser preenchido sempre que parte do montante da fatura não possa ser
+deduzido pelo contribuinte (ex.: despesas não dedutíveis fiscalmente,
+limites legais ou situações específicas previstas na legislação). Caso
+este campo não seja preenchido, será considerado que a totalidade do
+valor do documento é dedutível.</p>
+</div>
+<div class="paragraph">
+<p>Só um dos campos <strong>deductibleVATPercentage</strong> e <strong>nonDeductibleAmount</strong>
+poderá estar preenchido.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_parâmetros_de_saída"><a class="anchor" href="#_parâmetros_de_saída"></a>Parâmetros de Saída</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 19%;">
+<col style="width: 13%;">
+<col style="width: 68%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>HTTP code</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">200</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>object</p>
+</div>
+<div class="paragraph">
+<p>confirmRejectResult</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Registo de pedido efectuado com sucesso sendo devolvido um object do
+tipo <strong>statusFEResult</strong> com os dados da factura pesquisada.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">422</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Object errorEntry</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Chamada ocorreu com erro, sendo enviado uma
+mensagem (código e descrição) correspondente ao erro “E94” - “erro na
+chamada, nif diferente”</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Object errorEntry</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Chamada ocorreu com erro, sendo enviado uma
+mensagem (código e descrição) correspondente ao erro “E96” -
+“solicitação mal efectuada – erro de estrutura”</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_confirmrejectresult"><a class="anchor" href="#_composição_properties_do_object_confirmrejectresult"></a>Composição (properties) do object confirmRejectResult</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">actionResultCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 4</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 5</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Código de resultado da solicitação, com os seguintes valores possíveis e
+significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>C_OK</strong> – Confirmação do documento com sucesso</p>
+</li>
+<li>
+<p><strong>R_OK</strong> – Rejeição do documento com sucesso</p>
+</li>
+<li>
+<p><strong>C_NOK</strong> – Confirmação do documento não possível</p>
+</li>
+<li>
+<p><strong>R_NOK</strong> – Rejeição do documento não possível</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentStatusCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 3</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 4</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Código de estado em que o documento a actualizar foi encontrado antes de
+tentada a realização desta acção, com os seguintes valores possíveis e
+significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>S_A</strong> – Anulado</p>
+</li>
+<li>
+<p><strong>S_C</strong> – Confirmado</p>
+</li>
+<li>
+<p><strong>S_I</strong> – Inválido</p>
+</li>
+<li>
+<p><strong>S_RG</strong> – Registado</p>
+</li>
+<li>
+<p><strong>S_RJ</strong> – Rejeitado</p>
+</li>
+<li>
+<p><strong>S_V</strong> – Válido</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">errorList</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>array</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Array com os erros encontrados que impediram a execução com sucesso da
+acção solicitada (confirmação ou rejeição do documento) sobre o
+documento de facturação identificado no campo <strong>documentNo</strong>, sendo
+obrigatório quando <strong>actionResultCode</strong> for <strong>“C_NOK”</strong> ou <strong>“R_NOK”</strong>.</p>
+</div>
+<div class="paragraph">
+<p>Terá uma linha para cada erro encontrado.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composições_itens_do_array_errorlist_e_properties_do_object_errorentry"><a class="anchor" href="#_composições_itens_do_array_errorlist_e_properties_do_object_errorentry"></a>Composições (itens) do array errorList e (properties) do object errorEntry</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">errorCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength”: 3</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 3</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código de erro</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">errorDescription</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Descrição do erro</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_códigos_e_mensagens_de_erro_no_retorno_do_serviço"><a class="anchor" href="#_códigos_e_mensagens_de_erro_no_retorno_do_serviço"></a>Códigos e mensagens de erro no retorno do Serviço</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Tendo em conta as regras de negócio, são propostos adicionalmente os
+seguintes erros de validação:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14%;">
+<col style="width: 9%;">
+<col style="width: 77%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Regra de negócio</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Código de erro</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição de erro</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-033</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E44</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O estado do documento de facturação não permite a
+acção de confirmação do documento pelo adquirente.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-034</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E45</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O estado do documento de facturação não permite a
+acção de rejeição do documento pelo adquirente.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-077</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E47</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O campo “deductibleVATPercentage” (&lt;valor do
+parâmetro&gt;) não pode estar especificado simultaneamente com o campo
+“nonDeductibleAmount” (&lt;valor do parâmetro&gt;).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/vendor/lunr-languages.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+
+  </body>
+  <script src="../../../_/js/site.js"></script>
+  <script src="../../../_/js/search.js"></script>
+  <script src="../../../_/js/highlight.js"></script>
+</html>

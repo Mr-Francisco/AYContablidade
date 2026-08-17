@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Modelo de Processamento Assíncrono :: Facturação Electrónica</title>
+    <meta name="generator" content="Antora 3.1.14">
+    <link rel="stylesheet" href="../../_/css/custom.css">
+
+    <link rel="stylesheet" href="../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-brand" style="background-color: #0077b6;">
+      <img src="../../_/img/logo.png" alt="Gesforma Logo" style="height: 60px; margin-right: 8px;">
+      </a>
+           <div class="form-controler">
+                <div class="nif-input-wrapper">
+                    <input id="search-input" type="text" placeholder="Pesquisar" />
+                    <div class="search">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="#667085" width="24px"
+                            height="24px">
+                            <path
+                                d="M15.5,14h-.79l-.28-.27C15.41,12.59,16,11.11,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-.59,4.23-1.57l.27.28v.79l5,4.99L20.49,19l-4.99-5ZM9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5s4.5,2.01,4.5,4.5S11.99,14,9.5,14Z" />
+                        </svg>
+                    </div>
+                    <ul id="search-results" class="search-results"></ul>
+                </div>
+            </div>
+      <p class="navbar-item" style="color: #fff;" href="../..">Facturação Electrónica</p>
+    </div>
+   
+  </nav>
+</header>
+
+
+<div class="body">
+<div class="nav-container" data-component="faturacao-electronica" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+    <div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="index.html">Facturação Electrónica</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Introdução</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="api.html">Autenticação &amp; Autorização</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="estrutura.html">Estrutura das Assinaturas Digitais</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Serviços Disponíveis</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/solicitar.html">Solicitar Criação de Série</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/listar.html">Listar Séries</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/registar.html">Registar Fatura Eletrónica</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/consultar.html">Consultar Estado da Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/consultar_fatura.html">Consultar Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/listar_faturas.html">Listar Facturas Electrónicas</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/validar.html">Validar Documento</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="modelo.html">Modelo de Processamento Assíncrono</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="gestao.html">Gestão de Certificados e Chaves</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="qrcode.html">Especificações do QR Code</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    <div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Facturação Electrónica</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="index.html">Facturação Electrónica</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Facturação Electrónica</a></li>
+    <li><a href="modelo.html">Modelo de Processamento Assíncrono</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Nesta página" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Modelo de Processamento Assíncrono</h1>
+
+<div class="paragraph">
+<p>A submissão de documentos fiscais na API segue um <strong>modelo assíncrono</strong>,
+garantindo escalabilidade, resiliência e alta capacidade de
+processamento.</p>
+</div>
+<div class="paragraph">
+<p>Fluxo geral:</p>
+</div>
+<div class="ulist arabic">
+<ul class="arabic">
+<li>
+<p>O contribuinte/submissor envia o documento usando o endpoint<br>
+<a href="servicos/registar.html" class="xref page">Registar Factura Eletrónica</a>.</p>
+</li>
+<li>
+<p>A API valida apenas <strong>a estrutura JSON</strong>.</p>
+</li>
+<li>
+<p>Se a estrutura estiver correta, o documento é colocado numa <strong>fila de
+processamento</strong>.</p>
+</li>
+<li>
+<p>A API devolve imediatamente:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>requestID</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>O documento é processado internamente:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Validações fiscais</p>
+</li>
+<li>
+<p>Regras tributárias</p>
+</li>
+<li>
+<p>Validação da série</p>
+</li>
+<li>
+<p>Verificação de integridade</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>O produtor volta mais tarde para consultar o estado via<br>
+<a href="servicos/consultar.html" class="xref page">Consultar Estado da Submissão</a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Este mecanismo desacopla a submissão do processamento, permitindo altas
+cargas e garantindo que o sistema nunca bloqueia o contribuinte.</p>
+</div>
+</article>
+  </div>
+</main>
+</div>
+
+<script src="../../_/js/vendor/lunr.js"></script>
+<script src="../../_/js/vendor/lunr-languages.js"></script>
+<script src="../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../.." data-snippet-length="100" data-stylesheet="../../_/css/search.css"></script>
+<script async src="../../search-index.js"></script>
+
+  </body>
+  <script src="../../_/js/site.js"></script>
+  <script src="../../_/js/search.js"></script>
+  <script src="../../_/js/highlight.js"></script>
+</html>

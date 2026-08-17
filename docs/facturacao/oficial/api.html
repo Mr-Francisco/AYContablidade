@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Autenticação &amp; Autorização :: Facturação Electrónica</title>
+    <meta name="generator" content="Antora 3.1.14">
+    <link rel="stylesheet" href="../../_/css/custom.css">
+
+    <link rel="stylesheet" href="../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-brand" style="background-color: #0077b6;">
+      <img src="../../_/img/logo.png" alt="Gesforma Logo" style="height: 60px; margin-right: 8px;">
+      </a>
+           <div class="form-controler">
+                <div class="nif-input-wrapper">
+                    <input id="search-input" type="text" placeholder="Pesquisar" />
+                    <div class="search">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="#667085" width="24px"
+                            height="24px">
+                            <path
+                                d="M15.5,14h-.79l-.28-.27C15.41,12.59,16,11.11,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-.59,4.23-1.57l.27.28v.79l5,4.99L20.49,19l-4.99-5ZM9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5s4.5,2.01,4.5,4.5S11.99,14,9.5,14Z" />
+                        </svg>
+                    </div>
+                    <ul id="search-results" class="search-results"></ul>
+                </div>
+            </div>
+      <p class="navbar-item" style="color: #fff;" href="../..">Facturação Electrónica</p>
+    </div>
+   
+  </nav>
+</header>
+
+
+<div class="body">
+<div class="nav-container" data-component="faturacao-electronica" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+    <div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="index.html">Facturação Electrónica</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Introdução</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="api.html">Autenticação &amp; Autorização</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="estrutura.html">Estrutura das Assinaturas Digitais</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Serviços Disponíveis</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/solicitar.html">Solicitar Criação de Série</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/listar.html">Listar Séries</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/registar.html">Registar Fatura Eletrónica</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/consultar.html">Consultar Estado da Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/consultar_fatura.html">Consultar Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/listar_faturas.html">Listar Facturas Electrónicas</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/validar.html">Validar Documento</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="modelo.html">Modelo de Processamento Assíncrono</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="gestao.html">Gestão de Certificados e Chaves</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="qrcode.html">Especificações do QR Code</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    <div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Facturação Electrónica</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="index.html">Facturação Electrónica</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Facturação Electrónica</a></li>
+    <li><a href="api.html">Autenticação &amp; Autorização</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Nesta página" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Autenticação &amp; Autorização</h1>
+
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>A API utiliza o mecanismo <strong>Basic Authentication</strong> para validar e
+autorizar o acesso dos produtores de software.<br>
+O acesso é concedido através de um <strong>par de credenciais (username e
+password)</strong> emitido pela entidade gestora da Faturação Eletrónica.</p>
+</div>
+<div class="paragraph">
+<p>Estas credenciais devem ser enviadas em todas as chamadas aos serviços
+protegidos da API.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_obtenção_das_credenciais"><a class="anchor" href="#_obtenção_das_credenciais"></a>Obtenção das Credenciais</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Para solicitar as credenciais de acesso, o produtor de software deve
+enviar um e-mail formal para:</p>
+</div>
+<div class="paragraph">
+<p>📧 <strong>produtores.dfe.dcrr.agt@minfin.gov.ao</strong></p>
+</div>
+<div class="paragraph">
+<p>O pedido deve conter:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Nome da Empresa</p>
+</li>
+<li>
+<p>NIF da Empresa</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_funcionamento_do_basic_auth"><a class="anchor" href="#_funcionamento_do_basic_auth"></a>Funcionamento do Basic Auth</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>O Basic Auth consiste em enviar as credenciais codificadas em Base64 no
+cabeçalho HTTP:</p>
+</div>
+<div class="paragraph">
+<p>Authorization: Basic &lt;Base64(username:password)&gt;</p>
+</div>
+<div class="paragraph">
+<p><strong>Exemplo de codificação:</strong></p>
+</div>
+<div class="paragraph">
+<p>Se as credenciais forem:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Username: cliente123</p>
+</li>
+<li>
+<p>Password: s3nh@F0rte!</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Concatenação antes do Base64: cliente123:s3nh@F0rte!</p>
+</div>
+<div class="paragraph">
+<p>Após Base64: Y2xpZW50ZTEyMzpzM25oQEYwcnRlIQ==</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exemplo_de_header_http_completo"><a class="anchor" href="#_exemplo_de_header_http_completo"></a>Exemplo de Header HTTP Completo</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Requisição POST</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json"> POST /sigt/fe/v1/registarFactura HTTP/1.1
+ Host: https://sifphml.minfin.gov.ao
+ Authorization: Basic Y2xpZW50ZTEyMzpzM25oQEYwcnRlIQ==
+ Content-Type: application/json
+ Accept: application/json
+ Content-Length: 524</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exemplo_em_curl"><a class="anchor" href="#_exemplo_em_curl"></a>Exemplo em cURL</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json"> curl -X POST "https://sifphml.minfin.gov.ao/sigt/fe/v1/registarFactura"
+ -u cliente123:"s3nh@F0rte!"
+ -H "Accept: application/json"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Nota: O curl já faz o Base64 automaticamente quando usamos <strong>-u</strong>.</em></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exemplo_em_javascript_fetch_api"><a class="anchor" href="#_exemplo_em_javascript_fetch_api"></a>Exemplo em JavaScript (Fetch API)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>const auth = btoa("cliente123:s3nh@F0rte!");</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-javascript hljs" data-lang="javascript"> fetch("https://sifphml.minfin.gov.ao/sigt/fe/v1/registarFactura ",{
+
+    method: "POST",
+    headers:{
+        "Authorization": `Basic $\{auth}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+ }).then(res =&gt; res.json()).then(console.log);</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exemplo_em_c_httpclient"><a class="anchor" href="#_exemplo_em_c_httpclient"></a>Exemplo em C# (HttpClient)</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-C# hljs" data-lang="C#"> var client = new HttpClient();
+
+ var byteArray = Encoding.ASCII.GetBytes("cliente123:s3nh@F0rte!");
+
+ client.DefaultRequestHeaders.Authorization =
+    new AuthenticationHeaderValue("Basic",Convert.ToBase64String(byteArray));
+
+ var response = await client.GetAsync("https://sifphml.minfin.gov.ao/sigt/fe/v1/registarFactura");
+ var content = await response.Content.ReadAsStringAsync();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+
+<script src="../../_/js/vendor/lunr.js"></script>
+<script src="../../_/js/vendor/lunr-languages.js"></script>
+<script src="../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../.." data-snippet-length="100" data-stylesheet="../../_/css/search.css"></script>
+<script async src="../../search-index.js"></script>
+
+  </body>
+  <script src="../../_/js/site.js"></script>
+  <script src="../../_/js/search.js"></script>
+  <script src="../../_/js/highlight.js"></script>
+</html>

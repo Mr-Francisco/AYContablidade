@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Solicitar Criação de Série :: Facturação Electrónica</title>
+    <meta name="generator" content="Antora 3.1.14">
+    <link rel="stylesheet" href="../../../_/css/custom.css">
+
+    <link rel="stylesheet" href="../../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-brand" style="background-color: #0077b6;">
+      <img src="../../../_/img/logo.png" alt="Gesforma Logo" style="height: 60px; margin-right: 8px;">
+      </a>
+           <div class="form-controler">
+                <div class="nif-input-wrapper">
+                    <input id="search-input" type="text" placeholder="Pesquisar" />
+                    <div class="search">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="#667085" width="24px"
+                            height="24px">
+                            <path
+                                d="M15.5,14h-.79l-.28-.27C15.41,12.59,16,11.11,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-.59,4.23-1.57l.27.28v.79l5,4.99L20.49,19l-4.99-5ZM9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5s4.5,2.01,4.5,4.5S11.99,14,9.5,14Z" />
+                        </svg>
+                    </div>
+                    <ul id="search-results" class="search-results"></ul>
+                </div>
+            </div>
+      <p class="navbar-item" style="color: #fff;" href="../../..">Facturação Electrónica</p>
+    </div>
+   
+  </nav>
+</header>
+
+
+<div class="body">
+<div class="nav-container" data-component="faturacao-electronica" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+    <div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="../index.html">Facturação Electrónica</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introdução</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../api.html">Autenticação &amp; Autorização</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../estrutura.html">Estrutura das Assinaturas Digitais</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Serviços Disponíveis</span>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="solicitar.html">Solicitar Criação de Série</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="listar.html">Listar Séries</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="registar.html">Registar Fatura Eletrónica</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consultar.html">Consultar Estado da Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consultar_fatura.html">Consultar Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="listar_faturas.html">Listar Facturas Electrónicas</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="validar.html">Validar Documento</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../modelo.html">Modelo de Processamento Assíncrono</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../gestao.html">Gestão de Certificados e Chaves</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../qrcode.html">Especificações do QR Code</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    <div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Facturação Electrónica</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="../index.html">Facturação Electrónica</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Facturação Electrónica</a></li>
+    <li>Serviços Disponíveis</li>
+    <li><a href="solicitar.html">Solicitar Criação de Série</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Nesta página" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Solicitar Criação de Série</h1>
+
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Serviço destinado a solicitar a criação de séries de numeração de Faturas
+Electrónicas, devolvendo em resposta um indicador de sucesso ou
+insucesso.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_características_do_serviço"><a class="anchor" href="#_características_do_serviço"></a>Características do Serviço</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Endereço de homologação</strong></p>
+</div>
+<div class="endpoint-card">
+  <span class="http-method post">POST</span>
+  <span class="endpoint-url">https://sifphml.minfin.gov.ao/sigt/fe/ws/v1/registarFactura</span>
+</div>
+<div class="paragraph">
+<p><strong>Endereço de produção</strong></p>
+</div>
+<div class="endpoint-card">
+  <span class="http-method post">POST</span>
+  <span class="endpoint-url">https://sifp.minfin.gov.ao/sigt/fe/v1/solicitarSerie</span>
+</div>
+<div class="sect2">
+<h3 id="_payload_de_entrada_para_solicitar_criação_de_série"><a class="anchor" href="#_payload_de_entrada_para_solicitar_criação_de_série"></a>Payload de entrada para solicitar criação de série</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-JSON hljs" data-lang="JSON"> {
+    "schemaVersion": "1.2",
+    "submissionUUID": "a1b2c3d4-e5f6-7890-g1h2-i238j234k5122",
+    "taxRegistrationNumber": "5001636863",
+    "submissionTimeStamp": "2025-09-02T14:30:00Z",
+    "softwareInfo": {
+        "softwareInfoDetail": {
+            "productId": "Meu ERP CERTO",
+            "productVersion": "1.0.1",
+            "softwareValidationNumber": "C_134"
+        },
+        "jwsSoftwareSignature": "eyJ0eXAiOiJKT1NFIiwiYWxnIjoiUlMyNTYifQ.eyJwcm9kdWN0SWQiOiJNZXUgRVJQIENFUlRPIiwicHJvZHVjdFZlcnNpb24iOiIxLjAuMSIsInNvZnR3YXJlVmFsaWRhdGlvbk51bWJlciI6IkNfMTM0In0.VE3zkvOJOpqBfz4wpx4KCgcwOGgzGUP3MSMbaHCDnHhwOaeA6jlccBW9HjgQvg2tYCVVq0imrU_z0grEHNthhG4xD3afSOD1_RzvHs8Tc45dvztHJzB4gF0CAX-yIDwi7XcHiMRY0vkXOETBeHKewg0ktWSnZ7SLf4GxGzE7ry2u_pmhqhCPhxpa0oGQ_rBJUYkEAFg1OwaqjwvzCFgdT11r-XsHmnkcfJX_ktj59RWR_zgbytiCRtwCK9LNUflveS5GzUaCXbPn2deQ3F2hPldLECEa_ahwoapoK1LhkgOAVyPLJf6M1Cm09Le7rkdSaWQSW5BI_sPx5YaUaXkeqg"
+    },
+    "seriesYear": "2025",
+    "documentType": "LD",
+    "establishmentNumber": "10",
+    "jwsSignature": "string",
+    "seriesContingencyIndicator": "N"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>OBS: O campo establishmentNumber refere-se ao código da agência/estabelecimento a partir do qual o contribuinte emissor efetua a emissão do documento fiscal.</em></p>
+</div>
+<div class="paragraph">
+<p><em>As agências (estabelecimentos) devem estar previamente cadastradas no Portal do Contribuinte.</em></p>
+</div>
+<div class="paragraph">
+<p><em>Em ambiente de testes (sandbox) ou em cenários em que o contribuinte possua apenas uma única localização, poderá ser utilizado o valor padrão "SEDE".</em></p>
+</div>
+<div class="listingblock">
+<div class="title">Payload assinatura Solicitar Serie</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-JSON hljs" data-lang="JSON">{
+    "taxRegistrationNumber": "...",
+    "seriesYear": "...",
+    "documentType": "...",
+    "establishmentNumber": "...",
+    "seriesContingencyIndicator": "..."
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_payload_de_saídaresposta"><a class="anchor" href="#_payload_de_saídaresposta"></a>Payload de Saída(resposta)</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-JSON hljs" data-lang="JSON"> {
+    "resultCode": 1,
+    "errorList": [
+        ""
+    ],
+    "seriesFEResult": {
+        "seriesCode": "LD6325S2042N",
+        "authorizedQuantity": "999999999999",
+        "firstDocumentNo": "1",
+        "lastDocumentNo": "999999999999"
+    }
+ }</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_parâmetros_de_entrada"><a class="anchor" href="#_parâmetros_de_entrada"></a>Parâmetros de entrada</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">schemaVersion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Versão do schema do serviço, exemplo
+“1.0”.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">submissionUUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Identificador único da solicitação, fornecido pelo software no formato
+UUID standard “<strong>xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx”</strong> em que:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Cada <strong>x</strong> é um dígito hexadecimal (0–9, a–f);</p>
+</li>
+<li>
+<p><strong>M</strong> indica a versão do UUID (por exemplo, 4 para UUID versão 4 —
+aleatório);</p>
+</li>
+<li>
+<p><strong>N</strong> indica o <strong>variant</strong> (especifica o layout; para UUIDs compatíveis
+com RFC 4122, os primeiros bits de N devem estar entre 8 e b).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Exemplo:</p>
+</div>
+<div class="paragraph">
+<p>550e8400-e29b-41d4-a716-446655440000</p>
+</div>
+<div class="paragraph">
+<p>Este identificador deverá ser único por cada submissão do contribuinte
+emissor.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxRegistrationNumber</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 15</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número fiscal do
+contribuinte.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">submissionTimeStamp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Timestamp de submissão do pedido no formato ISO 8601, exemplos:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>"2025-05-27T14:30:00Z" (em UTC)</p>
+</li>
+<li>
+<p>"2025-05-27T14:30:00-03:00" (com informação de timezone)</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">softwareInfo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Objecto com os dados do <em>Software</em> de Facturação</p>
+</div>
+<div class="paragraph">
+<p>(ver formato em 5.1.2.1)</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jwsSignature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tamanho variável em Base64URL (dependendo da
+tamanho da chave usada)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Assinatura digital da solicitação de criação de série, usando a chave
+privada do emissor através do algoritmo RS256 (RSA + SHA-256). Os campos
+da solicitação a serem utilizados na assinatura são:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>taxRegistrationNumber</p>
+</li>
+<li>
+<p>establishmentNumber</p>
+</li>
+<li>
+<p>seriesYear</p>
+</li>
+<li>
+<p>documentType</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>O resultado é codificado em Base64URL, sendo que o tamanho final da
+string varia conforme o tamanho da chave usada (2048, 3072 ou 4096
+bits).</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">seriesYear</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ano de emissão associado à série de
+numeração das facturas. De 1 de Janeiro até 15 de Dezembro é possível
+criar séries somente para o ano de sistema, após essa data é possível
+criar séries para o ano de sistema e para o ano imediatamente posterior
+ao do sistema.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 2</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 2</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Tipo de documento de facturação electrónica, com os seguintes valores
+possíveis e significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>FA</strong> - Factura de Adiantamento</p>
+</li>
+<li>
+<p><strong>FT</strong> - Factura</p>
+</li>
+<li>
+<p><strong>FR</strong> - Factura/Recibo</p>
+</li>
+<li>
+<p><strong>FG</strong> - Factura Global</p>
+</li>
+<li>
+<p><strong>GF</strong> - Factura Genérica</p>
+</li>
+<li>
+<p><strong>AC</strong> - Aviso de Cobrança</p>
+</li>
+<li>
+<p><strong>AR</strong> - Aviso de Cobrança/Recibo</p>
+</li>
+<li>
+<p><strong>TV</strong> - Talão de Venda</p>
+</li>
+<li>
+<p><strong>RC</strong> - Recibo em numerário (cash)</p>
+</li>
+<li>
+<p><strong>RG</strong> - Recibo Geral</p>
+</li>
+<li>
+<p><strong>RE</strong> - Estorno ou Recibo de Estorno</p>
+</li>
+<li>
+<p><strong>ND</strong> - Nota de Débito</p>
+</li>
+<li>
+<p><strong>NC</strong> - Nota de Crédito</p>
+</li>
+<li>
+<p><strong>AF</strong> - Factura/Recibo de Autofacturação</p>
+</li>
+<li>
+<p><strong>RP</strong> - Prémio ou Recibo de Prémio</p>
+</li>
+<li>
+<p><strong>RA</strong> - Resseguro Aceite</p>
+</li>
+<li>
+<p><strong>CS</strong> - Imputação a Co-seguradoras</p>
+</li>
+<li>
+<p><strong>LD</strong> - Imputação a Co-seguradora Líder</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">establishmentNumber</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minlength” : 1<br>
+“maxlength”: 200</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Identifica o estabelecimento que solicita a
+emissão de facturas. Este campo garante que cada série esteja unicamente
+associada ao respectivo estabelecimento dentro da organização do
+contribuinte.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">seriesContingencyIndicator</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Indicador que identifica se a série de numeração de facturas se destina
+a emissão em regime de contingência, com os seguintes valores possíveis
+e significados:</p>
+</div>
+<div class="paragraph">
+<p>N – Série do regime normal de emissão;</p>
+</div>
+<div class="paragraph">
+<p>C – Série criada para suportar a emissão em contingência.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_softwareinfo"><a class="anchor" href="#_composição_properties_do_object_softwareinfo"></a>Composição (properties) do object softwareInfo</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 23%;">
+<col style="width: 9%;">
+<col style="width: 18%;">
+<col style="width: 13%;">
+<col style="width: 37%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">softwareInfoDetail</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Objecto com os detalhes do
+<em>Software</em> de Facturação</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jwsSoftwareSignature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 256</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 256</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Assinatura digital do <em>Software</em> de Facturação usando a chave
+privada do software, através o algoritmo RS256 (RSA + SHA-256).<br>
+Todos os campos do objecto softwareInfo devem ser usados na assinatura.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Composição (properties) do object softwareInfoDetail</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 23%;">
+<col style="width: 9%;">
+<col style="width: 18%;">
+<col style="width: 13%;">
+<col style="width: 37%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">productId</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Nome do <em>Software</em> de Facturação.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">productVersion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Versão do <em>Software</em> de Facturação.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">softwareValidationNumber</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número de Certificação do
+<em>Software</em> de Facturação.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_parâmetros_de_saída"><a class="anchor" href="#_parâmetros_de_saída"></a>Parâmetros de saída</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 19%;">
+<col style="width: 13%;">
+<col style="width: 68%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>HTTP code</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">200</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>object seriesFEResult</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Registo de pedido efectuado com sucesso sendo devolvido um object do
+tipo seriesFEResult com os dados da quantidade e 1ª e última facturas
+com emissão autorizada pela AGT para a série solicitada.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>array errorList</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Registo de pedido efectuado com erros, sendo devolvida uma lista de
+erros na recepção dos dados da factura.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_seriesferesult"><a class="anchor" href="#_composição_properties_do_object_seriesferesult"></a>Composição (properties) do object seriesFEResult</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 17%;">
+<col style="width: 12%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">seriesCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 3</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 60</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código da série de numeração de facturas electrónicas atribuído
+pela AGT para a solicitação efectuada, de acordo com a regra de
+numeração única de series definida.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">authorizedQuantity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quantidade de facturas que a AGT
+aprovou para emissão nesta solicitação, serão seguidas as orientações
+das regras <strong>FE-RNG-082</strong> e <strong>FE-RNG-083</strong>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">firstDocumentNo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 60</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Identificador da
+primeira factura electrónica que se possibilita a emissão na nova série
+ou extensão de série já existente.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lastDocumentNo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 60</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Identificador da última
+factura electrónica que se possibilita a emissão na nova série ou
+extensão de série já existente.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_itens_do_array_errorlist"><a class="anchor" href="#_composição_itens_do_array_errorlist"></a>Composição (itens) do array errorList</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">idError</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código do erro (ver tabela na secção 5.5.5).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">descriptionError</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Descrição do erro (ver tabela na
+secção 5.5.5).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_códigos_e_mensagens_de_erro"><a class="anchor" href="#_códigos_e_mensagens_de_erro"></a>Códigos e mensagens de erro</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Tendo em conta as regras de negócio, são propostos os seguintes erros de
+validação:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14%;">
+<col style="width: 9%;">
+<col style="width: 77%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Regra de negócio</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Código de erro</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição de erro</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E08</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A assinatura do produtor de software
+“jwsSoftwareSignature” não está de acordo com a informação transmitida.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E39</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Os dados constantes na assinatura do produtor de
+software “jwsSoftwareSignature” não estão de acordo com a informação
+constante no Processo de Certificação do S<em>oftware</em>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-032</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E40</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Os dados constantes na assinatura da chamada do
+serviço “jwsSignature” não estão de acordo com a informação constante na
+chamada do serviço.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-049</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E30</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Contribuinte especificado no parâmetro &lt;parâmetro&gt;
+(&lt;valor do parâmetro&gt;) não possui actividade registada no sistema da
+AGT.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-050</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E06</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Contribuinte especificado no parâmetro &lt;parâmetro&gt;
+(&lt;valor do parâmetro&gt;) não aderiu à facturação electrónica no sistema da
+AGT.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-051</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E31</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código de série de numeração (&lt;valor do parâmetro1&gt;)
+já se encontra em utilização para o contribuinte (&lt;valor do
+parâmetro2&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-053</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E32</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código de série mal construído (&lt;valor do parâmetro&gt;),
+deverá conter o ano de emissão com 2 ou 4 dígitos.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-055</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E33</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ano de emissão da série (&lt;valor do parâmetro 1&gt;) deve
+coincidir com o ano da data de sistema (&lt;valor do parâmetro 2&gt;
+(solicitações anteriores a 15 de Dezembro).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-056</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E34</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Série da factura (&lt;valor do parâmetro 1&gt;) é
+inexistente para o contribuinte (&lt;valor do parâmetro 2&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-057</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E35</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A factura que se pretende criar (&lt;valor do parâmetro
+1&gt;) refere-se a uma série de numeração de documentos de facturação não
+electrónicos.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-058</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E36</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O Software de Facturação que está a gerar a factura
+(&lt;valor do parâmetro 1&gt;) não coincide com o Software de Facturação que
+gerou a série (&lt;valor do parâmetro 2&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-059</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E37</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O tipo de factura a emitir (&lt;valor do parâmetro 1&gt;)
+não coincide com o tipo de factura que foi destinada a série de
+facturação (&lt;valor do parâmetro 2&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-060</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E38</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O ano de emissão da factura (&lt;valor do parâmetro 1&gt;)
+não coincide com o ano de emissão a que se refere a série de facturas
+(&lt;valor do parâmetro 2&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-080</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E48</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O estabelecimento referido (&lt;valor do parâmetro 1&gt;) é
+desconhecido, tem de ser previamente registado nos dados de adesão do
+emissor (&lt;valor do parâmetro 2&gt;) à facturação electrónica.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-081</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>E49</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A serie cuja ampliação foi solicitada, identifica o
+estabelecimento (&lt;valor do parâmetro 1&gt;), mas a serie foi originalmente
+criada para o estabelecimento (&lt;valor do parâmetro 2&gt;) pelo que o pedido
+não pode ser aprovado.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>O presente documento tem como principal objectivo desenhar uma
+solução/modelo que possibilite a comunicação electrónica automatizada e
+em tempo real de todas as facturas geradas pelos contribuintes por
+intermédio de serviços (<em>webservices</em>).</p>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/vendor/lunr-languages.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+
+  </body>
+  <script src="../../../_/js/site.js"></script>
+  <script src="../../../_/js/search.js"></script>
+  <script src="../../../_/js/highlight.js"></script>
+</html>

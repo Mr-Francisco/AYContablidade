@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Registar Factura :: Facturação Electrónica</title>
+    <meta name="generator" content="Antora 3.1.14">
+    <link rel="stylesheet" href="../../../_/css/custom.css">
+
+    <link rel="stylesheet" href="../../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-brand" style="background-color: #0077b6;">
+      <img src="../../../_/img/logo.png" alt="Gesforma Logo" style="height: 60px; margin-right: 8px;">
+      </a>
+           <div class="form-controler">
+                <div class="nif-input-wrapper">
+                    <input id="search-input" type="text" placeholder="Pesquisar" />
+                    <div class="search">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="#667085" width="24px"
+                            height="24px">
+                            <path
+                                d="M15.5,14h-.79l-.28-.27C15.41,12.59,16,11.11,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-.59,4.23-1.57l.27.28v.79l5,4.99L20.49,19l-4.99-5ZM9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5s4.5,2.01,4.5,4.5S11.99,14,9.5,14Z" />
+                        </svg>
+                    </div>
+                    <ul id="search-results" class="search-results"></ul>
+                </div>
+            </div>
+      <p class="navbar-item" style="color: #fff;" href="../../..">Facturação Electrónica</p>
+    </div>
+   
+  </nav>
+</header>
+
+
+<div class="body">
+<div class="nav-container" data-component="faturacao-electronica" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+    <div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="../index.html">Facturação Electrónica</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introdução</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../api.html">Autenticação &amp; Autorização</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../estrutura.html">Estrutura das Assinaturas Digitais</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Serviços Disponíveis</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="solicitar.html">Solicitar Criação de Série</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="listar.html">Listar Séries</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="registar.html">Registar Fatura Eletrónica</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consultar.html">Consultar Estado da Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="consultar_fatura.html">Consultar Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="listar_faturas.html">Listar Facturas Electrónicas</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="validar.html">Validar Documento</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../modelo.html">Modelo de Processamento Assíncrono</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../gestao.html">Gestão de Certificados e Chaves</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../qrcode.html">Especificações do QR Code</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    <div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Facturação Electrónica</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="../index.html">Facturação Electrónica</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Facturação Electrónica</a></li>
+    <li>Serviços Disponíveis</li>
+    <li><a href="registar.html">Registar Fatura Eletrónica</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Nesta página" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Registar Factura</h1>
+
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Serviço destinado à recepção de pedidos de registo de facturas
+electrónicas, devolvendo em resposta o identificador único do pedido,
+identificador essencial para acompanhar o processo de validação
+posterior que indicará se a factura validou ou não com sucesso. Caso o
+pedido não seja aceite é dada informação dos problemas que levaram à sua
+rejeição.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_características_do_serviço"><a class="anchor" href="#_características_do_serviço"></a>Características do Serviço</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Endereço de homologação</strong></p>
+</div>
+<div class="endpoint-card">
+  <span class="http-method post">POST</span>
+  <span class="endpoint-url">https://sifphml.minfin.gov.ao/sigt/fe/v1/registarFactura</span>
+</div>
+<div class="paragraph">
+<p><strong>Endereço de produção</strong></p>
+</div>
+<div class="endpoint-card">
+  <span class="http-method post">POST</span>
+  <span class="endpoint-url">https://sifp.minfin.gov.ao/sigt/fe/v1/registarFactura</span>
+</div>
+<div class="sect2">
+<h3 id="_payload_de_entrada_para_solicitar_criação_de_série"><a class="anchor" href="#_payload_de_entrada_para_solicitar_criação_de_série"></a>Payload de entrada para solicitar criação de série</h3>
+<div class="listingblock">
+<div class="content">
+<pre> {
+    "schemaVersion": "1.2",
+    "submissionUUID": "a1b2c3d4-e5f6-7890-g1h2-i23822j2232-3784",
+    "taxRegistrationNumber": "5001636863",
+    "submissionTimeStamp": "2025-11-04T14:30:00Z",
+    "softwareInfo": {
+        "softwareInfoDetail": {
+            "productId": "Meu ERP CERTO",
+            "productVersion": "1.0.1",
+            "softwareValidationNumber": "C_134"
+        },
+        "jwsSoftwareSignature": "eyJ0eXAiOiJKT1NFIiwiYWxnIjoiUlMyNTYifQ.eyJwcm9kdWN0SWQiOiJNZXUgRVJQIENFUlRPIiwicHJvZHVjdFZlcnNpb24iOiIxLjAuMSIsInNvZnR3YXJlVmFsaWRhdGlvbk51bWJlciI6IkNfMTM0In0.VE3zkvOJOpqBfz4wpx4KCgcwOGgzGUP3MSMbaHCDnHhwOaeA6jlccBW9HjgQvg2tYCVVq0imrU_z0grEHNthhG4xD3afSOD1_RzvHs8Tc45dvztHJzB4gF0CAX-yIDwi7XcHiMRY0vkXOETBeHKewg0ktWSnZ7SLf4GxGzE7ry2u_pmhqhCPhxpa0oGQ_rBJUYkEAFg1OwaqjwvzCFgdT11r-XsHmnkcfJX_ktj59RWR_zgbytiCRtwCK9LNUflveS5GzUaCXbPn2deQ3F2hPldLECEa_ahwoapoK1LhkgOAVyPLJf6M1Cm09Le7rkdSaWQSW5BI_sPx5YaUaXkeqg"
+    },
+    "numberOfEntries": 1,
+    "documents": [
+        {
+            "documentNo": "FT FT6325S2C/10006",
+            "documentStatus": "N",
+            "jwsDocumentSignature": "eyJ0eXAiOiJKT1NFIiwiYWxnIjoiUlMyNTYifQ.eyJkb2N1bWVudE5vIjoiRlQgRlQ2MzI1UzJDLzEwMDA2IiwidGF4UmVnaXN0cmF0aW9uTnVtYmVyIjoiNTAwMTYzNjg2MyIsImRvY3VtZW50VHlwZSI6IkZUIiwiZG9jdW1lbnREYXRlIjoiMjAyNS0xMS0wNCIsImN1c3RvbWVyVGF4SUQiOiJQVDk4NzY1NDMyMSIsImN1c3RvbWVyQ291bnRyeSI6IlBUIiwiY29tcGFueU5hbWUiOiJDbGllbnRlIEV4ZW1wbG8gTGRhIn0.Sg0jnyksnnXtXUkf5PaoZrRtf3kiNkw3urFaE2D1fHLLLw_hQWc896-cGbRVnJGRHPrcnOnEQqQ-ws5R51erzadVstr9Q1yUd0CIvUhszGO15t6m0H--O9VtNMWEOp2asP4P80LD4m55y5rX2stCCGAmTI2N1cAWAhw1JbRr2Zb378y8ZI8dicfJm1QDzs5YKmXrRqXH9yvaF62SHXXfpv5gzLRAAbRwjvY7roso_PRuue9Ke1w0hojnpBmr_zUg0D3eBa-eUjtVPMQsbl5DXBFhr4Qydr4Q04tvUqLBAeGpQmxTRZGs2OCjQzdz2tYIZSbEiFR9Zo6EwL1s1tsRnA",
+            "documentDate": "2025-11-04",
+            "documentType": "FT",
+            "eacCode": "12345",
+            "systemEntryDate": "2025-11-04T11:15:30Z",
+            "customerTaxID": "PT987654321",
+            "customerCountry": "PT",
+            "companyName": "Cliente Exemplo Lda",
+            "lines": [
+                {
+                    "lineNumber": 1,
+                    "productCode": "PROD001",
+                    "productDescription": "Produto Exemplo 1",
+                    "quantity": 2,
+                    "unitOfMeasure": "UN",
+                    "unitPrice": 250,
+                    "unitPriceBase": 250,
+                    "debitAmount": 0,
+                    "creditAmount": 500,
+                    "taxes": [
+                        {
+                            "taxType": "IVA",
+                            "taxCountryRegion": "AO",
+                            "taxCode": "NOR",
+                            "taxPercentage": 14,
+                            "taxContribution": 70
+                        }
+                    ],
+                    "settlementAmount": 0
+                }
+            ],
+            "documentTotals": {
+                "taxPayable": 70,
+                "netTotal": 500,
+                "grossTotal": 570
+            },
+            "withholdingTaxList": [
+                {
+                    "withholdingTaxType": "IRT",
+                    "withholdingTaxDescription": "Retenção na fonte",
+                    "withholdingTaxAmount": 16.5
+                }
+            ]
+        }
+    ]
+ }</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Payload assinatura Registar Factura</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-JSON hljs" data-lang="JSON"> {
+    "documentNo": "...",
+    "taxRegistrationNumber": "...",
+    "documentType": "...",
+    "documentDate": "...",
+    "customerTaxID": "...",
+    "customerCountry": "...",
+    "companyName": "...",
+    "documentTotals": {
+        "taxPayable": 70,
+        "netTotal": 500,
+        "grossTotal": 570
+    }
+ }</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_payload_de_saídaresposta"><a class="anchor" href="#_payload_de_saídaresposta"></a>Payload de Saída(resposta)</h3>
+<div class="listingblock">
+<div class="content">
+<pre> {
+    {
+        "requestID": "202500000010689",
+        "errorList": []
+    }
+ }</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_parâmetros_de_entrada"><a class="anchor" href="#_parâmetros_de_entrada"></a>Parâmetros de entrada</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">schemaVersion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Versão do schema do serviço, exemplo
+“1.0”</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">submissionUUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Identificadorúnico da solicitação fornecido pelo software, no formato
+UUID standard “<strong>xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx”</strong> em que:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Cada <strong>x</strong> é um dígito hexadecimal (0–9, a–f);</p>
+</li>
+<li>
+<p><strong>M</strong> indica a versão do UUID (por exemplo, 4 para UUID versão 4 —
+aleatório);</p>
+</li>
+<li>
+<p><strong>N</strong> indica o <strong>variant</strong> (especifica o layout; para UUIDs compatíveis
+com RFC 4122, os primeiros bits de N devem estar entre 8 e b).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Exemplo:</p>
+</div>
+<div class="paragraph">
+<p>550e8400-e29b-41d4-a716-446655440000</p>
+</div>
+<div class="paragraph">
+<p>Este identificador deverá ser único por cada submissão do contribuinte
+emissor.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxRegistrationNumber</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 15</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número fiscal de
+contribuinte.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">submissionTimeStamp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Timestamp de submissão do pedido no formato ISO 8601, exemplos:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>"2025-05-27T14:30:00Z" (em UTC);</p>
+</li>
+<li>
+<p>"2025-05-27T14:30:00-03:00" (com informação de timezone).</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">softwareInfo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Objecto com os dados do <em>Software</em> de
+Facturação.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">numberOfEntries</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número de facturas que constam na
+chamada ao serviço.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documents</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>array</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Array com a lista de facturas (object document)</p>
+</div>
+<div class="paragraph">
+<p>Prevê-se um máximo de 30 facturas.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Composição (properties) do object softwareInfo</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 23%;">
+<col style="width: 9%;">
+<col style="width: 18%;">
+<col style="width: 13%;">
+<col style="width: 37%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">softwareInfoDetail</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Objecto com os detalhes do
+<em>Software</em> de Facturação</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jwsSoftwareSignature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tamanho variável em Base64URL (dependendo
+do tamanho da chave usada)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Assinatura digital do <em>Software</em> de Facturação usando a chave privada do
+software, através o algoritmo RS256 (RSA + SHA-256).<br>
+É utilizado o conteúdo total do objecto softwareInfoDetail na
+assinatura.</p>
+</div>
+<div class="paragraph">
+<p>O resultado é codificado em Base64URL, sendo que o tamanho final da
+string varia conforme o tamanho da chave usada (2048, 3072 ou 4096
+bits).</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_softwareinfodetail"><a class="anchor" href="#_composição_properties_do_object_softwareinfodetail"></a>Composição (properties) do object softwareInfoDetail</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 23%;">
+<col style="width: 9%;">
+<col style="width: 18%;">
+<col style="width: 13%;">
+<col style="width: 37%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">productId</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Nome do <em>Software</em> de Facturação.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">productVersion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Versão do <em>Software</em> de Facturação.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">softwareValidationNumber</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número de Certificação do
+<em>Software</em> de Facturação.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">signatureVersion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Número de assinatura a aplicar. Sempre que um <em>Software</em> de Facturação é
+registado é também transmitida a(s) chave(s) pública(s) necessária(s)
+para descodificação das assinaturas. O Produtor pode optar por ter mais
+do que uma assinatura activa de forma a permitir, por exemplo, a
+transição de um conjunto alargado de instalações de uma assinatura em
+fase de descontinuação, para outra que entrou em vigor.</p>
+</div>
+<div class="paragraph">
+<p>A AGT manterá o conjunto de chaves transmitido pelo produtor
+aplicando-as ou não de acordo com a gestão efectuada pelo mesmo.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_itens_do_array_documents"><a class="anchor" href="#_composição_itens_do_array_documents"></a>Composição (itens) do array documents</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">document</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Array com a lista de documentos (object document)</p>
+</div>
+<div class="paragraph">
+<p>Prevê-se um máximo de 30 documentos.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_document"><a class="anchor" href="#_composição_properties_do_object_document"></a>Composição (properties) do object document</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentNo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 8</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 60</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Identificação única do documento, gerado pelo Software de Facturação de
+documentos em conformidade com o documento SAF-T(AO).</p>
+</div>
+<div class="paragraph">
+<p>Consiste de um código de documento interno - espaço - número de série do
+documento -/- e um número sequencial do documento para a sequência de
+consentimento.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentStatus</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 1</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Estado actual do documento de facturação, com os seguintes valores
+possíveis e significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>N</strong> - Normal</p>
+</li>
+<li>
+<p><strong>C</strong> - Documento gerado para correcção de documento anteriormente
+gerado e rejeitado pela AGT (identificado no campo <strong>rejectedDocumentNo</strong>)</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rejectedDocumentNo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 8</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 60</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Identificação do número de documento previamente submetido à AGT e
+rejeitado por falta de conformidade.</p>
+</div>
+<div class="paragraph">
+<p>O preenchimento deste campo é obrigatório quando a informação de estado
+do documento transmitido é correcção (<strong>documentStatus = “C”</strong>).</p>
+</div>
+<div class="paragraph">
+<p>O documento identificado nesta correcção será verificado se corresponde
+a uma rejeição no histórico de pedidos de registo de facturas emitidas.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jwsDocumentSignature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 256</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 256</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Assinatura digital da factura usando a chave privada do emissor através
+do algoritmo RS256 (RSA + SHA-256). Os campos das facturas a ser
+utilizados na assinatura são:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>documentNo</p>
+</li>
+<li>
+<p>taxRegistrationNumber</p>
+</li>
+<li>
+<p>documentType</p>
+</li>
+<li>
+<p>documentDate</p>
+</li>
+<li>
+<p>customerTaxID</p>
+</li>
+<li>
+<p>customerCountry</p>
+</li>
+<li>
+<p>companyName</p>
+</li>
+<li>
+<p>documentTotals</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>O resultado é codificado em Base64URL, sendo que o tamanho final da
+string varia conforme o tamanho da chave usada (2048, 3072 ou 4096
+bits).</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentDate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“format”: “date”</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Data de emissão do
+documento</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 2</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 2</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Tipo de documento de facturação electrónica, com os seguintes valores
+possíveis e significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>FA</strong> - Factura de Adiantamento</p>
+</li>
+<li>
+<p><strong>FT</strong> - Factura</p>
+</li>
+<li>
+<p><strong>FR</strong> - Factura/Recibo</p>
+</li>
+<li>
+<p><strong>FG</strong> - Factura Global</p>
+</li>
+<li>
+<p><strong>GF</strong> - Factura Genérica</p>
+</li>
+<li>
+<p><strong>AC</strong> - Aviso de Cobrança</p>
+</li>
+<li>
+<p><strong>AR</strong> - Aviso de Cobrança/Recibo</p>
+</li>
+<li>
+<p><strong>TV</strong> - Talão de Venda</p>
+</li>
+<li>
+<p><strong>RC</strong> - Recibo Emitido</p>
+</li>
+<li>
+<p><strong>RG</strong> - Recibo</p>
+</li>
+<li>
+<p><strong>RE</strong> - Estorno ou Recibo de Estorno</p>
+</li>
+<li>
+<p><strong>ND</strong> - Nota de Débito</p>
+</li>
+<li>
+<p><strong>NC</strong> - Nota de Crédito</p>
+</li>
+<li>
+<p><strong>AF</strong> - Factura/Recibo de Autofacturação</p>
+</li>
+<li>
+<p><strong>RP</strong> - Prémio ou Recibo de Prémio</p>
+</li>
+<li>
+<p><strong>RA</strong> - Resseguro Aceite</p>
+</li>
+<li>
+<p><strong>CS</strong> - Imputação a Co-seguradoras</p>
+</li>
+<li>
+<p><strong>LD</strong> - Imputação a Co-seguradora Líder</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">eacCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 5</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 5</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código de actividade que se relaciona com esta factura (ver Anexo
+6.1.)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">systemEntryDate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“format”: “date-time”</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Timestamp</em> de
+gravação do registo no momento da assinatura - formato ISO 8601
+(YYYY-MM-DDThh:mm:ss)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">customerCountry</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 2</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 2</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código de país do comprador, seguindo a norma ISO 3166-1-alpha-2,
+para compradores domésticos é utilizada a sigla “<strong>AO”</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">customerTaxID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 50</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Número de identificação do cliente da factura. Para compradores
+domésticos (identificados com <strong>AO</strong> no campo <strong>customerCountry</strong>) é
+preenchido com o NIF em Angola.</p>
+</div>
+<div class="paragraph">
+<p>Para documentos de facturação de contribuintes domésticos sem
+identificação do comprador poderá ser utilizado o valor “<strong>999999999</strong>”.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">companyName</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 200</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Nome/denominação do contribuinte.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lines</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>array</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Array com a lista de artigos do documento de facturação (object
+document), sendo não preenchido para os tipos de factura (documentType):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>AR</strong> - Aviso de Cobrança/Recibo</p>
+</li>
+<li>
+<p><strong>RC</strong> - Recibo Emitido</p>
+</li>
+<li>
+<p><strong>RG -</strong> Outros Recibos Emitidos</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Este elemento é obrigatoriamente preenchido para os demais tipos de
+documentos de facturação</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">paymentReceipt</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Object com os dados do recibo, sendo obrigatoriamente preenchido para os
+tipos de factura (documentType):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>AR</strong> - Aviso de Cobrança/Recibo</p>
+</li>
+<li>
+<p><strong>RC</strong> - Recibo Emitido</p>
+</li>
+<li>
+<p><strong>RG -</strong> Outros Recibos Emitidos</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Este elemento não é preenchido para os demais tipos de documentos de
+facturação.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentTotals</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Objecto cujos atributos apresentam
+os totais do documento de facturação.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">withholdingTaxList</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>array</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Array com a lista de retenções
+na fonte do documento de facturação (object withHoldingTax).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_itens_do_array_lines"><a class="anchor" href="#_composição_itens_do_array_lines"></a>Composição (itens) do array lines</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">line</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Objecto com os dados de uma linha de artigos
+ou serviços do documento de facturação.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_line"><a class="anchor" href="#_composição_properties_do_object_line"></a>Composição (properties) do object line</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lineNumber</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número da linha de artigos do
+documento de facturação, começando em 1 e incrementando de 1 unidade em
+cada nova linha.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">operationType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 2</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 3</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Indicador de tipo de operação na linha, com os seguintes valores
+possíveis e significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>SE</strong> - Prestação de serviços de educação;</p>
+</li>
+<li>
+<p><strong>SS</strong> - Prestação de serviços de saúde;</p>
+</li>
+<li>
+<p><strong>STP</strong> - Prestação de serviços de transporte de passageiros;</p>
+</li>
+<li>
+<p><strong>SR</strong> - Prestação de serviços sujeitos a royalties;</p>
+</li>
+<li>
+<p><strong>SIF</strong> - Prestação de serviços de intermediação financeira ou
+seguradora;</p>
+</li>
+<li>
+<p><strong>SHS</strong> - Prestação de serviços de hotelaria e similares;</p>
+</li>
+<li>
+<p><strong>ST</strong> - Prestação de serviços de telecomunicações;</p>
+</li>
+<li>
+<p><strong>SG</strong> - Prestação de serviço (geral - outros);</p>
+</li>
+<li>
+<p><strong>TB</strong> - Transmissão de bens;</p>
+</li>
+<li>
+<p><strong>AS</strong> - Arrendamento e subarrendamento;</p>
+</li>
+<li>
+<p><strong>QT</strong> - Quotas;</p>
+</li>
+<li>
+<p><strong>RD</strong> - Repasse de despesas.</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">operationDate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“format”: “date”</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não <sup>(*)</sup></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Data de realização da operação.</p>
+</div>
+<div class="paragraph">
+<p><sup>(*)</sup> Este campo é de preenchimento obrigatório para documentos dos
+tipos:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>GF</strong> - Factura genérica;</p>
+</li>
+<li>
+<p><strong>FG</strong> - Factura global.</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">productCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 60</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código do produto ou serviço.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">productDescription</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 200</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Descrição do produto ou serviço.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">quantity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quantidade, inteira ou decimal.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unitOfMeasure</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 20</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unidade de medida.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unitPriceBase</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preço unitário base, sem
+descontos e sem impostos.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unitPrice</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preço unitário já deduzido de
+descontos por linha ou cabeçalho, sem incluir impostos.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">referenceInfo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Objecto detalhando a referência para o documento base para este
+documento de facturação.</p>
+</div>
+<div class="paragraph">
+<p>Obrigatório para documentos de facturação do tipo:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>NC,</strong> para indicar a factura base aonde se deu a devolução de artigos.</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">debitAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Montante total para cada linha, excluindo impostos, sendo abatido o
+valor de descontos, aonde o valor da taxa e/ou o motivo da isenção foi
+aplicada.</p>
+</div>
+<div class="paragraph">
+<p>Só um dos campos <strong>debitAmount</strong> e <strong>creditAmount</strong> poderá estar preenchido.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">creditAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Montante total para cada linha, excluindo impostos, sendo abatido o
+valor de descontos, aonde o valor da taxa e/ou o motivo da isenção foi
+aplicada.</p>
+</div>
+<div class="paragraph">
+<p>Só um dos campos <strong>debitAmount</strong> e <strong>creditAmount</strong> poderá estar preenchido.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>array</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Array de objectos que especificam o(s)
+imposto(s) calculados para a linha.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">settlementAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum”: 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor total de descontos,
+deve reflectir a proporção do desconto global para essa linha e o
+desconto específico para a mesma.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_itens_do_object_referenceinfo"><a class="anchor" href="#_composição_itens_do_object_referenceinfo"></a>Composição (itens) do object referenceInfo</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reference</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 60</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Referência do documento de facturação origem a que este artigo se
+refere.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">reason</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“maxlength”: 60</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Motivo de intervenção no
+documento origem.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_properties_do_array_taxes"><a class="anchor" href="#_composição_properties_do_array_taxes"></a>Composição (properties) do array taxes</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 2</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 4</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Sistema de imposto, com os seguintes valores possíveis e significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>IVA</strong> - Imposto s/ o Valor Acrescentado;</p>
+</li>
+<li>
+<p><strong>IS</strong> - Imposto de Selo;</p>
+</li>
+<li>
+<p><strong>IEC -</strong> Imposto Especial de Consumo;</p>
+</li>
+<li>
+<p><strong>CEOC -</strong> Contribuição Especial de Consumo;</p>
+</li>
+<li>
+<p><strong>NS</strong> - Não sujeito a IVA, IS, IEC ou CEOC.</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxCountryRegion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 2</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 6</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Código de País ou Região do Imposto.<br>
+Quando se refere a um país utiliza um código ISO 3166-1-alpha-2.</p>
+</div>
+<div class="paragraph">
+<p>Quando se refere à região de Cabinda (único valor possível diferente de
+códigos de países) deverá utilizar o valor “AO-CAB”.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 2</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 10</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Código de imposto, de preenchimento obrigatório dependendo do valor
+preenchido no campo taxType, assumindo os seguintes valores possíveis e
+significados:</p>
+</div>
+<div class="paragraph">
+<p>Se <strong>taxType</strong> = <strong>IVA</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>NOR</strong> - Taxa normal</p>
+</li>
+<li>
+<p><strong>INT</strong> – Taxa intermédia</p>
+</li>
+<li>
+<p><strong>RED</strong> – Taxa reduzida</p>
+</li>
+<li>
+<p><strong>ISE</strong> - Isento</p>
+</li>
+<li>
+<p><strong>OUT</strong> – Outra</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Se <strong>taxType</strong> = <strong>IS</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Preenchido opcionalmente com a verba de IS, ver valores possíveis no
+anexo 6.3.</p>
+</li>
+<li>
+<p><strong>ISE</strong> – Isento</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Se <strong>taxType</strong> = <strong>IEC</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Preenchido opcionalmente, quando preenchido deverá ter o código pautal
+para aplicação de IEC, ver valores possíveis no anexo 6.2.</p>
+</li>
+<li>
+<p><strong>ISE</strong> – Isento</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Se <strong>taxType</strong> = <strong>CEOC:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>NOR</strong> - Taxa normal (10% para colectivos)</p>
+</li>
+<li>
+<p><strong>RED</strong> - Taxa reduzida (2,5% para singulares)</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxBase</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum”: 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Valor tributável unitário, sendo gerado quando o montante a constar na
+linha se refere unicamente a imposto, i.e., a base tributável subjacente
+à determinação desse imposto não constitui receita do sujeito passivo
+(poderá não fazer parte dos campos debitAmount ou creditAmount).</p>
+</div>
+<div class="paragraph">
+<p>Exemplos:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Emitir um documento rectificativo de factura, seja ele uma nota de
+débito ou crédito, por a taxa de imposto mencionada na factura se
+encontrar incorrecta e não existindo a possibilidade ou intenção de
+proceder à anulação desta ou de se efectuar o seu estorno integral,
+ter-se-á de liquidar ou devolver o imposto, respectivamente, em falta ou
+em excesso.</p>
+</li>
+<li>
+<p>Nas situações de concessão de crédito por instituições mutuantes com o
+encargo de liquidar Imposto do Selo pelo crédito concedido, a base
+considerada para a liquidação desse imposto não constitui sua receita
+pelo que essa base deverá constar no campo TaxBase.</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxPercentage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum”: 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Taxa a aplicar em percentagem
+(exemplo: 14 representa a taxa de 14%). Deverá ser preenchida com 0 no
+caso de isenção ou não sujeição.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum”: 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor fixo da verba de IS,
+concorre após multiplicado pela quantidade (<strong>quantity</strong>) para o valor de
+imposto total da linha do documento de facturação.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxContribution</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum”: 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Valor calculado de imposto para esta linha de impostos (valor decimal
+com um máximo de 2 casas decimais) contribuindo para o total de impostos
+do documento de facturação.</p>
+</div>
+<div class="paragraph">
+<p>O valor calculado neste campo deverá ser arredondado por excesso para o
+cêntimo seguinte, tal como ilustram os exemplos:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 43%;">
+<col style="width: 57%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Cálculo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Valor do taxContribution</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">23,144</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">23,15</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0,001844</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0,01</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5,9999999</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6,00</p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxExemptionCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minlength”: 3 “maxlength”: 3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Código de motivo de isenção do imposto. Campo deverá ser preenchido
+sempre que campo <strong>taxCode</strong> assumir o valor “ISE” (isento), sendo nesse
+caso de preenchimento obrigatório.</p>
+</div>
+<div class="paragraph">
+<p>Quando for preenchido o <strong>taxType</strong> = “NS” (Não sujeito a IVA, IS ou IEC,
+deverá também ser preenchido obrigatoriamente.</p>
+</div>
+<div class="paragraph">
+<p>Quando preenchido assume um dos valores constantes no anexo 6.4 (<strong>IVA</strong>),
+6.5 (<strong>IS</strong>) ou 6.6 (<strong>IEC</strong>).</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_paymentreceipt"><a class="anchor" href="#_composição_properties_do_object_paymentreceipt"></a>Composição (properties) do object paymentReceipt</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 21%;">
+<col style="width: 9%;">
+<col style="width: 15%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sourceDocuments</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>array</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dados do documento de facturação
+pago.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_itens_do_array_sourcedocumentlist"><a class="anchor" href="#_composição_itens_do_array_sourcedocumentlist"></a>Composição (itens) do array sourceDocumentList</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lineNo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número da linha do documento de
+facturação que foi incluída no recibo, iniciando em 1 e incrementando de
+1 unidade em cada nova linha.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sourceDocumentID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dados do documento de facturação
+que foi incluído neste recibo.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">debitAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>number</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Valor do recibo do documento rectificativo que resultou da lista de
+documentos sem</p>
+</div>
+<div class="paragraph">
+<p>impostos e eventuais descontos.</p>
+</div>
+<div class="paragraph">
+<p>Um e um só dos campos debitAmount e creditAmount poderá estar
+preenchido.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">creditAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>number</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“minimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Valor do recibo da factura ou documento rectificativo, sem impostos e
+eventuais descontos.</p>
+</div>
+<div class="paragraph">
+<p>Um e um só dos campos debitAmount e creditAmount poderá estar
+preenchido.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_itens_do_object_sourcedocumentid"><a class="anchor" href="#_composição_itens_do_object_sourcedocumentid"></a>Composição (itens) do object sourceDocumentID</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OriginatingON</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 1</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 60</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número do documento de facturação regularizado.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentDate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“format”: “date”</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Data de emissão da factura
+ou documento rectificativo desta a que se refere o pagamento.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_documenttotals"><a class="anchor" href="#_composição_properties_do_object_documenttotals"></a>Composição (properties) do object documentTotals</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">taxPayable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Valor total de imposto devido (soma de imposto das linhas).</p>
+</div>
+<div class="paragraph">
+<p>Quando se trata de um documento de facturação dos tipos:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>AR</strong> - Aviso de Cobrança/Recibo;</p>
+</li>
+<li>
+<p><strong>RC</strong> - Recibo Emitido;</p>
+</li>
+<li>
+<p><strong>RG -</strong> Outros Recibos emitidos.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Este valor deverá ser apurado somando os valores <strong>taxPayable</strong> dos
+diferentes documentos origem regularizados pelo recibo, sendo as NC
+contabilizadas com sinal negativo.</p>
+</div>
+<div class="paragraph">
+<p>Este campo não poderá conter valores decimais com mais do que
+2 casas decimais.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">netTotal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Valor total do documento sem imposto</p>
+</div>
+<div class="paragraph">
+<p>Quando se trata de um documento de facturação dos tipos:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>AR</strong> - Aviso de Cobrança/Recibo;</p>
+</li>
+<li>
+<p><strong>RC</strong> - Recibo Emitido;</p>
+</li>
+<li>
+<p><strong>RG -</strong> Outros Recibos emitidos.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Este valor é apurado somando os valores <strong>netTotal</strong> dos diferentes
+documentos origem regularizados pelo recibo, sendo as NC contabilizadas
+com sinal negativo.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grossTotal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Soma do valor total sem imposto e do
+valor total de imposto devido.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">currency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>object</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Objecto destinado a guardar a informação
+da divisa em que se processa o pagamento da factura, não preenchido se
+divisa for AOA. Passa a preenchimento obrigatório caso divisa diferente
+de AOA.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_properties_do_object_currency"><a class="anchor" href="#_composição_properties_do_object_currency"></a>Composição (properties) do object currency</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">currencyCode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>“minlength” : 3</p>
+</div>
+<div class="paragraph">
+<p>“maxlength”: 3</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código da divisa utilizada para pagar a factura, segundo norma ISO
+4217 (excluindo AOA).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">currencyAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“exclusiveMinimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor total na
+moeda estrangeira.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">exchangeRate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">“exclusiveMinimum” : 0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Taxa de câmbio para
+AOA.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_composição_itens_do_array_withholdingtaxlist"><a class="anchor" href="#_composição_itens_do_array_withholdingtaxlist"></a>Composição (itens) do array withholdingTaxList</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">withholdingTaxType</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"maxLength": 3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Código de tipo de retenção na fonte ou de cativação, assumindo os
+seguintes valores possíveis e significados:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>IRT - Imposto Sobre os Rendimentos do Trabalho;</p>
+</li>
+<li>
+<p>II - Imposto Industrial;</p>
+</li>
+<li>
+<p>IS - Imposto de Selo;</p>
+</li>
+<li>
+<p>IVA - Imposto s/ o Valor Acrescentado;</p>
+</li>
+<li>
+<p>IP - Imposto Predial;</p>
+</li>
+<li>
+<p>IAC - Imposto sobre Aplicação de Capitais;</p>
+</li>
+<li>
+<p>OU - Outros;</p>
+</li>
+<li>
+<p>IRPC - Imposto s/ rendimento de pessoas colectivas (impostos futuros);</p>
+</li>
+<li>
+<p>IRPS - Imposto s/ rendimento de pessoas singulares (impostos futuros).</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">withholdingTaxDescription</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"maxLength": 120</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O motivo de
+retenção na fonte. Devem ser indicadas as disposições legais aplicáveis
+ou a percentagem de imposto aplicável.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">withholdingTaxAmount</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Valor de retenção na fonte.</p>
+</div>
+<div class="paragraph">
+<p>Quando se trata de um documento de facturação de um dos tipos:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>AR</strong> - Aviso de cobrança/recibo</p>
+</li>
+<li>
+<p><strong>RC</strong> - Recibo emitido</p>
+</li>
+<li>
+<p><strong>RG -</strong> Outros recibos emitidos</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Este valor é apurado agrupando os valores <strong>withholdingTaxAmount,</strong> para o
+mesmo tipo de imposto (<strong>withholdingTaxType</strong>) dos diferentes documentos
+origem regularizados pelo recibo, sendo as NC contabilizadas com sinal
+negativo.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_parâmetros_de_saída_post"><a class="anchor" href="#_parâmetros_de_saída_post"></a>Parâmetros de saída (POST)</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 19%;">
+<col style="width: 13%;">
+<col style="width: 68%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>HTTP code</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">200</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>string</p>
+</div>
+<div class="paragraph">
+<p>requestID</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Registo de pedido efectuado com sucesso sendo devolvido ID de
+confirmação de solicitação de registo de documentos de facturação – a
+validação será efectuada de forma diferida no tempo.</p>
+</div>
+<div class="paragraph">
+<p>Este parâmetro será também disponibilizado em caso de registo de pedido
+com erros, quando existe erro de requisição duplicada, providenciando a
+informação do ID de confirmação que foi utilizado para registar pela 1ª
+vez a requisição.</p>
+</div>
+<div class="paragraph">
+<p>Atributos da string <strong>requestID:</strong> “maxlength”: 15</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>array</p>
+</div>
+<div class="paragraph">
+<p>errorList</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Registo de pedido efectuado com erros, sendo devolvida uma lista de
+erros na recepção dos dados do pedido de registo dos documentos de
+facturação.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="_composição_itens_do_array_errorlist"><a class="anchor" href="#_composição_itens_do_array_errorlist"></a>Composição (itens) do array errorList</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 9%;">
+<col style="width: 16%;">
+<col style="width: 13%;">
+<col style="width: 42%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Campo</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Tipo (JSON)</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Atributos</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Obrigatório</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">idError</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Código do erro (ver tabela na secção 4.1.5).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">descriptionError</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Descrição do erro (ver tabela na
+secção 4.1.5).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">documentNo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Número do documento de facturação a que se refere o erro (campo com o
+mesmo nome transmitido nos parâmetros de entrada).</p>
+</div>
+<div class="paragraph">
+<p>Campo passa a obrigatório se erro ocorrer num dos parâmetros incluídos
+no <em>array</em> <strong>documents.</strong></p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_códigos_e_mensagens_de_erro_no_retorno_do_serviço"><a class="anchor" href="#_códigos_e_mensagens_de_erro_no_retorno_do_serviço"></a>Códigos e mensagens de erro no retorno do Serviço</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Tendo em conta as regras de negócio, são propostos os seguintes erros de
+validação:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14%;">
+<col style="width: 9%;">
+<col style="width: 77%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Regra de negócio</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Código de erro</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição de erro</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>FE-RNG-001</p>
+</div>
+<div class="paragraph">
+<p>FE-RNG-002</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E01</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Falta de parâmetro &lt;parâmetro&gt;</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-003</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E02</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Formato inválido do parâmetro &lt;parâmetro&gt; (&lt;valor do
+parâmetro&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-004</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E03</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor não esperado do parâmetro &lt;parâmetro&gt; (&lt;valor do
+parâmetro&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-005</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E04</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número de facturas especificado no parâmetro
+“numberOfEntries” (&lt;valor de numberOfEntries&gt;) não coincide com o número
+de ocorrências do array “documents” (&lt;nº de ocorrências de documents&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-006</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E05</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número fiscal do emissor especificado no parâmetro
+&lt;parâmetro&gt; (&lt;valor do parâmetro&gt;) não possui actividade registada no
+sistema da AGT.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-008</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E06</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A data de criação do pedido especificado no parâmetro
+“creationDate” (&lt;valor do parâmetro&gt;) não está dentro do período
+permitido.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E07</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Software</em> de facturação especificado no parâmetro
+“softwareValidationNo” (&lt;valor do parâmetro&gt;) não está certificado</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E08</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A assinatura do Produtor de <em>Software</em>
+“jwsSoftwareSignature” não está de acordo com a informação transmitida.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E39</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Os dados constantes na assinatura do Produtor de
+<em>Software</em> “jwsSoftwareSignature” não estão de acordo com a informação
+constante no processo de Certificação do <em>Software</em>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-012</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E09</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Factura especificada no parâmetro &lt;parâmetro&gt; (&lt;valor
+do parâmetro&gt;) já consta no repositório do sistema</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-013</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Incorrecta especificação do contribuinte no
+preenchimento dos parâmetros “customerTaxID” (&lt;valor do parâmetro&gt;),
+“taxIDNumber” (&lt;valor do parâmetro&gt;) e “taxIDCountry” (&lt;valor do
+parâmetro&gt;)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-014</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E11</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número fiscal Angolano especificado no parâmetro
+&lt;parâmetro&gt; (&lt;valor do parâmetro&gt;) é desconhecido no sistema da AGT.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-015</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Incorrecto número de linha de artigo na factura
+preenchido no parâmetro “lineNo” (&lt;valor do parâmetro&gt;) originando
+repetição ou quebra de sequência</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-016</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E13</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">É esperado documento de facturação de referência para
+a factura transmitida que não foi especificado no parâmetro
+“referenceInfo”</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-017</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E14</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Documento de referência preenchido no parâmetro
+“reference” (&lt;valor do parâmetro&gt;) é desconhecido do sistema.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-018</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E15</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Não podem ser especificados em simultâneo os
+parâmetros &lt;parâmetro1&gt; (&lt;valor do parâmetro1&gt;) e &lt;parâmetro2&gt; (&lt;valor
+do parâmetro2&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-019</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A soma dos valores a crédito para as diferentes linhas
+de um documento de facturação deve ser obrigatoriamente inferior à soma
+dos valores a débito quando se trata de uma nota de crédito.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-020</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E17</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A soma dos valores a crédito para as diferentes linhas
+de um documento de facturação deve ser obrigatoriamente superior à soma
+dos valores a débito quando se trata de um documento diferente de nota
+de crédito.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-021</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E18</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Combinação não permitida dos campos &lt;parâmetro1&gt;
+(&lt;valor do parâmetro1&gt;), &lt;parâmetro2&gt; (&lt;valor do parâmetro2&gt;),
+&lt;parâmetro3&gt; (&lt;valor do parâmetro3&gt;), &lt;parâmetro4&gt; (&lt;valor do
+parâmetro4&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-022</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E19</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">O campo “taxBase” (&lt;valor do parâmetro&gt;) não pode
+estar especificado simultaneamente com um dos campos “debitAmount<strong>”</strong>
+(&lt;valor do parâmetro&gt;) ou “creditAmount<strong>”</strong> (&lt;valor do parâmetro&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-023</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E20</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Combinação não permitida dos campos &lt;parâmetro1&gt;
+(&lt;valor do parâmetro1&gt;), &lt;parâmetro2&gt; (&lt;valor do parâmetro2&gt;)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-024</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E21</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor do campo &lt;parâmetro1&gt; (&lt;valor do parâmetro1&gt;)
+não coincide com a aplicação da fórmula: quantity * unitPriceBase</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-025</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E22</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor total de impostos da factura “taxPayable”
+(&lt;valor do parâmetro&gt;), não corresponde à soma dos impostos de todas as
+linhas (&lt;total calculado&gt;)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-026</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E23</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor total do documento sem impostos “netPayable”
+(&lt;valor do parâmetro&gt;), não corresponde à soma dos valores sem impostos
+de todas as linhas (&lt;total calculado&gt;)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-027</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E24</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor total do documento com impostos “grossPayable”
+(&lt;valor do parâmetro&gt;), não corresponde à soma dos valores com impostos
+de todas as linhas (&lt;total calculado&gt;)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-028</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E25</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Valor registado na factura no campo “grossTotal” não
+corresponde ao valor na divisa utilizada no pagamento (&lt;valor do
+parâmetro&gt;) ao câmbio da divisa (&lt;valor do parâmetro&gt;)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-029</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E26</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Utilização incorrecta do campo “lines” para o tipo de
+factura (&lt;valor do parâmetro&gt;)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E27</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Utilização incorrecta do campo “paymentReceipt” para o tipo de
+factura (&lt;valor do parâmetro&gt;)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-007</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E28</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Número fiscal do emissor especificado no parâmetro
+&lt;parâmetro&gt; (&lt;valor do parâmetro&gt;) não aderiu à facturação electrónica
+no sistema da AGT.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-030</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E29</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A data de emissão do documento de facturação
+“documentDate” (&lt;valor do parâmetro&gt;) é anterior à data de adesão do
+contribuinte à facturação electrónica (&lt;data de adesão&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-031</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E40</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Os dados constantes na assinatura da chamada do
+serviço “jwsSignature” não estão de acordo com a informação constante na
+chamada do serviço.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-061</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E41</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A soma dos valores a regularizar assinalados nos
+campos “debitAmount”/”creditAmount” (&lt;valor do parâmetro&gt;) para o
+documento dado em “OriginatingON”(&lt;valor do parâmetro&gt;) excede o
+montante remanescente do referido documento.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-068</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E42</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A soma dos valores a anular/devolver assinalada no
+campo “debitAmount”/”creditAmount” (&lt;valor do parâmetro&gt;) para o mesmo
+documento base dado em “reference”(&lt;valor do parâmetro&gt;) excede o
+montante ainda não anulado/devolvido do referido documento.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-069</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E43</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quantidade de artigos/serviços assinalados no campo
+“quantity” (&lt;valor do parâmetro&gt;) deverá ser zero para aplicações de
+correcções com o campo “taxBase” (&lt;valor do parâmetro&gt;).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FE-RNG-073</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E46</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A emissão de documentos com o mesmo número de
+identificação no campo documentNo (&lt;valor do parâmetro&gt;) de outro
+documento previamente enviado e rejeitado pela AGT não é aceite. As
+correcções de documentos rejeitados deverão ser efectuados com a
+utilização de um novo número de documento.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Adicionalmente poderão ocorrer os seguintes erros não funcionais:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 19%;">
+<col style="width: 81%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Código de erro</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Descrição de erro</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E99</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Outro erro não detalhado &lt;parâmetro&gt; (&lt;valor do parâmetro&gt;)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Nota: O registo de uma factura para validação através deste serviço obriga a
+uma validação preliminar do formato da informação recebida, para a qual
+se dá resposta imediata, sendo a validação completa dos dados das
+facturas efectuada de forma diferida no tempo, de acordo com a
+capacidade e programação dos processamentos <em>batch</em>.</p>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/vendor/lunr-languages.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+
+  </body>
+  <script src="../../../_/js/site.js"></script>
+  <script src="../../../_/js/search.js"></script>
+  <script src="../../../_/js/highlight.js"></script>
+</html>

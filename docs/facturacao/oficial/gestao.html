@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Gestão de Certificados e Chaves :: Facturação Electrónica</title>
+    <meta name="generator" content="Antora 3.1.14">
+    <link rel="stylesheet" href="../../_/css/custom.css">
+
+    <link rel="stylesheet" href="../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-brand" style="background-color: #0077b6;">
+      <img src="../../_/img/logo.png" alt="Gesforma Logo" style="height: 60px; margin-right: 8px;">
+      </a>
+           <div class="form-controler">
+                <div class="nif-input-wrapper">
+                    <input id="search-input" type="text" placeholder="Pesquisar" />
+                    <div class="search">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="#667085" width="24px"
+                            height="24px">
+                            <path
+                                d="M15.5,14h-.79l-.28-.27C15.41,12.59,16,11.11,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-.59,4.23-1.57l.27.28v.79l5,4.99L20.49,19l-4.99-5ZM9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5s4.5,2.01,4.5,4.5S11.99,14,9.5,14Z" />
+                        </svg>
+                    </div>
+                    <ul id="search-results" class="search-results"></ul>
+                </div>
+            </div>
+      <p class="navbar-item" style="color: #fff;" href="../..">Facturação Electrónica</p>
+    </div>
+   
+  </nav>
+</header>
+
+
+<div class="body">
+<div class="nav-container" data-component="faturacao-electronica" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+    <div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="index.html">Facturação Electrónica</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Introdução</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="api.html">Autenticação &amp; Autorização</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="estrutura.html">Estrutura das Assinaturas Digitais</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Serviços Disponíveis</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/solicitar.html">Solicitar Criação de Série</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/listar.html">Listar Séries</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/registar.html">Registar Fatura Eletrónica</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/consultar.html">Consultar Estado da Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/consultar_fatura.html">Consultar Fatura</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/listar_faturas.html">Listar Facturas Electrónicas</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="servicos/validar.html">Validar Documento</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="modelo.html">Modelo de Processamento Assíncrono</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="gestao.html">Gestão de Certificados e Chaves</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="qrcode.html">Especificações do QR Code</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    <div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Facturação Electrónica</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="index.html">Facturação Electrónica</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Facturação Electrónica</a></li>
+    <li><a href="gestao.html">Gestão de Certificados e Chaves</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Nesta página" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Gestão de Certificados e Chaves</h1>
+
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>A infraestrutura de assinatura digital utilizada no sistema de Faturação
+Eletrónica baseia-se em criptografia assimétrica (RSA) com chaves
+privadas mantidas pelos produtores de software e chaves públicas
+registadas e validadas pela Administração Geral Tributária (AGT). As
+chaves privadas e públicas dos contribuintes serão geradas pela
+Administração Geral Tributária (AGT) podendo e disponibilizadas na conta
+do portal do contribinte.<br>
+Este capítulo descreve como as chaves são distribuídas, utilizadas,
+validadas e atualizadas.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_como_são_entregues_as_chaves_aos_contribuintes"><a class="anchor" href="#_como_são_entregues_as_chaves_aos_contribuintes"></a>Como são entregues as chaves aos contribuintes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As chaves dos contribuintes utilizadas para assinatura de documentos e
+requisições (jwsDocumentSignature e jwsSignature) serão emitidas AGT e
+estarão disponiveis na conta do portaltal do contribuinte de cada
+contribuinte para consulta.</p>
+</div>
+<div class="paragraph">
+<p>As chaves utilizadas para assinatura do software (jwsSoftwareSignature)
+não são emitidas pela AGT.<br>
+Cada produtor de software deve:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Gerar localmente um par de chaves RSA (privada + pública)</strong><br>
+ <strong> A chave privada nunca deve sair do ambiente do produtor.<br>
+ </strong> A chave publica será enviada à AGT.</p>
+</li>
+<li>
+<p><strong>Submeter a chave pública durante o processo de registo do Software
+Produtor</strong>, via portal do parceiro:</p>
+<div class="ulist arabic">
+<ul class="arabic">
+<li>
+<p>Testes: <a href="https://portaldoparceiro.hml.minfin.gov.ao/" class="bare">https://portaldoparceiro.hml.minfin.gov.ao/</a></p>
+</li>
+<li>
+<p>Produção: <a href="https://portaldoparceiro.minfin.gov.ao/" class="bare">https://portaldoparceiro.minfin.gov.ao/</a></p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_estrutura_da_chave_rsa_mínimo_2048_bits"><a class="anchor" href="#_estrutura_da_chave_rsa_mínimo_2048_bits"></a>Estrutura da chave (RSA mínimo 2048 bits)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Para garantir interoperabilidade, desempenho e segurança, as chaves
+usadas têm:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Tipo</strong>: RSA</p>
+</li>
+<li>
+<p><strong>Tamanho</strong>: mínimo 2048 bits</p>
+</li>
+<li>
+<p><strong>Formato recomendado</strong>: PEM</p>
+</li>
+<li>
+<p><strong>Codificação</strong>: Base64 (padrão para PEM)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Exemplo de chave pública válida:</p>
+</div>
+<div class="paragraph">
+<p>-----<strong>BEGIN PUBLIC KEY</strong>-----</p>
+</div>
+<div class="paragraph">
+<p>MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAw12&#8230;&#8203;</p>
+</div>
+<div class="paragraph">
+<p>&#8230;&#8203;restante conteúdo&#8230;&#8203;</p>
+</div>
+<div class="paragraph">
+<p>-----<strong>END PUBLIC KEY</strong>-----</p>
+</div>
+<div class="paragraph">
+<p>Exemplo de chave privada (que <em>nunca</em> deve ser enviada):</p>
+</div>
+<div class="paragraph">
+<p>-----<strong>BEGIN PRIVATE KEY</strong>-----</p>
+</div>
+<div class="paragraph">
+<p>MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBK&#8230;&#8203;</p>
+</div>
+<div class="paragraph">
+<p>-----<strong>END PRIVATE KEY</strong>-----</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedimento_em_caso_de_comprometimento"><a class="anchor" href="#_procedimento_em_caso_de_comprometimento"></a>Procedimento em caso de comprometimento</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Se o produtor suspeitar que a chave privada foi exposta:</p>
+</div>
+<div class="paragraph">
+<p><strong>A chave comprometida deve ser imediatamente revogada</strong></p>
+</div>
+<div class="paragraph">
+<p>O produtor deve:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Gerar um novo par de chaves RSA</p>
+</li>
+<li>
+<p>Atualizar o software com a nova chave públi no portal do parceiro</p>
+</li>
+<li>
+<p>Marcar a chave antiga como revogada a partir do portal</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Impacto sobre documentos</strong></p>
+</div>
+<div class="paragraph">
+<p>Documentos assinados com a chave comprometida permanecem válidos se:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Já tiverem sido processados e aceites pela AGT</p>
+</li>
+<li>
+<p>A assinatura digital for tecnicamente válida</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Porém, novas submissões deixam de ser aceites com a chave revogada.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_como_a_api_valida_a_assinatura"><a class="anchor" href="#_como_a_api_valida_a_assinatura"></a>Como a API valida a assinatura</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>O processo de verificação funciona assim:</p>
+</div>
+<div class="paragraph">
+<p><strong>Receção do documento</strong></p>
+</div>
+<div class="paragraph">
+<p>O sistema lê o JSON recebido e extrai:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>jwsSoftwareSignature</p>
+</li>
+<li>
+<p>jwsDocumentSignature (se aplicável)</p>
+</li>
+<li>
+<p>jwsSignature (se aplicável)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Busca da chave pública ativa (ou correspondente à versão)</strong></p>
+</div>
+<div class="paragraph">
+<p>A API localiza a chave pública do produtor.</p>
+</div>
+<div class="paragraph">
+<p><strong>Validação do JWS (RS256)</strong></p>
+</div>
+<div class="paragraph">
+<p>O servidor:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Reconstrói o <strong>JSON canônico</strong></p>
+</li>
+<li>
+<p>Recalcula o hash</p>
+</li>
+<li>
+<p>Usa a chave pública para validar o signature</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Resultado</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Se válido → documento segue para processamento</p>
+</li>
+<li>
+<p>Se inválido → retorna erro de assinatura</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+
+<script src="../../_/js/vendor/lunr.js"></script>
+<script src="../../_/js/vendor/lunr-languages.js"></script>
+<script src="../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../.." data-snippet-length="100" data-stylesheet="../../_/css/search.css"></script>
+<script async src="../../search-index.js"></script>
+
+  </body>
+  <script src="../../_/js/site.js"></script>
+  <script src="../../_/js/search.js"></script>
+  <script src="../../_/js/highlight.js"></script>
+</html>
