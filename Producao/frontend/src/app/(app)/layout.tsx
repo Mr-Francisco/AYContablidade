@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { AcessoRapido } from "@/components/layout/AcessoRapido";
 import { AvisoDeSeguranca } from "@/components/layout/AvisoDeSeguranca";
 import { Cabecalho } from "@/components/layout/Cabecalho";
+import { SessaoViva } from "@/components/layout/SessaoViva";
 import { ACarregar } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -53,6 +54,10 @@ export default function LayoutAplicacao({
       {/* O «+» dos módulos. Aqui, e não em cada página: é o mesmo atalho em
           todo o lado, e num sítio só não há hipótese de divergir. */}
       <AcessoRapido />
+
+      {/* Renova a sessão em silêncio enquanto se trabalha e avisa antes de ela
+          atingir o limite. Não desenha nada até haver o que dizer. */}
+      <SessaoViva />
     </div>
   );
 }

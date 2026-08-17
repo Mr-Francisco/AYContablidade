@@ -107,3 +107,28 @@ escrever um banco que ainda não esteja lá.
 
 O mesmo do ponto 2, com a validação própria do módulo: a conta tem de poder
 receber lançamentos, e o motivo aparece explicado quando não puder.
+
+
+---
+
+## 12. Sessão: renovar enquanto se trabalha, avisar antes do fim
+
+**Não estava na lista** — apareceu ao explicar por que motivo a sessão expira.
+
+O desenho sempre foi: o token dura 30 minutos e renova-se enquanto há
+actividade, sem passar do limite absoluto de 12 horas contado desde a entrada.
+O servidor tem a rota (`POST /api/auth/refresh`) desde o princípio. **O cliente
+nunca a chamou** — metade do mecanismo foi construída e a outra metade não.
+
+Resultado: passados 30 minutos a sessão morria a meio do trabalho, sem aviso, e
+descobria-se ao gravar.
+
+Feito: `lib/sessao.ts` renova quando faltam menos de 5 minutos, e
+`SessaoViva` verifica de minuto a minuto e mostra um aviso 5 minutos antes do
+limite absoluto — que esse não se prolonga, e é essa a razão de existir.
+
+**O que NÃO mudou, e não devia mudar:** os cinco cortes deliberados de sessão.
+Mudar a palavra-passe, um administrador definir a palavra-passe de alguém,
+alterar um perfil, bloquear uma conta, ou o superadministrador suspender a
+empresa continuam a expulsar quem está dentro na hora. O servidor recusa a
+renovação nesses casos — está fixado em `tests/test_renovacao_sessao.py`.
