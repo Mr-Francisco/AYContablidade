@@ -19,6 +19,7 @@ import {
   Cartao,
   Entrada,
   EnvolveTabela,
+  Selector,
   Selo,
   Tabela,
   Td,
@@ -85,6 +86,8 @@ export default function Saft() {
     String(new Date().getMonth() + 1).padStart(2, "0"),
   );
   const [validacao, setValidacao] = useState("0");
+  /** «facturacao» ou «compras» — os dois ficheiros mensais que a AGT pede. */
+  const [tipo, setTipo] = useState("facturacao");
   const [previsao, setPrevisao] = useState<Previsao | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -100,7 +103,11 @@ export default function Saft() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${lerToken() ?? ""}`,
       },
-      body: JSON.stringify({ ...periodo, numero_validacao: validacao.trim() }),
+      body: JSON.stringify({
+        ...periodo,
+        tipo,
+        numero_validacao: validacao.trim(),
+      }),
     });
     if (!r.ok) {
       const corpo = await r.json().catch(() => ({}));
@@ -135,7 +142,7 @@ export default function Saft() {
       const url = URL.createObjectURL(await r.blob());
       const a = document.createElement("a");
       a.href = url;
-      a.download = `SAFT_${empresa?.nif ?? ""}_${periodo.de.slice(0, 7).replace("-", "")}.xml`;
+      a.download = `SAFT_${tipo === "compras" ? "AQ" : "FT"}_${empresa?.nif ?? ""}_${periodo.de.slice(0, 7).replace("-", "")}.xml`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -155,13 +162,39 @@ export default function Saft() {
       />
 
       <Alerta tipo="info" className="mb-4">
-        O ficheiro é gerado a partir dos documentos <b>emitidos</b> do período e
-        validado contra o esquema oficial <code>SAFTAO1.01_01.xsd</code> antes
-        de sair daqui. Pró-formas e guias de remessa não entram: não são
-        documentos fiscais de facturação.
+        {tipo === "compras" ? (
+          <>
+            O ficheiro de <b>aquisição de bens e serviços</b> declara as compras
+            do período: fornecedor, data e totais. Não leva a discriminação das
+            linhas — essa é a declaração de quem vendeu.
+          </>
+        ) : (
+          <>
+            O ficheiro é gerado a partir dos documentos <b>emitidos</b> do
+            período e validado contra o esquema oficial{" "}
+            <code>SAFTAO1.01_01.xsd</code> antes de sair daqui. Pró-formas e
+            guias de remessa não entram: não são documentos fiscais de
+            facturação.
+          </>
+        )}
       </Alerta>
 
       <BarraFiltros className="mb-4">
+        <Selector
+          rotulo="Ficheiro"
+          valor={tipo}
+          aoMudar={(v) => {
+            setTipo(v);
+            // A verificação anterior era do outro ficheiro: mantê-la no ecrã
+            // faria alguém descarregar a pensar que estava conferido.
+            setPrevisao(null);
+          }}
+          opcoes={[
+            { valor: "facturacao", rotulo: "Facturação" },
+            { valor: "compras", rotulo: "Aquisição de bens e serviços" },
+          ]}
+          larguraMinima="17rem"
+        />
         <SelectorPeriodo
           rotulo="Mês"
           valor={mes}

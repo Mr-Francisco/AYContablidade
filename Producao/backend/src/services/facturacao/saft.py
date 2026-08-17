@@ -119,6 +119,7 @@ def _cabecalho(
     de: date,
     ate: date,
     numero_validacao: str | None,
+    tipo_ficheiro: str = "F",
 ) -> None:
     """`Header` — a identificação da empresa e do software.
 
@@ -132,8 +133,10 @@ def _cabecalho(
     _e(h, "AuditFileVersion", VERSAO)
     _e(h, "CompanyID", _exigir(empresa.codigo, "o código da empresa", "Configurações"))
     _e(h, "TaxRegistrationNumber", _exigir(empresa.nif, "o NIF da empresa", "Configurações"))
-    # `F` — facturação. É o tipo de ficheiro que se entrega mensalmente.
-    _e(h, "TaxAccountingBasis", "F")
+    # O TIPO DE FICHEIRO. `F` facturação, `A` aquisição de bens e serviços,
+    # `C` contabilidade — os três que a AGT pede. Distinguem-se aqui; o resto
+    # é o mesmo `AuditFile` com outros blocos preenchidos.
+    _e(h, "TaxAccountingBasis", tipo_ficheiro)
     _e(h, "CompanyName", _exigir(empresa.nome, "o nome da empresa", "Configurações"))
 
     morada = ET.SubElement(h, "CompanyAddress")
@@ -413,6 +416,193 @@ def _linha(
 
     base = l.total or Decimal(0)
     return (base * Decimal(t["percentagem"]) / 100).quantize(Decimal("0.01"))
+
+
+# ---------------------------------------------------------------------------
+# Compras — o SAF-T de «Aquisição de bens e serviços»
+# ---------------------------------------------------------------------------
+def _mestres_compras(
+    pai: ET.Element, db: Session, empresa: Empresa, compras: list
+) -> tuple[dict, dict]:
+    """`MasterFiles` do lado das compras: fornecedores, artigos e impostos.
+
+    A ESTRUTURA É A MESMA do ficheiro de facturação — muda quem aparece. Onde
+    havia `Customer` há `Supplier`, e a ordem dos elementos é a que o esquema
+    fixa: SupplierID, AccountID, SupplierTaxID, CompanyName, BillingAddress,
+    SelfBillingIndicator.
+    """
+    m = ET.SubElement(pai, "MasterFiles")
+
+    ids = {c.fornecedor_id for c in compras if c.fornecedor_id}
+    fornecedores = (
+        list(
+            db.scalars(
+                select(Terceiro).where(
+                    Terceiro.id.in_(ids), Terceiro.empresa_id == empresa.id
+                )
+            )
+        )
+        if ids
+        else []
+    )
+    for f in fornecedores:
+        el = ET.SubElement(m, "Supplier")
+        _e(el, "SupplierID", _id_cliente(f))
+        _e(el, "AccountID", f.conta or "Desconhecido")
+        _e(el, "SupplierTaxID", f.nif or "999999999")
+        _e(el, "CompanyName", f.nome)
+        end = ET.SubElement(el, "BillingAddress")
+        _e(end, "AddressDetail", f.morada or "Desconhecido")
+        _e(end, "City", f.localidade or f.provincia or "Desconhecido")
+        _e(end, "Country", "AO")
+        _e(el, "SelfBillingIndicator", 0)
+
+    if any(not c.fornecedor_id for c in compras):
+        el = ET.SubElement(m, "Supplier")
+        _e(el, "SupplierID", "FD")
+        _e(el, "AccountID", "Desconhecido")
+        _e(el, "SupplierTaxID", "999999999")
+        _e(el, "CompanyName", "Fornecedor diverso")
+        end = ET.SubElement(el, "BillingAddress")
+        _e(end, "AddressDetail", "Desconhecido")
+        _e(end, "City", "Desconhecido")
+        _e(end, "Country", "AO")
+        _e(el, "SelfBillingIndicator", 0)
+
+    artigo_ids = {l.artigo_id for c in compras for l in c.linhas if l.artigo_id}
+    artigos = (
+        list(
+            db.scalars(
+                select(Artigo).where(
+                    Artigo.id.in_(artigo_ids), Artigo.empresa_id == empresa.id
+                )
+            )
+        )
+        if artigo_ids
+        else []
+    )
+    for a in artigos:
+        el = ET.SubElement(m, "Product")
+        _e(el, "ProductType", "S" if (a.tipo_artigo or "") == "servico" else "P")
+        _e(el, "ProductCode", a.codigo)
+        _e(el, "ProductDescription", a.descricao)
+        _e(el, "ProductNumberCode", a.codigo)
+
+    if any(not l.artigo_id for c in compras for l in c.linhas):
+        el = ET.SubElement(m, "Product")
+        _e(el, "ProductType", "S")
+        _e(el, "ProductCode", "DIVERSOS")
+        _e(el, "ProductDescription", "Artigos e serviços diversos")
+        _e(el, "ProductNumberCode", "DIVERSOS")
+
+    tt = ET.SubElement(m, "TaxTable")
+    usadas = {imp.por_percentagem(c.iva_perc or 0)["codigo"] for c in compras} or {
+        imp.CODIGO_OMISSAO
+    }
+    for codigo in sorted(usadas):
+        x = imp.taxa(codigo)
+        entrada = ET.SubElement(tt, "TaxTableEntry")
+        _e(entrada, "TaxType", x["tipo"])
+        _e(entrada, "TaxCountryRegion", imp.PAIS)
+        _e(entrada, "TaxCode", x["codigo"])
+        _e(entrada, "Description", x["nome"])
+        _e(entrada, "TaxPercentage", Decimal(x["percentagem"]))
+
+    return (
+        {f.id: _id_cliente(f) for f in fornecedores},
+        {a.id: a.codigo for a in artigos},
+    )
+
+
+def _documentos_compras(
+    pai: ET.Element, compras: list, fornecedores: dict, artigos: dict
+) -> None:
+    """`SourceDocuments > PurchaseInvoices` — as compras do período.
+
+    A COMPRA NÃO LEVA CADEIA DE RESUMOS, e a razão é de fundo: o documento não
+    foi emitido por nós. Quem responde pela integridade de uma factura de
+    compra é quem a emitiu; o que declaramos é o que recebemos. O `Hash` que o
+    esquema pede vai a zero, como é próprio de um documento de terceiro.
+    """
+    fonte = ET.SubElement(pai, "SourceDocuments")
+    pi = ET.SubElement(fonte, "PurchaseInvoices")
+
+    # SÓ `NumberOfEntries` E OS DOCUMENTOS. Ao contrário de `SalesInvoices`,
+    # o bloco das compras não leva totais — o esquema di-lo e o validador
+    # apanhou-o à primeira: «TotalDebit: This element is not expected».
+    _e(pi, "NumberOfEntries", len(compras))
+
+    for c in compras:
+        inv = ET.SubElement(pi, "Invoice")
+        _e(inv, "InvoiceNo", (c.numero or f"CP {c.documento_codigo}")[:60])
+        _e(inv, "Hash", "0")
+        _e(inv, "SourceID", "SGD")
+        _e(inv, "InvoiceDate", c.data)
+        # `FT`: o que se recebe de um fornecedor é, por omissão, uma factura.
+        _e(inv, "PurchaseType", "FT")
+        _e(inv, "SupplierID", fornecedores.get(c.fornecedor_id, "FD"))
+
+        # SEM LINHAS, e não por esquecimento: no SAF-T angolano uma factura de
+        # COMPRA é cabeçalho e totais — `InvoiceNo`, `Hash`, `SourceID`,
+        # `InvoiceDate`, `PurchaseType`, `SupplierID` e `DocumentTotals`. Não
+        # há `Line` nenhuma. O validador disse-o sem margem: «Line: This
+        # element is not expected. Expected is DocumentTotals».
+        #
+        # Faz sentido: o que se declara numa aquisição é o que se pagou e o
+        # imposto que se suportou, não a discriminação do que o fornecedor
+        # vendeu — essa é a declaração DELE.
+
+        tot = ET.SubElement(inv, "DocumentTotals")
+        _e(tot, "TaxPayable", c.iva or Decimal(0))
+        _e(tot, "NetTotal", c.subtotal or Decimal(0))
+        _e(tot, "GrossTotal", c.total or Decimal(0))
+
+
+def gerar_compras(
+    db: Session,
+    *,
+    empresa: Empresa,
+    de: date,
+    ate: date,
+    numero_validacao: str | None = None,
+) -> bytes:
+    """O SAF-T de «Aquisição de bens e serviços» — o outro ficheiro mensal.
+
+    Mesmo prazo do de facturação: dia 20 do mês seguinte. E o mesmo
+    `AuditFile`, com `TaxAccountingBasis = "A"` e os blocos das compras.
+    """
+    from src.db.models.comercial import Compra
+
+    if ate < de:
+        raise ErroSaft("A data final é anterior à inicial.")
+
+    compras = list(
+        db.scalars(
+            select(Compra)
+            .where(
+                Compra.empresa_id == empresa.id,
+                Compra.estado == "emitida",
+                Compra.data >= de,
+                Compra.data <= ate,
+            )
+            .order_by(Compra.data, Compra.numero)
+        )
+    )
+
+    raiz = ET.Element("AuditFile", {"xmlns": NS})
+    _cabecalho(
+        raiz,
+        empresa,
+        de=de,
+        ate=ate,
+        numero_validacao=numero_validacao,
+        tipo_ficheiro="A",
+    )
+    fornecedores, artigos = _mestres_compras(raiz, db, empresa, compras)
+    _documentos_compras(raiz, compras, fornecedores, artigos)
+
+    ET.indent(raiz, space="  ")
+    return ET.tostring(raiz, encoding="utf-8", xml_declaration=True)
 
 
 # ---------------------------------------------------------------------------

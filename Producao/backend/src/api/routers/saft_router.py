@@ -26,9 +26,26 @@ VER = Depends(exigir_cap("contab.ver"))
 class PedidoSaft(BaseModel):
     de: date
     ate: date
+    #: `facturacao` ou `compras` — os dois ficheiros mensais que a AGT pede.
+    #: São o mesmo `AuditFile` com blocos diferentes preenchidos.
+    tipo: str = Field(default="facturacao", pattern="^(facturacao|compras)$")
     #: Número de validação do software atribuído pela AGT (`141/AGT/2026`), ou
     #: `0` enquanto não houver certificação.
     numero_validacao: str = Field(min_length=1, max_length=30)
+
+
+def _gerar(db, empresa, dados: "PedidoSaft") -> bytes:
+    """O ficheiro do tipo pedido. Um sítio só a decidir qual — dois ramos
+    espalhados pelas rotas seriam duas hipóteses de divergirem."""
+    if dados.tipo == "compras":
+        return saft.gerar_compras(
+            db, empresa=empresa, de=dados.de, ate=dados.ate,
+            numero_validacao=dados.numero_validacao,
+        )
+    return saft.gerar(
+        db, empresa=empresa, de=dados.de, ate=dados.ate,
+        numero_validacao=dados.numero_validacao,
+    )
 
 
 @router.post("/prever", dependencies=[FECHAR])
@@ -40,10 +57,7 @@ def prever(dados: PedidoSaft, empresa: EmpresaAtual, db: DB) -> dict:
     os erros de validação, se houver, antes de se gastar a submissão.
     """
     try:
-        xml = saft.gerar(
-            db, empresa=empresa, de=dados.de, ate=dados.ate,
-            numero_validacao=dados.numero_validacao,
-        )
+        xml = _gerar(db, empresa, dados)
     except saft.ErroSaft as e:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
 
@@ -66,10 +80,7 @@ def exportar(dados: PedidoSaft, empresa: EmpresaAtual, db: DB) -> Response:
     e descobri-lo do lado da AGT, com o prazo a correr.
     """
     try:
-        xml = saft.gerar(
-            db, empresa=empresa, de=dados.de, ate=dados.ate,
-            numero_validacao=dados.numero_validacao,
-        )
+        xml = _gerar(db, empresa, dados)
     except saft.ErroSaft as e:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
 
@@ -82,7 +93,8 @@ def exportar(dados: PedidoSaft, empresa: EmpresaAtual, db: DB) -> Response:
             + " | ".join(erros[:3]),
         )
 
-    nome = f"SAFT_{empresa.nif}_{dados.de:%Y%m}.xml"
+    marca = "FT" if dados.tipo == "facturacao" else "AQ"
+    nome = f"SAFT_{marca}_{empresa.nif}_{dados.de:%Y%m}.xml"
     return Response(
         content=xml,
         media_type="application/xml",
