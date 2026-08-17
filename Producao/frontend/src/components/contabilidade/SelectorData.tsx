@@ -89,7 +89,7 @@ export function SelectorData({
   aoMudarMes: (v: string) => void;
   aoMudarDia: (v: string) => void;
 }) {
-  const { periodos, falhou } = usePeriodos();
+  const { periodos, sessaoCaiu, falhou } = usePeriodos();
   const [aberto, setAberto] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
 
@@ -169,11 +169,20 @@ export function SelectorData({
               contabilístico, não dados da empresa. Quando o servidor não
               confirma, diz-se: calar-se era deixar a pessoa a lançar sem saber
               que a sessão pode já ter caído, e a descobri-lo ao gravar. */}
-          {falhou && (
+          {(sessaoCaiu || falhou) && (
             <p className="mb-2 rounded-lg border border-[var(--color-aviso)]/40 bg-[var(--color-aviso)]/10 px-2 py-1.5 text-[11px] leading-relaxed text-texto">
-              Não foi possível confirmar os períodos com o servidor — a sessão
-              pode ter expirado. Estes são os períodos de sempre; verifique
-              antes de gravar.
+              {sessaoCaiu ? (
+                <>
+                  <b>A sessão expirou.</b> Os períodos abaixo são os de sempre e
+                  pode continuar a escolher, mas gravar vai falhar — volte a
+                  entrar primeiro.
+                </>
+              ) : (
+                <>
+                  Não se conseguiu falar com o servidor. Estes são os períodos
+                  de sempre, que não mudam; a escolha é válida.
+                </>
+              )}
             </p>
           )}
 

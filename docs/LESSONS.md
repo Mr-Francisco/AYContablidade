@@ -203,3 +203,4 @@
 - `NEXT_PUBLIC_SITE_URL` em produção não é opcional: sem ele, canónica, `og:url` e sitemap apontam para `localhost`.
 - Uma rota que devolve `{linhas, total}` lida no cliente como lista rebenta com «is not iterable» e leva o ecrã inteiro atrás: ao paginar uma rota, procurar TODOS os consumidores dela.
 - `flex-1` não encolhe abaixo do conteúdo sem `min-h-0` — o `overflow-y-auto` nunca chega a agir e a página passa a ser mais alta do que o ecrã.
+- Um `<input type="date">` não sabe o que é o período 14: em Contabilidade a data escolhe-se sempre pelo selector do Movimento (00–15 + dia), nunca pelo calendário do browser.

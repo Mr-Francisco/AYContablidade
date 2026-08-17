@@ -281,10 +281,10 @@ export default function PaginaBalancete() {
             exercicioId={exercicioId}
           />
           <SelectorPeriodo
-            rotulo="Até ao mês"
+            rotulo="Até ao período"
             valor={mes}
             aoMudar={setMes}
-            rotuloTodos="Todos (15 · Resultado Líquido)"
+            rotuloTodos="Todo o exercício"
             larguraMinima="15rem"
           />
           <span className="flex-1" />

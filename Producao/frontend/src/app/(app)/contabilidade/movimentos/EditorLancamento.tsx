@@ -5,6 +5,7 @@ import { Tabs } from "radix-ui";
 import { useId, useMemo } from "react";
 import useSWR from "swr";
 
+import { SelectorData } from "@/components/contabilidade/SelectorData";
 import { Alerta, Selo } from "@/components/ui";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -12,7 +13,7 @@ import { useCentros, useDiarios, useDocumentos } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 
 import { GrelhaGeral, linhaPreenchida } from "./GrelhaGeral";
-import { SelectorData } from "./SelectorData";
+
 import type { EstadoEditor, Linha } from "./tipos";
 
 /** Contas monetárias: 43 (Depósitos à Ordem) e 45 (Caixa) e subcontas. */

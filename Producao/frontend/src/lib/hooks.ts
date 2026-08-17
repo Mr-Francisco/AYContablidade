@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import useSWR from "swr";
 
-import { buscador } from "@/lib/api";
+import { buscador, ErroApi } from "@/lib/api";
 import type {
   Artigo,
   CentroCusto,
@@ -118,9 +118,26 @@ export function usePeriodos() {
   const { data, error } = useSWR<{ codigo: string; nome: string }[]>(
     "/api/contabilidade/periodos",
     buscador,
-    { revalidateOnFocus: false },
+    // Uma falha aqui não pode ser definitiva. Com `revalidateOnFocus: false` e
+    // sem repetição, um soluço de rede — ou o instante em que o token é
+    // renovado — deixava o aviso colado ao ecrã até a página ser recarregada,
+    // a dizer que a sessão tinha caído quando não tinha.
+    { revalidateOnFocus: false, errorRetryCount: 3, errorRetryInterval: 4000 },
   );
-  return { periodos: data?.length ? data : PERIODOS, falhou: Boolean(error) };
+
+  // A LISTA NÃO PODE ESTAR ERRADA: os períodos 00–15 são o modelo
+  // contabilístico e estão escritos dos dois lados. O que a falha diz é sobre
+  // a SESSÃO, e só quando é disso que se trata — 401 é sessão expirada; um 500
+  // ou uma rede em baixo não são, e anunciá-los como tal manda a pessoa
+  // reautenticar-se sem razão.
+  const estado = error instanceof ErroApi ? error.estado : 0;
+  return {
+    periodos: data?.length ? data : PERIODOS,
+    /** A sessão caiu — o que se gravar a seguir vai falhar. */
+    sessaoCaiu: estado === 401,
+    /** Não se conseguiu confirmar, por outro motivo qualquer. */
+    falhou: Boolean(error),
+  };
 }
 
 /** Artigos activos, para os selectores de linha de documento. */

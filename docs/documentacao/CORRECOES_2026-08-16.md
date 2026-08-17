@@ -30,8 +30,20 @@ dizem «Até ao mês», outros «Período», outros «Mês»; uns separam com `�
 com `—`; a opção de «todos» chama-se «Todos (15 · Resultado Líquido)» num sítio
 e «Todo o exercício» noutro. É o mesmo conceito com três aspectos.
 
-Fazer: um selector de período partilhado, e os intervalos De/Até limitados ao
-exercício escolhido.
+**Feito**, e mais do que o previsto: não bastava limitar o `<input type="date">`
+ao exercício, porque um calendário de browser não sabe o que é o período 14. O
+selector do Movimento saiu da pasta dos movimentos e passou a ser o de toda a
+Contabilidade — Extrato, Razão, Balancete, Balancete do Razão, Fluxos de Caixa
+e Apuramento de IVA. **Não resta um único `<input type="date">` no módulo.**
+
+Períodos 13 a 15 numa consulta não têm dia no calendário: levam a data ao
+último dia do exercício, e o campo diz que foi isso que aconteceu em vez de
+mudar o número em silêncio.
+
+Também: o aviso «não foi possível confirmar os períodos — a sessão pode ter
+expirado» aparecia a qualquer falha, ficava colado ao ecrã até recarregar (não
+havia repetição) e acusava a sessão sem saber. Agora repete três vezes, e só
+fala em sessão quando o servidor respondeu 401.
 
 ## 2. Criar conta onde se escreve uma conta
 
