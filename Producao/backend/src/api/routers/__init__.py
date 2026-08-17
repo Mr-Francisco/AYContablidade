@@ -22,6 +22,7 @@ from src.api.routers import (
     nif_router,
     relatorios_router,
     rh_router,
+    saft_router,
     totp_router,
     user_router,
 )
@@ -44,6 +45,7 @@ ROUTERS = (
     relatorios_router.router,
     apuramentos_router.router,
     rh_router.router,
+    saft_router.router,
     logistica_router.router,
     comercial_router.router,
     compras_router.router,

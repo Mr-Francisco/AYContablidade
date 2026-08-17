@@ -110,8 +110,24 @@ e o prazo não pára.
 | 2. Séries como entidade | ✅ `services/facturacao/series.py` + tabela `series_documento` |
 | 3. Encadeamento por hash | ✅ `services/facturacao/cadeia.py`, ligado à emissão |
 | 4. Campos em falta | ⚠️ na base (`entrada_sistema`, `local_operacao`, `cliente_pais`, `motivo_isencao`); falta o EAC e o preenchimento no ecrã |
-| 5. Gerador de XML | ⬜ por fazer |
-| 6. Ecrã de exportação | ⬜ por fazer |
+| 5. Gerador de XML | ✅ `services/facturacao/saft.py`, validado contra o XSD oficial |
+| 6. Ecrã de exportação | ✅ `/fiscalidade/saft` — verifica antes de deixar descarregar |
+
+**Um ficheiro real já foi gerado e validado**: a partir da base de
+demonstração, três facturas, 7 778 bytes, **válido contra o
+`SAFTAO1.01_01.xsd`**.
+
+Duas exigências de formato que só o validador revelou — a documentação não as
+diz:
+
+- `SoftwareValidationNumber` tem de ser `141/AGT/2026` ou `0`. O **`0` é
+  previsto pela norma** e quer dizer «software ainda não certificado».
+- `ProductID` tem de ser `nome/produtor` — `SGD/AYContabilidade`. Um nome solto
+  é recusado.
+
+E um defeito que só apareceu com dados reais: o `CustomerID` caía no UUID do
+cliente, com 36 caracteres, e o esquema limita-o a 30. Os testes sintéticos não
+lá chegavam porque usavam vendas a consumidor final.
 
 **O que já acontece numa emissão real** (verificado em
 `tests/test_emissao_com_serie.py`): o documento recebe número da série no

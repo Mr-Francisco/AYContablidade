@@ -71,6 +71,13 @@ class Empresa(UUIDMixin, TimestampMixin, Base):
     # Forma jurídica (FORMAS em fiscalidade.js) — determina as obrigações fiscais.
     forma_juridica: Mapped[str | None] = mapped_column(String(20))
 
+    #: CÓDIGO DE ACTIVIDADE ECONÓMICA (CAE/EAC). Cinco dígitos.
+    #:
+    #: Vai no cabeçalho do SAF-T e em CADA documento comunicado à AGT, no campo
+    #: `eacCode`. Sem ele, a comunicação é rejeitada — e é um dado que ninguém
+    #: se lembra de pedir até ao dia em que falta.
+    eac: Mapped[str | None] = mapped_column(String(10))
+
     estado: Mapped[EstadoEmpresa] = mapped_column(
         String(20), default=EstadoEmpresa.ACTIVA, nullable=False, index=True
     )

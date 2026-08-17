@@ -480,6 +480,15 @@ const NAV_COMPLETO: GrupoNav[] = [
         cap: "rh.ver",
         icone: "receipt",
       },
+      {
+        href: "/fiscalidade/saft",
+        rotulo: "SAF-T (AO)",
+        seccao: "Declarações",
+        // `contab.fechar`: exportar o SAF-T não é uma consulta — é preparar o
+        // que se entrega à AGT, e quem o faz é quem responde pelo fecho.
+        cap: "contab.fechar",
+        icone: "clipboard",
+      },
     ],
   },
 
