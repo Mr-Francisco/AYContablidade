@@ -31,6 +31,7 @@ import {
   usePaginacao,
 } from "@/components/ui/Paginacao";
 import { api, buscador, ErroApi } from "@/lib/api";
+import { formataInteiro } from "@/lib/dinheiro";
 import { plural } from "@/lib/texto";
 import type { LicencaGerada, LicencaPlataforma } from "@/types";
 
@@ -201,7 +202,7 @@ export default function Licencas() {
                       <Td numerico>{l.limite_utilizadores ?? "—"}</Td>
                       <Td numerico>
                         {l.limite_tokens_mes
-                          ? l.limite_tokens_mes.toLocaleString("pt-PT")
+                          ? formataInteiro(l.limite_tokens_mes)
                           : "—"}
                       </Td>
                       <Td numerico>

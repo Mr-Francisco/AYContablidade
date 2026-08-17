@@ -338,7 +338,6 @@ export default function PlanoDeContas() {
                     <LinhaConta
                       key={l.conta?.id}
                       conta={l.conta as Conta}
-                      nivel={l.nivel}
                       temFilhos={l.temFilhos}
                       aberto={aberto((l.conta as Conta).codigo)}
                       movimento={l.movimento}
@@ -418,7 +417,6 @@ export default function PlanoDeContas() {
 // ---------------------------------------------------------------------------
 function LinhaConta({
   conta,
-  nivel,
   temFilhos,
   aberto,
   movimento,
@@ -429,7 +427,6 @@ function LinhaConta({
   aoApagar,
 }: {
   conta: Conta;
-  nivel: number;
   temFilhos: boolean;
   aberto: boolean;
   movimento: boolean;
@@ -454,10 +451,14 @@ function LinhaConta({
       }}
     >
       <td className="px-3.5 py-1.5">
-        <span
-          className="tabular inline-flex items-center gap-1.5"
-          style={{ paddingLeft: `${nivel * 16}px` }}
-        >
+        {/* SEM INDENTAÇÃO POR NÍVEL.
+            Cada nível deslocado 16 px punha as contas de quarto grau a
+            começar a meio da coluna, e a olhar para a lista não se
+            comparavam códigos — comparavam-se margens. A hierarquia continua
+            a ler-se onde sempre se leu: no próprio código (11 → 111 → 1111) e
+            no negrito de quem tem filhos. Os códigos ficam todos à esquerda,
+            alinhados como no Balancete Geral. */}
+        <span className="tabular inline-flex items-center gap-1.5">
           {temFilhos ? (
             <button
               type="button"

@@ -46,12 +46,16 @@ export function EditorLancamento({
   estado,
   aoMudar,
   aoPedirCriacaoDeConta,
+  aoPedirNovaLinha,
   erro,
   soLeitura,
 }: {
   estado: EstadoEditor;
   aoMudar: (parcial: Partial<EstadoEditor>) => void;
   aoPedirCriacaoDeConta: (codigo: string) => void;
+  /** Pede uma linha nova. A página decide — se o documento já estiver
+   *  equilibrado, pergunta primeiro se é para gravar. */
+  aoPedirNovaLinha: () => void;
   erro: string | null;
   soLeitura: boolean;
 }) {
@@ -236,18 +240,14 @@ export function EditorLancamento({
             linhas={estado.linhas}
             aoAlterar={alterarLinha}
             aoRemover={removerLinha}
-            aoAdicionar={() =>
-              aoMudar({ linhas: [...estado.linhas, linhaNova()] })
-            }
+            aoAdicionar={aoPedirNovaLinha}
             aoPedirCriacaoDeConta={aoPedirCriacaoDeConta}
             soLeitura={soLeitura}
           />
           {!soLeitura && (
             <button
               type="button"
-              onClick={() =>
-                aoMudar({ linhas: [...estado.linhas, linhaNova()] })
-              }
+              onClick={aoPedirNovaLinha}
               className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-borda px-3 py-1.5 text-[12.5px] font-semibold hover:border-acento"
             >
               <Plus size={14} />

@@ -166,20 +166,71 @@ def test_alterar_um_campo_nao_apaga_os_outros(base, empresa):
 # ---------------------------------------------------------------------------
 # 2. Identificação mínima
 # ---------------------------------------------------------------------------
-def test_sem_nif_nem_documento_recusa():
+@pytest.mark.parametrize("campo,rotulo", [
+    ("nif", "o NIF"),
+    ("num_ss", "Segurança Social"),
+    ("provincia", "a província"),
+    ("municipio", "o município"),
+    ("morada", "a morada"),
+    ("localidade", "a localidade"),
+])
+def test_campos_exigidos_pelo_mapa_de_remuneracoes(campo, rotulo):
+    """REGRA ACTUALIZADA (16 de Agosto de 2026).
+
+    Antes bastava NIF **ou** número do documento. Passa a ser exigida a ficha
+    que o Mapa de Remunerações precisa: sem NIF, INSS, província, município,
+    morada e localidade, o modelo IRT A2.1 sai incompleto e é recusado — e a
+    falha aparece semanas depois, a quem não preencheu a ficha.
+    """
     with pytest.raises(ValidationError) as erro:
-        ColaboradorEntrada(**{**FICHA, "nif": None, "num_documento": None})
-    assert "Mapa de Remunerações" in str(erro.value)
+        ColaboradorEntrada(**{**FICHA, campo: None})
+    assert rotulo in str(erro.value)
 
 
-def test_so_o_documento_chega(base, empresa):
-    """Nem toda a gente tem NIF. O número do BI identifica na mesma."""
-    criado = _criar(base, empresa, nif=None)
+def test_diz_todos_os_campos_em_falta_de_uma_vez():
+    """Um de cada vez obrigava a submeter seis vezes para os descobrir."""
+    with pytest.raises(ValidationError) as erro:
+        ColaboradorEntrada(
+            **{**FICHA, "nif": None, "num_ss": None, "morada": None}
+        )
+    m = str(erro.value)
+    assert "o NIF" in m and "Segurança Social" in m and "a morada" in m
+
+
+def test_salario_base_a_zero_recusa():
+    """Entrava no processamento e saía com líquido zero, sem ninguém reparar."""
+    with pytest.raises(ValidationError) as erro:
+        ColaboradorEntrada(**{**FICHA, "salario_base": Decimal("0")})
+    assert "salário base" in str(erro.value).lower()
+
+
+# ---------------------------------------------------------------------------
+# Subsídio de férias em percentagem
+# ---------------------------------------------------------------------------
+def test_percentagem_calcula_o_valor_do_subsidio():
+    """O valor continua a ser o que o processamento lê."""
+    e = ColaboradorEntrada(
+        **{**FICHA, "salario_base": Decimal("350000"), "subsidio_ferias_perc": Decimal("50")}
+    )
+    assert e.subsidio_ferias == Decimal("175000.00")
+
+
+def test_sem_percentagem_o_valor_escrito_e_respeitado():
+    """O comportamento de sempre não se perde."""
+    e = ColaboradorEntrada(
+        **{**FICHA, "subsidio_ferias": Decimal("123456.78"), "subsidio_ferias_perc": None}
+    )
+    assert e.subsidio_ferias == Decimal("123456.78")
+
+
+def test_a_percentagem_fica_gravada_e_volta(base, empresa):
+    """Para a ficha reabrir a dizer como foi calculada."""
+    criado = _criar(base, empresa, subsidio_ferias_perc=Decimal("50"))
     lida = next(
         c for c in listar_colaboradores(empresa, base) if c["id"] == criado["id"]
     )
-    assert lida["nif"] is None
-    assert lida["num_documento"] == FICHA["num_documento"]
+    assert lida["subsidio_ferias_perc"] == Decimal("50.00")
+    assert lida["subsidio_ferias"] == Decimal("175000.00")
 
 
 def test_sem_nenhum_contacto_recusa():

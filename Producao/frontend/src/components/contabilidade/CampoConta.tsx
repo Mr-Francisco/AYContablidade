@@ -2,8 +2,9 @@
 
 import { Check, X } from "lucide-react";
 
-import { useId, useMemo } from "react";
+import { useId, useMemo, useState } from "react";
 
+import { CriarContaEmFalta } from "@/components/contabilidade/CriarContaEmFalta";
 import { useContas } from "@/lib/hooks";
 import { ehMovimento } from "@/lib/plano";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,15 @@ export function CampoConta({
 }: {
   valor: string;
   aoMudar: (codigo: string) => void;
-  /** Chamado quando o código escrito não existe e há como o criar. */
+  /**
+   * Chamado quando o código escrito não existe.
+   *
+   * OPCIONAL, e por omissão não é preciso: sem ele o próprio campo abre o
+   * diálogo de criação e assume a conta criada. Só o Movimento o passa, porque
+   * já governa o seu diálogo. Antes, quem não o passasse ficava com um campo
+   * que dizia «conta inexistente» e mais nada — era o caso dos Imobilizados,
+   * das Configurações, dos Documentos e do Extrato.
+   */
   aoPedirCriacao?: (codigo: string) => void;
   placeholder?: string;
   className?: string;
@@ -51,6 +60,21 @@ export function CampoConta({
 }) {
   const { contas } = useContas();
   const idLista = useId();
+
+  /**
+   * A conta que se está a criar a partir daqui.
+   *
+   * Fica no campo e não em cada página: criar a conta que falta é uma
+   * necessidade de quem escreve um código, e escrever códigos faz-se em oito
+   * ecrãs. Uma cópia deste fluxo em cada um seria a garantia de que sete
+   * ficavam para trás — como já estavam.
+   */
+  const [aCriarAqui, setACriarAqui] = useState<string | null>(null);
+
+  function pedirCriacao(codigo: string) {
+    if (aoPedirCriacao) return aoPedirCriacao(codigo);
+    setACriarAqui(codigo);
+  }
   const { props, dialogo, abrir } = useSelectorDeConta(aoMudar);
 
   const estado = useMemo(() => {
@@ -146,10 +170,10 @@ export function CampoConta({
           {estado.tipo === "inexistente" && (
             <span className="text-perigo">
               <X size={12} className="inline" /> conta inexistente
-              {aoPedirCriacao && (
+              {!disabled && (
                 <button
                   type="button"
-                  onClick={() => aoPedirCriacao(valor.trim())}
+                  onClick={() => pedirCriacao(valor.trim())}
                   className="ml-2 font-semibold text-marca hover:underline"
                 >
                   criar
@@ -169,6 +193,20 @@ export function CampoConta({
       </datalist>
 
       {dialogo}
+
+      {aCriarAqui && (
+        <CriarContaEmFalta
+          codigo={aCriarAqui}
+          aoFechar={() => setACriarAqui(null)}
+          aoCriar={(codigo) => {
+            // O campo assume a conta acabada de criar: quem a criou estava a
+            // meio de a escrever, e obrigá-lo a escrevê-la outra vez seria
+            // devolver-lhe o trabalho que o diálogo veio poupar.
+            aoMudar(codigo);
+            setACriarAqui(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-
+import { SelectorPeriodo } from "@/components/contabilidade/SelectorPeriodo";
 import { TabelaDemonstracao } from "@/components/contabilidade/TabelaDemonstracao";
 import {
   ACarregar,
@@ -18,13 +18,12 @@ import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda, subtrai } from "@/lib/dinheiro";
-import { useExercicios, usePeriodos } from "@/lib/hooks";
+import { useExercicios } from "@/lib/hooks";
 import type { Balanco } from "@/types";
 
 export default function PaginaBalanco() {
   const { empresa } = useAuth();
   const { exercicios, activo } = useExercicios();
-  const { periodos } = usePeriodos();
   const [exercicioId, setExercicioId] = useState<string | undefined>();
   const [mes, setMes] = useState("");
 
@@ -68,17 +67,11 @@ export default function PaginaBalanco() {
           }))}
           larguraMinima="13rem"
         />
-        <Selector
+        <SelectorPeriodo
           rotulo="Até ao período"
           valor={mes}
           aoMudar={setMes}
-          opcoes={[
-            { valor: "", rotulo: "Todo o exercício" },
-            ...periodos.map((x) => ({
-              valor: x.codigo,
-              rotulo: `${x.codigo} — ${x.nome}`,
-            })),
-          ]}
+          rotuloTodos="Todo o exercício"
           larguraMinima="14rem"
         />
       </BarraFiltros>

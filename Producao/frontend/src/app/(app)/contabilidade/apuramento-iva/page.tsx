@@ -3,7 +3,7 @@
 import { AlertDialog } from "radix-ui";
 import { useState } from "react";
 import useSWR from "swr";
-
+import { CampoData } from "@/components/contabilidade/CampoData";
 import {
   ACarregar,
   Alerta,
@@ -154,13 +154,12 @@ export default function ApuramentoIva() {
         />
         {pode("contab.fechar") && (
           <>
-            <Campo rotulo="Data do lançamento">
-              <Entrada
-                type="date"
-                value={data}
-                onChange={(e) => setData(e.target.value)}
-              />
-            </Campo>
+            <CampoData
+              rotulo="Data do lançamento"
+              valor={data}
+              aoMudar={setData}
+              exercicioId={exercicioId}
+            />
             <div className="pb-0.5">
               <Botao
                 variante="primario"

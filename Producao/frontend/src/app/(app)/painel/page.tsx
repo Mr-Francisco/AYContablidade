@@ -172,7 +172,19 @@ export default function Painel() {
     return celulas;
   };
 
+  /*
+   * A ORDEM: identidade primeiro, informação a seguir.
+   *
+   * Quem abre o sistema vê primeiro a marca e só depois os números — foi
+   * pedido assim. O painel de informação continua a ser o segundo do carrossel
+   * e a um clique de distância; nada foi retirado de nenhum dos dois.
+   */
   const paineis = [
+    {
+      id: "identidade",
+      titulo: "Identidade SGD",
+      conteudo: <PainelIdentidade nome={primeiroNome} contexto={contexto} />,
+    },
     {
       id: "dashboard",
       titulo: "Informação",
@@ -322,11 +334,6 @@ export default function Painel() {
           )}
         </PainelEnquadrado>
       ),
-    },
-    {
-      id: "identidade",
-      titulo: "Identidade SGD",
-      conteudo: <PainelIdentidade nome={primeiroNome} contexto={contexto} />,
     },
   ];
 

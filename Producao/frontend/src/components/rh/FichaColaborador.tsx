@@ -2,12 +2,19 @@
 
 import { X } from "lucide-react";
 import { Dialog, Tabs } from "radix-ui";
-import { type FormEvent, type ReactNode, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useId,
+  useMemo,
+  useState,
+} from "react";
 import useSWR from "swr";
 
 import { Alerta, Botao, Campo, Entrada, Selector } from "@/components/ui";
 import { CampoNif, type RespostaNif } from "@/components/ui/CampoNif";
 import { api, buscador, ErroApi } from "@/lib/api";
+import { formataMoeda } from "@/lib/dinheiro";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,9 +37,24 @@ interface CampoDaFicha {
   k: string;
   l: string;
   full?: boolean;
-  t?: "texto" | "email" | "num" | "inteiro" | "data" | "sel" | "moeda" | "nif";
+  t?:
+    | "texto"
+    | "email"
+    | "num"
+    | "inteiro"
+    | "data"
+    | "sel"
+    | "moeda"
+    | "nif"
+    | "sugerido"
+    | "moeda-ou-perc";
   opcoes?: { valor: string; rotulo: string }[];
   dica?: string;
+  /** Exigido pelo servidor. O asterisco não é decoração: é a mesma lista que o
+   *  `model_validator` de `ColaboradorEntrada` verifica ao gravar. */
+  obrigatorio?: boolean;
+  /** Sugestões para um campo de texto livre — ver `t: "sugerido"`. */
+  sugestoes?: string[];
 }
 
 const op = (...vs: string[]) => vs.map((v) => ({ valor: v, rotulo: v }));
@@ -43,7 +65,7 @@ function separadores(provincias: string[]) {
       id: "ident",
       rotulo: "Identificação",
       campos: [
-        { k: "nome", l: "Nome", full: true },
+        { k: "nome", l: "Nome", full: true, obrigatorio: true },
         { k: "nome_abreviado", l: "Nome abreviado" },
         {
           k: "genero",
@@ -54,17 +76,18 @@ function separadores(provincias: string[]) {
         { k: "data_nascimento", l: "Data de nascimento", t: "data" },
         { k: "nacionalidade", l: "Nacionalidade" },
         { k: "naturalidade", l: "Naturalidade" },
-        { k: "morada", l: "Morada", full: true },
-        { k: "localidade", l: "Localidade" },
+        { k: "morada", l: "Morada", full: true, obrigatorio: true },
+        { k: "localidade", l: "Localidade", obrigatorio: true },
         { k: "codigo_postal", l: "Código postal" },
         { k: "pais", l: "País" },
         {
           k: "provincia",
           l: "Província",
           t: "sel",
+          obrigatorio: true,
           opcoes: provincias.map((p) => ({ valor: p, rotulo: p })),
         },
-        { k: "municipio", l: "Município" },
+        { k: "municipio", l: "Município", obrigatorio: true },
         { k: "comuna", l: "Comuna" },
         {
           k: "email",
@@ -93,7 +116,6 @@ function separadores(provincias: string[]) {
         {
           k: "num_documento",
           l: "Nº do documento",
-          dica: "Obrigatório se não houver NIF.",
         },
         { k: "validade_documento", l: "Validade", t: "data" },
       ] as CampoDaFicha[],
@@ -107,9 +129,10 @@ function separadores(provincias: string[]) {
           l: "NIF",
           t: "nif",
           full: true,
-          dica: "Obrigatório se não houver documento. Confirme na AGT para trazer o nome.",
+          obrigatorio: true,
+          dica: "Confirme na AGT para trazer o nome e o regime.",
         },
-        { k: "num_ss", l: "Nº Segurança Social" },
+        { k: "num_ss", l: "Nº Segurança Social (INSS)", obrigatorio: true },
         {
           k: "estado_civil",
           l: "Estado civil",
@@ -166,7 +189,7 @@ function separadores(provincias: string[]) {
       id: "proc",
       rotulo: "Processamento",
       campos: [
-        { k: "salario_base", l: "Salário base", t: "moeda" },
+        { k: "salario_base", l: "Salário base", t: "moeda", obrigatorio: true },
         { k: "subsidios", l: "Subsídios sujeitos a IRT", t: "moeda" },
         {
           k: "subs_nao_sujeitos",
@@ -195,7 +218,12 @@ function separadores(provincias: string[]) {
           t: "sel",
           opcoes: op("Transferência bancária", "Cheque", "Numerário"),
         },
-        { k: "banco", l: "Banco" },
+        {
+          k: "banco",
+          l: "Banco",
+          t: "sugerido",
+          dica: "Sugere os bancos que já existem no plano de contas (43).",
+        },
         { k: "iban", l: "IBAN", full: true },
       ] as CampoDaFicha[],
     },
@@ -204,7 +232,7 @@ function separadores(provincias: string[]) {
       rotulo: "Subsídios e Férias",
       campos: [
         { k: "dias_ferias", l: "Dias de férias / ano", t: "inteiro" },
-        { k: "subsidio_ferias", l: "Subsídio de férias", t: "moeda" },
+        { k: "subsidio_ferias", l: "Subsídio de férias", t: "moeda-ou-perc" },
         { k: "subsidio_natal", l: "Subsídio de Natal", t: "moeda" },
       ] as CampoDaFicha[],
     },
@@ -260,6 +288,7 @@ const OMISSOES: Valores = {
   iban: "",
   dias_ferias: "22",
   subsidio_ferias: "0",
+  subsidio_ferias_perc: "",
   subsidio_natal: "0",
   habilitacoes: "",
   notas: "",
@@ -307,6 +336,23 @@ export function FichaColaborador({
 
   const abas = separadores(provincias ?? ["Luanda"]);
 
+  /*
+   * OS BANCOS SÃO CONTAS DO PLANO, sob `43 — Bancos` (PGC-AR). Não há tabela
+   * de bancos no sistema e não se cria uma: duplicar aqui o que já existe no
+   * plano seria ter duas listas a divergir no dia em que se abrisse uma conta
+   * nova. Sugere-se o nome da conta, que é como o banco se chama.
+   */
+  const { data: contas } = useSWR<
+    { codigo: string; nome: string; movimento?: boolean }[]
+  >("/api/contabilidade/contas", buscador, { revalidateOnFocus: false });
+  const bancos = useMemo(() => {
+    const nomes = (contas ?? [])
+      .filter((c) => c.codigo.startsWith("43") && c.codigo.length > 2)
+      .map((c) => c.nome.trim())
+      .filter(Boolean);
+    return [...new Set(nomes)].sort((a, b) => a.localeCompare(b, "pt"));
+  }, [contas]);
+
   function alterar(k: string, v: string) {
     setValores((antes) => ({ ...antes, [k]: v }));
   }
@@ -325,15 +371,47 @@ export function FichaColaborador({
   }
 
   /** O que falta para a ficha poder ser gravada, na linguagem de quem a lê. */
+  /**
+   * O que falta para a ficha poder ser gravada, na linguagem de quem a lê.
+   *
+   * ESTA LISTA É A DO SERVIDOR — o `model_validator` de `ColaboradorEntrada`
+   * verifica exactamente os mesmos campos. Não é duplicação por descuido: o
+   * ecrã avisa antes de se perder o preenchimento todo, o servidor garante. Se
+   * um dia divergirem, quem manda é o servidor e o ecrã fica a mentir; por
+   * isso as duas listas trazem a mesma ordem e as mesmas palavras.
+   */
   function emFalta(): { mensagem: string; separador: string } | null {
-    if (!valores.nome.trim())
-      return { mensagem: "O nome é obrigatório.", separador: "ident" };
-    if (!valores.nif.trim() && !valores.num_documento.trim())
+    const obrigatorios: [string, string, string][] = [
+      ["nome", "o nome", "ident"],
+      ["morada", "a morada", "ident"],
+      ["localidade", "a localidade", "ident"],
+      ["provincia", "a província", "ident"],
+      ["municipio", "o município", "ident"],
+      ["nif", "o NIF", "fiscais"],
+      ["num_ss", "o nº de Segurança Social (INSS)", "fiscais"],
+    ];
+    const falta = obrigatorios.filter(([k]) => !(valores[k] ?? "").trim());
+    if (falta.length) {
+      const nomes = falta.map(([, rotulo]) => rotulo);
+      const lista =
+        nomes.length === 1
+          ? nomes[0]
+          : `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
+      return {
+        mensagem: `Falta preencher ${lista}. São campos exigidos pelo Mapa de Remunerações e pelo processamento salarial.`,
+        // Leva ao separador do PRIMEIRO que falta — dizer «falta o NIF» com o
+        // separador dos Dados Fiscais fechado é mandar procurar.
+        separador: falta[0][2],
+      };
+    }
+
+    if (!(Number(valores.salario_base) > 0))
       return {
         mensagem:
-          "Indique o NIF ou o número do documento de identificação — sem um dos dois, o colaborador não entra no Mapa de Remunerações.",
-        separador: "fiscais",
+          "O salário base tem de ser maior do que zero — sem ele o colaborador entra no processamento e sai com líquido zero.",
+        separador: "proc",
       };
+
     if (
       !valores.telefone.trim() &&
       !valores.telemovel.trim() &&
@@ -434,10 +512,17 @@ export function FichaColaborador({
                     {a.campos.map((c) => (
                       <CampoFicha
                         key={c.k}
-                        campo={c}
+                        campo={
+                          c.k === "banco" ? { ...c, sugestoes: bancos } : c
+                        }
                         valor={valores[c.k] ?? ""}
                         aoMudar={(v) => alterar(c.k, v)}
                         aoConfirmarNif={preencherDaAgt}
+                        percentagem={valores.subsidio_ferias_perc}
+                        aoMudarPercentagem={(v) =>
+                          alterar("subsidio_ferias_perc", v)
+                        }
+                        salarioBase={valores.salario_base}
                       />
                     ))}
                   </div>
@@ -477,18 +562,54 @@ function CampoFicha({
   valor,
   aoMudar,
   aoConfirmarNif,
+  percentagem,
+  aoMudarPercentagem,
+  salarioBase,
 }: {
   campo: CampoDaFicha;
   valor: string;
   aoMudar: (v: string) => void;
   aoConfirmarNif?: (r: RespostaNif) => void;
+  /** Só para o subsídio de férias — ver `t: "moeda-ou-perc"`. */
+  percentagem?: string;
+  aoMudarPercentagem?: (v: string) => void;
+  salarioBase?: string;
 }): ReactNode {
   const largura = campo.full ? "sm:col-span-2 lg:col-span-3" : undefined;
+  // O asterisco é o mesmo em todos: a lista de obrigatórios vem do servidor.
+  const rotulo = campo.obrigatorio ? `${campo.l} *` : campo.l;
+
+  if (campo.t === "sugerido") {
+    return (
+      <CampoSugerido
+        rotulo={rotulo}
+        valor={valor}
+        aoMudar={aoMudar}
+        sugestoes={campo.sugestoes ?? []}
+        dica={campo.dica}
+        className={largura}
+      />
+    );
+  }
+
+  if (campo.t === "moeda-ou-perc") {
+    return (
+      <SubsidioDeFerias
+        rotulo={rotulo}
+        valor={valor}
+        percentagem={percentagem ?? ""}
+        salarioBase={salarioBase ?? "0"}
+        aoMudar={aoMudar}
+        aoMudarPercentagem={aoMudarPercentagem}
+        className={largura}
+      />
+    );
+  }
 
   if (campo.t === "nif") {
     return (
       <CampoNif
-        rotulo={campo.l}
+        rotulo={rotulo}
         valor={valor}
         aoMudar={aoMudar}
         aoConfirmar={aoConfirmarNif}
@@ -501,7 +622,7 @@ function CampoFicha({
   if (campo.t === "sel") {
     return (
       <Selector
-        rotulo={campo.l}
+        rotulo={rotulo}
         valor={valor}
         aoMudar={aoMudar}
         opcoes={campo.opcoes ?? []}
@@ -519,7 +640,7 @@ function CampoFicha({
           ? "number"
           : "text";
   return (
-    <Campo rotulo={campo.l} dica={campo.dica} className={largura}>
+    <Campo rotulo={rotulo} dica={campo.dica} className={largura}>
       <Entrada
         type={tipo}
         step={
@@ -530,6 +651,141 @@ function CampoFicha({
         onChange={(e) => aoMudar(e.target.value)}
         className={tipo === "number" ? "text-right tabular" : undefined}
       />
+    </Campo>
+  );
+}
+
+/**
+ * Campo de texto com sugestões — o banco, hoje.
+ *
+ * Não há tabela de bancos no sistema, e não se inventa uma: os bancos **são
+ * contas do plano**, sob `43 — Bancos` (PGC-AR). É de lá que vêm as sugestões.
+ * Continua a ser um campo livre, porque um colaborador pode ser pago por um
+ * banco que a empresa ainda não tem em conta corrente — bloquear isso seria
+ * impedir de gravar uma ficha por causa de uma conta que falta noutro sítio.
+ */
+function CampoSugerido({
+  rotulo,
+  valor,
+  aoMudar,
+  sugestoes,
+  dica,
+  className,
+}: {
+  rotulo: string;
+  valor: string;
+  aoMudar: (v: string) => void;
+  sugestoes: string[];
+  dica?: string;
+  className?: string;
+}) {
+  const id = useId();
+  return (
+    <Campo rotulo={rotulo} dica={dica} className={className}>
+      <Entrada
+        list={id}
+        value={valor}
+        onChange={(e) => aoMudar(e.target.value)}
+        placeholder={sugestoes.length ? "Escolha ou escreva…" : undefined}
+      />
+      <datalist id={id}>
+        {sugestoes.map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
+    </Campo>
+  );
+}
+
+/**
+ * Subsídio de férias: em kwanzas, ou em percentagem do salário base.
+ *
+ * SEM SEPARADOR NOVO — foi pedido assim, e faz sentido: é o mesmo subsídio,
+ * não uma funcionalidade à parte. O que muda é COMO se chega ao número.
+ *
+ * O valor em kwanzas continua a ser o que o processamento lê. Com percentagem,
+ * o servidor recalcula-o ao gravar, e por isso uma actualização de salário
+ * seguida de gravação traz o subsídio atrás — que é a razão de se guardar a
+ * percentagem em vez de só a usar como calculadora.
+ */
+function SubsidioDeFerias({
+  rotulo,
+  valor,
+  percentagem,
+  salarioBase,
+  aoMudar,
+  aoMudarPercentagem,
+  className,
+}: {
+  rotulo: string;
+  valor: string;
+  percentagem: string;
+  salarioBase: string;
+  aoMudar: (v: string) => void;
+  aoMudarPercentagem?: (v: string) => void;
+  className?: string;
+}) {
+  const porPercentagem = percentagem.trim() !== "";
+  const calculado =
+    porPercentagem && Number(salarioBase) > 0
+      ? (Number(salarioBase) * Number(percentagem)) / 100
+      : null;
+
+  return (
+    <Campo
+      rotulo={rotulo}
+      className={className}
+      dica={
+        porPercentagem
+          ? calculado != null
+            ? `${formataMoeda(String(calculado), "Kz")} — recalculado sempre que o salário base mudar.`
+            : "Indique o salário base para ver o valor."
+          : "Em kwanzas. Passe a percentagem para o calcular do salário base."
+      }
+    >
+      <div className="flex items-stretch gap-1.5">
+        <Entrada
+          type="number"
+          step={porPercentagem ? "0.01" : "0.01"}
+          min="0"
+          max={porPercentagem ? "100" : undefined}
+          value={porPercentagem ? percentagem : valor}
+          onChange={(e) =>
+            porPercentagem
+              ? aoMudarPercentagem?.(e.target.value)
+              : aoMudar(e.target.value)
+          }
+          className="tabular text-right"
+        />
+        {/* Dois botões e não um interruptor: com um interruptor não se vê qual
+            é o estado actual sem o interpretar. Aqui o que está activo está
+            preenchido. */}
+        <div className="flex shrink-0 overflow-hidden rounded-[10px] border border-borda">
+          {[
+            { modo: "kz", texto: "Kz", activo: !porPercentagem },
+            { modo: "perc", texto: "%", activo: porPercentagem },
+          ].map((b) => (
+            <button
+              key={b.modo}
+              type="button"
+              aria-pressed={b.activo}
+              onClick={() =>
+                b.modo === "perc"
+                  ? aoMudarPercentagem?.(percentagem || "50")
+                  : aoMudarPercentagem?.("")
+              }
+              className={cn(
+                "px-2.5 text-[12.5px] font-bold transition-colors",
+                b.activo
+                  ? "bg-marca text-white"
+                  : "text-texto-suave hover:bg-superficie-2",
+              )}
+            >
+              {b.texto}
+            </button>
+          ))}
+        </div>
+      </div>
     </Campo>
   );
 }

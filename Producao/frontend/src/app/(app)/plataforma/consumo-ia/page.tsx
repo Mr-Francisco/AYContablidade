@@ -28,7 +28,12 @@ import {
   Vazio,
 } from "@/components/ui";
 import { buscador } from "@/lib/api";
-import { formataCompacto, paraGrafico, soma } from "@/lib/dinheiro";
+import {
+  formataCompacto,
+  formataInteiro,
+  paraGrafico,
+  soma,
+} from "@/lib/dinheiro";
 import type { ConsumoEmpresa } from "@/types";
 
 export default function ConsumoIa() {
@@ -197,11 +202,11 @@ export default function ConsumoIa() {
                         <Td className="text-texto-suave">{l.plano ?? "—"}</Td>
                         <Td numerico>{l.consultas || "—"}</Td>
                         <Td numerico>
-                          {l.tokens ? l.tokens.toLocaleString("pt-PT") : "—"}
+                          {l.tokens ? formataInteiro(l.tokens) : "—"}
                         </Td>
                         <Td numerico className="text-texto-suave">
                           {l.limite_tokens
-                            ? l.limite_tokens.toLocaleString("pt-PT")
+                            ? formataInteiro(l.limite_tokens)
                             : "sem limite"}
                         </Td>
                         <Td numerico className="font-semibold">

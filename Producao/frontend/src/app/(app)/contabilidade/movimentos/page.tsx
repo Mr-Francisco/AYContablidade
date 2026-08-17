@@ -61,6 +61,8 @@ export default function Movimentos() {
 
   const [estado, setEstado] = useState<EstadoEditor>(() => estadoNovo());
   const [erro, setErro] = useState<string | null>(null);
+  /** «Já está equilibrado — quer gravar?», antes de abrir mais uma linha. */
+  const [perguntaGravar, setPerguntaGravar] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [aCriarConta, setACriarConta] = useState<string | null>(null);
@@ -136,6 +138,30 @@ export default function Movimentos() {
   const podeGravar = podeLancar && completo && editavel;
 
   // ---- Acções ----
+
+  /**
+   * Abrir mais uma linha — mas não em cima de um documento já fechado.
+   *
+   * Quando o débito iguala o crédito e há contas preenchidas, o documento está
+   * pronto a gravar. Abrir linha nesse momento é quase sempre um Enter a mais:
+   * a pessoa acabou de equilibrar e o cursor saltou para uma linha que não
+   * queria. Pergunta-se antes — gravar, ou continuar a editar.
+   *
+   * NADA DO QUE JÁ EXISTIA SE PERDE: as validações do documento continuam a
+   * ser as mesmas, e quem responder «continuar» fica com a linha nova.
+   */
+  function novaLinha() {
+    setEstado((e) => ({ ...e, linhas: [...e.linhas, linhaVazia()] }));
+  }
+
+  function pedirNovaLinha() {
+    if (equilibrado && preenchidas.length >= 2) {
+      setPerguntaGravar(true);
+      return;
+    }
+    novaLinha();
+  }
+
   function alterar(parcial: Partial<EstadoEditor>) {
     setErro(null);
     setAviso(null);
@@ -415,6 +441,7 @@ export default function Movimentos() {
           estado={estado}
           aoMudar={alterar}
           aoPedirCriacaoDeConta={setACriarConta}
+          aoPedirNovaLinha={pedirNovaLinha}
           erro={erro}
           soLeitura={!podeLancar || !editavel}
         />
@@ -427,6 +454,29 @@ export default function Movimentos() {
           aoCriar={() => setACriarConta(null)}
         />
       )}
+
+      <Confirmar
+        aberto={perguntaGravar}
+        aoMudar={(a) => !a && setPerguntaGravar(false)}
+        titulo="O documento já está equilibrado. Gravar?"
+        rotuloConfirmar="Gravar"
+        rotuloOcupado="A gravar…"
+        rotuloCancelar="Continuar a editar"
+        variante="primario"
+        aoConfirmar={() => {
+          setPerguntaGravar(false);
+          gravar();
+        }}
+        aoCancelar={() => {
+          // Quem escolhe continuar fica com a linha que pediu — senão o botão
+          // «Linha» não teria feito nada e pareceria avariado.
+          setPerguntaGravar(false);
+          novaLinha();
+        }}
+      >
+        Débito e crédito somam {formataMoeda(totalDebito, "").trim()}. Pode
+        gravar agora, ou continuar a editar e acrescentar mais uma linha.
+      </Confirmar>
 
       <Confirmar
         aberto={aEliminar}

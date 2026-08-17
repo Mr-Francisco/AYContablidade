@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import useSWR from "swr";
 import { CampoConta } from "@/components/contabilidade/CampoConta";
+import { CampoData } from "@/components/contabilidade/CampoData";
 import {
   ACarregar,
   Alerta,
@@ -130,20 +131,18 @@ function Conteudo() {
             placeholder="Código da conta · F4 procura"
           />
         </Campo>
-        <Campo rotulo="De">
-          <Entrada
-            type="date"
-            value={de}
-            onChange={(e) => setDe(e.target.value)}
-          />
-        </Campo>
-        <Campo rotulo="Até">
-          <Entrada
-            type="date"
-            value={ate}
-            onChange={(e) => setAte(e.target.value)}
-          />
-        </Campo>
+        <CampoData
+          rotulo="De"
+          valor={de}
+          aoMudar={setDe}
+          exercicioId={exercicioId}
+        />
+        <CampoData
+          rotulo="Até"
+          valor={ate}
+          aoMudar={setAte}
+          exercicioId={exercicioId}
+        />
         <Campo rotulo="Entidade" className="min-w-[180px]">
           <div className="relative">
             <Search

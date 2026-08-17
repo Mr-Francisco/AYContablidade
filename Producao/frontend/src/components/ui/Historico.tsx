@@ -2,8 +2,8 @@
 
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
-
 import { Botao } from "@/components/ui";
+import { formataInteiro } from "@/lib/dinheiro";
 
 /**
  * A regra dos históricos, num sítio só.
@@ -110,16 +110,11 @@ export function RodapeHistorico({
         {temMais ? (
           <>
             A mostrar <b className="tabular text-texto">{mostrados}</b> de{" "}
-            <b className="tabular text-texto">
-              {total.toLocaleString("pt-PT")}
-            </b>{" "}
-            {nome}
+            <b className="tabular text-texto">{formataInteiro(total)}</b> {nome}
           </>
         ) : (
           <>
-            <b className="tabular text-texto">
-              {total.toLocaleString("pt-PT")}
-            </b>{" "}
+            <b className="tabular text-texto">{formataInteiro(total)}</b>{" "}
             {total === 1 ? nome.replace(/s$/, "") : nome}
           </>
         )}

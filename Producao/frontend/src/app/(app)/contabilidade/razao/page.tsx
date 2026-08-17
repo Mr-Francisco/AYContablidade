@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { CampoData } from "@/components/contabilidade/CampoData";
 import {
   ACarregar,
   Alerta,
@@ -155,20 +155,18 @@ function Conteudo() {
           }))}
           larguraMinima="13rem"
         />
-        <Campo rotulo="De">
-          <Entrada
-            type="date"
-            value={de}
-            onChange={(e) => setDe(e.target.value)}
-          />
-        </Campo>
-        <Campo rotulo="Até">
-          <Entrada
-            type="date"
-            value={ate}
-            onChange={(e) => setAte(e.target.value)}
-          />
-        </Campo>
+        <CampoData
+          rotulo="De"
+          valor={de}
+          aoMudar={setDe}
+          exercicioId={exercicioId}
+        />
+        <CampoData
+          rotulo="Até"
+          valor={ate}
+          aoMudar={setAte}
+          exercicioId={exercicioId}
+        />
         <label className="flex cursor-pointer items-center gap-2 pb-2.5 text-[13px] text-texto-suave">
           <input
             type="checkbox"

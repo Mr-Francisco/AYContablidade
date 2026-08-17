@@ -91,6 +91,19 @@ export function formata(v: Valor, casas = 2): string {
   return negativo ? `−${saida}` : saida; // sinal menos tipográfico, não hífen
 }
 
+/**
+ * Um inteiro agrupado como o resto do sistema: `1 000 000`.
+ *
+ * O `toLocaleString("pt-PT")` agrupa com pontos — `1.000.000` — e num ecrã de
+ * contabilidade isso é ambíguo: o ponto é separador decimal em metade do mundo
+ * e a mesma tabela passava a ter dois agrupamentos diferentes conforme o número
+ * fosse dinheiro ou contagem. Aqui é sempre o mesmo espaço fino.
+ */
+export function formataInteiro(n: number | string | null | undefined): string {
+  if (n === null || n === undefined || n === "") return "—";
+  return formata(String(n), 0);
+}
+
 /** Valor com moeda: "1 234,56 Kz". */
 export function formataMoeda(v: Valor, moeda = "Kz", casas = 2): string {
   return `${formata(v, casas)} ${moeda}`;

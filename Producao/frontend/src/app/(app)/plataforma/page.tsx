@@ -25,7 +25,7 @@ import {
 } from "@/components/ui";
 import type { Pagina } from "@/components/ui/Paginacao";
 import { buscador } from "@/lib/api";
-import { formataCompacto, soma } from "@/lib/dinheiro";
+import { formataCompacto, formataInteiro, soma } from "@/lib/dinheiro";
 import type {
   ConsumoEmpresa,
   EmpresaPlataforma,
@@ -200,7 +200,7 @@ export default function Empresas() {
                             : "—"}
                       </Td>
                       <Td numerico>
-                        {c?.tokens ? c.tokens.toLocaleString("pt-PT") : "—"}
+                        {c?.tokens ? formataInteiro(c.tokens) : "—"}
                         {c?.percentagem != null && (
                           <span
                             className={`ml-1 text-xs ${c.excedido ? "text-perigo" : "text-texto-suave"}`}

@@ -81,6 +81,7 @@ export function Confirmar({
   rotuloConfirmar,
   rotuloOcupado,
   rotuloCancelar = "Manter",
+  aoCancelar,
   variante = "perigo",
 }: {
   aberto: boolean;
@@ -92,6 +93,15 @@ export function Confirmar({
   rotuloConfirmar: string;
   rotuloOcupado: string;
   rotuloCancelar?: string;
+  /**
+   * O que fazer quando a pessoa escolhe NÃO confirmar.
+   *
+   * Nem toda a pergunta é «apagar ou manter». Há confirmações em que recusar é
+   * uma escolha com consequência — «gravar agora ou continuar a editar» — e
+   * sem isto o botão de recusa fechava a caixa e não fazia nada, o que se lê
+   * como um botão avariado.
+   */
+  aoCancelar?: () => void;
   variante?: "perigo" | "primario";
 }) {
   return (
@@ -109,7 +119,9 @@ export function Confirmar({
           </AlertDialog.Description>
           <div className="mt-5 flex justify-end gap-2">
             <AlertDialog.Cancel asChild>
-              <Botao variante="neutro">{rotuloCancelar}</Botao>
+              <Botao variante="neutro" onClick={aoCancelar}>
+                {rotuloCancelar}
+              </Botao>
             </AlertDialog.Cancel>
             <Botao variante={variante} onClick={aoConfirmar} disabled={ocupado}>
               {ocupado ? rotuloOcupado : rotuloConfirmar}

@@ -44,6 +44,12 @@ class Colaborador(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     salario_base: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
     subsidios: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
     subsidio_ferias: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
+    #: Percentagem do salário base, quando o subsídio de férias é calculado
+    #: assim em vez de escrito em kwanzas. O VALOR CONTINUA A SER O QUE MANDA:
+    #: guarda-se a percentagem para se saber como foi calculado e para o valor
+    #: acompanhar uma mudança de salário — o processamento lê `subsidio_ferias`
+    #: e não precisa de saber que isto existe.
+    subsidio_ferias_perc: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
     subsidio_natal: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
     subs_nao_sujeitos: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
 

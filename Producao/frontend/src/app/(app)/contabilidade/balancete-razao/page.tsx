@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import useSWR from "swr";
-
+import { CampoData } from "@/components/contabilidade/CampoData";
+import { SelectorPeriodo } from "@/components/contabilidade/SelectorPeriodo";
 import {
   ACarregar,
   Alerta,
@@ -24,7 +25,7 @@ import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
-import { useExercicios, usePeriodos } from "@/lib/hooks";
+import { useExercicios } from "@/lib/hooks";
 
 interface ParDC {
   d: string;
@@ -55,7 +56,6 @@ interface BalanceteRazao {
 export default function BalanceteRazao() {
   const { empresa } = useAuth();
   const { exercicios, activo } = useExercicios();
-  const { periodos } = usePeriodos();
 
   const [exercicioId, setExercicioId] = useState<string | undefined>();
   const [de, setDe] = useState("");
@@ -95,24 +95,17 @@ export default function BalanceteRazao() {
           }))}
           larguraMinima="13rem"
         />
-        <Campo rotulo="Período começa em">
-          <Entrada
-            type="date"
-            value={de}
-            onChange={(e) => setDe(e.target.value)}
-          />
-        </Campo>
-        <Selector
+        <CampoData
+          rotulo="Período começa em"
+          valor={de}
+          aoMudar={setDe}
+          exercicioId={exercicioId}
+        />
+        <SelectorPeriodo
           rotulo="Até ao período"
           valor={mes}
           aoMudar={setMes}
-          opcoes={[
-            { valor: "", rotulo: "Todo o exercício" },
-            ...periodos.map((x) => ({
-              valor: x.codigo,
-              rotulo: `${x.codigo} — ${x.nome}`,
-            })),
-          ]}
+          rotuloTodos="Todo o exercício"
           larguraMinima="14rem"
         />
       </BarraFiltros>

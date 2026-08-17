@@ -103,6 +103,9 @@ class ColaboradorEntrada(BaseModel):
     # ---- Subsídios e férias ----
     dias_ferias: int = 22
     subsidio_ferias: Decimal = Decimal("0")
+    #: Em percentagem do salário base, em alternativa ao valor em kwanzas.
+    #: Dado isto, o valor é calculado aqui — ver `_subsidio_de_ferias`.
+    subsidio_ferias_perc: Decimal | None = Field(default=None, ge=0, le=100)
     subsidio_natal: Decimal = Decimal("0")
 
     # ---- Habilitações ----
@@ -110,13 +113,68 @@ class ColaboradorEntrada(BaseModel):
     notas: str | None = None
 
     @model_validator(mode="after")
-    def _identificacao_minima(self):
-        if not (self.nif or self.num_documento):
+    def _subsidio_de_ferias(self):
+        """Percentagem do salário base, quando é assim que se calcula.
+
+        O valor em kwanzas continua a ser o que o processamento lê. Calcular
+        aqui — e não no motor de cálculo — é o que faz esta alteração não tocar
+        em nenhuma regra contabilística: para tudo o que vem a jusante, o
+        subsídio continua a ser um número escrito na ficha.
+        """
+        if self.subsidio_ferias_perc is not None and self.subsidio_ferias_perc > 0:
+            self.subsidio_ferias = (
+                self.salario_base * self.subsidio_ferias_perc / 100
+            ).quantize(Decimal("0.01"))
+        return self
+
+    @model_validator(mode="after")
+    def _ficha_completa(self):
+        """O que uma ficha tem de ter para o colaborador ser processável.
+
+        NÃO É UMA LISTA DE PREFERÊNCIAS. Cada um destes campos é exigido por
+        alguma coisa a jusante, e sem ele o que falha é o processamento ou uma
+        declaração — mais tarde, e a quem não teve nada que ver com o
+        preenchimento:
+
+        - **NIF**, **nome**, **nº de Segurança Social**, **província** e
+          **município**: são cinco das catorze colunas do Mapa de
+          Remunerações (Modelo IRT A2.1). Sem elas o mapa sai incompleto e a
+          AGT recusa o ficheiro.
+        - **Salário base**: sem ele não há folha; um colaborador a zero entra
+          no processamento e sai com líquido zero, sem ninguém reparar.
+        - **Morada** e **localidade**: identificam o trabalhador nos mapas e
+          nos recibos.
+
+        A verificação está aqui, no servidor, e não só no ecrã: um formulário
+        ajuda quem o usa, mas quem garante é quem grava.
+        """
+        obrigatorios = [
+            ("nome", self.nome, "o nome"),
+            ("nif", self.nif, "o NIF"),
+            ("num_ss", self.num_ss, "o nº de Segurança Social (INSS)"),
+            ("provincia", self.provincia, "a província"),
+            ("municipio", self.municipio, "o município"),
+            ("morada", self.morada, "a morada"),
+            ("localidade", self.localidade, "a localidade"),
+        ]
+        em_falta = [
+            rotulo for _, valor, rotulo in obrigatorios if not (valor or "").strip()
+        ]
+        if em_falta:
+            lista = ", ".join(em_falta[:-1])
+            ultimo = em_falta[-1]
+            faltam = f"{lista} e {ultimo}" if lista else ultimo
             raise ValueError(
-                "Indique o NIF ou o número do documento de identificação — "
-                "sem um dos dois, o colaborador não pode entrar no Mapa de "
-                "Remunerações."
+                f"Falta preencher {faltam}. São campos exigidos pelo Mapa de "
+                "Remunerações e pelo processamento salarial."
             )
+
+        if self.salario_base <= 0:
+            raise ValueError(
+                "O salário base tem de ser maior do que zero — sem ele o "
+                "colaborador entra no processamento e sai com líquido zero."
+            )
+
         if not (self.telefone or self.telemovel or self.email):
             raise ValueError(
                 "Indique pelo menos um contacto: telefone, telemóvel ou "
@@ -254,6 +312,7 @@ def _colaborador_publico(c: Colaborador) -> dict:
         "subs_nao_sujeitos": c.subs_nao_sujeitos,
         "forma_pagamento": c.forma_pagamento, "banco": c.banco, "iban": c.iban,
         "dias_ferias": c.dias_ferias, "subsidio_ferias": c.subsidio_ferias,
+        "subsidio_ferias_perc": c.subsidio_ferias_perc,
         "subsidio_natal": c.subsidio_natal,
         "habilitacoes": c.habilitacoes, "notas": c.notas,
     }

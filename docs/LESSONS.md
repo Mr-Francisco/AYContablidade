@@ -201,3 +201,5 @@
 - Rota paginada no servidor (`{linhas, total}`) lida como lista no cliente rebenta com «is not iterable» e leva o ecrã inteiro. Verificar as duas pontas quando se acrescenta paginação.
 - O guarda de rotas tem de deixar passar `opengraph-image`, `manifest.webmanifest` e afins: quem lê uma pré-visualização chega sem sessão e apanhava 307 — a partilha ficava sem imagem.
 - `NEXT_PUBLIC_SITE_URL` em produção não é opcional: sem ele, canónica, `og:url` e sitemap apontam para `localhost`.
+- Uma rota que devolve `{linhas, total}` lida no cliente como lista rebenta com «is not iterable» e leva o ecrã inteiro atrás: ao paginar uma rota, procurar TODOS os consumidores dela.
+- `flex-1` não encolhe abaixo do conteúdo sem `min-h-0` — o `overflow-y-auto` nunca chega a agir e a página passa a ser mais alta do que o ecrã.

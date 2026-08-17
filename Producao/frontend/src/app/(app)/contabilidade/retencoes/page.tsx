@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-
+import { SelectorPeriodo } from "@/components/contabilidade/SelectorPeriodo";
 import {
   ACarregar,
   Alerta,
@@ -25,7 +25,7 @@ import { CaixaHistorico } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
-import { useExercicios, usePeriodos } from "@/lib/hooks";
+import { useExercicios } from "@/lib/hooks";
 
 interface LinhaRetencao {
   data: string;
@@ -54,7 +54,6 @@ const CORES_TIPO: Record<string, string> = {
 export default function Retencoes() {
   const { empresa } = useAuth();
   const { exercicios, activo } = useExercicios();
-  const { periodos } = usePeriodos();
   const [exercicioId, setExercicioId] = useState<string | undefined>();
   const [mes, setMes] = useState("");
 
@@ -102,17 +101,11 @@ export default function Retencoes() {
           }))}
           larguraMinima="13rem"
         />
-        <Selector
+        <SelectorPeriodo
           rotulo="Período"
           valor={mes}
           aoMudar={setMes}
-          opcoes={[
-            { valor: "", rotulo: "Todo o exercício" },
-            ...periodos.map((x) => ({
-              valor: x.codigo,
-              rotulo: `${x.codigo} — ${x.nome}`,
-            })),
-          ]}
+          rotuloTodos="Todo o exercício"
           larguraMinima="14rem"
         />
       </BarraFiltros>
