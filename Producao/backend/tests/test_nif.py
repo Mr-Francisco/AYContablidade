@@ -147,3 +147,57 @@ def test_a_rota_existe_e_exige_sessao():
     fonte = inspect.getsource(nif_router)
     assert "UtilizadorAtual" in fonte, "a rota tem de exigir sessão"
     assert "limiter.limit" in fonte, "a rota tem de ter limite de pedidos"
+
+
+# ---------------------------------------------------------------------------
+# Inadimplência — o campo que faltava
+# ---------------------------------------------------------------------------
+def test_inadimplente_quando_a_agt_o_diz():
+    """Verificado contra empresas reais em 17 de Agosto de 2026.
+
+    A ETU ENERGIAS BLOCO 17/06 (SU), SA (NIF 5417010944) aparece como
+    inadimplente na consulta oficial; a A CASA DOS PERFUMES, LDA (5402132186)
+    não. Quem vai abrir crédito a um cliente quer saber isto antes.
+    """
+    r = svc._do_contribuinte(_resposta_agt(indicadorInadimplente="true"), "5417010944")
+    assert r["inadimplente"] is True
+
+
+def test_nao_inadimplente():
+    r = svc._do_contribuinte(_resposta_agt(indicadorInadimplente="false"), "5402132186")
+    assert r["inadimplente"] is False
+
+
+def test_sem_o_campo_fica_por_saber_e_nao_por_negado():
+    """`None` e não `False`.
+
+    A chave exacta não está documentada — o portal de documentação da AGT só
+    cobre a Facturação Electrónica. Enquanto não se confirmar, dizer «não é
+    inadimplente» sem o servidor o ter dito seria uma afirmação inventada sobre
+    a situação fiscal de uma empresa.
+    """
+    r = svc._do_contribuinte(_resposta_agt(), "5402132186")
+    assert r["inadimplente"] is None
+
+
+@pytest.mark.parametrize("bruto,esperado", [
+    ("S", True), ("Sim", True), (True, True), ("1", True),
+    ("N", False), ("nao", False), (False, False), ("0", False),
+    (None, None),
+])
+def test_le_as_varias_formas_de_sim_e_nao(bruto, esperado):
+    assert svc._booleano(bruto) is esperado
+
+
+def test_autenticacao_basic_como_o_servico_pede():
+    """O serviço responde `WWW-Authenticate: Basic realm=owsm`.
+
+    O Piloto mandava as credenciais em cabeçalhos `Username`/`Password`. Contra
+    o serviço real, o que a cancela pede é Basic — testado nos dois ambientes a
+    17 de Agosto de 2026. Mandam-se as duas formas.
+    """
+    import inspect
+
+    fonte = inspect.getsource(svc.consultar)
+    assert "Authorization" in fonte and "Basic" in fonte
+    assert "Username" in fonte, "manter também o formato do Piloto"

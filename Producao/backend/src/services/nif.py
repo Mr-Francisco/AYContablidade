@@ -18,6 +18,7 @@ local e não da AGT. É a diferença entre «não sei» e «não perguntei».
 
 from __future__ import annotations
 
+import base64
 import re
 from typing import Any
 
@@ -115,6 +116,25 @@ def _resposta_local(numero: str) -> dict[str, Any]:
     }
 
 
+def _booleano(*valores: Any) -> bool | None:
+    """O primeiro valor que exista, lido como sim/não. `None` se nenhum existir.
+
+    Distinguir «não» de «não sei» é o ponto: um campo em falta não pode
+    passar por uma resposta negativa.
+    """
+    for v in valores:
+        if v is None:
+            continue
+        if isinstance(v, bool):
+            return v
+        texto = str(v).strip().lower()
+        if texto in {"true", "s", "sim", "1", "y", "yes"}:
+            return True
+        if texto in {"false", "n", "nao", "não", "0"}:
+            return False
+    return None
+
+
 def _do_contribuinte(dados: dict[str, Any], numero: str) -> dict[str, Any]:
     """Traduz a resposta da AGT para o vocabulário da aplicação."""
     envelope = dados.get("ObterContribuinte") or {}
@@ -156,6 +176,23 @@ def _do_contribuinte(dados: dict[str, Any], numero: str) -> dict[str, Any]:
         "regime_rotulo": REGIMES.get(regime, regime),
         "regime_na_ficha": REGIME_NA_FICHA.get(regime, ""),
         "nao_residente": str(c.get("indicadorNaoResidente")).lower() == "true",
+        # INADIMPLENTE — «tem obrigações fiscais por cumprir».
+        #
+        # A consulta pública da AGT mostra este campo e nós não o trazíamos.
+        # Não é um pormenor: verificado a 17 de Agosto de 2026 contra empresas
+        # reais, a ETU ENERGIAS BLOCO 17/06 (SU), SA (5417010944) aparece como
+        # inadimplente e a A CASA DOS PERFUMES, LDA (5402132186) não. Quem vai
+        # abrir crédito a um cliente quer saber isto ANTES.
+        #
+        # A chave exacta no JSON da AGT não está documentada publicamente — o
+        # portal de documentação só cobre a Facturação Electrónica. Tentam-se
+        # as três formas prováveis e, na dúvida, fica `None`: dizer «não é
+        # inadimplente» sem saber seria pior do que não dizer nada.
+        "inadimplente": _booleano(
+            c.get("indicadorInadimplente"),
+            c.get("inadimplente"),
+            c.get("indicadorIncumprimento"),
+        ),
         "mensagem": (
             f"Contribuinte {ESTADOS.get(estado, estado).lower()} — com "
             "restrições legais."
@@ -181,8 +218,25 @@ async def consultar(numero: str, tipo_documento: str = "NIF") -> dict[str, Any]:
     if not (s.AGT_ATIVO and s.AGT_USERNAME and s.AGT_PASSWORD):
         return _resposta_local(numero)
 
+    # AUTENTICAÇÃO: os dois formatos, e não um.
+    #
+    # O Piloto enviava as credenciais em cabeçalhos próprios `Username` e
+    # `Password`. Contra o serviço real — testado a 17 de Agosto de 2026, nos
+    # dois ambientes — a resposta é:
+    #
+    #     HTTP/1.1 401 Unauthorized
+    #     Www-authenticate: Basic realm=owsm
+    #
+    # É um Oracle Web Services Manager à frente, e o que ele pede é **Basic**
+    # normal. Manda-se o Basic e mantêm-se os cabeçalhos do Piloto: se o
+    # serviço aceitar qualquer um dos dois, funciona; e se um dia trocarem a
+    # cancela, não é preciso descobrir isto outra vez.
+    basica = base64.b64encode(
+        f"{s.AGT_USERNAME}:{s.AGT_PASSWORD}".encode()
+    ).decode()
     cabecalhos = {
         "Accept": "application/json",
+        "Authorization": f"Basic {basica}",
         "Username": s.AGT_USERNAME,
         "Password": s.AGT_PASSWORD,
     }
