@@ -14,7 +14,17 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from src.db.base import agora
-from src.db.models.comercial import TIPOS_DOC, SequenciaVenda, Venda, VendaLinha
+from src.core import documentos_fiscais as docs_fiscais
+from src.db.base import agora
+from src.db.models.comercial import (
+    TIPOS_DOC,
+    SequenciaVenda,
+    SerieDocumento,
+    Venda,
+    VendaLinha,
+)
+from src.services.facturacao import cadeia
+from src.services.facturacao import series as svc_series
 from src.db.models.tenancy import ConfigEmpresa
 from src.db.models.terceiros import Terceiro
 from src.services.contabilidade import (
@@ -325,8 +335,58 @@ def emitir(
     conta_pag = conta or venda.conta_recebimento or c2["conta_caixa"]
     mes = f"{venda.data.month:02d}"
 
+    # ---- Numeração e cadeia de resumos ------------------------------------
+    #
+    # A NUMERAÇÃO PASSA PELA SÉRIE. O `proximo_numero` antigo dava
+    # `FT 2026/0001` a partir de um contador por prefixo; a lei quer numeração
+    # por tipo E por ano, e a AGT quer o código da série dentro do número
+    # (`FT FT2026S1/00001`). É a série que o dá agora.
+    #
+    # A pró-forma não leva numeração fiscal — não é documento fiscal, e gastar
+    # números de série com ela seria abrir buracos na sequência que a AGT vê.
     if not venda.numero:
-        venda.numero = proximo_numero(db, empresa_id, td["cod"], venda.data.year)
+        if svc_series.pode_emitir(td["cod"]):
+            serie, sequencia, numero = svc_series.proximo_numero(
+                db, empresa_id=empresa_id, tipo_doc=td["cod"], ano=venda.data.year
+            )
+            venda.serie_id = serie.id
+            venda.sequencia = sequencia
+            venda.numero = numero
+        else:
+            venda.numero = proximo_numero(db, empresa_id, td["cod"], venda.data.year)
+
+    # A HORA A QUE ENTROU NO SISTEMA. Não é a data do documento — um documento
+    # pode ser datado de ontem e ser lançado hoje — e é o que distingue duas
+    # facturas do mesmo dia dentro da cadeia. Vai no SAF-T e na AGT como
+    # `systemEntryDate`.
+    if venda.entrada_sistema is None:
+        venda.entrada_sistema = agora()
+
+    # O RESUMO ENCADEADO. Cada documento leva o resumo do anterior da mesma
+    # série: apagar ou alterar um pelo meio parte a cadeia de forma
+    # detectável. É o que o SAF-T pede em `Hash`, e é o que o
+    # `codigo_validacao` que aqui estava NÃO fazia — era um resumo do número
+    # com o total, sem elo nenhum ao documento anterior.
+    if venda.serie_id and not venda.hash_doc:
+        serie_doc = db.get(SerieDocumento, venda.serie_id)
+        anterior = serie_doc.ultimo_hash if serie_doc else None
+        venda.hash_anterior = anterior
+        venda.hash_doc = cadeia.resumir(
+            data_doc=venda.data,
+            entrada_sistema=venda.entrada_sistema,
+            numero=venda.numero or "",
+            total=venda.total,
+            hash_anterior=anterior,
+        )
+        venda.hash_controlo = cadeia.codigo_de_controlo(venda.hash_doc)
+        if serie_doc is not None:
+            serie_doc.ultimo_hash = venda.hash_doc
+
+    # Comunicável à AGT? Uma pró-forma ou uma guia não são, e marcá-las como
+    # «por comunicar» punha-as numa fila onde nunca sairiam.
+    venda.estado_agt = (
+        "por_comunicar" if docs_fiscais.comunicavel(td["cod"]) else "nao_aplicavel"
+    )
 
     diario, documento_cod = c2["diario"], doc_venda
     linhas: list[dict] = []

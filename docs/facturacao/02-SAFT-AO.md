@@ -101,6 +101,25 @@ Gerar o XML, validá-lo **contra o XSD** antes de o entregar, e guardar o que
 foi entregue. Um SAF-T que não passa no validador da AGT é uma entrega falhada,
 e o prazo não pára.
 
+## Estado da implementação
+
+| Passo | Estado |
+|---|---|
+| 1. Tabela de impostos normalizada | ✅ `core/impostos.py` — as seis taxas em vigor, com motivo obrigatório a zero |
+| 1b. Tradução dos tipos de documento | ✅ `core/documentos_fiscais.py` — os nossos onze tipos → tabelas da AGT |
+| 2. Séries como entidade | ✅ `services/facturacao/series.py` + tabela `series_documento` |
+| 3. Encadeamento por hash | ✅ `services/facturacao/cadeia.py`, ligado à emissão |
+| 4. Campos em falta | ⚠️ na base (`entrada_sistema`, `local_operacao`, `cliente_pais`, `motivo_isencao`); falta o EAC e o preenchimento no ecrã |
+| 5. Gerador de XML | ⬜ por fazer |
+| 6. Ecrã de exportação | ⬜ por fazer |
+
+**O que já acontece numa emissão real** (verificado em
+`tests/test_emissao_com_serie.py`): o documento recebe número da série no
+formato `FT FT2026S1/00001`, guarda a hora de entrada no sistema, calcula o
+resumo encadeado com o do documento anterior, grava o código de controlo de
+quatro caracteres e fica marcado como «por comunicar» — ou «não aplicável», se
+for uma pró-forma.
+
 ## Plano de implementação — por onde começar
 
 Pela ordem em que cada passo desbloqueia o seguinte:
