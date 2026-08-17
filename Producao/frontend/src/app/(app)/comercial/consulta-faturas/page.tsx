@@ -1,14 +1,16 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { FileText, Search, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useDeferredValue, useState } from "react";
 import useSWR from "swr";
+import { DocumentoLegal } from "@/components/comercial/DocumentoLegal";
 import { SelectorDeCliente } from "@/components/comercial/SelectorDeCliente";
 import { GrelhaKpis } from "@/components/painel";
 import {
   ACarregar,
   BarraFiltros,
+  Botao,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -243,6 +245,7 @@ function DetalheFactura({
   moeda: string;
   aoFechar: () => void;
 }) {
+  const [documento, setDocumento] = useState(false);
   const { data, isLoading } = useSWR<Venda>(
     `/api/comercial/vendas/${id}`,
     buscador,
@@ -257,16 +260,37 @@ function DetalheFactura({
             <Dialog.Title className="truncate text-[15px] font-bold">
               {data?.tipo_doc} {data?.numero}
             </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+            <div className="flex items-center gap-2">
+              {/* O DOCUMENTO LEGAL — o que se imprime e se entrega ao cliente,
+                  no modelo do Piloto. Este diálogo mostra os dados; aquele
+                  mostra o documento. São coisas diferentes e ambas servem. */}
+              <Botao
+                tamanho="pequeno"
+                onClick={() => setDocumento(true)}
+                disabled={!data}
+                motivoBloqueio={!data ? "A carregar o documento…" : undefined}
               >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
+                <FileText size={14} />
+                Ver documento
+              </Botao>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  aria-label="Fechar"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+                >
+                  <X size={15} />
+                </button>
+              </Dialog.Close>
+            </div>
           </div>
+
+          {documento && data && (
+            <DocumentoLegal
+              documento={data as never}
+              aoFechar={() => setDocumento(false)}
+            />
+          )}
 
           <div className="min-w-0 overflow-auto p-5">
             {isLoading || !data ? (

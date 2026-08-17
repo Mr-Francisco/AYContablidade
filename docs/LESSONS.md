@@ -207,3 +207,4 @@
 - `atualizado_em` é NULLABLE em todas as tabelas (o `TimestampMixin` só o preenche ao alterar): pôr NOT NULL numa migração rebenta a primeira inserção, mesmo com `server_default`.
 - Tipos de documento da AGT e tipos de movimento são tabelas DIFERENTES: uma guia de remessa nunca está na lista das facturas.
 - Gerar um ficheiro oficial a partir de dados REAIS antes de dar por feito: o SAF-T passava nos testes sintéticos e era recusado com clientes de verdade (UUID de 36 no CustomerID, limite 30).
+- `select(Empresa).limit(1)` sem ordenação num teste é uma bomba-relógio: a empresa escolhida passa a depender do que outros testes inseriram, e o teste passa sozinho e falha na suite.

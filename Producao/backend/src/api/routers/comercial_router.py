@@ -350,6 +350,19 @@ def _venda_publica(v: Venda) -> dict:
         "data": v.data, "cliente_id": v.cliente_id, "cliente_nome": v.cliente_nome,
         "subtotal": v.subtotal, "iva": v.iva, "total": v.total, "estado": v.estado,
         "numero_op": v.numero_op, "codigo_validacao": v.codigo_validacao,
+        # ---- Facturação legal ----
+        # O `hash_controlo` é o que se IMPRIME no documento. O
+        # `codigo_validacao` fica porque os documentos antigos só têm esse, mas
+        # o que vale é este: vem da cadeia de resumos e não de um cálculo
+        # inventado sobre o número e o total.
+        "hash_controlo": v.hash_controlo,
+        "iva_perc": v.iva_perc,
+        "emitido_em": v.emitido_em,
+        "entrada_sistema": v.entrada_sistema,
+        "estado_saft": v.estado_saft,
+        "estado_agt": v.estado_agt,
+        "doc_origem_num": v.doc_origem_num,
+        "local_operacao": v.local_operacao,
     }
 
 
@@ -426,9 +439,19 @@ def obter_venda(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
         "vendedor_id": v.vendedor_id, "iva_perc": v.iva_perc, "subtotal": v.subtotal,
         "iva": v.iva, "total": v.total, "estado": v.estado, "numero_op": v.numero_op,
         "codigo_validacao": v.codigo_validacao, "emitido_em": v.emitido_em,
+        # O documento legal precisa disto para se imprimir como a lei manda.
+        "hash_controlo": v.hash_controlo,
+        "entrada_sistema": v.entrada_sistema,
+        "estado_saft": v.estado_saft,
+        "estado_agt": v.estado_agt,
+        "doc_origem_num": v.doc_origem_num,
+        "local_operacao": v.local_operacao,
+        "cliente_pais": v.cliente_pais,
         "linhas": [
             {"ordem": l.ordem, "artigo_id": l.artigo_id, "descricao": l.descricao,
-             "unidade": l.unidade, "qtd": l.qtd, "preco": l.preco, "total": l.total}
+             "unidade": l.unidade, "qtd": l.qtd, "preco": l.preco, "total": l.total,
+             "taxa_codigo": l.taxa_codigo, "taxa_perc": l.taxa_perc,
+             "motivo_isencao": l.motivo_isencao}
             for l in v.linhas
         ],
     }

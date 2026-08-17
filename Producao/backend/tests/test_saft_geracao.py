@@ -54,7 +54,17 @@ def _limpar(db):
 
 @pytest.fixture
 def empresa(base):
-    e = base.scalar(select(Empresa).limit(1))
+    """A empresa de demonstração, e não «a primeira que aparecer».
+
+    REGRESSÃO: com `select(Empresa).limit(1)` sem ordenação, a empresa
+    escolhida dependia do que outros testes tivessem inserido antes — e os
+    testes de isolamento por empresa criam duas. Os testes passavam sozinhos e
+    falhavam na suite completa, que é a pior forma de falhar: parece
+    intermitente e não é.
+    """
+    e = base.scalar(
+        select(Empresa).where(Empresa.codigo == "DC001")
+    ) or base.scalar(select(Empresa).order_by(Empresa.criado_em).limit(1))
     assert e is not None
     # O ficheiro precisa destes; a empresa de demonstração pode não os ter.
     if not e.morada:

@@ -184,8 +184,20 @@ def _mestres(
 
     # ---- Clientes ----
     ids = {v.cliente_id for v in vendas if v.cliente_id}
+    # O FILTRO POR EMPRESA É REDUNDANTE — os ids vieram das vendas desta
+    # empresa — e fica na mesma. As facturas de uma empresa NUNCA se misturam
+    # com as de outra, e é a regra que não se pode confiar a uma cadeia de
+    # deduções: basta um dado mal ligado para o ficheiro de uma empresa levar
+    # o nome de um cliente de outra. Aqui, se isso acontecer, o cliente não
+    # aparece — em vez de aparecer indevidamente.
     clientes = (
-        list(db.scalars(select(Terceiro).where(Terceiro.id.in_(ids))))
+        list(
+            db.scalars(
+                select(Terceiro).where(
+                    Terceiro.id.in_(ids), Terceiro.empresa_id == empresa.id
+                )
+            )
+        )
         if ids
         else []
     )
@@ -219,7 +231,13 @@ def _mestres(
     # ---- Artigos ----
     artigo_ids = {l.artigo_id for v in vendas for l in v.linhas if l.artigo_id}
     artigos = (
-        list(db.scalars(select(Artigo).where(Artigo.id.in_(artigo_ids))))
+        list(
+            db.scalars(
+                select(Artigo).where(
+                    Artigo.id.in_(artigo_ids), Artigo.empresa_id == empresa.id
+                )
+            )
+        )
         if artigo_ids
         else []
     )

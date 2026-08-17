@@ -101,7 +101,9 @@ export function CampoData({
         aoMudarDia={(v) => aoMudar(`${ano}-${mes}-${v}`)}
       />
       {nota && (
-        <p className="mt-1 text-[11px] leading-tight text-texto-suave">{nota}</p>
+        <p className="mt-1 text-[11px] leading-tight text-texto-suave">
+          {nota}
+        </p>
       )}
     </div>
   );
