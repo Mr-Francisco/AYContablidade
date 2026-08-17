@@ -66,7 +66,16 @@ def cfg_com_default() -> dict:
         "conta_caixa": "4511",
         "conta_banco": "43101",
         "conta_adiantamento": "319121",
-        "software_validacao": "AGT/SGD/2026",
+        # NÚMERO DE VALIDAÇÃO DO SOFTWARE, atribuído pela AGT ao certificar.
+        #
+        # O formato é `NNN/AGT/AAAA` — por exemplo `141/AGT/2026` — e é o
+        # esquema do SAF-T que o impõe (`\d+/AGT/\d{4}|0`). O `0` é previsto
+        # pela norma e quer dizer «ainda não certificado».
+        #
+        # Fica a `0` por omissão de propósito: um número inventado passaria na
+        # validação do ficheiro e seria falso perante a AGT. Preenche-se em
+        # Configurações → Facturação quando a certificação chegar.
+        "software_validacao": "0",
     }
 
 

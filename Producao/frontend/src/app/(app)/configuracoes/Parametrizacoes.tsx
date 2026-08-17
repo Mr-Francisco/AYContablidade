@@ -38,6 +38,8 @@ interface CfgLog {
   diario_saida?: string;
   doc_saida?: string;
   armazem_venda_id?: string;
+  /** Nº de validação do software atribuído pela AGT (`141/AGT/2026`), ou `0`. */
+  software_validacao?: string;
 }
 
 interface Armazem {
@@ -101,6 +103,31 @@ export function Parametrizacoes({
       </p>
 
       <form onSubmit={submeter}>
+        {/* ---- Certificação do software pela AGT ----
+            Fica aqui, no topo e à parte, porque é o único campo desta página
+            que vem DE FORA: é a AGT que o atribui ao certificar o software, e
+            entra em cada factura impressa (DP 71/25, art. 10.º j) e no
+            cabeçalho de cada SAF-T. Sem ele, os ficheiros saem com «0», que a
+            norma aceita e quer dizer «ainda não certificado». */}
+        <div className="mb-4 rounded-xl border border-borda bg-superficie-2 p-3.5">
+          <Campo
+            rotulo="Nº de validação do software (AGT)"
+            dica="No formato 141/AGT/2026, tal como a AGT o atribui. Enquanto não houver certificação, «0» — que é o que a norma prevê e não uma falha."
+            className="max-w-[22rem]"
+          >
+            <Entrada
+              value={campos.software_validacao ?? ""}
+              onChange={(e) => alterar("software_validacao", e.target.value)}
+              placeholder="141/AGT/2026"
+              className="tabular"
+            />
+          </Campo>
+          <p className="mt-2 text-[12px] leading-relaxed text-texto-suave">
+            Vai impresso em cada documento fiscal e no cabeçalho de cada
+            ficheiro SAF-T entregue à AGT.
+          </p>
+        </div>
+
         <label className="mb-3 flex cursor-pointer items-start gap-2 text-sm">
           <input
             type="checkbox"

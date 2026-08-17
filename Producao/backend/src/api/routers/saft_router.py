@@ -30,13 +30,20 @@ class PedidoSaft(BaseModel):
     #: São o mesmo `AuditFile` com blocos diferentes preenchidos.
     tipo: str = Field(default="facturacao", pattern="^(facturacao|compras)$")
     #: Número de validação do software atribuído pela AGT (`141/AGT/2026`), ou
-    #: `0` enquanto não houver certificação.
-    numero_validacao: str = Field(min_length=1, max_length=30)
+    #: `0` enquanto não houver certificação. Em branco, usa-se o que está
+    #: guardado em Configurações → Facturação: escrevê-lo a cada exportação
+    #: era um convite a enganos numa coisa que não muda.
+    numero_validacao: str | None = Field(default=None, max_length=30)
 
 
 def _gerar(db, empresa, dados: "PedidoSaft") -> bytes:
     """O ficheiro do tipo pedido. Um sítio só a decidir qual — dois ramos
     espalhados pelas rotas seriam duas hipóteses de divergirem."""
+    from src.services.comercial import cfg_com
+
+    if not (dados.numero_validacao or "").strip():
+        dados.numero_validacao = cfg_com(db, empresa.id)["software_validacao"]
+
     if dados.tipo == "compras":
         return saft.gerar_compras(
             db, empresa=empresa, de=dados.de, ate=dados.ate,
