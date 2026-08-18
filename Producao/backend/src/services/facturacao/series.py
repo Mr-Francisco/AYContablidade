@@ -107,13 +107,34 @@ def proximo_numero(
         db, empresa_id=empresa_id, tipo_doc=tipo_doc, ano=ano, sufixo=sufixo
     )
 
-    # Relê com bloqueio — entre o `obter_ou_criar` e aqui pode ter entrado
-    # outra emissão.
-    serie = db.scalar(
+    # RELÊ COM BLOQUEIO **E COM `populate_existing`**, e a segunda metade é a
+    # que conta.
+    #
+    # O `with_for_update()` sozinho não chega: o SQLAlchemy emite o
+    # `SELECT … FOR UPDATE`, adquire o bloqueio — e depois devolve o objecto
+    # que já estava no mapa de identidade da sessão, **sem actualizar os
+    # atributos**. Fica-se com a fechadura na mão e o valor velho na memória:
+    # dois processos somam 1 ao mesmo número e atribuem o mesmo.
+    #
+    # Não é teoria. Um teste de carga com 20 processos a emitir 10 facturas
+    # cada deu 200 números atribuídos e apenas 35 diferentes — 165 duplicados.
+    # Numeração de facturas duplicada é uma infracção fiscal, não um defeito
+    # menor, e não se via em uso normal porque com um utilizador de cada vez
+    # não há nada a colidir.
+    # O `flush` antes da releitura é a outra metade do mesmo problema. O
+    # `populate_existing` vai buscar os valores à base — e um incremento ainda
+    # por escrever não está lá. Sem isto, emitir dois documentos na MESMA
+    # transacção dava o mesmo número às duas: a segunda leitura via o valor
+    # anterior ao primeiro incremento. Apanhado pelo teste
+    # `test_a_sequencia_avanca_e_nao_recua`, que emite três seguidos.
+    db.flush()
+
+    serie = db.scalars(
         select(SerieDocumento)
         .where(SerieDocumento.id == serie.id)
         .with_for_update()
-    )
+        .execution_options(populate_existing=True)
+    ).one_or_none()
     if serie is None:  # pragma: no cover — a série foi criada acima
         raise ErroSerie("A série desapareceu durante a emissão.")
 

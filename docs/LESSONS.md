@@ -208,3 +208,5 @@
 - Tipos de documento da AGT e tipos de movimento são tabelas DIFERENTES: uma guia de remessa nunca está na lista das facturas.
 - Gerar um ficheiro oficial a partir de dados REAIS antes de dar por feito: o SAF-T passava nos testes sintéticos e era recusado com clientes de verdade (UUID de 36 no CustomerID, limite 30).
 - `select(Empresa).limit(1)` sem ordenação num teste é uma bomba-relógio: a empresa escolhida passa a depender do que outros testes inseriram, e o teste passa sozinho e falha na suite.
+- `with_for_update()` sozinho NÃO relê: o SQLAlchemy devolve o objecto do mapa de identidade com os valores velhos. Precisa de `populate_existing` E de um `flush` antes — sem isso, 165 números de factura duplicados em 200.
+- Um teste de carga não é luxo: encontrou dois defeitos que nenhum teste unitário via, porque ambos precisavam de concorrência ou de dados sem hora.

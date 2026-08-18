@@ -172,3 +172,43 @@ primeira linha do gerador**, não no fim.
 - Esquema oficial: [`oficial/xsd/SAFTAO1.01_01.xsd`](oficial/xsd/SAFTAO1.01_01.xsd)
 - [Decreto Executivo n.º 74/19](oficial/Decreto-Executivo-74-19-regras-validacao-sistemas.pdf) — regras e requisitos de validação
 - [Comunicado da AGT](oficial/AGT-documento-1173168.pdf) — obrigação e prazos dos dois SAF-T mensais
+
+
+---
+
+## Os três ficheiros, todos feitos e validados
+
+| Ficheiro | `TaxAccountingBasis` | Prazo | Estado |
+|---|---|---|---|
+| **Facturação** | `F` | Dia 20 do mês seguinte | ✅ válido contra o XSD |
+| **Aquisição de bens e serviços** | `A` | Dia 20 do mês seguinte | ✅ válido |
+| **Contabilidade** | `C` | 10 de Abril do ano seguinte | ✅ válido — 1623 contas, 685 KB |
+
+### O que o esquema exige e nenhuma documentação diz
+
+Tudo isto foi descoberto pelo validador, um erro de cada vez:
+
+| Campo | Regra |
+|---|---|
+| `SoftwareValidationNumber` | `\d+/AGT/\d{4}` ou `0` (não certificado) |
+| `ProductID` | `nome/produtor` — um nome solto é recusado |
+| `CustomerID` | máximo 30 caracteres — um UUID tem 36 |
+| `TransactionID` | `AAAA-MM-DD DIÁRIO NÚMERO`, com espaços |
+| `Period` | 1 a 16 — o período 00 do plano angolano não passa |
+| `GLPostingDate` | data, não data-hora |
+| `InvoiceStatusDate`, `SystemEntryDate` | data-**hora**, não data |
+| `Account` | leva saldos de abertura e fecho, antes do `GroupingCategory` |
+| `Lines` | **todos os débitos antes de todos os créditos** |
+| `PurchaseInvoices` | sem totais no bloco, e **sem linhas** nas facturas |
+
+## Desempenho, medido
+
+Contra a base real, com 2000 facturas:
+
+- Gerar o SAF-T: **3,0 segundos** (674 facturas/s)
+- Validar contra o XSD: 0,21 s
+- Ficheiro: 3,3 MB
+- Emissão concorrente: 20 processos, **0 números duplicados**
+- Leitura com a base cheia: mediana 4,1 ms
+
+O guião está em `Producao/backend/scripts/teste_carga.py` e limpa o que cria.

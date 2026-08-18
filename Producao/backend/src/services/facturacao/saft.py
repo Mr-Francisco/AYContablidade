@@ -103,6 +103,18 @@ def _texto(v: Any) -> str:
     return str(v)
 
 
+def _instante_ou_meia_noite(quando: datetime | None, dia: date) -> datetime:
+    """Uma data-hora, sempre.
+
+    Onde o esquema pede `dateTime`, uma `date` é recusada. Sem hora conhecida,
+    meia-noite do próprio dia é o que mais se aproxima da verdade — e é
+    melhor do que inventar uma hora ou do que invalidar o ficheiro.
+    """
+    if quando is not None:
+        return quando
+    return datetime(dia.year, dia.month, dia.day)
+
+
 def _exigir(valor: Any, o_que: str, onde: str) -> Any:
     if valor is None or (isinstance(valor, str) and not valor.strip()):
         raise DadosEmFalta(f"Falta {o_que}. Preencha em {onde} e volte a exportar.")
@@ -349,7 +361,15 @@ def _factura(pai: ET.Element, v: Venda, clientes: dict, artigos: dict) -> None:
 
     ds = ET.SubElement(inv, "DocumentStatus")
     _e(ds, "InvoiceStatus", v.estado_saft or "N")
-    _e(ds, "InvoiceStatusDate", v.anulado_em or v.emitido_em or v.data)
+    # DATA-HORA, e não data. O `InvoiceStatusDate` é `SAFdateTimeType`: um
+    # documento antigo sem hora de emissão caía na data e invalidava o
+    # ficheiro inteiro. Só apareceu num teste de carga com dois mil documentos
+    # sintéticos — nos testes pequenos, todos tinham hora.
+    _e(
+        ds,
+        "InvoiceStatusDate",
+        _instante_ou_meia_noite(v.anulado_em or v.emitido_em, v.data),
+    )
     _e(ds, "SourceID", "SGD")
     # `P` — documento produzido nesta aplicação.
     _e(ds, "SourceBilling", "P")
@@ -367,7 +387,12 @@ def _factura(pai: ET.Element, v: Venda, clientes: dict, artigos: dict) -> None:
     _e(reg, "ThirdPartiesBillingIndicator", 0)
 
     _e(inv, "SourceID", "SGD")
-    _e(inv, "SystemEntryDate", v.entrada_sistema or v.emitido_em or v.data)
+    # Também `dateTime` — mesma armadilha do `InvoiceStatusDate`.
+    _e(
+        inv,
+        "SystemEntryDate",
+        _instante_ou_meia_noite(v.entrada_sistema or v.emitido_em, v.data),
+    )
     _e(inv, "CustomerID", clientes.get(v.cliente_id, "CF"))
 
     for i, l in enumerate(v.linhas, start=1):
@@ -600,6 +625,262 @@ def gerar_compras(
     )
     fornecedores, artigos = _mestres_compras(raiz, db, empresa, compras)
     _documentos_compras(raiz, compras, fornecedores, artigos)
+
+    ET.indent(raiz, space="  ")
+    return ET.tostring(raiz, encoding="utf-8", xml_declaration=True)
+
+
+# ---------------------------------------------------------------------------
+# Contabilidade — o SAF-T anual
+# ---------------------------------------------------------------------------
+def _plano_de_contas(
+    pai: ET.Element, db: Session, empresa: Empresa, de: date, ate: date
+) -> None:
+    """`MasterFiles > GeneralLedgerAccounts` — o plano de contas em PGC-AR.
+
+    Vai INTEIRO, e não só as contas movimentadas: o ficheiro de contabilidade
+    é a fotografia do plano com que a empresa trabalhou no exercício, e uma
+    conta sem movimento no ano continua a fazer parte dele.
+    """
+    from src.db.models.contabilidade import Conta
+
+    m = ET.SubElement(pai, "MasterFiles")
+    gl = ET.SubElement(m, "GeneralLedgerAccounts")
+
+    contas = list(
+        db.scalars(
+            select(Conta)
+            .where(Conta.empresa_id == empresa.id)
+            .order_by(Conta.codigo)
+        )
+    )
+    # OS SALDOS DE ABERTURA E FECHO. A ordem que o esquema fixa é
+    # AccountID, AccountDescription, Opening(Debit|Credit)Balance,
+    # Closing(Debit|Credit)Balance, GroupingCategory — e não se altera.
+    #
+    # Calculam-se a partir dos lançamentos: abertura é o acumulado ATÉ ao
+    # início do período, fecho é o acumulado até ao fim. Não se inventa: uma
+    # conta sem movimento fica a zero, que é o seu saldo verdadeiro.
+    abertura = _saldos_ate(db, empresa, de)
+    fecho = _saldos_ate(db, empresa, ate, inclusive=True)
+
+    for c in contas:
+        el = ET.SubElement(gl, "Account")
+        _e(el, "AccountID", c.codigo)
+        _e(el, "AccountDescription", c.nome)
+
+        ad, ac = abertura.get(c.codigo, (Decimal(0), Decimal(0)))
+        fd, fc = fecho.get(c.codigo, (Decimal(0), Decimal(0)))
+        _e(el, "OpeningDebitBalance", ad)
+        _e(el, "OpeningCreditBalance", ac)
+        _e(el, "ClosingDebitBalance", fd)
+        _e(el, "ClosingCreditBalance", fc)
+
+        # `GM` conta de movimento, `GR` integradora — o campo `tipo` do plano
+        # já o diz: M movimento, I integradora, R razão.
+        _e(el, "GroupingCategory", "GM" if (c.tipo or "M") == "M" else "GR")
+
+
+def _saldos_ate(
+    db: Session, empresa: Empresa, limite: date, *, inclusive: bool = False
+) -> dict[str, tuple[Decimal, Decimal]]:
+    """Débito e crédito acumulados por conta, até uma data.
+
+    Uma consulta agregada e não um ciclo por conta: com 1600 contas e milhares
+    de linhas, percorrer conta a conta seriam 1600 consultas para responder a
+    uma pergunta que a base responde de uma vez.
+    """
+    from sqlalchemy import func
+
+    from src.db.models.contabilidade import Lancamento, LancamentoLinha
+
+    condicao = (
+        Lancamento.data <= limite if inclusive else Lancamento.data < limite
+    )
+    linhas = db.execute(
+        select(
+            LancamentoLinha.conta_codigo,
+            func.coalesce(func.sum(LancamentoLinha.debito), 0),
+            func.coalesce(func.sum(LancamentoLinha.credito), 0),
+        )
+        .join(Lancamento, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(Lancamento.empresa_id == empresa.id, condicao)
+        .group_by(LancamentoLinha.conta_codigo)
+    ).all()
+    return {c: (Decimal(str(d)), Decimal(str(cr))) for c, d, cr in linhas}
+
+
+def _lancamentos(
+    pai: ET.Element, db: Session, empresa: Empresa, de: date, ate: date
+) -> None:
+    """`GeneralLedgerEntries` — os lançamentos do exercício.
+
+    O `TransactionType` vem do PERÍODO, e não de uma escolha nossa: os
+    períodos 13, 14 e 15 do plano angolano são exactamente as categorias que a
+    norma distingue — regularizações e apuramentos —, e a correspondência é
+    directa. Um lançamento do período 14 é um apuramento, e dizê-lo `N` seria
+    declarar mal uma coisa que o sistema já sabe.
+    """
+    from src.db.models.contabilidade import Lancamento
+
+    lancamentos = list(
+        db.scalars(
+            select(Lancamento)
+            .where(
+                Lancamento.empresa_id == empresa.id,
+                Lancamento.data >= de,
+                Lancamento.data <= ate,
+            )
+            .order_by(Lancamento.data, Lancamento.numero_op)
+        )
+    )
+
+    gle = ET.SubElement(pai, "GeneralLedgerEntries")
+    _e(gle, "NumberOfEntries", len(lancamentos))
+
+    total_d = sum(
+        (l.debito or Decimal(0) for x in lancamentos for l in x.linhas), Decimal(0)
+    )
+    total_c = sum(
+        (l.credito or Decimal(0) for x in lancamentos for l in x.linhas), Decimal(0)
+    )
+    _e(gle, "TotalDebit", total_d)
+    _e(gle, "TotalCredit", total_c)
+
+    # Um diário por grupo, como a norma quer.
+    por_diario: dict[str, list] = {}
+    for x in lancamentos:
+        por_diario.setdefault(x.diario_codigo or "1", []).append(x)
+
+    for diario, docs in sorted(por_diario.items()):
+        j = ET.SubElement(gle, "Journal")
+        _e(j, "JournalID", diario)
+        _e(j, "Description", f"Diário {diario}")
+
+        for x in docs:
+            tr = ET.SubElement(j, "Transaction")
+            # O `TransactionID` TEM UMA FORMA FIXA no esquema:
+            # `AAAA-MM-DD DIÁRIO NÚMERO`, com espaços a separar. O nosso
+            # número de operação sozinho («00/101.001») é recusado. Foi o
+            # validador que o disse — a documentação não o refere.
+            _e(
+                tr,
+                "TransactionID",
+                f"{x.data.isoformat()} {x.diario_codigo} "
+                f"{(x.numero_op or str(x.numero)).replace(' ', '')}",
+            )
+            _e(tr, "Period", _periodo_saft(x.mes, x.data))
+            _e(tr, "TransactionDate", x.data)
+            _e(tr, "SourceID", "SGD")
+            _e(tr, "Description", x.descricao or "Lançamento")
+            _e(tr, "DocArchivalNumber", x.numero_op or "—")
+            _e(tr, "TransactionType", _tipo_de_transaccao(x.mes))
+            # DATA, e não data-hora: o esquema usa `SAFdateType`.
+            _e(
+                tr,
+                "GLPostingDate",
+                (x.criado_em.date() if x.criado_em else x.data),
+            )
+
+            linhas = ET.SubElement(tr, "Lines")
+
+            # PRIMEIRO OS DÉBITOS, DEPOIS OS CRÉDITOS. O esquema declara
+            # `DebitLine*` seguido de `CreditLine*` numa `xs:sequence`, e
+            # intercalá-los pela ordem em que foram escritos — que é a ordem
+            # natural de um lançamento — invalida o ficheiro. O `RecordID`
+            # guarda a posição original de cada linha.
+            debitos = [
+                (i, l)
+                for i, l in enumerate(x.linhas, start=1)
+                if (l.debito or Decimal(0)) > 0
+            ]
+            creditos = [
+                (i, l)
+                for i, l in enumerate(x.linhas, start=1)
+                if (l.debito or Decimal(0)) <= 0
+            ]
+
+            for nome, grupo, campo in (
+                ("DebitLine", debitos, "DebitAmount"),
+                ("CreditLine", creditos, "CreditAmount"),
+            ):
+                for i, l in grupo:
+                    el = ET.SubElement(linhas, nome)
+                    _e(el, "RecordID", str(i))
+                    _e(el, "AccountID", l.conta_codigo)
+                    _e(el, "SystemEntryDate", x.criado_em or x.data)
+                    _e(el, "Description", l.descricao or x.descricao or "Linha")
+                    _e(
+                        el,
+                        campo,
+                        (l.debito if campo == "DebitAmount" else l.credito)
+                        or Decimal(0),
+                    )
+
+
+def _periodo_saft(mes: str | None, data: date) -> int:
+    """O período no vocabulário do esquema, que vai de 1 a 16.
+
+    O plano angolano numera de 00 a 15 — dezasseis posições, as mesmas que o
+    esquema aceita, mas a começar noutro sítio. Os meses mantêm-se alinhados
+    (01 → 1, …, 12 → 12), tal como 13, 14 e 15, e a **abertura (00) vai para
+    1**: é um lançamento datado de 1 de Janeiro e pertence ao primeiro
+    período. Deslocar tudo em um faria Janeiro aparecer como 2, e quem lê o
+    ficheiro leria Fevereiro.
+    """
+    p = (mes or "").strip()
+    if not p:
+        return data.month
+    if p == "00":
+        return 1
+    try:
+        return min(16, max(1, int(p)))
+    except ValueError:
+        return data.month
+
+
+def _tipo_de_transaccao(periodo: str | None) -> str:
+    """`N` normal, `R` regularizações, `A` apuramentos, `J` ajustamentos.
+
+    A correspondência com os períodos do plano angolano é directa: 13 são as
+    regularizações e 14/15 os apuramentos. É informação que o sistema já tem —
+    declará-la a partir do período é dizer a verdade sem pedir nada a ninguém.
+    """
+    p = (periodo or "").strip()
+    if p == "13":
+        return "R"
+    if p in {"14", "15"}:
+        return "A"
+    return "N"
+
+
+def gerar_contabilidade(
+    db: Session,
+    *,
+    empresa: Empresa,
+    de: date,
+    ate: date,
+    numero_validacao: str | None = None,
+) -> bytes:
+    """O SAF-T de Contabilidade — anual, entregue até 10 de Abril.
+
+    É o terceiro dos ficheiros que a AGT pede, e o único que não é mensal:
+    leva o plano de contas inteiro e os lançamentos do exercício.
+    """
+    if ate < de:
+        raise ErroSaft("A data final é anterior à inicial.")
+
+    raiz = ET.Element("AuditFile", {"xmlns": NS})
+    _cabecalho(
+        raiz,
+        empresa,
+        de=de,
+        ate=ate,
+        numero_validacao=numero_validacao,
+        tipo_ficheiro="C",
+    )
+    _plano_de_contas(raiz, db, empresa, de, ate)
+    _lancamentos(raiz, db, empresa, de, ate)
 
     ET.indent(raiz, space="  ")
     return ET.tostring(raiz, encoding="utf-8", xml_declaration=True)
