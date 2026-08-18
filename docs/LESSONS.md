@@ -223,3 +223,4 @@
 - Erros de validador (XSD e afins) nunca vão crus para o ecrã: traduzir para o que a pessoa deve fazer e guardar o original em «Detalhe técnico».
 - Duas audiências, duas mensagens: o nome da variável de ambiente vai para o REGISTO, não para quem lê o ecrã — quem administra a plataforma pode não ser quem instalou o servidor.
 - `pytest -p no:logging` remove o fixture `caplog` e os testes que o usam dão ERROR sem explicação.
+- Documentar um passo manual não impede o esquecimento: o mesmo acidente das migrações repetiu-se COM a secção já escrita. Passou para o `buildCommand` do Render — no gratuito o `preDeployCommand` não corre, e uma linha que não corre não protege ninguém.

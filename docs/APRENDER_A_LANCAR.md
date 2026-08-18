@@ -294,7 +294,13 @@ plataforma exige segundo factor.
 
 ---
 
-## 11. Depois de CADA envio: as migrações não correm sozinhas
+## 11. As migrações — hoje automáticas, e porquê
+
+**Já não é preciso fazer nada.** O `render.yaml` corre `alembic upgrade head`
+na construção do backend, a cada envio. Esta secção fica para se perceber
+porque é que lá está, e para o dia em que for preciso fazer o passo à mão.
+
+### O acidente, duas vezes
 
 O Render reconstrói e reinicia sozinho a cada `git push`. **A base de dados
 não.** O código sobe com colunas novas, a base fica como estava, e o resultado
@@ -303,11 +309,26 @@ cabeçalhos de CORS, o browser bloqueia a resposta e o ecrã diz «não foi
 possível contactar o servidor». Passa-se meia hora a olhar para a rede quando
 o que falta é uma coluna.
 
-Aconteceu: três migrações por aplicar, e a coluna `eac` em falta rebentava
-**todas** as consultas que tocavam em `Empresa` — ou seja, a entrada na
-aplicação.
+Aconteceu duas vezes. Da primeira, três migrações por aplicar e a coluna `eac`
+em falta rebentava **todas** as consultas que tocavam em `Empresa` — ou seja, a
+entrada na aplicação. Da segunda, uma migração só, e **já com esta secção
+escrita**: foi o que provou que documentar não chegava.
 
-Como se vê em dois comandos, com o `.env.neon` carregado:
+### Porque é que está no `buildCommand`
+
+O sítio certo seria o `preDeployCommand` — corre depois de construir, antes de
+a versão nova entrar ao serviço, e se falhar o Render não troca. Mas **exige
+plano pago**, e uma linha que não corre não protege ninguém.
+
+No `buildCommand` corre sempre. O que se perde: se a construção passar e o
+arranque falhar, a base fica migrada com o código antigo de pé. Para migrações
+que só **acrescentam** não faz diferença — o código antigo ignora colunas que
+não conhece. Numa migração que **apague ou renomeie**, fazer à mão e pela ordem
+certa.
+
+### À mão, quando for preciso
+
+Com o `.env.neon` carregado, ver onde está a base e onde está o código:
 
 ```bash
 ./.venv/Scripts/python.exe -m alembic current
@@ -323,6 +344,5 @@ Se os dois não derem o mesmo identificador, a base está atrasada. Aplica-se:
 ./.venv/Scripts/python.exe -m alembic upgrade head
 ```
 
-**A regra:** sempre que um envio inclua um ficheiro em
-`backend/alembic/versions/`, correr as migrações contra a base de produção
-antes de dizer que o lançamento está feito. Não há aviso nenhum a lembrar.
+**Se der «não foi possível contactar o servidor» a seguir a um envio**, é aqui
+que se olha primeiro. O sintoma parece de rede e quase nunca é.

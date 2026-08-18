@@ -27,7 +27,29 @@ services:
     plan: free
     region: frankfurt # a região gratuita mais perto de Angola
     rootDir: Producao/backend
-    buildCommand: pip install -r requirements.txt
+    # AS MIGRAÇÕES CORREM AQUI, e não à mão.
+    #
+    # Duas vezes o mesmo acidente, e da segunda já estava documentado: o Render
+    # reconstrói e reinicia sozinho a cada envio, a base de dados não. O código
+    # sobe à espera de colunas que ainda não existem, todas as consultas que
+    # lhes tocam rebentam, o 500 sai sem cabeçalhos de CORS, o browser bloqueia
+    # a resposta — e o que se lê no ecrã é «não foi possível contactar o
+    # servidor». Perde-se meia hora a olhar para a rede quando o que falta é
+    # uma coluna. Documentar não chegou: o passo tem de deixar de depender de
+    # alguém se lembrar.
+    #
+    # PORQUE NO `buildCommand` E NÃO NO `preDeployCommand`: o
+    # `preDeployCommand` é o sítio certo — corre depois de construir, antes de
+    # a versão nova entrar ao serviço, e se falhar o Render não troca. Mas
+    # EXIGE PLANO PAGO. No plano gratuito não corre de todo, e uma linha que
+    # não corre não protege ninguém. Fica no `buildCommand`, que corre sempre.
+    #
+    # O que se perde com isso: se a construção passar e o arranque falhar, a
+    # base fica migrada com o código antigo de pé. Para migrações que só
+    # ACRESCENTAM — que são estas — não faz diferença: o código antigo ignora
+    # colunas que não conhece. Numa migração que apague ou renomeie, fazer o
+    # passo à mão e pela ordem certa (ver `docs/APRENDER_A_LANCAR.md`, § 11).
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
     # `/api/health` e não `/docs`: a documentação da API FECHA em produção e
     # devolve 404, e o Render trata uma sonda que não responde 200 como serviço
