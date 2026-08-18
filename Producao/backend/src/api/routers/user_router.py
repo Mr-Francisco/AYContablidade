@@ -34,7 +34,9 @@ from src.db.base import agora
 from src.db.models.user import User
 from src.db.schemas.auth import UtilizadorPublico
 from src.services.auditoria import auditar
+from src.services.licenciamento import gerar_password_temporaria
 from src.db.schemas.user import (
+    AprovacaoFeita,
     AprovarPedido,
     DefinirPassword,
     UtilizadorAtualizar,
@@ -260,7 +262,7 @@ def atualizar(
     return UtilizadorPublico.model_validate(user)
 
 
-@router.post("/{user_id}/aprovar", response_model=UtilizadorPublico)
+@router.post("/{user_id}/aprovar", response_model=AprovacaoFeita)
 def aprovar(
     request: Request,
     user_id: UUID,
@@ -268,8 +270,20 @@ def aprovar(
     empresa: EmpresaAtual,
     atual: UtilizadorAtual,
     db: DB,
-) -> UtilizadorPublico:
-    """Aprova uma conta pendente, opcionalmente atribuindo-lhe outro perfil."""
+) -> AprovacaoFeita:
+    """Aceita um pedido de acesso e entrega a palavra-passe de entrada.
+
+    QUEM PEDE ACESSO NÃO ESCOLHE PALAVRA-PASSE — não faria sentido escolher uma
+    credencial para uma conta que a empresa ainda não aceitou. Ela nasce aqui,
+    no momento em que o pedido é aceite, e é mostrada UMA VEZ a quem aceita,
+    para a entregar à pessoa.
+
+    Vem em grupos legíveis ao telefone de propósito: é assim que vai ser
+    transmitida, e a pessoa é avisada no primeiro acesso para a trocar.
+
+    Contas criadas pelo administrador já trazem palavra-passe própria; nesse
+    caso não se gera nenhuma e o campo vem vazio.
+    """
     user = _da_empresa(db, empresa.id, user_id)
     if user.aprovado:
         raise HTTPException(status.HTTP_409_CONFLICT, "A conta já está aprovada.")
@@ -286,15 +300,28 @@ def aprovar(
     user.aprovado_por_id = atual.id
     user.aprovado_em = agora()
 
+    password = None
+    if not user.password_definida:
+        password = gerar_password_temporaria()
+        user.password_hash = hash_password(password)
+        user.password_definida = True
+        # Definida por outra pessoa: a pessoa é avisada no primeiro acesso.
+        user.password_provisoria = True
+
     auditar(
         db, actor=atual, accao="utilizador.aprovar", request=request,
         alvo_tipo="utilizador", alvo_id=user.id,
         alvo_desc=f"{user.nome} <{user.email}>", empresa_id=empresa.id,
-        detalhes={"perfil": str(user.perfil)},
+        # A palavra-passe NÃO entra nos detalhes. O que fica registado é que
+        # foi entregue uma, não qual.
+        detalhes={"perfil": str(user.perfil), "password_entregue": password is not None},
     )
     db.commit()
     db.refresh(user)
-    return UtilizadorPublico.model_validate(user)
+    return AprovacaoFeita(
+        utilizador=UtilizadorPublico.model_validate(user),
+        password_entrada=password,
+    )
 
 
 @router.post("/{user_id}/password", status_code=status.HTTP_204_NO_CONTENT)

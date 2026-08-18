@@ -4,7 +4,7 @@ import { Check, KeyRound, Plus, Search, Trash2, X } from "lucide-react";
 import { AlertDialog, Dialog } from "radix-ui";
 import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { PasswordDeEntrada } from "@/components/gestao/PasswordDeEntrada";
 import {
   ACarregar,
   Alerta,
@@ -73,6 +73,44 @@ export default function Utilizadores() {
 
   const pendentes = (data ?? []).filter((u) => !u.aprovado).length;
   const activos = (data ?? []).filter((u) => u.ativo && u.aprovado).length;
+
+  /** A palavra-passe gerada ao aceitar um pedido. Mostra-se UMA vez. */
+  const [entregar, setEntregar] = useState<{
+    nome: string;
+    password: string;
+  } | null>(null);
+
+  /** Aceitar um pedido de acesso.
+   *
+   *  Quem pede acesso pelo ecrã público não escolhe palavra-passe — não faria
+   *  sentido escolher uma credencial para uma conta que a empresa ainda não
+   *  aceitou. Ela nasce aqui, e este é o único momento em que aparece: se se
+   *  fechar sem a copiar, define-se outra pelo botão da chave. */
+  async function aceitar(u: { id: string; nome: string }) {
+    setOcupado(true);
+    setErro(null);
+    setAviso(null);
+    try {
+      const r = await api.post<{ password_entrada: string | null }>(
+        `/api/users/${u.id}/aprovar`,
+        {},
+      );
+      if (r.password_entrada) {
+        setEntregar({ nome: u.nome, password: r.password_entrada });
+      } else {
+        setAviso(`${u.nome} passou a poder entrar.`);
+      }
+      mutate();
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi
+          ? e.mensagemUtilizador
+          : "Não foi possível aceitar o pedido.",
+      );
+    } finally {
+      setOcupado(false);
+    }
+  }
 
   async function accao(fn: () => Promise<unknown>, mensagem: string) {
     setOcupado(true);
@@ -146,10 +184,10 @@ export default function Utilizadores() {
 
       {pendentes > 0 && (
         <Alerta tipo="aviso" className="mb-4">
-          Há <b>{plural(pendentes, "conta", "contas")}</b> por aprovar. Uma
-          conta registada mas não aprovada existe e tem palavra-passe, mas não
-          entra — é essa a barreira que impede que qualquer pessoa que descubra
-          o endereço se junte à empresa.
+          Há <b>{plural(pendentes, "pedido", "pedidos")}</b> de acesso à espera
+          de resposta. Quem pede acesso não consegue entrar até ser aceite — e é
+          ao aceitar que recebe a palavra-passe de entrada, para lhe ser
+          entregue.
         </Alerta>
       )}
 
@@ -258,16 +296,10 @@ export default function Utilizadores() {
                               tamanho="pequeno"
                               variante="primario"
                               disabled={ocupado}
-                              onClick={() =>
-                                accao(
-                                  () =>
-                                    api.post(`/api/users/${u.id}/aprovar`, {}),
-                                  `${u.nome} passou a poder entrar.`,
-                                )
-                              }
+                              onClick={() => aceitar(u)}
                             >
                               <Check size={13} />
-                              Aprovar
+                              Aceitar
                             </Botao>
                           )}
                           <Botao
@@ -323,6 +355,14 @@ export default function Utilizadores() {
             setAviso(msg);
             mutate();
           }}
+        />
+      )}
+
+      {entregar && (
+        <PasswordDeEntrada
+          nome={entregar.nome}
+          password={entregar.password}
+          aoFechar={() => setEntregar(null)}
         />
       )}
 

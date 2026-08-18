@@ -69,6 +69,21 @@ def obter_token(
     raise _nao_autenticado("Sessão não iniciada.")
 
 
+#: Um pedido de acesso feito e ainda sem resposta da empresa.
+PEDIDO_POR_ACEITAR = (
+    "O seu pedido de acesso ainda não foi aceite. Assim que um administrador "
+    "da empresa o aceitar, recebe a palavra-passe para entrar."
+)
+
+#: Aceite, mas a palavra-passe ainda não chegou à pessoa. Sem esta mensagem, a
+#: resposta seria «credenciais inválidas» — e quem já foi aceite ficava a
+#: tentar adivinhar uma palavra-passe que nunca existiu.
+SEM_PASSWORD_ENTREGUE = (
+    "O seu acesso já foi aceite, mas ainda não lhe foi entregue uma "
+    "palavra-passe. Peça-a ao administrador da empresa."
+)
+
+
 def utilizador_atual(
     token: Annotated[str, Depends(obter_token)],
     db: Annotated[Session, Depends(get_db)],
@@ -100,11 +115,14 @@ def utilizador_atual(
     if int(payload.get("tv", -1)) != user.token_version:
         raise _nao_autenticado("Sessão revogada. Volte a iniciar sessão.")
 
+    # A MESMA MENSAGEM QUE O LOGIN DÁ, e é de propósito que está escrita uma
+    # vez só. Estavam duas cópias — esta e a do `auth_router` — e ao mudar a do
+    # login esta ficou para trás a dizer outra coisa. Quem apanhasse as duas
+    # via o sistema a explicar-lhe a mesma situação de duas maneiras.
     if not user.aprovado:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "Conta pendente de aprovação. Aguarde a validação de um Administrador.",
-        )
+        raise HTTPException(status.HTTP_403_FORBIDDEN, PEDIDO_POR_ACEITAR)
+    if not user.password_definida:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, SEM_PASSWORD_ENTREGUE)
     if not user.ativo:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Conta desativada. Contacte o administrador."

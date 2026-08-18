@@ -7,6 +7,7 @@ Nota: NÃO usar `from __future__ import annotations` neste ficheiro — o
 `@limiter.limit` do slowapi rebenta com anotações adiadas (docs/LESSONS.md).
 """
 
+import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -14,7 +15,13 @@ from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import func, select
 
 from src.api.limites import LIMITE_LOGIN, limiter
-from src.api.deps import DB, UtilizadorAtual, licenca_da_empresa
+from src.api.deps import (
+    DB,
+    PEDIDO_POR_ACEITAR,
+    SEM_PASSWORD_ENTREGUE,
+    UtilizadorAtual,
+    licenca_da_empresa,
+)
 from src.auth.permissions import licenca_valida
 from src.auth.totp import (
     ErroTotp,
@@ -108,10 +115,13 @@ def _verificar_conta_e_empresa(db: DB, user: User) -> None:
     só corresse no primeiro, o desafio seria uma porta aberta durante esse tempo.
     """
     if not user.aprovado:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "Conta pendente de aprovação. Aguarde a validação de um Administrador.",
-        )
+        raise HTTPException(status.HTTP_403_FORBIDDEN, PEDIDO_POR_ACEITAR)
+    # ACEITE, MAS AINDA SEM PALAVRA-PASSE ENTREGUE. Acontece se o pedido for
+    # aceite e a palavra-passe não chegar a ser dada à pessoa. Sem esta
+    # verificação, a mensagem seria «credenciais inválidas» — e quem já foi
+    # aceite ficava a tentar adivinhar uma palavra-passe que nunca existiu.
+    if not user.password_definida:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, SEM_PASSWORD_ENTREGUE)
     if not user.ativo:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Conta desativada. Contacte o administrador."
@@ -404,8 +414,6 @@ def registar(request: Request, dados: RegistoPedido, db: DB) -> UtilizadorPublic
     valida-a — acrescentando só o que a multiempresa exige: saber a que empresa
     o registo se destina, indicada pelo NIF.
     """
-    validar_forca_password(dados.password)
-
     if dados.perfil not in PERFIS_REGISTO:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -432,7 +440,15 @@ def registar(request: Request, dados: RegistoPedido, db: DB) -> UtilizadorPublic
         empresa_id=empresa.id,
         nome=dados.nome.strip(),
         email=dados.email.lower(),
-        password_hash=hash_password(dados.password),
+        # UMA PALAVRA-PASSE QUE NINGUÉM CONHECE, nem quem pediu acesso.
+        #
+        # A coluna não aceita vazio, e deixá-la vazia seria pior de qualquer
+        # maneira: bastaria um engano numa comparação para uma conta por
+        # aprovar passar a entrar. Um valor aleatório de 64 caracteres que
+        # nunca sai daqui não é adivinhável por ninguém — e o login recusa
+        # antes sequer de o comparar, por causa de `password_definida`.
+        password_hash=hash_password(secrets.token_urlsafe(48)),
+        password_definida=False,
         perfil=dados.perfil,
         telefone=(dados.telefone or "").strip() or None,
         ativo=True,

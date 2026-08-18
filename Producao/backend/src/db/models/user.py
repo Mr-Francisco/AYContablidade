@@ -75,6 +75,22 @@ class User(UUIDMixin, TimestampMixin, Base):
         Boolean, default=False, server_default=text("false"), nullable=False
     )
 
+    #: Esta conta já tem uma palavra-passe que alguém conhece.
+    #:
+    #: FALSO SÓ EM QUEM PEDIU ACESSO E AINDA NÃO FOI ACEITE. Pedir acesso a uma
+    #: empresa deixou de exigir uma palavra-passe: não fazia sentido escolher
+    #: uma credencial para uma conta que a empresa ainda não aceitou, e que
+    #: pode nunca vir a existir. O pedido guarda quem é a pessoa; a
+    #: palavra-passe nasce quando o pedido é aceite e é entregue nesse momento.
+    #:
+    #: Enquanto for falso, a conta NÃO ENTRA — a que lá está é um valor
+    #: aleatório que ninguém conhece, e o login recusa antes sequer de a
+    #: comparar. Não é uma conta desactivada: é uma conta que ainda não tem
+    #: chave.
+    password_definida: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true"), nullable=False
+    )
+
     # --- Segundo factor (TOTP) ---
     # O segredo vai CIFRADO (ver src/auth/totp.py). Em claro, quem leia a base
     # gera códigos válidos de qualquer conta.

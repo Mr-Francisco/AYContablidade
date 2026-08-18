@@ -27,20 +27,26 @@ class LoginPedido(BaseModel):
 
 
 class RegistoPedido(BaseModel):
-    """Registo de um novo utilizador numa empresa existente.
+    """Pedido de acesso a uma empresa existente.
 
     O Piloto tem auto-registo com aprovação posterior por um administrador; em
-    multiempresa é preciso saber *em que* empresa. O fluxo mantém-se: a conta
-    nasce por aprovar e o administrador da empresa valida-a.
+    multiempresa é preciso saber *em que* empresa. O fluxo mantém-se: o pedido
+    nasce por aprovar e o administrador da empresa valida-o.
 
     Identifica-se a empresa pelo CÓDIGO ou pelo NIF — o mesmo que se escreve no
-    login. Aceitar só o NIF obrigava quem se regista a conhecer duas coisas
+    login. Aceitar só o NIF obrigava quem pede acesso a conhecer duas coisas
     diferentes para dois ecrãs seguidos.
+
+    NÃO LEVA PALAVRA-PASSE, e é a diferença que importa. Escolher uma
+    credencial para uma conta que a empresa ainda não aceitou — e que pode
+    nunca vir a existir — não faz sentido nenhum: quem desistia a meio deixava
+    para trás uma palavra-passe a proteger nada, e quem era recusado tinha
+    escolhido uma em vão. O pedido guarda quem é a pessoa; a palavra-passe
+    nasce quando o pedido é aceite, e é entregue nesse momento.
     """
 
     nome: str = Field(min_length=1, max_length=200)
     email: EmailStr
-    password: str = Field(min_length=8, max_length=200)
     empresa: str = Field(min_length=1, max_length=200)
     perfil: Perfil = Perfil.CONSULTA
     telefone: str | None = Field(default=None, max_length=40)

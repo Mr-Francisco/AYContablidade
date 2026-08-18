@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 /**
- * Metadados de «Registar numa empresa».
+ * Metadados de «Pedir acesso».
  *
  * A página é um componente de cliente — tem estado, campos e validação — e um
  * componente de cliente não pode exportar `metadata`. Este `layout` existe só
@@ -11,8 +11,9 @@ import type { Metadata } from "next";
  * histórico do browser ficava com três entradas iguais.
  */
 export const metadata: Metadata = {
-  title: "Registar numa empresa",
-  description: "Peça acesso a uma empresa que já usa o SGD.",
+  title: "Pedir acesso a uma empresa",
+  description:
+    "Peça acesso a uma empresa que já usa o SGD. Não precisa de escolher palavra-passe: se o pedido for aceite, a empresa entrega-lha.",
   robots: { index: false, follow: false },
 };
 

@@ -170,9 +170,9 @@ function Formulario() {
               </span>
             ) : (
               <>
-                Ainda não tem conta?{" "}
+                Ainda não tem acesso?{" "}
                 <a href="/registar" className="font-bold text-marca">
-                  Registar numa empresa
+                  Pedir acesso
                 </a>
                 {" · "}
                 <a href="/activar" className="font-bold text-marca">

@@ -100,6 +100,10 @@ def ambiente():
         totp_codigos_recuperacao=[totp.hash_codigo(c) for c in codigos],
         totp_falhas=0,
         password_provisoria=False,
+        # Como o `aprovado` e o `ativo`: o valor por omissão da coluna só entra
+        # ao gravar, e um objecto construído em memória fica com `None` — que
+        # o login lê como «esta conta ainda não tem palavra-passe».
+        password_definida=True,
         permissoes_extra=[],
         permissoes_accao={},
     )

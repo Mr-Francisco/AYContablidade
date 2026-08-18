@@ -61,16 +61,34 @@ def test_o_tratador_devolve_422_com_a_mensagem():
     assert b"10 caracteres" in resposta.body
 
 
+def test_pedir_acesso_nao_recebe_palavra_passe_nenhuma():
+    """A rota que era a quinta desta lista deixou de ter o que validar.
+
+    Pedir acesso a uma empresa não pede palavra-passe: escolher uma credencial
+    para uma conta que a empresa ainda não aceitou — e que pode nunca vir a
+    existir — não faz sentido nenhum. Ela nasce quando o pedido é aceite.
+
+    Este teste substitui a entrada de `registar` na lista abaixo, e é de
+    propósito: apagar a linha e seguir em frente deixava a porta aberta para
+    alguém voltar a pôr lá um campo de palavra-passe sem validação nenhuma.
+    """
+    from src.db.schemas.auth import RegistoPedido
+
+    assert "password" not in RegistoPedido.model_fields
+
+
 def test_todas_as_rotas_de_password_usam_a_politica():
-    """As cinco rotas que definem palavras-passe validam-nas.
+    """As rotas que definem palavras-passe validam-nas.
 
     Procura no código em vez de fixar uma lista: uma rota nova escrita sem a
     validação passaria despercebida a uma lista escrita à mão.
+
+    `auth_router.registar` esteve aqui e saiu quando deixou de receber
+    palavra-passe — ver o teste acima, que garante que não volta a receber.
     """
     import importlib
 
     esperado = {
-        ("auth_router", "registar"),
         ("auth_router", "alterar_password"),
         ("licenca_router", "activar"),
         ("user_router", "criar"),

@@ -3,6 +3,7 @@
 from pydantic import BaseModel, EmailStr, Field
 
 from src.core.constants import Perfil
+from src.db.schemas.auth import UtilizadorPublico
 
 
 class UtilizadorCriar(BaseModel):
@@ -45,3 +46,19 @@ class AprovarPedido(BaseModel):
     (o `aprovarUser(id, perfil)` do Piloto)."""
 
     perfil: Perfil | None = None
+
+
+class AprovacaoFeita(BaseModel):
+    """O que se devolve ao aceitar um pedido de acesso.
+
+    A `password_entrada` vem preenchida quando a pessoa pediu acesso pelo ecrã
+    público — nesse caso não escolheu palavra-passe nenhuma, e esta é a que lhe
+    tem de ser entregue. **Só é mostrada aqui, uma vez.** Não fica guardada em
+    lado nenhum de onde se possa voltar a ler.
+
+    Vem vazia quando a conta foi criada pelo administrador, que nessa altura já
+    definiu uma.
+    """
+
+    utilizador: UtilizadorPublico
+    password_entrada: str | None = None

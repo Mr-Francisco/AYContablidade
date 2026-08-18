@@ -224,3 +224,7 @@
 - Duas audiências, duas mensagens: o nome da variável de ambiente vai para o REGISTO, não para quem lê o ecrã — quem administra a plataforma pode não ser quem instalou o servidor.
 - `pytest -p no:logging` remove o fixture `caplog` e os testes que o usam dão ERROR sem explicação.
 - Documentar um passo manual não impede o esquecimento: o mesmo acidente das migrações repetiu-se COM a secção já escrita. Passou para o `buildCommand` do Render — no gratuito o `preDeployCommand` não corre, e uma linha que não corre não protege ninguém.
+- Não pedir credenciais para uma conta que ainda não existe: escolher palavra-passe antes de a empresa aceitar o pedido não protege nada e desperdiça-se se o pedido for recusado. Nasce na aceitação e é entregue nesse momento.
+- O `default=` de uma coluna SQLAlchemy só se aplica ao GRAVAR: um `User(...)` construído em memória num teste fica com `None`, que uma verificação booleana lê como falso.
+- A mesma verificação escrita em dois sítios diverge: mudei a mensagem no `auth_router` e a de `deps.py` ficou a dizer outra coisa. Constante partilhada, não cópia.
+- `pkill` não garante porta livre no Windows: o uvicorn novo falha a ligar-se, o antigo continua a servir, e passa-se a depurar código que não está a correr. Confirmar quem está a ouvir na porta.
