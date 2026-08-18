@@ -25,12 +25,18 @@ import { useEffect, useRef } from "react";
    movimento.
 --------------------------------------------------------------------------- */
 
+type Cor = readonly [number, number, number];
+
+/** Uma família de cor, com o tom de frente e o de trás. */
+type Familia = { perto: Cor; longe: Cor };
+
 type No = {
   ox: number;
   oy: number;
   oz: number;
   tamanho: number;
   brilho: number;
+  familia: Familia;
 };
 
 /** Ponto já rodado e projectado no plano do ecrã. */
@@ -40,17 +46,31 @@ type Projeccao = {
   z: number;
   tamanho: number;
   brilho: number;
+  familia: Familia;
 };
 
-/* Os azuis da marca: `--color-acento-claro` à frente, `--color-acento` ao
-   fundo. O ponto em si é quase branco, para se ler como luz e não como tinta. */
-const PERTO: [number, number, number] = [111, 163, 236];
-const LONGE: [number, number, number] = [61, 127, 224];
+/* DUAS FAMÍLIAS, e é a razão de este ficheiro ter mudado depois de pronto.
+   Com uma só, o herói era uma mancha azul — o mesmo problema que o resto da
+   página tinha. O azul é o da marca (`--color-acento` e o seu tom claro); o
+   rosa vem da paleta do Piloto, onde estava declarado e por usar. Fica em
+   minoria: cerca de dois em cada sete pontos. */
+const AZUL: Familia = { perto: [111, 163, 236], longe: [61, 127, 224] };
+const ROSA: Familia = { perto: [255, 143, 196], longe: [206, 55, 132] };
 
 const VELOCIDADE = 0.00008; // radianos por milissegundo
 
+/** A cor de um ponto à profundidade dada — 0 ao fundo, 1 à frente. */
+function tom(familia: Familia, frente: number): Cor {
+  const { perto, longe } = familia;
+  return [
+    Math.round(longe[0] + (perto[0] - longe[0]) * frente),
+    Math.round(longe[1] + (perto[1] - longe[1]) * frente),
+    Math.round(longe[2] + (perto[2] - longe[2]) * frente),
+  ];
+}
+
 function criarNos(quantos: number): No[] {
-  return Array.from({ length: quantos }, () => {
+  return Array.from({ length: quantos }, (_, i) => {
     // Distribuição uniforme na esfera: o `acos` é o que evita os pontos
     // acumularem-se nos pólos, que é o que acontece se se sortear o ângulo
     // vertical directamente.
@@ -63,6 +83,15 @@ function criarNos(quantos: number): No[] {
       oz: Math.cos(fi) * raio,
       tamanho: 1.1 + Math.random() * 2,
       brilho: 0.4 + Math.random() * 0.6,
+      // Pelo índice e não à sorte: com quarenta pontos, um sorteio pode sair
+      // sem rosa nenhum e o efeito perde metade da graça.
+      //
+      // Dois em cada cinco, e o número foi medido e não escolhido: com dois em
+      // sete, os pares azul-azul eram metade das linhas e o rosa não chegava a
+      // 8% do que se pinta — lia-se na mesma como um herói azul. Assim as
+      // linhas mistas passam a ser a maioria, e são elas que dão o violeta que
+      // liga as duas famílias.
+      familia: i % 5 < 2 ? ROSA : AZUL,
     };
   });
 }
@@ -136,6 +165,7 @@ export default function ConstelacaoAnimada() {
           z,
           tamanho: n.tamanho,
           brilho: n.brilho,
+          familia: n.familia,
         };
       });
     }
@@ -156,11 +186,15 @@ export default function ConstelacaoAnimada() {
 
           const frente = ((a.z + b.z) / 2 + 1) / 2;
           const opacidade = (1 - afastamento / ligacao) * frente * 0.42;
-          const vermelho = Math.round(
-            LONGE[0] + (PERTO[0] - LONGE[0]) * frente,
-          );
-          const verde = Math.round(LONGE[1] + (PERTO[1] - LONGE[1]) * frente);
-          const azul = Math.round(LONGE[2] + (PERTO[2] - LONGE[2]) * frente);
+
+          // A linha fica na média das cores das duas pontas: entre um ponto
+          // azul e um rosa sai um violeta, e é isso que faz as duas famílias
+          // parecerem a mesma constelação em vez de duas sobrepostas.
+          const ca = tom(a.familia, frente);
+          const cb = tom(b.familia, frente);
+          const vermelho = (ca[0] + cb[0]) >> 1;
+          const verde = (ca[1] + cb[1]) >> 1;
+          const azul = (ca[2] + cb[2]) >> 1;
 
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
@@ -175,6 +209,7 @@ export default function ConstelacaoAnimada() {
         const opacidade = p.brilho * frente;
         const raio = p.tamanho * (0.5 + frente * 0.8);
 
+        const [hr, hg, hb] = p.familia.perto;
         const halo = ctx.createRadialGradient(
           p.x,
           p.y,
@@ -183,16 +218,19 @@ export default function ConstelacaoAnimada() {
           p.y,
           raio * 3.5,
         );
-        halo.addColorStop(0, `rgba(111,163,236,${opacidade * 0.65})`);
-        halo.addColorStop(1, "rgba(111,163,236,0)");
+        halo.addColorStop(0, `rgba(${hr},${hg},${hb},${opacidade * 0.65})`);
+        halo.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
         ctx.beginPath();
         ctx.arc(p.x, p.y, raio * 3.5, 0, Math.PI * 2);
         ctx.fillStyle = halo;
         ctx.fill();
 
+        // O núcleo é quase branco, com um travo da própria família: é o que o
+        // faz ler como luz e não como um ponto pintado.
+        const nucleo = tom(p.familia, 1);
         ctx.beginPath();
         ctx.arc(p.x, p.y, raio, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(226,238,255,${opacidade})`;
+        ctx.fillStyle = `rgba(${(nucleo[0] + 255 * 3) >> 2},${(nucleo[1] + 255 * 3) >> 2},${(nucleo[2] + 255 * 3) >> 2},${opacidade})`;
         ctx.fill();
       }
     }

@@ -163,197 +163,52 @@ const DADOS_ESTRUTURADOS = {
    que é texto e o que é estrutura.
 --------------------------------------------------------------------------- */
 
-const PROBLEMAS = [
-  {
-    titulo: "Os números vivem em sítios diferentes",
-    texto:
-      "A facturação num lado, os salários noutro, o stock numa folha de cálculo. " +
-      "No fim do mês alguém passa dias a juntar tudo — e o que se decide já é " +
-      "história.",
-  },
-  {
-    titulo: "O fecho consome a equipa",
-    texto:
-      "Balancetes conferidos à mão, IVA apurado a partir de listagens, " +
-      "retenções procuradas documento a documento. Trabalho que se repete " +
-      "todos os meses e onde um engano passa despercebido.",
-  },
-  {
-    titulo: "Perguntar simples custa caro",
-    texto:
-      "«Quanto gastámos neste centro de custo?» devia ser uma pergunta de um " +
-      "minuto. Costuma ser um pedido a alguém, uma exportação e meia tarde.",
-  },
-];
+/* O CONTEÚDO, e é pouco de propósito.
 
-const PASSOS = [
-  {
-    numero: "01",
-    titulo: "Activa a licença",
-    texto:
-      "A empresa entra com a chave que recebeu. O plano de contas em PGC-AR, os " +
-      "diários e os documentos ficam prontos no momento — não há configuração " +
-      "de semanas antes de poder lançar o primeiro movimento.",
-  },
-  {
-    numero: "02",
-    titulo: "Lança e o resto acompanha",
-    texto:
-      "Uma venda, uma compra ou uma folha de salários dá origem aos lançamentos " +
-      "certos. Balancetes, balanço, resultados, IVA e retenções actualizam-se a " +
-      "partir do mesmo movimento, sem segunda digitação.",
-  },
-  {
-    numero: "03",
-    titulo: "Pergunta em vez de exportar",
-    texto:
-      "O assistente responde sobre os dados da empresa em linguagem corrente, e " +
-      "o diagnóstico aponta o que está por fechar — períodos de IVA por apurar, " +
-      "linhas sem centro de custo, contas por conciliar.",
-  },
-];
+   A página é para se ler de uma vez, não para se estudar. Ficam as três
+   secções que a navegação já anuncia — Módulos, Assistente, Segurança — e cada
+   cartão diz o que é numa linha. Quem quiser mais entra e vê.
+
+   Ao acrescentar aqui, pergunte-se se o que vai escrever cabe numa linha. Se
+   não couber, provavelmente não é para esta página. */
 
 const MODULOS = [
-  {
-    nome: "Contabilidade",
-    texto:
-      "Movimentos, plano de contas, balancetes geral e do razão, balanço, " +
-      "demonstração de resultados, notas, fluxos de caixa, extractos e razão.",
-  },
-  {
-    nome: "Fiscalidade",
-    texto:
-      "Apuramento de IVA, retenções na fonte, regimes, obrigações, calendário " +
-      "fiscal e mapa de remunerações.",
-  },
-  {
-    nome: "Recursos humanos",
-    texto:
-      "Funcionários, alterações mensais, processamento com IRT e INSS, " +
-      "pagamentos, recibos, simulação e prestadores independentes.",
-  },
-  {
-    nome: "Comercial",
-    texto:
-      "Vendas, consulta de facturas, clientes e vendedores, com o lançamento " +
-      "contabilístico a sair do próprio documento.",
-  },
-  {
-    nome: "Logística",
-    texto:
-      "Artigos, compras, recepção, expedição, transferências, acertos, " +
-      "existências e armazéns.",
-  },
-  {
-    nome: "Contas correntes",
-    texto:
-      "Posição de clientes e de fornecedores, saldos e antiguidade, a partir " +
-      "dos mesmos lançamentos.",
-  },
-  {
-    nome: "Imobilizados",
-    texto:
-      "Ficha de activos e amortizações, com o efeito contabilístico feito.",
-  },
-  {
-    nome: "Analítica",
-    texto:
-      "Centros de custo e mapa de custos, para saber onde o dinheiro é gasto e " +
-      "não apenas quanto.",
-  },
-];
-
-const BENEFICIOS = [
-  {
-    titulo: "O fecho deixa de ser um evento",
-    texto:
-      "Os mapas saem do que já foi lançado. Não há reconstrução no fim do mês, " +
-      "há conferência — e sobra tempo para olhar para os números em vez de os " +
-      "montar.",
-  },
-  {
-    titulo: "Decidir com o mês a correr",
-    texto:
-      "O painel mostra a posição actual e o diagnóstico aponta o que falta " +
-      "fechar. Corrige-se enquanto ainda dá para corrigir, não na véspera da " +
-      "entrega.",
-  },
-  {
-    titulo: "Menos digitação, menos engano",
-    texto:
-      "Um documento dá origem aos seus lançamentos. O que não se escreve duas " +
-      "vezes também não diverge entre os dois sítios.",
-  },
-  {
-    titulo: "Cada pessoa vê o que lhe compete",
-    texto:
-      "Perfis e permissões por módulo e por acção, verificados no servidor. " +
-      "Quem processa salários não precisa de ver a facturação para fazer o seu " +
-      "trabalho.",
-  },
+  ["Contabilidade", "Movimentos, balancetes, balanço e resultados."],
+  ["Fiscalidade", "IVA, retenções, obrigações e calendário fiscal."],
+  ["Recursos humanos", "Processamento com IRT e INSS, recibos e mapas."],
+  ["Comercial", "Vendas e facturas, com o lançamento a sair do documento."],
+  ["Logística", "Artigos, compras, existências e armazéns."],
+  ["Contas correntes", "Saldos e antiguidade de clientes e fornecedores."],
+  [
+    "Imobilizados",
+    "Activos e amortizações, com o efeito contabilístico feito.",
+  ],
+  ["Analítica", "Centros de custo — onde o dinheiro é gasto, não só quanto."],
 ];
 
 const SEGURANCA = [
-  {
-    titulo: "Uma empresa nunca vê outra",
-    texto:
-      "Todos os dados de negócio estão marcados com a empresa a que pertencem, " +
-      "e o servidor confirma essa pertença em cada pedido — a separação não " +
-      "depende do que o ecrã esconde.",
-  },
-  {
-    titulo: "Verificação em dois passos",
-    texto:
-      "Autenticação TOTP com a aplicação que já usa, códigos de recuperação e " +
-      "bloqueio ao fim de tentativas falhadas. Obrigatória para quem administra " +
-      "a plataforma.",
-  },
-  {
-    titulo: "Registo de auditoria",
-    texto:
-      "As acções de administração ficam registadas com autor, momento e o que " +
-      "mudou. Uma alteração de contrato ou de acesso tem sempre a quem " +
-      "perguntar.",
-  },
-  {
-    titulo: "Períodos que fecham a sério",
-    texto:
-      "Um exercício fechado deixa de aceitar lançamentos, e a verificação está " +
-      "no servidor. O que já foi entregue não muda por engano.",
-  },
+  [
+    "Uma empresa nunca vê outra",
+    "O servidor confirma a pertença em cada pedido.",
+  ],
+  [
+    "Verificação em dois passos",
+    "TOTP, códigos de recuperação e bloqueio por tentativas.",
+  ],
+  ["Registo de auditoria", "Quem mudou o quê, e quando."],
+  ["Períodos que fecham a sério", "Exercício fechado não aceita lançamentos."],
 ];
 
 const IA_FAZ = [
   "Responde sobre os dados da empresa em linguagem corrente",
   "Explica saldos, variações e o que está por conciliar",
-  "Diagnostica o que falta fechar, por regras, sem sair do servidor",
+  "Diagnostica o que falta fechar — por regras, no servidor",
 ];
 
 const IA_NAO_FAZ = [
-  "Não envia nomes nem identificadores pessoais para fora",
-  "Não executa SQL nem altera dados do sistema",
-  "Não decide por si — o registo contabilístico continua a ser de quem o faz",
-];
-
-const PARA_QUEM = [
-  {
-    titulo: "Gabinetes de contabilidade",
-    texto:
-      "Várias empresas na mesma instalação, cada uma com os seus dados, o seu " +
-      "plano de contas e os seus utilizadores.",
-  },
-  {
-    titulo: "Empresas com contabilidade própria",
-    texto:
-      "Um sistema só, do documento ao balancete, sem passar por folhas de " +
-      "cálculo pelo meio.",
-  },
-  {
-    titulo: "Direcções financeiras",
-    texto:
-      "A posição actual sem esperar pelo fecho, e o custo por centro sem " +
-      "montar o mapa à mão.",
-  },
+  "Não envia nomes nem identificadores para fora",
+  "Não executa SQL nem altera dados",
+  "Não decide por si",
 ];
 
 /* ------------------------------------------------------------------------ */
@@ -443,7 +298,7 @@ export default function Apresentacao() {
 
             <h1 className="max-w-[19ch] text-4xl font-black leading-[1.06] tracking-[-0.02em] text-white sm:text-[3.6rem]">
               A contabilidade da sua empresa,{" "}
-              <span className="text-[#8fb8ff]">fechada a tempo</span>.
+              <span className="text-[#ff8fc4]">fechada a tempo</span>.
             </h1>
 
             <p className="mt-6 max-w-[62ch] text-lg leading-relaxed text-[#b9cdf0]">
@@ -488,95 +343,20 @@ export default function Apresentacao() {
 
         {/* --------------------------------------------------------------- */}
         <Seccao
-          id="problema"
-          etiqueta="O problema"
-          titulo="O trabalho não é lançar. É juntar tudo outra vez."
-          intro="Em quase todas as empresas com que isto se parece, o mês fecha-se duas vezes: uma no sistema, outra numa folha de cálculo."
-        >
-          <div className="grid gap-5 md:grid-cols-3">
-            {PROBLEMAS.map((p) => (
-              <article
-                key={p.titulo}
-                className="rounded-[14px] border border-borda bg-superficie p-6"
-              >
-                <h3 className="text-[17px] font-bold leading-snug">
-                  {p.titulo}
-                </h3>
-                <p className="mt-2.5 text-sm leading-relaxed text-texto-suave">
-                  {p.texto}
-                </p>
-              </article>
-            ))}
-          </div>
-        </Seccao>
-
-        {/* --------------------------------------------------------------- */}
-        <Seccao
-          id="como-funciona"
-          etiqueta="Como funciona"
-          titulo="Três passos, e o sistema passa a trabalhar para si"
-          fundo
-        >
-          <ol className="grid gap-5 md:grid-cols-3">
-            {PASSOS.map((p) => (
-              <li
-                key={p.numero}
-                className="rounded-[14px] border border-borda bg-superficie p-6"
-              >
-                <span className="tabular text-[13px] font-black tracking-[2px] text-acento">
-                  {p.numero}
-                </span>
-                <h3 className="mt-2 text-[17px] font-bold leading-snug">
-                  {p.titulo}
-                </h3>
-                <p className="mt-2.5 text-sm leading-relaxed text-texto-suave">
-                  {p.texto}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </Seccao>
-
-        {/* --------------------------------------------------------------- */}
-        <Seccao
           id="modulos"
-          etiqueta="Funcionalidades"
+          etiqueta="Módulos"
           titulo="Um sistema, do documento ao balancete"
-          intro="Os módulos partilham os mesmos dados. Um documento comercial dá origem aos seus lançamentos, e esses lançamentos são os que aparecem no balancete, no IVA e nas contas correntes."
+          intro="Partilham os mesmos dados: um documento dá origem aos seus lançamentos, e são esses que aparecem no balancete e no IVA."
         >
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {MODULOS.map((m) => (
+            {MODULOS.map(([nome, texto]) => (
               <article
-                key={m.nome}
-                className="rounded-[14px] border border-borda bg-superficie p-6 transition-colors hover:border-acento"
+                key={nome}
+                className="rounded-[14px] border border-borda bg-superficie p-6 transition-colors hover:border-rosa"
               >
-                <h3 className="text-[15px] font-bold">{m.nome}</h3>
+                <h3 className="text-[15px] font-bold">{nome}</h3>
                 <p className="mt-2 text-[13px] leading-relaxed text-texto-suave">
-                  {m.texto}
-                </p>
-              </article>
-            ))}
-          </div>
-        </Seccao>
-
-        {/* --------------------------------------------------------------- */}
-        <Seccao
-          id="beneficios"
-          etiqueta="O que muda"
-          titulo="O ganho não é ter mais ecrãs. É deixar de repetir trabalho."
-          fundo
-        >
-          <div className="grid gap-5 sm:grid-cols-2">
-            {BENEFICIOS.map((b) => (
-              <article
-                key={b.titulo}
-                className="rounded-[14px] border border-borda bg-superficie p-6"
-              >
-                <h3 className="text-[17px] font-bold leading-snug">
-                  {b.titulo}
-                </h3>
-                <p className="mt-2.5 text-sm leading-relaxed text-texto-suave">
-                  {b.texto}
+                  {texto}
                 </p>
               </article>
             ))}
@@ -591,19 +371,22 @@ export default function Apresentacao() {
           id="assistente"
           etiqueta="Assistente"
           titulo="Perguntar aos seus dados, sem os entregar a ninguém"
-          intro="O assistente responde sobre a contabilidade da empresa em linguagem corrente. O que sai da máquina vai sem nomes e sem identificadores, e é verificado antes de sair."
+          fundo
         >
           <div className="grid gap-5 lg:grid-cols-2">
             <article className="rounded-[14px] border border-borda bg-superficie p-7">
               <h3 className="text-[17px] font-bold">O que faz</h3>
               <ul className="mt-4 flex flex-col gap-3">
-                {IA_FAZ.map((t) => (
-                  <li key={t} className="flex gap-3 text-sm leading-relaxed">
+                {IA_FAZ.map((linha) => (
+                  <li
+                    key={linha}
+                    className="flex gap-3 text-sm leading-relaxed"
+                  >
                     <span
                       aria-hidden="true"
                       className="mt-1.5 size-1.5 shrink-0 rounded-full bg-sucesso"
                     />
-                    {t}
+                    {linha}
                   </li>
                 ))}
               </ul>
@@ -612,24 +395,21 @@ export default function Apresentacao() {
             <article className="rounded-[14px] border border-borda bg-superficie p-7">
               <h3 className="text-[17px] font-bold">O que nunca faz</h3>
               <ul className="mt-4 flex flex-col gap-3">
-                {IA_NAO_FAZ.map((t) => (
-                  <li key={t} className="flex gap-3 text-sm leading-relaxed">
+                {IA_NAO_FAZ.map((linha) => (
+                  <li
+                    key={linha}
+                    className="flex gap-3 text-sm leading-relaxed"
+                  >
                     <span
                       aria-hidden="true"
                       className="mt-1.5 size-1.5 shrink-0 rounded-full bg-perigo"
                     />
-                    {t}
+                    {linha}
                   </li>
                 ))}
               </ul>
             </article>
           </div>
-
-          <p className="mt-5 max-w-[76ch] text-sm leading-relaxed text-texto-suave">
-            O diagnóstico é um caso à parte: corre inteiramente no servidor, por
-            regras, e nunca contacta nenhum serviço externo. Continua a
-            funcionar mesmo com o assistente desligado.
-          </p>
         </Seccao>
 
         {/* --------------------------------------------------------------- */}
@@ -637,20 +417,17 @@ export default function Apresentacao() {
           id="seguranca"
           etiqueta="Segurança"
           titulo="Controlo dos dados, verificado no servidor"
-          intro="Nada aqui depende do que a interface mostra ou esconde. Cada uma destas garantias é uma verificação que o servidor faz a cada pedido."
-          fundo
+          intro="Cada uma destas garantias é uma verificação que o servidor faz — não é o que o ecrã esconde."
         >
           <div className="grid gap-5 sm:grid-cols-2">
-            {SEGURANCA.map((s) => (
+            {SEGURANCA.map(([titulo, texto]) => (
               <article
-                key={s.titulo}
-                className="rounded-[14px] border border-borda bg-superficie p-6"
+                key={titulo}
+                className="rounded-[14px] border border-borda bg-superficie p-6 transition-colors hover:border-rosa"
               >
-                <h3 className="text-[17px] font-bold leading-snug">
-                  {s.titulo}
-                </h3>
+                <h3 className="text-[17px] font-bold leading-snug">{titulo}</h3>
                 <p className="mt-2.5 text-sm leading-relaxed text-texto-suave">
-                  {s.texto}
+                  {texto}
                 </p>
               </article>
             ))}
@@ -658,47 +435,28 @@ export default function Apresentacao() {
         </Seccao>
 
         {/* --------------------------------------------------------------- */}
-        <Seccao
-          id="para-quem"
-          etiqueta="Para quem"
-          titulo="Pensado para quem fecha contas todos os meses"
-        >
-          <div className="grid gap-5 md:grid-cols-3">
-            {PARA_QUEM.map((p) => (
-              <article
-                key={p.titulo}
-                className="rounded-[14px] border border-borda bg-superficie p-6"
-              >
-                <h3 className="text-[17px] font-bold leading-snug">
-                  {p.titulo}
-                </h3>
-                <p className="mt-2.5 text-sm leading-relaxed text-texto-suave">
-                  {p.texto}
-                </p>
-              </article>
-            ))}
-          </div>
-        </Seccao>
-
-        {/* --------------------------------------------------------------- */}
+        {/* A banda final fecha a página como o herói a abriu: escura, e nos
+            dois temas. O gradiente vai do azul da marca ao roxo do Piloto —
+            é onde a segunda cor pode ocupar espaço a sério sem competir com o
+            conteúdo, porque aqui não há conteúdo nenhum a competir. */}
         <section
           aria-labelledby="entrar-titulo"
-          className="border-t border-borda bg-marca"
+          className="border-t border-borda bg-[linear-gradient(100deg,#0b3d91_0%,#5b3a9e_60%,#7a3aab_100%)]"
         >
           <div className="mx-auto max-w-[1180px] px-5 py-20 text-center">
             <h2
               id="entrar-titulo"
-              className="mx-auto max-w-[22ch] text-3xl font-black leading-tight tracking-[-0.02em] text-white sm:text-4xl dark:text-[#0c1220]"
+              className="mx-auto max-w-[22ch] text-3xl font-black leading-tight tracking-[-0.02em] text-white sm:text-4xl"
             >
               Já tem acesso? O sistema está à sua espera.
             </h2>
-            <p className="mx-auto mt-4 max-w-[52ch] text-[15px] leading-relaxed text-white/75 dark:text-[#0c1220]/80">
+            <p className="mx-auto mt-4 max-w-[52ch] text-[15px] leading-relaxed text-white/75">
               Entre com o código ou o nome da empresa, o seu e-mail e a
               palavra-passe.
             </p>
             <Link
               href="/entrar"
-              className="mt-8 inline-block rounded-[10px] bg-white px-8 py-3.5 text-[15px] font-bold text-marca transition-transform hover:scale-[1.02] dark:bg-[#0c1220] dark:text-marca"
+              className="mt-8 inline-block rounded-[10px] bg-white px-8 py-3.5 text-[15px] font-bold text-[#0b3d91] transition-transform hover:scale-[1.02]"
             >
               Entrar
             </Link>
@@ -806,7 +564,18 @@ function Seccao({
       className={`border-b border-borda ${fundo ? "bg-superficie-2" : ""}`}
     >
       <div className="mx-auto max-w-[1180px] px-5 py-16 sm:py-20">
-        <p className="text-xs font-bold uppercase tracking-[2.5px] text-acento">
+        {/* A etiqueta NÃO é azul, e é a decisão de cor desta página. Tudo aqui
+            era da mesma família — marca, acento, gráficos — e um produto
+            inteiro em azul não dá onde pousar o olho. A segunda cor vem da
+            paleta do Piloto, onde já estava declarada e por usar.
+
+            É o MAGENTA e não o rosa, e a razão é medida: o rosa (`#e6007e`)
+            sobre branco dá 4,50:1 de contraste — exactamente o mínimo para
+            texto normal, e isto é texto pequeno. Ficar a uma casa decimal de
+            falhar não é passar. O magenta dá 5,85:1. O rosa continua a servir
+            onde o fundo é escuro e sobra contraste: o realce do herói e os
+            pontos da constelação. */}
+        <p className="text-xs font-bold uppercase tracking-[2.5px] text-magenta">
           {etiqueta}
         </p>
         <h2

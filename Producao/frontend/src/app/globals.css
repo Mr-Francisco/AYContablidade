@@ -48,6 +48,19 @@
   --color-acento: #4fa0e8;
   --color-acento-claro: #7fc0f0;
 
+  /* A SEGUNDA FAMÍLIA, que faltava aqui.
+     O rosa, o magenta e o roxo vêm do Piloto e estavam declarados só no tema
+     claro — no escuro ficavam com o mesmo valor saturado e liam-se como uma
+     mancha. Estes são os mesmos passos que o Piloto usa nos gráficos do tema
+     escuro. Existem porque um produto inteiro em azul não tem onde pousar o
+     olho: são a cor de destaque, para etiquetas e realces, nunca para blocos
+     grandes. */
+  --color-rosa: #ff3fa0;
+  --color-magenta: #ff6fbb;
+  --color-roxo: #b57edc;
+  --color-indigo: #8f93f5;
+  --color-azul: #6d9bff;
+
   --color-fundo: #0c1220;
   --color-superficie: #141b2b;
   --color-superficie-2: #1b2436;
