@@ -214,3 +214,7 @@
 - O TypeScript não leva o estreitamento de tipo para dentro de `function` declaradas: dar um nome novo com o tipo já sem `null` em vez de espalhar `!`, que é o que esconde o erro a sério.
 - `aria-hidden` num `<canvas>` é recusado (conta como elemento interactivo): a decoração esconde-se pela caixa que a envolve, não pelo próprio elemento.
 - Um painel de pré-visualização que não está à vista não emite frames: sem `requestAnimationFrame` e sem `ResizeObserver`, uma animação parece parada e não está — confirmar `document.visibilityState` antes de a dar por avariada.
+- Código sem porta na aplicação não tem como falhar nem como provar que funciona: o SAF-T de contabilidade estava escrito, testado à mão e inalcançável — o router só aceitava dois tipos.
+- Toda a conta usada num lançamento tem de existir no plano exportado: o SAF-T verifica-o com uma `keyref` e a mensagem que devolve não diz nada a ninguém. Verificar antes e nomear a conta e o lançamento.
+- Um teste que passa por sorte é pior do que não existir: o da ordem débitos/créditos passava porque a fixture já vinha ordenada. Construir o caso ADVERSO, não o natural.
+- O Portal do Contribuinte não é um ambiente de testes — submeter é declarar. Nunca lá enviar ficheiros gerados da base de demonstração.

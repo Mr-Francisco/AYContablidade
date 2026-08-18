@@ -12,6 +12,7 @@ foi decidida: **primeiro o SAF-T, depois a facturação electrónica.**
 | **[02 — SAF-T (AO)](02-SAFT-AO.md)** | **A prioridade.** O ficheiro, a estrutura, o que já temos e o que falta |
 | **[03 — Facturação electrónica](03-FACTURACAO-ELECTRONICA.md)** | A API da AGT: serviços, assinaturas, séries, QR Code |
 | **[04 — O que já existe](04-O-QUE-JA-EXISTE.md)** | Inventário honesto do Piloto e da Produção |
+| **[05 — Como testar o SAF-T](05-COMO-TESTAR-O-SAFT.md)** | Onde validar antes de entregar, e porque o portal da AGT não é um teste |
 
 E a pasta **[`oficial/`](oficial/)**, com as fontes tal como vieram:
 

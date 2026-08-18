@@ -721,7 +721,7 @@ def _lancamentos(
     directa. Um lançamento do período 14 é um apuramento, e dizê-lo `N` seria
     declarar mal uma coisa que o sistema já sabe.
     """
-    from src.db.models.contabilidade import Lancamento
+    from src.db.models.contabilidade import Conta, Lancamento
 
     lancamentos = list(
         db.scalars(
@@ -734,6 +734,37 @@ def _lancamentos(
             .order_by(Lancamento.data, Lancamento.numero_op)
         )
     )
+
+    # TODA A CONTA USADA TEM DE EXISTIR NO PLANO EXPORTADO, e o esquema
+    # verifica-o com uma `keyref`. Não é um pormenor: a linha do lançamento
+    # guarda o código da conta como texto — de propósito, para o razão mostrar
+    # a conta como estava à data —, e por isso nada impede que exista uma linha
+    # numa conta que entretanto saiu do plano, ou que lá nunca esteve por ter
+    # vindo de uma importação.
+    #
+    # Sem isto, o ficheiro sai, o validador recusa-o e a mensagem que se lê é
+    # «No match found for key-sequence ['4321'] of keyref
+    # GeneralLedgerEntriesCreditLineAccountIDConstraint». Ninguém age sobre
+    # aquilo. Preferimos parar aqui e dizer que conta é e em que lançamento.
+    no_plano = set(
+        db.scalars(select(Conta.codigo).where(Conta.empresa_id == empresa.id))
+    )
+    orfas: dict[str, str] = {}
+    for x in lancamentos:
+        for l in x.linhas:
+            if l.conta_codigo and l.conta_codigo not in no_plano:
+                orfas.setdefault(l.conta_codigo, x.numero_op or str(x.numero))
+    if orfas:
+        detalhe = "; ".join(
+            f"{codigo} (lançamento {onde})" for codigo, onde in sorted(orfas.items())
+        )
+        raise ErroSaft(
+            "Há lançamentos em contas que não estão no plano de contas da "
+            f"empresa: {detalhe}. O SAF-T seria recusado pela AGT — o esquema "
+            "exige que todas as contas movimentadas existam no plano "
+            "exportado. Acrescente as contas ao plano, ou corrija os "
+            "lançamentos, antes de exportar."
+        )
 
     gle = ET.SubElement(pai, "GeneralLedgerEntries")
     _e(gle, "NumberOfEntries", len(lancamentos))

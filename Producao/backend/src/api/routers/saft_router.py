@@ -26,9 +26,12 @@ VER = Depends(exigir_cap("contab.ver"))
 class PedidoSaft(BaseModel):
     de: date
     ate: date
-    #: `facturacao` ou `compras` — os dois ficheiros mensais que a AGT pede.
-    #: São o mesmo `AuditFile` com blocos diferentes preenchidos.
-    tipo: str = Field(default="facturacao", pattern="^(facturacao|compras)$")
+    #: Os TRÊS ficheiros que a AGT pede. São o mesmo `AuditFile` com blocos
+    #: diferentes preenchidos: `facturacao` e `compras` são mensais (dia 20 do
+    #: mês seguinte), `contabilidade` é anual (10 de Abril do ano seguinte).
+    tipo: str = Field(
+        default="facturacao", pattern="^(facturacao|compras|contabilidade)$"
+    )
     #: Número de validação do software atribuído pela AGT (`141/AGT/2026`), ou
     #: `0` enquanto não houver certificação. Em branco, usa-se o que está
     #: guardado em Configurações → Facturação: escrevê-lo a cada exportação
@@ -37,19 +40,19 @@ class PedidoSaft(BaseModel):
 
 
 def _gerar(db, empresa, dados: "PedidoSaft") -> bytes:
-    """O ficheiro do tipo pedido. Um sítio só a decidir qual — dois ramos
-    espalhados pelas rotas seriam duas hipóteses de divergirem."""
+    """O ficheiro do tipo pedido. Um sítio só a decidir qual — três ramos
+    espalhados pelas rotas seriam três hipóteses de divergirem."""
     from src.services.comercial import cfg_com
 
     if not (dados.numero_validacao or "").strip():
         dados.numero_validacao = cfg_com(db, empresa.id)["software_validacao"]
 
-    if dados.tipo == "compras":
-        return saft.gerar_compras(
-            db, empresa=empresa, de=dados.de, ate=dados.ate,
-            numero_validacao=dados.numero_validacao,
-        )
-    return saft.gerar(
+    gerador = {
+        "compras": saft.gerar_compras,
+        "contabilidade": saft.gerar_contabilidade,
+    }.get(dados.tipo, saft.gerar)
+
+    return gerador(
         db, empresa=empresa, de=dados.de, ate=dados.ate,
         numero_validacao=dados.numero_validacao,
     )
@@ -69,11 +72,15 @@ def prever(dados: PedidoSaft, empresa: EmpresaAtual, db: DB) -> dict:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
 
     valido, erros = saft.validar(xml)
+    # O ficheiro de contabilidade não tem facturas nenhumas: o que ali se conta
+    # são lançamentos. Contar `<Invoice>` dizia «0 documentos» num ficheiro
+    # correcto com um exercício inteiro lá dentro — e quem lê isso não entrega.
+    marcador = b"<Transaction>" if dados.tipo == "contabilidade" else b"<Invoice>"
     return {
         "valido": valido,
         "erros": erros,
         "bytes": len(xml),
-        "documentos": xml.count(b"<Invoice>"),
+        "documentos": xml.count(marcador),
         "periodo": {"de": dados.de, "ate": dados.ate},
     }
 
@@ -100,8 +107,13 @@ def exportar(dados: PedidoSaft, empresa: EmpresaAtual, db: DB) -> Response:
             + " | ".join(erros[:3]),
         )
 
-    marca = "FT" if dados.tipo == "facturacao" else "AQ"
-    nome = f"SAFT_{marca}_{empresa.nif}_{dados.de:%Y%m}.xml"
+    # O de contabilidade é anual e leva só o ano no nome: um `202601` num
+    # ficheiro que cobre o exercício inteiro fazia-o parecer de Janeiro.
+    marca = {"compras": "AQ", "contabilidade": "CT"}.get(dados.tipo, "FT")
+    quando = (
+        f"{dados.de:%Y}" if dados.tipo == "contabilidade" else f"{dados.de:%Y%m}"
+    )
+    nome = f"SAFT_{marca}_{empresa.nif}_{quando}.xml"
     return Response(
         content=xml,
         media_type="application/xml",

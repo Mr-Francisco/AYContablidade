@@ -64,15 +64,35 @@ interface Serie {
   registada_na_agt: boolean;
 }
 
-/** Primeiro e último dia de um mês do exercício. */
-function limitesDoMes(ano: number, mes: string) {
-  const m = Number(mes || "1");
-  const de = new Date(Date.UTC(ano, m - 1, 1));
-  const ate = new Date(Date.UTC(ano, m, 0));
+/** O período a exportar.
+
+    Os dois ficheiros mensais levam um mês; o de contabilidade leva o
+    EXERCÍCIO INTEIRO, porque é isso que a AGT pede uma vez por ano. Pedir o
+    mês num ficheiro anual daria um ficheiro certo com um ano errado lá dentro
+    — e é o género de engano que só se descobre do lado de lá. */
+function limitesDoPeriodo(ano: number, mes: string, tipo: string) {
+  const anual = tipo === "contabilidade";
+  const de = new Date(Date.UTC(ano, anual ? 0 : Number(mes || "1") - 1, 1));
+  const ate = anual
+    ? new Date(Date.UTC(ano, 11, 31))
+    : new Date(Date.UTC(ano, Number(mes || "1"), 0));
   return {
     de: de.toISOString().slice(0, 10),
     ate: ate.toISOString().slice(0, 10),
   };
+}
+
+/** O mesmo nome que o servidor põe no cabeçalho da resposta.
+ *
+ *  Está nos dois sítios porque o descarregamento é feito a partir de um
+ *  `blob` e o nome do cabeçalho perde-se pelo caminho. Se um mudar, o outro
+ *  tem de mudar — ver `saft_router.exportar`. */
+function nomeDoFicheiro(tipo: string, nif: string, de: string) {
+  const marca =
+    tipo === "compras" ? "AQ" : tipo === "contabilidade" ? "CT" : "FT";
+  const quando =
+    tipo === "contabilidade" ? de.slice(0, 4) : de.slice(0, 7).replace("-", "");
+  return `SAFT_${marca}_${nif}_${quando}.xml`;
 }
 
 export default function Saft() {
@@ -86,7 +106,7 @@ export default function Saft() {
     String(new Date().getMonth() + 1).padStart(2, "0"),
   );
   const [validacao, setValidacao] = useState("0");
-  /** «facturacao» ou «compras» — os dois ficheiros mensais que a AGT pede. */
+  /** Os três ficheiros da AGT: dois mensais e o de contabilidade, anual. */
   const [tipo, setTipo] = useState("facturacao");
   const [previsao, setPrevisao] = useState<Previsao | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -94,7 +114,7 @@ export default function Saft() {
 
   const { data: series } = useSWR<Serie[]>("/api/saft/series", buscador);
 
-  const periodo = limitesDoMes(ano, mes);
+  const periodo = limitesDoPeriodo(ano, mes, tipo);
 
   async function pedir(caminho: string) {
     const r = await fetch(`${API_URL}${caminho}`, {
@@ -142,7 +162,7 @@ export default function Saft() {
       const url = URL.createObjectURL(await r.blob());
       const a = document.createElement("a");
       a.href = url;
-      a.download = `SAFT_${tipo === "compras" ? "AQ" : "FT"}_${empresa?.nif ?? ""}_${periodo.de.slice(0, 7).replace("-", "")}.xml`;
+      a.download = nomeDoFicheiro(tipo, empresa?.nif ?? "", periodo.de);
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -158,7 +178,11 @@ export default function Saft() {
     <>
       <CabecalhoPagina
         titulo="SAF-T (AO)"
-        descricao="Ficheiro de facturação para a AGT — entrega-se até ao dia 20 do mês seguinte."
+        descricao={
+          tipo === "contabilidade"
+            ? "Ficheiro de contabilidade para a AGT — entrega-se até 10 de Abril do ano seguinte."
+            : "Ficheiro mensal para a AGT — entrega-se até ao dia 20 do mês seguinte."
+        }
       />
 
       <Alerta tipo="info" className="mb-4">
@@ -167,6 +191,12 @@ export default function Saft() {
             O ficheiro de <b>aquisição de bens e serviços</b> declara as compras
             do período: fornecedor, data e totais. Não leva a discriminação das
             linhas — essa é a declaração de quem vendeu.
+          </>
+        ) : tipo === "contabilidade" ? (
+          <>
+            O ficheiro de <b>contabilidade</b> leva o plano de contas inteiro e
+            os lançamentos do exercício — não só as contas movimentadas. É
+            anual, e o período é o exercício completo.
           </>
         ) : (
           <>
@@ -192,16 +222,26 @@ export default function Saft() {
           opcoes={[
             { valor: "facturacao", rotulo: "Facturação" },
             { valor: "compras", rotulo: "Aquisição de bens e serviços" },
+            { valor: "contabilidade", rotulo: "Contabilidade (anual)" },
           ]}
           larguraMinima="17rem"
         />
-        <SelectorPeriodo
-          rotulo="Mês"
-          valor={mes}
-          aoMudar={setMes}
-          rotuloTodos={null}
-          larguraMinima="14rem"
-        />
+        {tipo === "contabilidade" ? (
+          <Campo
+            rotulo="Período"
+            dica="O exercício inteiro — é o que a AGT pede uma vez por ano."
+          >
+            <Entrada value={`${ano} — exercício completo`} readOnly disabled />
+          </Campo>
+        ) : (
+          <SelectorPeriodo
+            rotulo="Mês"
+            valor={mes}
+            aoMudar={setMes}
+            rotuloTodos={null}
+            larguraMinima="14rem"
+          />
+        )}
         <Campo
           rotulo="Nº de validação do software"
           dica="Atribuído pela AGT (141/AGT/2026). Enquanto não houver certificação, «0»."
