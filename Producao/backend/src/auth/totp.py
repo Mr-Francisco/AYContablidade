@@ -27,6 +27,7 @@ TRÊS DECISÕES QUE VALE A PENA EXPLICAR:
    o que aconteceu.
 """
 
+import logging
 import base64
 import hashlib
 import io
@@ -46,6 +47,9 @@ JANELA = 1
 
 #: Quantos códigos de recuperação se geram na activação.
 N_CODIGOS_RECUPERACAO = 8
+
+
+log = logging.getLogger(__name__)
 
 
 class ErroTotp(Exception):
@@ -89,9 +93,19 @@ def decifrar_segredo(cifrado: str) -> str:
     try:
         return _cifrador().decrypt(cifrado.encode("ascii")).decode("ascii")
     except InvalidToken as e:
+        # DUAS AUDIÊNCIAS, DUAS MENSAGENS. Quem está a entrar não pode fazer
+        # nada com «a chave de cifra foi alterada» — para essa pessoa isto é
+        # «não consigo entrar, e agora?». O que ela lê diz o que fazer; a causa
+        # vai para os registos, onde quem administra a instalação a procura.
+        log.error(
+            "TOTP: falhou a decifra do segredo. A TOTP_CHAVE_CIFRA em uso não "
+            "é a que cifrou este segredo — foi rodada ou trocada. As contas "
+            "afectadas têm de reconfigurar o segundo factor."
+        )
         raise ErroTotp(
-            "Não foi possível ler o segredo de 2FA desta conta. A chave de "
-            "cifra do servidor foi alterada — o 2FA tem de ser reconfigurado."
+            "Não foi possível confirmar a verificação em dois passos desta "
+            "conta. É preciso configurá-la de novo — peça a reposição a quem "
+            "administra a plataforma."
         ) from e
 
 

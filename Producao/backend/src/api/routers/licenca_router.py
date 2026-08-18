@@ -32,6 +32,7 @@ from src.core.constants import EstadoEmpresa, EstadoLicenca, Perfil
 from src.db.models.tenancy import Empresa, Licenca
 from src.db.models.user import User
 from src.db.schemas.licenca import (
+    EmpresaCertificacaoPedido,
     ActivacaoPedido,
     ActivacaoResposta,
     ConfigIaAtualizar,
@@ -287,6 +288,67 @@ def mudar_estado_empresa(
             "depois": novo,
             "motivo": (dados.motivo or "").strip() or None,
             "sessoes_terminadas": expulsos,
+        },
+    )
+    db.commit()
+    db.refresh(empresa)
+    return EmpresaPublica.model_validate(empresa)
+
+
+@router.patch(
+    "/empresas/{empresa_id}/certificacao", response_model=EmpresaPublica
+)
+def definir_certificacao(
+    request: Request,
+    empresa_id: UUID,
+    dados: EmpresaCertificacaoPedido,
+    user: UtilizadorAtual,
+    db: DB,
+) -> EmpresaPublica:
+    """O número de certificação da AGT de uma empresa. SÓ AQUI SE ESCREVE.
+
+    Esteve nas parametrizações comerciais, onde qualquer administrador de
+    empresa lhe podia mexer — e essa era a falha. Quem certifica é a AGT, e o
+    que ela certifica é o programa; uma empresa a escrever ali o número que lhe
+    apetecesse podia declarar uma certificação que não tem, uma que não existe,
+    ou a de um concorrente. E saía tudo validado, porque o esquema do SAF-T
+    verifica o FORMATO do número e nunca a quem pertence.
+
+    Deixar em branco limpa o número, e isso quer dizer «esta empresa não tem
+    certificação» — estado legítimo, previsto pela norma, e o valor honesto
+    enquanto a certificação não chega. O SAF-T sai com `0`, que é como a norma
+    diz «software ainda não certificado».
+    """
+    empresa = _empresa_ou_404(db, empresa_id)
+
+    anterior = empresa.certificacao_agt or ""
+    novo = dados.numero
+    if anterior == novo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "A empresa já tem esse número de certificação."
+            if novo
+            else "A empresa já está sem número de certificação.",
+        )
+
+    empresa.certificacao_agt = novo or None
+
+    # O ANTES E O DEPOIS FICAM REGISTADOS, e não é formalidade. Este número vai
+    # em cada ficheiro entregue à AGT: se um dia se perguntar com que
+    # certificação é que uma entrega saiu, a resposta tem de existir.
+    auditar(
+        db,
+        actor=user,
+        accao="empresa.certificacao",
+        request=request,
+        alvo_tipo="empresa",
+        alvo_id=empresa.id,
+        alvo_desc=f"{empresa.codigo} — {empresa.nome}",
+        empresa_id=empresa.id,
+        detalhes={
+            "antes": anterior or None,
+            "depois": novo or None,
+            "motivo": (dados.motivo or "").strip() or None,
         },
     )
     db.commit()

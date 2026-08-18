@@ -546,11 +546,27 @@ def resumo(empresa: EmpresaAtual, db: DB) -> dict:
 
 @router.get("/config")
 def obter_config(empresa: EmpresaAtual, db: DB) -> dict:
-    return svc.cfg_com(db, empresa.id)
+    # O número de certificação vai junto para a empresa o PODER VER, mas não é
+    # uma parametrização: quem o define é a plataforma. Vem marcado como só de
+    # leitura para o ecrã não ter de adivinhar.
+    return {
+        **svc.cfg_com(db, empresa.id),
+        "certificacao_agt": empresa.certificacao_agt or "",
+        "certificacao_agt_editavel": False,
+    }
 
 
 @router.put("/config", dependencies=[GERIR])
 def gravar_config(request: Request, dados: dict, empresa: EmpresaAtual, db: DB) -> dict:
+    """As parametrizações comerciais da empresa.
+
+    O número de certificação NÃO se altera por aqui, mesmo que venha no pedido:
+    o serviço deixa-o cair. Ver `SO_A_PLATAFORMA_ESCREVE`.
+    """
     r = svc.guardar_cfg_com(db, empresa.id, dados)
     db.commit()
-    return r
+    return {
+        **r,
+        "certificacao_agt": empresa.certificacao_agt or "",
+        "certificacao_agt_editavel": False,
+    }

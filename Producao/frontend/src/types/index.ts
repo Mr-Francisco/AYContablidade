@@ -1002,6 +1002,8 @@ export interface EmpresaPlataforma {
   regime: string;
   forma_juridica: string | null;
   estado: string;
+  /** Número de certificação da AGT. Só a plataforma o define; a empresa vê-o. */
+  certificacao_agt: string | null;
   criado_em: string;
 }
 

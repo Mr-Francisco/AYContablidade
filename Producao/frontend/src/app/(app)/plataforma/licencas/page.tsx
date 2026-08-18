@@ -320,9 +320,9 @@ function ModalChave({
     <Modal titulo="Licença gerada" aoFechar={aoFechar} largura="560px">
       <div className="flex flex-col gap-4 p-5">
         <Alerta tipo="aviso">
-          <b>Esta chave não volta a ser mostrada.</b> A base guarda apenas o seu
-          hash, para que uma leitura da base não entregue licenças por activar.
-          Copie-a agora — se se perder, gera-se outra.
+          <b>Esta chave não volta a ser mostrada.</b> Por segurança, não fica
+          guardada de forma legível. Copie-a agora e entregue-a ao cliente. Se a
+          perder, gere uma licença nova.
         </Alerta>
 
         <div className="rounded-xl border-2 border-dashed border-marca bg-fundo p-5 text-center">

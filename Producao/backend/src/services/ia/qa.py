@@ -81,7 +81,7 @@ def listar_modelos() -> list[str]:
     """
     s = _settings()
     if not s.OPENAI_API_KEY:
-        raise ErroIA("A chave da API da OpenAI não está configurada.")
+        raise ErroIA("O assistente ainda não está disponível nesta instalação.")
     try:
         r = httpx.get(
             OPENAI_MODELOS_URL,
@@ -99,8 +99,8 @@ def _chamar_openai(pacote: dict, pergunta: str, max_saida: int, modelo: str) -> 
     s = _settings()
     if not s.OPENAI_API_KEY:
         raise ErroIA(
-            "A chave da API da OpenAI não está configurada. Defina OPENAI_API_KEY "
-            "no ficheiro .env."
+            "O assistente ainda não está disponível nesta instalação. "
+            "Contacte o fornecedor da plataforma."
         )
 
     corpo = {
@@ -149,7 +149,7 @@ def _chamar_openai(pacote: dict, pergunta: str, max_saida: int, modelo: str) -> 
         raise ErroIA(f"Falha na comunicação com a IA: {e}") from e
 
     if r.status_code == 401:
-        raise ErroIA("A chave da API da OpenAI foi recusada. Verifique OPENAI_API_KEY.")
+        raise ErroIA("O assistente não está a conseguir responder. Contacte o fornecedor da plataforma.")
     if r.status_code == 429:
         raise ErroIA("Limite de utilização da OpenAI atingido. Tente daqui a pouco.")
     if r.status_code >= 400:

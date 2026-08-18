@@ -52,9 +52,9 @@ export default function DiagnosticoPagina() {
       />
 
       <Alerta tipo="info" className="mb-4">
-        Este diagnóstico corre <b>inteiramente no servidor</b>, por regras — não
-        contacta nenhuma API externa e funciona sem chave de IA configurada.
-        Nada daqui é enviado para lado nenhum.
+        Este diagnóstico é feito <b>dentro da plataforma</b>, a partir dos dados
+        da sua empresa. Nenhuma informação é enviada para fora, e continua a
+        funcionar mesmo com o assistente desligado.
       </Alerta>
 
       {data && (

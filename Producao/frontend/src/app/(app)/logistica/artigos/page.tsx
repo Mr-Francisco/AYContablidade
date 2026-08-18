@@ -574,8 +574,8 @@ function FormularioArtigo({
                 {margem && (
                   <Alerta tipo="info" className="mt-3">
                     Margem sobre o preço de compra:{" "}
-                    <b className="tabular">{margem} %</b>. É calculada dos dois
-                    preços, não se grava.
+                    <b className="tabular">{margem} %</b>. É calculada a partir
+                    dos preços indicados e não fica guardada.
                   </Alerta>
                 )}
               </Tabs.Content>

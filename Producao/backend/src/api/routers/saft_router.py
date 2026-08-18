@@ -32,21 +32,21 @@ class PedidoSaft(BaseModel):
     tipo: str = Field(
         default="facturacao", pattern="^(facturacao|compras|contabilidade)$"
     )
-    #: Número de validação do software atribuído pela AGT (`141/AGT/2026`), ou
-    #: `0` enquanto não houver certificação. Em branco, usa-se o que está
-    #: guardado em Configurações → Facturação: escrevê-lo a cada exportação
-    #: era um convite a enganos numa coisa que não muda.
-    numero_validacao: str | None = Field(default=None, max_length=30)
+    # NÃO HÁ AQUI UM `numero_validacao`, E É DE PROPÓSITO.
+    #
+    # Havia, e era o maior buraco desta rota: quem exportasse podia mandar no
+    # pedido o número de certificação que lhe apetecesse — o de um concorrente,
+    # um inventado — e o ficheiro saía com ele. O esquema do SAF-T só verifica
+    # o FORMATO do número, nunca a quem pertence, por isso passava na validação
+    # e chegava à AGT com uma certificação que não era daquela empresa.
+    #
+    # O número vem agora da ficha da empresa, escrito só pela plataforma. Se o
+    # cliente enviar o campo, é ignorado — não existe no modelo.
 
 
 def _gerar(db, empresa, dados: "PedidoSaft") -> bytes:
     """O ficheiro do tipo pedido. Um sítio só a decidir qual — três ramos
     espalhados pelas rotas seriam três hipóteses de divergirem."""
-    from src.services.comercial import cfg_com
-
-    if not (dados.numero_validacao or "").strip():
-        dados.numero_validacao = cfg_com(db, empresa.id)["software_validacao"]
-
     gerador = {
         "compras": saft.gerar_compras,
         "contabilidade": saft.gerar_contabilidade,
@@ -54,7 +54,7 @@ def _gerar(db, empresa, dados: "PedidoSaft") -> bytes:
 
     return gerador(
         db, empresa=empresa, de=dados.de, ate=dados.ate,
-        numero_validacao=dados.numero_validacao,
+        numero_validacao=empresa.certificacao_agt or saft.SEM_CERTIFICACAO,
     )
 
 
@@ -78,7 +78,11 @@ def prever(dados: PedidoSaft, empresa: EmpresaAtual, db: DB) -> dict:
     marcador = b"<Transaction>" if dados.tipo == "contabilidade" else b"<Invoice>"
     return {
         "valido": valido,
-        "erros": erros,
+        # O QUE VAI PARA O ECRÃ É A TRADUÇÃO, não o que o validador diz. Quem
+        # exporta é um contabilista com um prazo, e «No match found for
+        # key-sequence ['4321'] of keyref …» não lhe diz o que corrigir. O
+        # texto original segue em `detalhe`, para quem der apoio.
+        "erros": saft.explicar(erros),
         "bytes": len(xml),
         "documentos": xml.count(marcador),
         "periodo": {"de": dados.de, "ate": dados.ate},
@@ -100,11 +104,12 @@ def exportar(dados: PedidoSaft, empresa: EmpresaAtual, db: DB) -> Response:
 
     valido, erros = saft.validar(xml)
     if not valido:
+        explicados = saft.explicar(erros)
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "O ficheiro gerado não passa no esquema oficial da AGT e por isso "
-            "não é descarregado — seria recusado na entrega. "
-            + " | ".join(erros[:3]),
+            "O ficheiro não pode ser entregue à AGT tal como está e por isso "
+            "não foi descarregado. "
+            + " ".join(e["mensagem"] for e in explicados[:2]),
         )
 
     # O de contabilidade é anual e leva só o ano no nome: um `202601` num

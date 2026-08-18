@@ -4,6 +4,10 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import {
+  BotaoCertificacao,
+  SeloCertificacao,
+} from "@/components/plataforma/CertificacaoEmpresa";
+import {
   AccoesEstado,
   SeloEstado,
 } from "@/components/plataforma/EstadoEmpresa";
@@ -170,6 +174,7 @@ export default function Empresas() {
                   <Th>Validade</Th>
                   <Th numerico>Tokens no mês</Th>
                   <Th numerico>Custo</Th>
+                  <Th>Certificação AGT</Th>
                   <Th>Estado</Th>
                   <Th numerico>Acções</Th>
                 </tr>
@@ -211,10 +216,19 @@ export default function Empresas() {
                       </Td>
                       <Td numerico>{c?.custo ? `${c.custo} USD` : "—"}</Td>
                       <Td>
+                        <SeloCertificacao numero={e.certificacao_agt} />
+                      </Td>
+                      <Td>
                         <SeloEstado estado={e.estado} />
                       </Td>
                       <Td>
-                        <AccoesEstado empresa={e} aoMudar={() => mutate()} />
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          <BotaoCertificacao
+                            empresa={e}
+                            aoMudar={() => mutate()}
+                          />
+                          <AccoesEstado empresa={e} aoMudar={() => mutate()} />
+                        </div>
                       </Td>
                     </Tr>
                   );

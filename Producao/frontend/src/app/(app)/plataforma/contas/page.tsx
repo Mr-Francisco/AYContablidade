@@ -404,8 +404,8 @@ function DialogoCriar({
       <form onSubmit={submeter} className="flex flex-col gap-3 p-5">
         <Alerta tipo="aviso">
           Esta conta vai poder gerar licenças, alterar contratos e ver a
-          auditoria de todas as empresas. A palavra-passe inicial é gerada pelo
-          servidor e mostrada uma única vez.
+          auditoria de todas as empresas. A palavra-passe inicial é gerada
+          automaticamente e mostrada uma única vez — guarde-a nesse momento.
         </Alerta>
 
         <Campo rotulo="Nome">

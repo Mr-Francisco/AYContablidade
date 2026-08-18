@@ -78,6 +78,24 @@ class Empresa(UUIDMixin, TimestampMixin, Base):
     #: se lembra de pedir até ao dia em que falta.
     eac: Mapped[str | None] = mapped_column(String(10))
 
+    #: NÚMERO DE CERTIFICAÇÃO DO SOFTWARE, atribuído pela AGT (`141/AGT/2026`).
+    #:
+    #: Vive AQUI, na empresa, e não nas parametrizações — e a diferença não é
+    #: de arrumação, é de quem manda. As parametrizações são da empresa e a
+    #: empresa altera-as; este número é atribuído pela plataforma e a empresa
+    #: só o vê.
+    #:
+    #: A razão é simples de dizer e séria: quem certifica é a AGT, e o que ela
+    #: certifica é o programa. Se cada empresa pudesse escrever aqui o que
+    #: quisesse, podia declarar uma certificação que não tem, uma que não
+    #: existe, ou a de um concorrente — e o ficheiro sairia validado à mesma,
+    #: porque o esquema só verifica o FORMATO do número, nunca se ele é seu.
+    #:
+    #: Vazio ou `0` quer dizer «software ainda não certificado», que é um
+    #: estado previsto pela norma e é o valor honesto enquanto não houver
+    #: certificação. Nunca inventar um número para «ficar bonito».
+    certificacao_agt: Mapped[str | None] = mapped_column(String(30))
+
     estado: Mapped[EstadoEmpresa] = mapped_column(
         String(20), default=EstadoEmpresa.ACTIVA, nullable=False, index=True
     )

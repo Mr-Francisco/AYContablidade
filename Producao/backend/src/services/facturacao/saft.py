@@ -981,3 +981,176 @@ def validar(xml: bytes) -> tuple[bool, list[str]]:
     if esquema.validate(doc):
         return True, []
     return False, [f"linha {e.line}: {e.message}" for e in esquema.error_log]
+
+
+# ---------------------------------------------------------------------------
+# Traduzir o validador para português de quem trabalha
+# ---------------------------------------------------------------------------
+#
+# O validador do esquema fala a língua dele, e é esta:
+#
+#   linha 14674: Element '{urn:OECD:...}CreditLine': No match found for
+#   key-sequence ['4321'] of keyref '{urn:OECD:...}GeneralLedgerEntries
+#   CreditLineAccountIDConstraint'.
+#
+# Isso ia inteiro para o ecrã. Quem exporta o SAF-T é um contabilista com um
+# prazo no dia 20, não quem escreveu o programa: aquela linha não lhe diz o que
+# está mal nem o que fazer, e o prazo continua a correr.
+#
+# O que se mostra passa a ser a tradução. O texto original não desaparece —
+# segue no campo `detalhe`, para quem der apoio o poder ler.
+
+#: Nomes do esquema traduzidos para o que a pessoa vê nos ecrãs.
+NOMES = {
+    "AccountID": "código da conta",
+    "CustomerID": "código do cliente",
+    "SupplierID": "código do fornecedor",
+    "ProductCode": "código do artigo",
+    "InvoiceNo": "número do documento",
+    "InvoiceDate": "data do documento",
+    "TaxRegistrationNumber": "NIF",
+    "SoftwareValidationNumber": "número de certificação do software",
+    "ProductID": "identificação do programa",
+    "CompanyName": "nome da empresa",
+    "CompanyAddress": "morada da empresa",
+    "AddressDetail": "morada",
+    "City": "localidade",
+    "TaxPayable": "imposto",
+    "GrossTotal": "total",
+    "NetTotal": "total sem imposto",
+    "Period": "período",
+    "TransactionID": "identificação do lançamento",
+    "TransactionDate": "data do lançamento",
+    "GLPostingDate": "data de registo",
+    "SystemEntryDate": "data de entrada no sistema",
+    "TaxCode": "código de imposto",
+    "TaxPercentage": "taxa de imposto",
+    "EACCode": "código de actividade económica (CAE)",
+    "Description": "descrição",
+    "DebitAmount": "valor a débito",
+    "CreditAmount": "valor a crédito",
+}
+
+
+def _legivel(nome: str) -> str:
+    """`{urn:...}CreditLine` → «linha de crédito»."""
+    limpo = re.sub(r"^\{[^}]*\}", "", nome or "").strip()
+    if limpo in NOMES:
+        return NOMES[limpo]
+    return {
+        "DebitLine": "linha de débito",
+        "CreditLine": "linha de crédito",
+        "Invoice": "documento",
+        "Line": "linha do documento",
+        "Transaction": "lançamento",
+        "Account": "conta",
+        "Customer": "cliente",
+        "Supplier": "fornecedor",
+        "Product": "artigo",
+        "Header": "cabeçalho",
+    }.get(limpo, limpo)
+
+
+def explicar(erros: list[str]) -> list[dict]:
+    """Cada erro do validador, dito em português de quem usa o sistema.
+
+    Devolve `{"mensagem": …, "detalhe": …}` — a tradução e o texto original.
+    Mensagens repetidas são agrupadas: cinquenta linhas a dizer o mesmo não
+    ajudam ninguém a corrigir mais depressa do que uma.
+    """
+    vistas: dict[str, dict] = {}
+
+    for erro in erros:
+        mensagem = _traduzir(erro)
+        entrada = vistas.setdefault(
+            mensagem, {"mensagem": mensagem, "detalhe": erro, "ocorrencias": 0}
+        )
+        entrada["ocorrencias"] += 1
+
+    return list(vistas.values())
+
+
+def _traduzir(erro: str) -> str:
+    # Uma conta usada num lançamento que não existe no plano exportado.
+    m = re.search(r"No match found for key-sequence \['([^']*)'\].*?AccountID", erro)
+    if m:
+        return (
+            f"A conta {m.group(1)} é usada em lançamentos mas não existe no "
+            "plano de contas. Acrescente a conta ao plano ou corrija os "
+            "lançamentos que a usam."
+        )
+
+    m = re.search(r"No match found for key-sequence \['([^']*)'\]", erro)
+    if m:
+        return (
+            f"O código {m.group(1)} é usado mas não está declarado no "
+            "ficheiro. Confirme se o registo a que pertence existe."
+        )
+
+    # Valor que não respeita o formato exigido.
+    m = re.search(r"The value '([^']*)' is not accepted by the pattern", erro)
+    if m:
+        campo = _campo_do_erro(erro)
+        onde = f" em {campo}" if campo else ""
+        return (
+            f"O valor «{m.group(1)}»{onde} não tem o formato exigido pela AGT. "
+            "Corrija-o antes de exportar."
+        )
+
+    # Valor demasiado comprido. A mensagem do validador tem esta forma:
+    # «The value has a length of '36'; this exceeds the allowed maximum
+    # length of '30'» — o valor em si não vem lá, só os comprimentos.
+    m = re.search(
+        r"length of '(\d+)'.*?maximum length of '(\d+)'", erro, re.S
+    )
+    if m:
+        campo = _campo_do_erro(erro)
+        onde = f"O {campo}" if campo else "Um dos valores"
+        return (
+            f"{onde} é demasiado comprido: tem {m.group(1)} caracteres e a AGT "
+            f"aceita no máximo {m.group(2)}. Encurte-o e exporte de novo."
+        )
+
+    # Campo obrigatório em falta.
+    m = re.search(r"Missing child element\(s\).*?Expected is[^(]*\(\s*([^)]*)\)", erro)
+    if m:
+        falta = ", ".join(_legivel(x) for x in m.group(1).split(",")[:3])
+        return f"Falta preencher: {falta}. Complete a informação e exporte de novo."
+
+    # Elemento fora de sítio ou a mais.
+    m = re.search(r"This element is not expected", erro)
+    if m:
+        campo = _campo_do_erro(erro)
+        onde = f" ({campo})" if campo else ""
+        return (
+            f"Há informação fora do sítio no ficheiro{onde}. "
+            "Contacte o fornecedor da plataforma."
+        )
+
+    # Tipo errado — data onde se espera data e hora, texto onde se espera número.
+    m = re.search(r"'([^']*)' is not a valid value of the atomic type '([^']*)'", erro)
+    if m:
+        campo = _campo_do_erro(erro)
+        onde = f" em {campo}" if campo else ""
+        return (
+            f"O valor «{m.group(1)}»{onde} não é aceite pela AGT. "
+            "Verifique se está preenchido correctamente."
+        )
+
+    if "XML mal formado" in erro or "não foi possível ler o esquema" in erro.lower():
+        return (
+            "Não foi possível preparar o ficheiro. "
+            "Contacte o fornecedor da plataforma."
+        )
+
+    # O que não se reconhece não se inventa: diz-se que é preciso ajuda.
+    return (
+        "O ficheiro tem um problema que impede a entrega à AGT. "
+        "Contacte o fornecedor da plataforma com o detalhe técnico."
+    )
+
+
+def _campo_do_erro(erro: str) -> str:
+    """O nome do campo que o validador cita, já traduzido."""
+    m = re.search(r"Element '\{[^}]*\}([A-Za-z]+)'", erro)
+    return _legivel(m.group(1)) if m else ""

@@ -36,21 +36,19 @@ export function Permissoes() {
           <Linha
             politica="Perfis de acesso"
             estado="Fixos no sistema"
-            detalhe="O que cada perfil pode fazer não se edita: é o que garante que um perfil de consulta nunca lança nada. Para mudar o perfil de uma pessoa, é em Gestão → Utilizadores."
+            detalhe="O que cada perfil pode fazer não é editável — é isso que garante que um perfil de consulta nunca lança documentos. Para mudar o perfil de uma pessoa, vá a Gestão → Utilizadores."
           />
           <Linha
             politica="Módulos por utilizador"
             estado="Por utilizador"
-            detalhe="Um utilizador pode ser limitado a alguns módulos. A limitação é aplicada no servidor, não só no menu."
+            detalhe="Um utilizador pode ser limitado a alguns módulos. A limitação vale para todo o acesso, e não apenas para o que aparece no menu."
           />
         </div>
 
         <Alerta tipo="info" className="mt-4">
-          No Piloto esta política era um interruptor que se podia desligar. Aqui
-          é permanente — a rota que altera vendedores exige a capacidade no
-          servidor, e desligá-la significaria abrir a edição a quem não a deve
-          ter. Um interruptor que não mudasse nada seria pior do que não
-          existir.
+          Esta política não pode ser desligada. Só quem tem permissão para gerir
+          vendedores os consegue alterar, e essa verificação é sempre feita —
+          independentemente do que esteja visível no ecrã.
         </Alerta>
       </Cartao>
 

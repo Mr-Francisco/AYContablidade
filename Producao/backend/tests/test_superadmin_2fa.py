@@ -76,19 +76,37 @@ def test_superadmin_sem_2fa_nao_administra_a_plataforma():
     assert "dois passos" in e.value.detail
 
 
-def test_sem_chave_de_cifra_falha_fechado():
-    """REGRESSÃO: deixar passar por faltar uma variável seria desligar a
-    protecção exactamente quando o servidor está mal configurado. A mensagem
-    tem de nomear a variável, senão ninguém percebe como sair disto."""
+def test_sem_chave_de_cifra_falha_fechado(caplog):
+    """REGRESSÃO: deixar passar por faltar configuração seria desligar a
+    protecção exactamente quando a instalação está mal configurada.
+
+    E DUAS AUDIÊNCIAS, DUAS MENSAGENS. Este teste já exigiu o contrário —
+    que a mensagem nomeasse a variável de ambiente. Estava errado: quem
+    administra a plataforma não é necessariamente quem instalou o servidor,
+    e mandá-lo definir uma variável a que não tem acesso não o ajuda a sair
+    dali. O que ele lê diz a quem se dirigir; o nome da variável fica no
+    registo, que é onde quem instalou o vai procurar.
+    """
+    import logging
+
     from src.api.deps import exigir_superadmin
     from src.core.constants import Perfil
 
     os.environ["TOTP_CHAVE_CIFRA"] = ""
     get_settings.cache_clear()
-    with pytest.raises(HTTPException) as e:
-        exigir_superadmin(_conta(Perfil.SUPERADMIN, com_2fa=False), ESCOPO_PLATAFORMA)
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(HTTPException) as e:
+            exigir_superadmin(
+                _conta(Perfil.SUPERADMIN, com_2fa=False), ESCOPO_PLATAFORMA
+            )
+
     assert e.value.status_code == 503
-    assert "TOTP_CHAVE_CIFRA" in e.value.detail
+    # O que a pessoa lê: sem jargão, e com o passo seguinte.
+    assert "TOTP_CHAVE_CIFRA" not in e.value.detail
+    assert "dois passos" in e.value.detail
+    assert "fornecedor da plataforma" in e.value.detail
+    # O que fica registado: a causa exacta, para quem a pode resolver.
+    assert "TOTP_CHAVE_CIFRA" in caplog.text
 
 
 def test_o_perfil_continua_a_ser_verificado_primeiro():

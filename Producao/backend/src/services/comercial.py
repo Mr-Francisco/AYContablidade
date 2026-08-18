@@ -66,17 +66,21 @@ def cfg_com_default() -> dict:
         "conta_caixa": "4511",
         "conta_banco": "43101",
         "conta_adiantamento": "319121",
-        # NÚMERO DE VALIDAÇÃO DO SOFTWARE, atribuído pela AGT ao certificar.
-        #
-        # O formato é `NNN/AGT/AAAA` — por exemplo `141/AGT/2026` — e é o
-        # esquema do SAF-T que o impõe (`\d+/AGT/\d{4}|0`). O `0` é previsto
-        # pela norma e quer dizer «ainda não certificado».
-        #
-        # Fica a `0` por omissão de propósito: um número inventado passaria na
-        # validação do ficheiro e seria falso perante a AGT. Preenche-se em
-        # Configurações → Facturação quando a certificação chegar.
-        "software_validacao": "0",
     }
+
+
+#: Campos que a empresa NÃO escreve, por muito que os envie.
+#:
+#: Só há um, e é o número de certificação da AGT. Esteve aqui nas
+#: parametrizações e qualquer administrador de empresa lhe podia mexer —
+#: bastava um pedido a dizer `{"software_validacao": "..."}` para uma empresa
+#: declarar uma certificação que não tem, ou a de um concorrente. Passou para
+#: a ficha da empresa (`Empresa.certificacao_agt`), onde só as rotas da
+#: plataforma escrevem.
+#:
+#: A lista fica aqui, e não numa verificação escondida na rota, para que quem
+#: acrescentar um campo destes amanhã o ponha no mesmo sítio.
+SO_A_PLATAFORMA_ESCREVE = frozenset({"software_validacao", "certificacao_agt"})
 
 
 def cfg_com(db: Session, empresa_id: UUID) -> dict:
@@ -88,6 +92,13 @@ def cfg_com(db: Session, empresa_id: UUID) -> dict:
 
 
 def guardar_cfg_com(db: Session, empresa_id: UUID, novo: dict) -> dict:
+    # O que a empresa não escreve é DEIXADO CAIR, em silêncio e sem erro. Não é
+    # descuido: quem envia isto ou está a usar um ecrã antigo, e um erro só o
+    # confundiria, ou está a tentar contornar a regra, e nesse caso um erro
+    # detalhado só lhe diria o que tentar a seguir. O valor não muda, que é o
+    # que interessa. A tentativa fica no registo de auditoria da rota.
+    novo = {k: v for k, v in novo.items() if k not in SO_A_PLATAFORMA_ESCREVE}
+
     cfg = db.scalar(select(ConfigEmpresa).where(ConfigEmpresa.empresa_id == empresa_id))
     if cfg is None:
         cfg = ConfigEmpresa(empresa_id=empresa_id, modulos={}, parametrizacoes={}, agt={})

@@ -128,6 +128,60 @@ módulos, e aplica-se antes de se escrever qualquer listagem nova.
 Usar `ListaPaginada` / `usePaginacao` (`components/ui/Paginacao.tsx`). Não
 reimplementar por página — foi assim que as listagens divergiram antes.
 
+## Regra de Linguagem — falar com quem usa, não com quem programou
+
+**Vale para TODO o texto que o utilizador lê**, em todos os módulos: erros,
+avisos, confirmações, validações, notificações, bloqueios, estados, mensagens
+informativas, mensagens de sucesso, dicas e instruções.
+
+### A forma
+
+Uma mensagem responde a três coisas, por esta ordem:
+
+1. **O que está a acontecer** — dito de forma directa.
+2. **Qual é o impacto** — o que isto significa para o trabalho da pessoa.
+3. **O que fazer a seguir** — a acção concreta.
+
+### O que evitar
+
+Não é só apagar `backend`, `API`, `endpoint`, `HTTP 500`, `exception`, nomes de
+ficheiros ou de campos da base de dados. É também evitar:
+
+- **linguagem interna do sistema** — nomes de tabelas, de funções, de estados
+  internos, jargão da implementação;
+- **explicar como o sistema funciona por dentro** em vez de explicar o problema
+  do ponto de vista de quem o encontrou;
+- **frases burocráticas ou abstractas** que estão correctas e não se percebem;
+- **subentendidos** que só quem conhece a lógica interna consegue desfazer.
+
+### O exemplo que originou a regra
+
+❌ «Mudar estas contas a meio de um exercício faz os lançamentos novos irem
+para outro sítio — os que já estão lançados não se movem, e o mapa de custos
+deixa de comparar o mesmo. Se for mesmo preciso, convém que aconteça no início
+de um período.»
+
+✅ «Não é possível alterar estas contas durante o exercício porque isso pode
+afectar a forma como os custos são apresentados e comparados. Para evitar
+diferenças nos resultados, faça esta alteração no início de um novo período.»
+
+A primeira não tem um único termo de programação e está tecnicamente correcta.
+Continua a ser má: descreve o mecanismo interno («os lançamentos novos vão
+para outro sítio») em vez de dizer o efeito e o que fazer.
+
+### Onde é que o detalhe técnico vive
+
+Nos registos do servidor e na área de administração. **Nunca desaparece** — só
+não é o que se mostra a quem está a trabalhar. Uma excepção com o seu tipo, a
+sua causa e a sua origem continua a ser registada; o que a pessoa lê é a
+tradução.
+
+### A verificação
+
+Antes de escrever qualquer texto visível, ler em voz alta e perguntar: *uma
+pessoa que nunca viu o código percebe o que aconteceu e o que fazer a seguir?*
+Se for preciso conhecer a arquitectura, o texto está errado.
+
 ## Regra de Botões Bloqueados
 
 **`disabled` nunca significa «o botão simplesmente não funciona».** Vale para

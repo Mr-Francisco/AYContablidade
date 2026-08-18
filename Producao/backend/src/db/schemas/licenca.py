@@ -1,10 +1,11 @@
 """Esquemas de licenciamento e de empresa."""
 
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from src.core.constants import EstadoEmpresa, EstadoLicenca, Perfil, RegimeIVA
 
@@ -118,7 +119,40 @@ class EmpresaPublica(BaseModel):
     regime: RegimeIVA
     forma_juridica: str | None
     estado: str
+    #: Número de certificação do software atribuído pela AGT. Só a plataforma
+    #: o escreve — ver `EmpresaCertificacaoPedido`.
+    certificacao_agt: str | None = None
     criado_em: datetime
+
+
+class EmpresaCertificacaoPedido(BaseModel):
+    """O número de certificação da AGT de uma empresa. SÓ O SUPERADMIN.
+
+    O formato é o que o esquema do SAF-T impõe: `NNN/AGT/AAAA`. Vazio limpa o
+    número, e limpar quer dizer «esta empresa não tem certificação» — que é um
+    estado legítimo e previsto pela norma, não uma falha.
+
+    A validação do formato está aqui, à entrada, e não só no gerador do SAF-T:
+    um número mal escrito guardado hoje só daria erro no dia da entrega.
+    """
+
+    numero: str = Field(default="", max_length=30)
+    #: Fica na auditoria, como no estado. Um número que muda sem motivo é
+    #: exactamente o que se quer poder investigar mais tarde.
+    motivo: str | None = Field(default=None, max_length=300)
+
+    @field_validator("numero")
+    @classmethod
+    def _formato(cls, v: str) -> str:
+        v = (v or "").strip()
+        if v in ("", "0"):
+            return ""
+        if not re.match(r"^\d+/AGT/\d{4}$", v):
+            raise ValueError(
+                "O número de certificação tem de ter o formato 141/AGT/2026. "
+                "Deixe em branco se esta empresa ainda não tem certificação."
+            )
+        return v
 
 
 class EmpresaEstadoPedido(BaseModel):

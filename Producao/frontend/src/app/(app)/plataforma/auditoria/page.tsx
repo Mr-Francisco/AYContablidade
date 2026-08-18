@@ -83,9 +83,9 @@ export default function AuditoriaPlataforma() {
       </div>
 
       <Alerta tipo="info" className="mb-4">
-        As activações de licença aparecem <b>sem autor</b>: quem activa ainda
-        não tem conta no momento em que o faz. É o único tipo de registo assim,
-        e é por isso que a linha o diz em vez de mostrar um espaço em branco.
+        As activações de licença aparecem <b>sem autor</b> porque a conta da
+        empresa ainda não existe no momento da activação. É o único caso em que
+        isto acontece.
       </Alerta>
 
       <BarraFiltros className="mb-4">

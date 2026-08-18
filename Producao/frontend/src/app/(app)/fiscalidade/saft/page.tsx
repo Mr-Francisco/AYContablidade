@@ -45,9 +45,17 @@ import { useExercicios } from "@/lib/hooks";
  *    tentar entregar e ser recusado do lado da AGT.
  */
 
+/** Um problema do ficheiro, já dito em português de quem trabalha.
+ *  O `detalhe` é o texto do validador, guardado para quem der apoio. */
+interface ProblemaSaft {
+  mensagem: string;
+  detalhe: string;
+  ocorrencias: number;
+}
+
 interface Previsao {
   valido: boolean;
-  erros: string[];
+  erros: ProblemaSaft[];
   bytes: number;
   documentos: number;
   periodo: { de: string; ate: string };
@@ -82,6 +90,16 @@ function limitesDoPeriodo(ano: number, mes: string, tipo: string) {
   };
 }
 
+/** O tamanho do ficheiro como uma pessoa o diz.
+ *
+ *  Mostrava-se «702030 bytes». Ninguém pensa em bytes ao conferir uma entrega
+ *  à AGT — pensa em «isto é grande ou pequeno?», e 686 KB responde a isso. */
+function tamanho(bytes: number) {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 /** O mesmo nome que o servidor põe no cabeçalho da resposta.
  *
  *  Está nos dois sítios porque o descarregamento é feito a partir de um
@@ -105,7 +123,6 @@ export default function Saft() {
   const [mes, setMes] = useState(
     String(new Date().getMonth() + 1).padStart(2, "0"),
   );
-  const [validacao, setValidacao] = useState("0");
   /** Os três ficheiros da AGT: dois mensais e o de contabilidade, anual. */
   const [tipo, setTipo] = useState("facturacao");
   const [previsao, setPrevisao] = useState<Previsao | null>(null);
@@ -113,6 +130,12 @@ export default function Saft() {
   const [ocupado, setOcupado] = useState(false);
 
   const { data: series } = useSWR<Serie[]>("/api/saft/series", buscador);
+  /** O número de certificação, para MOSTRAR. Quem o define é a plataforma. */
+  const { data: config } = useSWR<{ certificacao_agt?: string }>(
+    "/api/comercial/config",
+    buscador,
+  );
+  const certificacao = config?.certificacao_agt ?? "";
 
   const periodo = limitesDoPeriodo(ano, mes, tipo);
 
@@ -123,11 +146,7 @@ export default function Saft() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${lerToken() ?? ""}`,
       },
-      body: JSON.stringify({
-        ...periodo,
-        tipo,
-        numero_validacao: validacao.trim(),
-      }),
+      body: JSON.stringify({ ...periodo, tipo }),
     });
     if (!r.ok) {
       const corpo = await r.json().catch(() => ({}));
@@ -242,16 +261,21 @@ export default function Saft() {
             larguraMinima="14rem"
           />
         )}
+        {/* SÓ DE LEITURA. Era um campo escrito à mão a cada exportação, e
+            era o pior dos dois buracos: nem sequer era preciso gravar nada —
+            bastava escrever aqui o número de outra empresa e o ficheiro saía
+            com ele. O pedido já nem tem onde o receber; o número vem da ficha
+            da empresa e é a plataforma que o define. */}
         <Campo
-          rotulo="Nº de validação do software"
-          dica="Atribuído pela AGT (141/AGT/2026). Enquanto não houver certificação, «0»."
+          rotulo="Nº de certificação do software"
+          dica="Atribuído pela AGT e definido pelo fornecedor da plataforma."
           className="min-w-[16rem]"
         >
           <Entrada
-            value={validacao}
-            onChange={(e) => setValidacao(e.target.value)}
-            placeholder="141/AGT/2026"
-            className="tabular"
+            value={certificacao || "Sem certificação atribuída"}
+            readOnly
+            disabled
+            className={certificacao ? "tabular" : undefined}
           />
         </Campo>
         <span className="flex-1" />
@@ -304,13 +328,31 @@ export default function Saft() {
               </p>
               <p className="mt-0.5 text-sm text-texto-suave">
                 {formataInteiro(previsao.documentos)} documento(s) ·{" "}
-                {formataInteiro(previsao.bytes)} bytes · {previsao.periodo.de} a{" "}
+                {tamanho(previsao.bytes)} · {previsao.periodo.de} a{" "}
                 {previsao.periodo.ate}
               </p>
               {!previsao.valido && (
-                <ul className="mt-2 flex flex-col gap-1 text-[12.5px] text-perigo">
-                  {previsao.erros.slice(0, 8).map((e) => (
-                    <li key={e}>{e}</li>
+                <ul className="mt-3 flex flex-col gap-2.5 text-[13px]">
+                  {previsao.erros.slice(0, 8).map((p) => (
+                    <li key={p.mensagem}>
+                      <span className="text-perigo">{p.mensagem}</span>
+                      {p.ocorrencias > 1 && (
+                        <span className="ml-1 text-texto-suave">
+                          (em {p.ocorrencias} sítios)
+                        </span>
+                      )}
+                      {/* O texto do validador fica AQUI, fechado. Não
+                          desaparece — quem der apoio precisa dele —, mas
+                          também não é o que se lê primeiro. */}
+                      <details className="mt-0.5">
+                        <summary className="cursor-pointer text-[11.5px] text-texto-suave">
+                          Detalhe técnico
+                        </summary>
+                        <code className="mt-1 block break-all rounded-lg bg-superficie-2 p-2 text-[11px] text-texto-suave">
+                          {p.detalhe}
+                        </code>
+                      </details>
+                    </li>
                   ))}
                 </ul>
               )}

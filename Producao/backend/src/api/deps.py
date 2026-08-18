@@ -10,6 +10,7 @@ nenhum router se possa esquecer de uma:
   3. capacidade / permissão de acção.
 """
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -41,6 +42,8 @@ from src.db.models.user import User
 # por isso um nome genérico como "access_token" colide com outra app na mesma
 # máquina e provoca logouts sem qualquer 401 nos registos (docs/LESSONS.md).
 COOKIE_SESSAO = "aycontab_access_token"
+
+log = logging.getLogger(__name__)
 
 
 def _nao_autenticado(detalhe: str) -> HTTPException:
@@ -290,12 +293,23 @@ def exigir_superadmin(user: UtilizadorAtual, escopo: EscopoAtual) -> User:
         )
     if not user.totp_ativo:
         if not (get_settings().TOTP_CHAVE_CIFRA or "").strip():
+            # A CAUSA VAI PARA OS REGISTOS, a mensagem vai para quem lê.
+            # Quem administra a plataforma não é necessariamente quem instalou
+            # o servidor: dizer-lhe «falta a variável TOTP_CHAVE_CIFRA» é
+            # mandá-lo resolver uma coisa a que não tem acesso. O nome da
+            # variável fica no registo, que é onde quem instalou o vai
+            # procurar.
+            log.error(
+                "TOTP_CHAVE_CIFRA em falta: a administração da plataforma "
+                "exige segundo factor e não é possível activá-lo sem esta "
+                "variável de ambiente definida."
+            )
             raise HTTPException(
                 status.HTTP_503_SERVICE_UNAVAILABLE,
-                "A administração da plataforma exige verificação em dois passos, "
-                "mas o servidor não tem a variável TOTP_CHAVE_CIFRA definida e "
-                "por isso não é possível activá-la. Contacte quem administra o "
-                "servidor.",
+                "A administração da plataforma exige verificação em dois "
+                "passos, mas essa verificação ainda não está disponível nesta "
+                "instalação. Contacte o fornecedor da plataforma para a "
+                "activar.",
             )
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,

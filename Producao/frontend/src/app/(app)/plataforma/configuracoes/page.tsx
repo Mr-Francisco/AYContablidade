@@ -152,10 +152,9 @@ export default function ConfiguracoesDaPlataforma() {
                 </Campo>
 
                 <Alerta tipo="info">
-                  Vale a partir da <b>pergunta seguinte</b>, em todas as
-                  empresas — não é preciso reiniciar nada. O limite é imposto
-                  pelo servidor no pedido à API, e não apenas sugerido ao
-                  modelo: uma resposta nunca passa deste tamanho.
+                  Aplica-se a partir da <b>pergunta seguinte</b>, em todas as
+                  empresas. As respostas nunca ultrapassam este tamanho — o
+                  limite é sempre cumprido.
                 </Alerta>
 
                 {erro && <Alerta tipo="erro">{erro}</Alerta>}

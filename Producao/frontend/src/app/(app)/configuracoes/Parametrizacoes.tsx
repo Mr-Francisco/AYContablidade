@@ -39,7 +39,7 @@ interface CfgLog {
   doc_saida?: string;
   armazem_venda_id?: string;
   /** Nº de validação do software atribuído pela AGT (`141/AGT/2026`), ou `0`. */
-  software_validacao?: string;
+  certificacao_agt?: string;
 }
 
 interface Armazem {
@@ -104,27 +104,34 @@ export function Parametrizacoes({
 
       <form onSubmit={submeter}>
         {/* ---- Certificação do software pela AGT ----
-            Fica aqui, no topo e à parte, porque é o único campo desta página
-            que vem DE FORA: é a AGT que o atribui ao certificar o software, e
-            entra em cada factura impressa (DP 71/25, art. 10.º j) e no
-            cabeçalho de cada SAF-T. Sem ele, os ficheiros saem com «0», que a
-            norma aceita e quer dizer «ainda não certificado». */}
+            SÓ DE LEITURA, e não é uma limitação do ecrã: quem atribui este
+            número é a AGT, e o que ela certifica é o programa. Se cada empresa
+            o pudesse escrever, podia declarar uma certificação que não tem ou
+            a de outra empresa — e o ficheiro sairia validado à mesma, porque o
+            esquema do SAF-T verifica o formato do número e nunca a quem
+            pertence.
+
+            O servidor recusa a alteração venha ela de onde vier, e não é este
+            campo que a impede — ver `SO_A_PLATAFORMA_ESCREVE`. Aqui só se
+            mostra, para a empresa saber com que número os seus ficheiros
+            saem. */}
         <div className="mb-4 rounded-xl border border-borda bg-superficie-2 p-3.5">
           <Campo
-            rotulo="Nº de validação do software (AGT)"
-            dica="No formato 141/AGT/2026, tal como a AGT o atribui. Enquanto não houver certificação, «0» — que é o que a norma prevê e não uma falha."
+            rotulo="Nº de certificação do software (AGT)"
+            dica="Atribuído pela AGT e definido pelo fornecedor da plataforma."
             className="max-w-[22rem]"
           >
             <Entrada
-              value={campos.software_validacao ?? ""}
-              onChange={(e) => alterar("software_validacao", e.target.value)}
-              placeholder="141/AGT/2026"
-              className="tabular"
+              value={campos.certificacao_agt || "Sem certificação atribuída"}
+              readOnly
+              disabled
+              className={campos.certificacao_agt ? "tabular" : undefined}
             />
           </Campo>
           <p className="mt-2 text-[12px] leading-relaxed text-texto-suave">
-            Vai impresso em cada documento fiscal e no cabeçalho de cada
-            ficheiro SAF-T entregue à AGT.
+            {campos.certificacao_agt
+              ? "Este número é impresso em cada documento fiscal e vai no cabeçalho dos ficheiros entregues à AGT. Para o alterar, contacte o fornecedor da plataforma."
+              : "Os ficheiros entregues à AGT vão indicar que o software ainda não está certificado — o que é permitido. Para registar a certificação, contacte o fornecedor da plataforma."}
           </p>
         </div>
 
@@ -209,10 +216,9 @@ export function Parametrizacoes({
         </div>
 
         <Alerta tipo="aviso" className="mt-3">
-          Mudar estas contas a meio de um exercício faz os lançamentos novos
-          irem para outro sítio — os que já estão lançados não se movem, e o
-          mapa de custos deixa de comparar o mesmo. Se for mesmo preciso, convém
-          que aconteça no início de um período.
+          Alterar estas contas durante o exercício pode afectar a forma como os
+          custos são apresentados e comparados. Para evitar diferenças nos
+          resultados, faça esta alteração no início de um novo período.
         </Alerta>
 
         <div className="mt-4 flex justify-end">

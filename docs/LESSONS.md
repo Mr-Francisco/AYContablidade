@@ -218,3 +218,8 @@
 - Toda a conta usada num lançamento tem de existir no plano exportado: o SAF-T verifica-o com uma `keyref` e a mensagem que devolve não diz nada a ninguém. Verificar antes e nomear a conta e o lançamento.
 - Um teste que passa por sorte é pior do que não existir: o da ordem débitos/créditos passava porque a fixture já vinha ordenada. Construir o caso ADVERSO, não o natural.
 - O Portal do Contribuinte não é um ambiente de testes — submeter é declarar. Nunca lá enviar ficheiros gerados da base de demonstração.
+- Número de certificação da AGT: certifica o SOFTWARE, não a empresa. Só a plataforma o escreve — se a empresa puder, declara a certificação de um concorrente e o SAF-T valida na mesma (o esquema verifica o formato, nunca a quem pertence).
+- Esconder um campo no ecrã não fecha nada: o buraco maior era o `numero_validacao` aceite no CORPO do pedido de exportação, que nem precisava de gravar.
+- Erros de validador (XSD e afins) nunca vão crus para o ecrã: traduzir para o que a pessoa deve fazer e guardar o original em «Detalhe técnico».
+- Duas audiências, duas mensagens: o nome da variável de ambiente vai para o REGISTO, não para quem lê o ecrã — quem administra a plataforma pode não ser quem instalou o servidor.
+- `pytest -p no:logging` remove o fixture `caplog` e os testes que o usam dão ERROR sem explicação.

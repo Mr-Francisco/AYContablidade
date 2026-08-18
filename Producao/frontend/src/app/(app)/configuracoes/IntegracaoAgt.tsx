@@ -103,10 +103,9 @@ export function IntegracaoAgt({
         </div>
 
         <Alerta tipo="info" className="mt-3">
-          As credenciais e o endereço do serviço da AGT estão no servidor, em
-          variáveis de ambiente — não se configuram aqui nem passam pelo
-          browser. Se a consulta falhar por falta de credenciais, é ao
-          administrador de sistema que se pede, não a este ecrã.
+          O acesso ao serviço da AGT é configurado pelo fornecedor da plataforma
+          e não pode ser alterado aqui. Se a consulta de NIF deixar de
+          funcionar, contacte o fornecedor da plataforma.
         </Alerta>
 
         <div className="mt-4 flex justify-end">

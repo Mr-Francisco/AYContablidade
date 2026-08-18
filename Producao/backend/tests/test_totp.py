@@ -61,15 +61,29 @@ def test_cifrar_duas_vezes_da_resultados_diferentes():
     assert totp.cifrar_segredo(s) != totp.cifrar_segredo(s)
 
 
-def test_chave_trocada_da_erro_claro():
+def test_chave_trocada_da_erro_claro(caplog):
     """Uma chave de cifra alterada tem de dar um erro que se perceba, e não um
     código sempre inválido — que seria indistinguível de o utilizador se estar
-    a enganar, e mandaria toda a gente para o suporte errado."""
+    a enganar, e mandaria toda a gente para o suporte errado.
+
+    «Que se perceba» é para QUEM ESTÁ A ENTRAR. Essa pessoa não pode fazer nada
+    com «a chave de cifra foi alterada» — para ela isto é «não consigo entrar,
+    e agora?». Lê o que fazer; a causa fica no registo.
+    """
+    import logging
+
     cifrado = totp.cifrar_segredo(totp.gerar_segredo())
     os.environ["TOTP_CHAVE_CIFRA"] = "outra-chave-completamente-diferente"
     get_settings.cache_clear()
-    with pytest.raises(totp.ErroTotp, match="chave de cifra"):
-        totp.decifrar_segredo(cifrado)
+
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(totp.ErroTotp) as e:
+            totp.decifrar_segredo(cifrado)
+
+    mensagem = str(e.value)
+    assert "cifra" not in mensagem.lower()
+    assert "configurá-la de novo" in mensagem
+    assert "TOTP_CHAVE_CIFRA" in caplog.text
 
 
 def test_sem_chave_falha_fechado():
