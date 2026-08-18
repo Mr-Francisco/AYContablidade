@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import ConstelacaoAnimada from "@/components/landing/ConstelacaoAnimada";
 import {
   AUTOR,
   CONTRIBUICAO,
@@ -13,9 +14,15 @@ import {
 
    É a única página do produto que se dirige a quem ainda não é cliente, e a
    única que os motores de busca conseguem ler. Por isso é um COMPONENTE DE
-   SERVIDOR sem uma linha de JavaScript no cliente: nada aqui precisa de estado,
-   e o que se ganha é a página a chegar pronta, o que conta para quem a
-   encontra numa pesquisa e para quem a abre com rede fraca.
+   SERVIDOR: nada do que se lê aqui precisa de estado, e o que se ganha é a
+   página a chegar pronta, o que conta para quem a encontra numa pesquisa e
+   para quem a abre com rede fraca.
+
+   A ÚNICA EXCEPÇÃO é o fundo animado do herói (`ConstelacaoAnimada`), que é
+   cliente porque desenha num `canvas`. Não trava nada: o texto, os botões e os
+   dados estruturados continuam a vir do servidor, e sem JavaScript fica o
+   gradiente e mais nada muda. Ao acrescentar seja o que for a esta página,
+   pergunte-se primeiro se tem mesmo de correr no cliente.
 
    Não usa Framer Motion pela mesma razão. As micro-interacções que aqui fazem
    sentido — o realce ao passar o rato, a entrada suave do cabeçalho — fazem-se
@@ -414,23 +421,32 @@ export default function Apresentacao() {
         {/* ---------------------------------------------------------------
             HERO. Uma frase que diz o que isto faz, e uma que diz porquê.
         ---------------------------------------------------------------- */}
-        <section className="relative overflow-hidden border-b border-borda bg-superficie">
+        {/* O herói é escuro nos DOIS temas, e é deliberado: a constelação só se
+            lê sobre fundo escuro, e o azul da marca sobre navio já é a
+            linguagem dos painéis do carrossel dentro da aplicação. Por isso as
+            cores aqui são fixas e não tokens de tema. */}
+        <section className="relative overflow-hidden border-b border-borda bg-[#06152f] text-white">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -right-40 -top-40 size-[34rem] rounded-full bg-acento/10 blur-3xl"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,#06152f_0%,#0b3d91_58%,#0a2c66_100%)]"
           />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_62%_38%,rgba(61,127,224,0.30)_0%,transparent_70%)]"
+          />
+          <ConstelacaoAnimada />
           <div className="relative mx-auto max-w-[1180px] px-5 py-20 sm:py-28">
-            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-borda bg-superficie-2 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-texto-suave">
-              <span className="size-1.5 rounded-full bg-sucesso" />
+            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-[#cfe0ff] backdrop-blur-sm">
+              <span className="size-1.5 rounded-full bg-[#4ade80]" />
               Feito para o PGC-AR e para a fiscalidade angolana
             </p>
 
-            <h1 className="max-w-[19ch] text-4xl font-black leading-[1.06] tracking-[-0.02em] sm:text-[3.6rem]">
+            <h1 className="max-w-[19ch] text-4xl font-black leading-[1.06] tracking-[-0.02em] text-white sm:text-[3.6rem]">
               A contabilidade da sua empresa,{" "}
-              <span className="text-marca">fechada a tempo</span>.
+              <span className="text-[#8fb8ff]">fechada a tempo</span>.
             </h1>
 
-            <p className="mt-6 max-w-[62ch] text-lg leading-relaxed text-texto-suave">
+            <p className="mt-6 max-w-[62ch] text-lg leading-relaxed text-[#b9cdf0]">
               O SGD junta contabilidade, IVA, salários, facturação, stocks e
               imobilizados num só sistema. Lança-se uma vez e os mapas saem
               feitos — sem exportações, sem folhas de cálculo pelo meio e sem
@@ -440,19 +456,19 @@ export default function Apresentacao() {
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link
                 href="/entrar"
-                className="rounded-[10px] bg-marca px-7 py-3.5 text-[15px] font-semibold text-white transition-all hover:bg-marca-escuro hover:shadow-[0_8px_24px_rgba(11,61,145,0.35)] dark:text-[#0c1220]"
+                className="rounded-[10px] bg-white px-7 py-3.5 text-[15px] font-semibold text-[#0b3d91] transition-all hover:bg-[#e8f0ff] hover:shadow-[0_8px_24px_rgba(61,127,224,0.45)]"
               >
                 Entrar na aplicação
               </Link>
               <a
                 href="#modulos"
-                className="-my-2 py-2 text-[15px] font-semibold text-marca transition-colors hover:text-acento"
+                className="-my-2 py-2 text-[15px] font-semibold text-[#9dc0ff] transition-colors hover:text-white"
               >
                 Ver o que inclui →
               </a>
             </div>
 
-            <dl className="mt-14 grid max-w-[54rem] grid-cols-2 gap-x-8 gap-y-6 border-t border-borda pt-8 sm:grid-cols-4">
+            <dl className="mt-14 grid max-w-[54rem] grid-cols-2 gap-x-8 gap-y-6 border-t border-white/15 pt-8 sm:grid-cols-4">
               {[
                 ["PGC-AR", "Plano de contas angolano"],
                 ["IRT e INSS", "Salários com as tabelas em vigor"],
@@ -460,8 +476,8 @@ export default function Apresentacao() {
                 ["Dois passos", "Autenticação TOTP e auditoria"],
               ].map(([forte, fraco]) => (
                 <div key={forte}>
-                  <dt className="text-base font-bold text-texto">{forte}</dt>
-                  <dd className="mt-1 text-[13px] leading-snug text-texto-suave">
+                  <dt className="text-base font-bold text-white">{forte}</dt>
+                  <dd className="mt-1 text-[13px] leading-snug text-[#a9c1e8]">
                     {fraco}
                   </dd>
                 </div>

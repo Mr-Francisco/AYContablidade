@@ -210,3 +210,7 @@
 - `select(Empresa).limit(1)` sem ordenação num teste é uma bomba-relógio: a empresa escolhida passa a depender do que outros testes inseriram, e o teste passa sozinho e falha na suite.
 - `with_for_update()` sozinho NÃO relê: o SQLAlchemy devolve o objecto do mapa de identidade com os valores velhos. Precisa de `populate_existing` E de um `flush` antes — sem isso, 165 números de factura duplicados em 200.
 - Um teste de carga não é luxo: encontrou dois defeitos que nenhum teste unitário via, porque ambos precisavam de concorrência ou de dados sem hora.
+- Migrações não correm sozinhas no envio: o Render reinicia, a base fica atrás, e o sintoma é «não foi possível contactar o servidor» — não uma coluna em falta.
+- O TypeScript não leva o estreitamento de tipo para dentro de `function` declaradas: dar um nome novo com o tipo já sem `null` em vez de espalhar `!`, que é o que esconde o erro a sério.
+- `aria-hidden` num `<canvas>` é recusado (conta como elemento interactivo): a decoração esconde-se pela caixa que a envolve, não pelo próprio elemento.
+- Um painel de pré-visualização que não está à vista não emite frames: sem `requestAnimationFrame` e sem `ResizeObserver`, uma animação parece parada e não está — confirmar `document.visibilityState` antes de a dar por avariada.

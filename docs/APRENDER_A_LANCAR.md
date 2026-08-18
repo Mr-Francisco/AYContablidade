@@ -291,3 +291,38 @@ pg_dump "postgresql://...neon.tech/neondb?sslmode=require" -Fc -f copia-2026-08-
 Guarde à parte, fora do Render, a `TOTP_CHAVE_CIFRA`. Se se perder, todas as
 contas com segundo factor têm de o configurar outra vez — e a administração da
 plataforma exige segundo factor.
+
+---
+
+## 11. Depois de CADA envio: as migrações não correm sozinhas
+
+O Render reconstrói e reinicia sozinho a cada `git push`. **A base de dados
+não.** O código sobe com colunas novas, a base fica como estava, e o resultado
+não se parece nada com o problema: o `entrar` devolve 500, o 500 vai sem
+cabeçalhos de CORS, o browser bloqueia a resposta e o ecrã diz «não foi
+possível contactar o servidor». Passa-se meia hora a olhar para a rede quando
+o que falta é uma coluna.
+
+Aconteceu: três migrações por aplicar, e a coluna `eac` em falta rebentava
+**todas** as consultas que tocavam em `Empresa` — ou seja, a entrada na
+aplicação.
+
+Como se vê em dois comandos, com o `.env.neon` carregado:
+
+```bash
+./.venv/Scripts/python.exe -m alembic current
+```
+
+```bash
+./.venv/Scripts/python.exe -m alembic heads
+```
+
+Se os dois não derem o mesmo identificador, a base está atrasada. Aplica-se:
+
+```bash
+./.venv/Scripts/python.exe -m alembic upgrade head
+```
+
+**A regra:** sempre que um envio inclua um ficheiro em
+`backend/alembic/versions/`, correr as migrações contra a base de produção
+antes de dizer que o lançamento está feito. Não há aviso nenhum a lembrar.
