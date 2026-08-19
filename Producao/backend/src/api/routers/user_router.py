@@ -51,6 +51,38 @@ router = APIRouter(
 )
 
 
+def exigir_lugar_livre(db, empresa_id) -> None:
+    """Há lugar na licença para mais uma conta activa?
+
+    ESTAVA SÓ AQUI, e era metade da verificação. Só corria quando o
+    administrador criava uma conta directamente — não corria ao aceitar um
+    pedido de acesso, e por isso uma empresa com licença para cinco pessoas
+    passava dos cinco pelo caminho de pedir acesso e ser aceite. O limite
+    existia e não travava o caminho por onde a maior parte das contas entra.
+
+    Fica numa função para os dois caminhos a chamarem. A mensagem fala de
+    «licença» e não de «plano»: o número que trava está gravado na licença
+    daquela empresa, e pode ter sido ajustado para ela.
+    """
+    licenca = licenca_da_empresa(db, empresa_id)
+    if licenca is None or licenca.limite_utilizadores is None:
+        return
+
+    activos = db.scalar(
+        select(func.count())
+        .select_from(User)
+        .where(User.empresa_id == empresa_id, User.ativo.is_(True))
+    )
+    if int(activos or 0) >= licenca.limite_utilizadores:
+        raise HTTPException(
+            status.HTTP_402_PAYMENT_REQUIRED,
+            f"A licença desta empresa permite {licenca.limite_utilizadores} "
+            "contas activas, e já estão todas em uso. Desactive uma conta que "
+            "já não seja precisa, ou fale com o fornecedor da plataforma para "
+            "aumentar o limite.",
+        )
+
+
 def _da_empresa(db: DB, empresa_id: UUID, user_id: UUID) -> User:
     """Carrega um utilizador GARANTINDO que pertence à empresa em causa.
 
@@ -161,20 +193,7 @@ def criar(
             status.HTTP_409_CONFLICT, "Já existe uma conta com este e-mail."
         )
 
-    # Limite de utilizadores do plano — só conta os activos.
-    licenca = licenca_da_empresa(db, empresa.id)
-    if licenca is not None and licenca.limite_utilizadores is not None:
-        activos = db.scalar(
-            select(func.count())
-            .select_from(User)
-            .where(User.empresa_id == empresa.id, User.ativo.is_(True))
-        )
-        if int(activos or 0) >= licenca.limite_utilizadores:
-            raise HTTPException(
-                status.HTTP_402_PAYMENT_REQUIRED,
-                f"O plano permite {licenca.limite_utilizadores} utilizadores activos. "
-                "Desactive uma conta ou actualize a licença.",
-            )
+    exigir_lugar_livre(db, empresa.id)
 
     user = User(
         empresa_id=empresa.id,
@@ -299,6 +318,11 @@ def aprovar(
         user.perfil = dados.perfil
     user.aprovado_por_id = atual.id
     user.aprovado_em = agora()
+
+    # HÁ LUGAR NA LICENÇA? Aceitar um pedido cria uma conta activa, e é por
+    # este caminho que a maior parte delas entra. Verificar só na criação
+    # directa deixava o limite a não travar nada.
+    exigir_lugar_livre(db, empresa.id)
 
     password = None
     if not user.password_definida:

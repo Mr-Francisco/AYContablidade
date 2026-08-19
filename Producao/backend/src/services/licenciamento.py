@@ -169,6 +169,33 @@ def gerar_licenca(
             "Para alterar o plano, edita a licença dessa empresa."
         )
 
+    # O PLANO PREENCHE O QUE VIER EM BRANCO. Era uma etiqueta que não decidia
+    # nada, e a consequência prática era esta: o formulário não tinha campo para
+    # os módulos, lista vazia significa «todos», e por isso TODA a licença
+    # criada pela interface incluía TODOS os módulos — escolhesse-se «Base» ou
+    # «Enterprise».
+    #
+    # Os limites GRAVAM-SE na licença e não se vão buscar ao plano a cada
+    # leitura. É o contrário do que fiz com a certificação, e por uma razão: o
+    # que um cliente contratou não deve mudar por alguém ter mexido na
+    # definição do plano depois. A certificação é um facto sobre o programa e
+    # muda para todos ao mesmo tempo; um plano é um contrato, e um contrato
+    # assinado não se reescreve à distância.
+    from src.core import planos as cat
+
+    p = cat.por_codigo(plano) or cat.POR_OMISSAO
+
+    # `None` e lista vazia querem dizer coisas diferentes: a lista vazia é um
+    # valor legítimo — «todos os módulos» — e por isso a herança testa `is None`.
+    if modulos_incluidos is None:
+        modulos_incluidos = list(p.modulos)
+    if limite_utilizadores is None:
+        limite_utilizadores = p.utilizadores
+    if limite_tokens_mes is None:
+        limite_tokens_mes = p.tokens_mes
+    if limite_custo_mes is None:
+        limite_custo_mes = p.custo_mes
+
     chave = gerar_chave()
     lic = Licenca(
         chave_hash=hash_chave(chave),
@@ -176,11 +203,11 @@ def gerar_licenca(
         nif_previsto=nif,
         nome_previsto=nome_empresa.strip(),
         titular=(titular or nome_empresa).strip(),
-        plano=(plano or "Base").strip(),
+        plano=p.codigo,
         duracao_meses=duracao_meses,
         expira_activacao=agora() + timedelta(days=DIAS_PARA_ACTIVAR),
         estado=EstadoLicenca.PENDENTE,
-        modulos_incluidos=modulos_incluidos or [],
+        modulos_incluidos=modulos_incluidos,
         limite_utilizadores=limite_utilizadores,
         limite_tokens_mes=limite_tokens_mes,
         limite_custo_mes=limite_custo_mes,

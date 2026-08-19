@@ -20,13 +20,36 @@ class LicencaCriar(BaseModel):
     nif: str = Field(min_length=1, max_length=20)
     nome_empresa: str = Field(min_length=1, max_length=200)
     titular: str | None = Field(default=None, max_length=200)
-    plano: str = Field(default="Base", max_length=60)
+    #: O plano. Preenche os módulos e os limites que vierem em branco — ver
+    #: `core/planos.py`. Deixou de ser uma etiqueta: decide o que a empresa vê.
+    plano: str = Field(default="gestao", max_length=60)
     duracao_meses: int | None = Field(default=12, ge=1, le=120)
-    modulos_incluidos: list[str] = Field(default_factory=list)
+
+    #: Os campos abaixo, em branco, HERDAM DO PLANO. Preenchidos, ganham-lhe a
+    #: frente — é o que permite dar um módulo a mais ou um tecto diferente a um
+    #: cliente sem inventar um plano novo para ele sozinho.
+    #:
+    #: `None` e lista vazia querem dizer coisas diferentes aqui, e é por isso
+    #: que os módulos usam `None`: uma lista VAZIA é um valor legítimo — quer
+    #: dizer «todos os módulos» — e não se distingue de «não indiquei nada».
+    modulos_incluidos: list[str] | None = None
     limite_utilizadores: int | None = Field(default=None, ge=1)
     limite_tokens_mes: int | None = Field(default=None, ge=0)
     limite_custo_mes: Decimal | None = Field(default=None, ge=0)
     notas: str | None = None
+
+    @field_validator("plano")
+    @classmethod
+    def _plano_conhecido(cls, v: str) -> str:
+        from src.core import planos
+
+        p = planos.por_codigo(v)
+        if p is None:
+            nomes = ", ".join(x.nome for x in planos.PLANOS)
+            raise ValueError(
+                f"«{v}» não é um plano do sistema. Os planos são: {nomes}."
+            )
+        return p.codigo
 
 
 class LicencaGerada(BaseModel):

@@ -857,6 +857,19 @@ def _config_ia_publica(db: DB) -> ConfigIaPublica:
 # ---------------------------------------------------------------------------
 # Certificação da AGT — o valor por omissão da plataforma
 # ---------------------------------------------------------------------------
+@router.get("/planos")
+def catalogo_de_planos() -> list[dict]:
+    """Os planos e o que cada um inclui.
+
+    Existe para o ecrã não ter de repetir a definição. Os nomes estavam
+    escritos à mão na lista do formulário — «Base», «Profissional»,
+    «Enterprise» — e não correspondiam a nada no servidor.
+    """
+    from src.core import planos
+
+    return planos.catalogo()
+
+
 @router.get("/certificacao", response_model=CertificacaoPlataforma)
 def certificacao_da_plataforma(db: DB) -> CertificacaoPlataforma:
     """O número por omissão, e quantas empresas dependem dele."""

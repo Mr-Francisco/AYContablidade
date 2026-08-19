@@ -2,9 +2,14 @@
 
 import { Ban, Copy, KeyRound, Pencil, X } from "lucide-react";
 import { AlertDialog, Dialog } from "radix-ui";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import useSWR from "swr";
-
+import {
+  EscolherModulos,
+  EscolherPlano,
+  type PlanoCatalogo,
+  usePlanos,
+} from "@/components/plataforma/EscolherPlano";
 import {
   ACarregar,
   Alerta,
@@ -50,6 +55,9 @@ const CORES: Record<string, string> = {
 
 export default function Licencas() {
   const [estado, setEstado] = useState("todos");
+  /** Procura por NIF, nome ou início da chave. Não havia nenhuma — com
+   *  cinquenta licenças, encontrar a de um cliente era percorrer páginas. */
+  const [procura, setProcura] = useState("");
   const [novaAberta, setNovaAberta] = useState(false);
   const [aEditar, setAEditar] = useState<LicencaPlataforma | null>(null);
   const [aRevogar, setARevogar] = useState<LicencaPlataforma | null>(null);
@@ -63,7 +71,19 @@ export default function Licencas() {
     buscador,
   );
 
-  const todas = data?.linhas ?? [];
+  const linhas = data?.linhas ?? [];
+  // Filtra a PÁGINA que está no ecrã. É um atalho honesto e diz-se ao lado:
+  // procurar no servidor obriga a mexer na rota, e a maior parte do trabalho
+  // aqui é sobre a página que já se está a ver.
+  const termo = procura.trim().toLowerCase();
+  const todas = !termo
+    ? linhas
+    : linhas.filter(
+        (l) =>
+          l.nome_previsto.toLowerCase().includes(termo) ||
+          l.nif_previsto.includes(termo) ||
+          l.chave_prefixo.toLowerCase().includes(termo),
+      );
   // Do servidor e sobre TODAS as licenças: com o filtro em «activas», contar
   // as pendentes da página dava sempre zero — uma afirmação falsa sobre a
   // plataforma, e não só um número em falta.
@@ -138,6 +158,13 @@ export default function Licencas() {
       </div>
 
       <BarraFiltros className="mb-4">
+        <Campo rotulo="Procurar" className="min-w-[240px] flex-1">
+          <Entrada
+            value={procura}
+            onChange={(e) => setProcura(e.target.value)}
+            placeholder="Nome, NIF ou início da chave"
+          />
+        </Campo>
         <Selector
           rotulo="Estado"
           valor={estado}
@@ -173,8 +200,8 @@ export default function Licencas() {
                     <Th>Plano</Th>
                     <Th>Estado</Th>
                     <Th>Prazo / Validade</Th>
-                    <Th numerico>Utilizadores</Th>
-                    <Th numerico>Tokens/mês</Th>
+                    <Th numerico>Contas</Th>
+                    <Th numerico>IA / mês</Th>
                     <Th />
                   </tr>
                 </thead>
@@ -186,7 +213,9 @@ export default function Licencas() {
                         {l.nome_previsto}
                       </Td>
                       <Td className="tabular">{l.nif_previsto}</Td>
-                      <Td>{l.plano}</Td>
+                      <Td>
+                        <PlanoNaLinha licenca={l} />
+                      </Td>
                       <Td>
                         <Selo cor={CORES[l.estado] ?? "#62657a"}>
                           {l.estado}
@@ -199,11 +228,27 @@ export default function Licencas() {
                             : "sem termo"
                           : `activar até ${new Date(l.expira_activacao).toLocaleDateString("pt-PT")}`}
                       </Td>
-                      <Td numerico>{l.limite_utilizadores ?? "—"}</Td>
                       <Td numerico>
-                        {l.limite_tokens_mes
-                          ? formataInteiro(l.limite_tokens_mes)
-                          : "—"}
+                        {l.limite_utilizadores ?? (
+                          <span
+                            className="text-texto-suave"
+                            title="Sem limite de contas"
+                          >
+                            ∞
+                          </span>
+                        )}
+                      </Td>
+                      <Td numerico>
+                        {l.limite_tokens_mes ? (
+                          formataInteiro(l.limite_tokens_mes)
+                        ) : (
+                          <span
+                            className="text-texto-suave"
+                            title="Assistente sem tecto"
+                          >
+                            ∞
+                          </span>
+                        )}
                       </Td>
                       <Td numerico>
                         <div className="flex justify-end gap-1.5">
@@ -370,6 +415,30 @@ function Par({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
+/** O plano na linha da tabela, com o que ele significa por baixo.
+ *
+ *  Mostrava-se só o texto do campo — «Base», «Enterprise» — que não dizia
+ *  nada porque não decidia nada. Agora mostra o nome e quantos módulos a
+ *  licença inclui, que é a informação pela qual se olha esta coluna. */
+function PlanoNaLinha({ licenca }: { licenca: LicencaPlataforma }) {
+  const { data: planos } = usePlanos();
+  const p = planos?.find(
+    (x) =>
+      x.codigo === licenca.plano ||
+      x.nome.toLowerCase() === (licenca.plano ?? "").toLowerCase(),
+  );
+  const n = licenca.modulos_incluidos?.length ?? 0;
+
+  return (
+    <span className="flex flex-col leading-tight">
+      <b className="text-[13.5px]">{p?.nome ?? licenca.plano}</b>
+      <span className="text-[11.5px] text-texto-suave">
+        {n === 0 ? "todos os módulos" : plural(n, "módulo")}
+      </span>
+    </span>
+  );
+}
+
 function FormularioLicenca({
   aoFechar,
   aoGerar,
@@ -381,18 +450,47 @@ function FormularioLicenca({
     nif: "",
     nome_empresa: "",
     titular: "",
-    plano: "Base",
+    plano: "gestao",
     duracao_meses: "12",
     limite_utilizadores: "",
     limite_tokens_mes: "",
     limite_custo_mes: "",
     notas: "",
   });
+  /** Os módulos da licença. Começam nos do plano e podem ser ajustados —
+   *  o plano preenche, não tranca. */
+  const [modulos, setModulos] = useState<string[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [aGerar, setAGerar] = useState(false);
+  const { data: planos } = usePlanos();
+  const planoEscolhido = planos?.find((p) => p.codigo === campos.plano);
+
+  // Os módulos do plano por omissão, assim que o catálogo chega. Só enquanto
+  // ninguém tocou neles: a partir daí a escolha é de quem está a criar.
+  const [tocado, setTocado] = useState(false);
+  useEffect(() => {
+    if (!tocado && planoEscolhido) setModulos([...planoEscolhido.modulos]);
+  }, [planoEscolhido, tocado]);
 
   function alterar(campo: string, valor: string) {
     setCampos((c) => ({ ...c, [campo]: valor }));
+  }
+
+  function escolherPlano(codigo: string, p: PlanoCatalogo) {
+    alterar("plano", codigo);
+    // Escolher um plano REPÕE os módulos e os limites desse plano. Ajustes
+    // feitos antes perdem-se de propósito: escolher outro plano é escolher
+    // outro conjunto, e manter ajustes do anterior daria uma mistura que
+    // ninguém pediu.
+    setModulos([...p.modulos]);
+    setTocado(false);
+    setCampos((c) => ({
+      ...c,
+      limite_utilizadores:
+        p.utilizadores === null ? "" : String(p.utilizadores),
+      limite_tokens_mes: p.tokens_mes === null ? "" : String(p.tokens_mes),
+      limite_custo_mes: p.custo_mes === null ? "" : p.custo_mes,
+    }));
   }
 
   async function submeter(e: FormEvent) {
@@ -406,6 +504,7 @@ function FormularioLicenca({
           nome_empresa: campos.nome_empresa.trim(),
           titular: campos.titular.trim() || null,
           plano: campos.plano,
+          modulos_incluidos: modulos,
           duracao_meses: Number(campos.duracao_meses) || null,
           limite_utilizadores: campos.limite_utilizadores
             ? Number(campos.limite_utilizadores)
@@ -437,6 +536,21 @@ function FormularioLicenca({
           registar outra empresa.
         </Alerta>
 
+        <EscolherPlano
+          valor={campos.plano}
+          aoMudar={escolherPlano}
+          planos={planos}
+        />
+
+        <EscolherModulos
+          valor={modulos}
+          aoMudar={(m) => {
+            setModulos(m);
+            setTocado(true);
+          }}
+          planoEscolhido={planoEscolhido}
+        />
+
         <div className="grid gap-3 sm:grid-cols-2">
           {/* Confirmar aqui é o sítio que mais rende: o NIF e o nome ficam
               GRAVADOS na licença e são conferidos na activação. Um nome
@@ -467,17 +581,6 @@ function FormularioLicenca({
               onChange={(e) => alterar("titular", e.target.value)}
             />
           </Campo>
-          <Selector
-            rotulo="Plano"
-            valor={campos.plano}
-            aoMudar={(v) => alterar("plano", v)}
-            opcoes={[
-              { valor: "Base", rotulo: "Base" },
-              { valor: "Profissional", rotulo: "Profissional" },
-              { valor: "Enterprise", rotulo: "Enterprise" },
-            ]}
-            larguraMinima="100%"
-          />
           <Campo
             rotulo="Duração (meses)"
             dica="Contada a partir da activação, não da emissão."
@@ -562,11 +665,27 @@ function FormularioAlteracao({
     limite_custo_mes: licenca.limite_custo_mes ?? "",
     notas: licenca.notas ?? "",
   });
+  const [modulos, setModulos] = useState<string[]>(
+    licenca.modulos_incluidos ?? [],
+  );
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
+  const { data: planos } = usePlanos();
+  const planoEscolhido = planos?.find((p) => p.codigo === campos.plano);
 
   function alterar(campo: string, valor: string) {
     setCampos((c) => ({ ...c, [campo]: valor }));
+  }
+
+  /** Mudar de plano num contrato JÁ ACTIVO não repõe os limites em silêncio.
+   *
+   *  No formulário de criação repõe, porque ali não há nada a perder. Aqui há:
+   *  a empresa pode ter um limite ajustado de propósito, e trocá-lo sem aviso
+   *  seria alterar um contrato pelo lado. Muda-se o nome do plano e os módulos
+   *  que lhe correspondem; os limites ficam à mão de quem está a decidir. */
+  function escolherPlano(codigo: string, p: PlanoCatalogo) {
+    alterar("plano", codigo);
+    setModulos([...p.modulos]);
   }
 
   async function submeter(e: FormEvent) {
@@ -576,6 +695,7 @@ function FormularioAlteracao({
     try {
       await api.patch(`/api/licencas/${licenca.id}`, {
         plano: campos.plano,
+        modulos_incluidos: modulos,
         estado: campos.estado,
         validade: campos.validade || null,
         limite_utilizadores: campos.limite_utilizadores
@@ -608,18 +728,19 @@ function FormularioAlteracao({
           porque a empresa existe e já entra pelo login.
         </Alerta>
 
+        <EscolherPlano
+          valor={campos.plano}
+          aoMudar={escolherPlano}
+          planos={planos}
+        />
+
+        <EscolherModulos
+          valor={modulos}
+          aoMudar={setModulos}
+          planoEscolhido={planoEscolhido}
+        />
+
         <div className="grid gap-3 sm:grid-cols-2">
-          <Selector
-            rotulo="Plano"
-            valor={campos.plano}
-            aoMudar={(v) => alterar("plano", v)}
-            opcoes={[
-              { valor: "Base", rotulo: "Base" },
-              { valor: "Profissional", rotulo: "Profissional" },
-              { valor: "Enterprise", rotulo: "Enterprise" },
-            ]}
-            larguraMinima="100%"
-          />
           <Selector
             rotulo="Estado"
             valor={campos.estado}

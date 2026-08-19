@@ -231,3 +231,10 @@
 - Valor herdado resolve-se À LEITURA, não se copia na criação: a certificação renova-se, e copiada obrigaria a ir empresa a empresa — bastando esquecer uma para ela entregar ficheiros com certificação caducada.
 - Um campo pode estar a ler de uma rota que nunca o devolveu: a certificação nas Parametrizações lia de `/api/logistica/config` e o valor vivia no comercial — aparecia sempre vazio, e ninguém deu por isso.
 - Ao fechar uma porta, procurar as outras que dão para o mesmo sítio: `guardar_cfg_com` e `guardar_cfg_log` aceitam ambas dicionários soltos para a mesma tabela.
+- Um código «errado» fixo num teste de TOTP não é errado: `"000000"` é válido para um em cada cento e trinta mil segredos, e nesse dia o login ENTRA, a contagem de falhas é reposta e o teste do bloqueio falha a dizer `0 == 3` — passando na repetição. Calcular um código que aquele segredo não valida.
+- O limitador do slowapi é um objecto único do processo: as contagens que um teste deixa ficam para o seguinte, e o `enabled` é uma variável partilhada. Repô-lo no `conftest.py` e devolver o `enabled` como estava — não a `True`, que é o mesmo defeito ao contrário.
+- Um ciclo de tentativas que descarta as respostas transforma qualquer interferência (429, 503, licença recusada) numa contagem final a zero: verificar cada resposta, senão a culpa parece do código que está bom.
+- Um campo de escolha que ninguem le e pior do que nao existir: «Base/Profissional/Enterprise» dava sempre a mesma licenca, e como o formulario nao tinha campo de modulos, todas incluiam tudo.
+- `None` e lista vazia dizem coisas diferentes quando o vazio e um valor legitimo: nos modulos da licenca vazio = «todos», e herdar por `or` em vez de `is None` dava ao cliente menos do que se pediu.
+- Contrato grava-se, facto resolve-se a leitura: limites do plano ficam na licenca (o cliente contratou aquilo); a certificacao da AGT le-se sempre (e um facto sobre o programa).
+- Uma verificacao de limite tem de correr em TODOS os caminhos que criam o recurso: a das contas corria na criacao directa e nao ao aceitar pedidos, que e por onde entram quase todas.
