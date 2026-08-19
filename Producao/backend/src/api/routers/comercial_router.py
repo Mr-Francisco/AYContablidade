@@ -16,8 +16,10 @@ from src.api.deps import DB, EmpresaAtual, exigir_cap
 from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.db.models.comercial import TIPOS_DOC, Venda, VendaLinha, Vendedor
 from src.db.models.terceiros import PROVINCIAS, Terceiro
+from src.services.contabilidade import ErroContabilistico
 from src.services import certificacao as svc_certificacao
 from src.services import comercial as svc
+from src.services import comercial_anulacao as svc_anulacao
 
 router = APIRouter(
     prefix="/api/comercial",
@@ -522,14 +524,83 @@ def emitir_venda(
 def remover_venda(
     request: Request, venda_id: UUID, empresa: EmpresaAtual, db: DB
 ) -> None:
+    """Elimina um RASCUNHO. Um documento emitido anula-se — ver `anular_venda`.
+
+    Um documento emitido não se apaga, e não é uma limitação nossa: o número
+    vem de uma série e a lei exige numeração sequencial sem falhas, e cada
+    documento leva o resumo do anterior — apagar um pelo meio parte a cadeia
+    que existe precisamente para tornar isso detectável.
+    """
     v = _venda(db, empresa.id, venda_id)
     if v.estado == "emitida":
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "Um documento emitido não pode ser eliminado — emita uma nota de crédito.",
+            "Um documento emitido não se elimina, porque o número dele já está "
+            "na sequência entregue à AGT. Anule-o: o número mantém-se e o "
+            "documento passa a valer zero.",
+        )
+    if v.estado == "anulada":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este documento está anulado e tem de continuar a existir — é o "
+            "que prova que o número não foi usado para outra coisa.",
         )
     db.delete(v)
     db.commit()
+
+
+class AnularPedido(BaseModel):
+    #: Fica na venda e na auditoria. Um documento anulado sem motivo, meses
+    #: depois, não explica a ninguém porque é que aquele número vale zero.
+    motivo: str | None = Field(default=None, max_length=200)
+
+
+@router.post("/vendas/{venda_id}/anular", dependencies=[GERIR])
+def anular_venda(
+    request: Request, venda_id: UUID, dados: AnularPedido,
+    empresa: EmpresaAtual, db: DB,
+) -> dict:
+    """Anula um documento emitido, mantendo-lhe o número.
+
+    NO MESMO PERÍODO, anula-se e pronto — sem nota de crédito. Em período
+    diferente, não: o IVA desse período pode já ter sido apurado e entregue, e
+    aí o caminho é a nota de crédito. A regra e a mensagem estão em
+    `services/comercial_anulacao.py`.
+
+    O lançamento que a emissão criou é revertido com um lançamento de sentido
+    contrário — não é apagado. Apagar deixava o balancete certo e o histórico a
+    mentir.
+    """
+    v = _venda(db, empresa.id, venda_id)
+    try:
+        r = svc_anulacao.anular(
+            db, empresa_id=empresa.id, venda=v, motivo=dados.motivo
+        )
+    except ErroContabilistico as e:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from e
+
+    db.commit()
+    return r
+
+
+@router.get("/vendas/{venda_id}/pode-anular", dependencies=[GERIR])
+def pode_anular(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
+    """Pode ser anulado directamente, ou precisa de nota de crédito?
+
+    Existe para o ecrã poder dizer o que vai acontecer ANTES de se carregar no
+    botão, em vez de mostrar um erro depois de a pessoa decidir.
+    """
+    v = _venda(db, empresa.id, venda_id)
+    if v.estado != "emitida":
+        return {
+            "pode": False,
+            "motivo": "Só documentos emitidos se anulam.",
+            "exige_nota_credito": False,
+        }
+    pode, motivo = svc_anulacao.pode_anular_sem_nota_de_credito(
+        db, empresa_id=empresa.id, venda=v
+    )
+    return {"pode": pode, "motivo": motivo, "exige_nota_credito": not pode}
 
 
 # ---------------------------------------------------------------------------

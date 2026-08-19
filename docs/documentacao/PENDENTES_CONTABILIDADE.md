@@ -32,7 +32,7 @@ A regra vai mudar; ver o que fica na secção do desenho.
 **O que se pede:** dentro do **mesmo período**, eliminar uma factura não
 obriga a emitir nota de crédito.
 
-**Estado:** por fazer.
+**Estado: FEITO** — com um ajuste, explicado abaixo.
 
 ---
 
@@ -41,7 +41,7 @@ obriga a emitir nota de crédito.
 **O que se pede:** a obrigatoriedade da nota de crédito surge **quando o
 documento a anular é de um período diferente** do actual.
 
-**Estado:** por fazer.
+**Estado: FEITO.**
 
 **3 e 4 são a mesma regra, vista dos dois lados:**
 
@@ -52,6 +52,34 @@ documento a anular é de um período diferente** do actual.
 
 A razão é contabilística e não informática: um período já encerrado ou já
 declarado não se reescreve — corrige-se com um documento novo que deixe rasto.
+
+### O ajuste, e porque foi preciso
+
+Pediu-se **eliminar**; faz-se **anular mantendo o número**. Um documento
+emitido não se pode apagar, e não é uma limitação nossa:
+
+1. o número vem de uma série e a lei (DP 71/25, art. 10.º b) exige numeração
+   **sequencial sem falhas** — apagar deixa um salto que a AGT vê;
+2. cada documento leva o **resumo do anterior** da mesma série, e apagar um
+   pelo meio **parte a cadeia** — que é exactamente o que essa cadeia existe
+   para tornar detectável.
+
+O efeito para quem trabalha é o que se pediu: desfazer sem papelada e sem nota
+de crédito. O que muda é que fica prova de que se desfez. No SAF-T o documento
+vai com `InvoiceStatus = A`, que é o estado que a própria norma prevê.
+
+### E a contabilidade
+
+O lançamento que a emissão criou é **revertido com um lançamento de sentido
+contrário**, não apagado. Apagar deixava o balancete certo e o histórico a
+mentir; o contrário deixa os dois certos e deixa rasto.
+
+**Onde está:** `backend/src/services/comercial_anulacao.py`, rotas
+`POST /api/comercial/vendas/{id}/anular` e `GET …/pode-anular` — esta última
+existe para o ecrã poder dizer o que vai acontecer antes de se carregar no
+botão. Cobertura em `tests/test_anulacao_documentos.py` (9 testes).
+
+**Falta:** o botão no ecrã de vendas.
 
 ---
 
@@ -76,8 +104,7 @@ dois.
 
 ## Ordem de trabalho
 
-1. **3 e 4** primeiro — é a regra de negócio, e as outras dependem de saber o
-   que acontece a um documento anulado.
+1. ~~**3 e 4** — a regra de negócio.~~ **Feito no servidor.** Falta o botão.
 2. **5** — a aba de diferidos e a notificação.
 3. **2** — alterar um lançamento vindo de vendas, com o cuidado de não deixar a
    contabilidade a contradizer o documento.
