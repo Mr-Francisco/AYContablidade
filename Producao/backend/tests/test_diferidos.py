@@ -1,193 +1,272 @@
-"""Lançamentos diferidos: ficam de fora até serem integrados.
+"""Movimentos automáticos à espera do fluxo de caixa.
 
-A razão de ser da funcionalidade não é a marca no ecrã — é o efeito nos mapas.
-Um movimento diferido não conta no balancete, no razão, no extracto nem nos
-apuramentos; depois de integrado conta em todos. Se o balancete não mudar, a
-integração não serviu para nada, e é isso que estes testes fixam.
+A Demonstração de Fluxos de Caixa é construída a partir do `fluxo_codigo` de
+cada linha que passa por caixa ou por banco. Uma linha sem esse código **não
+desaparece do balancete** — o dinheiro está lá — mas **desaparece da
+demonstração**: o mapa fecha com um total que não bate com a tesouraria real, e
+quem o lê não tem como saber o que ficou de fora.
 
-Vem do Piloto (`contabilidade.js:415-489`), onde `lancamentos()` filtra os
-diferidos por omissão e `integrarLancamento()` os passa a contar.
+O documento comercial não classifica isto sozinho e não deve adivinhar: o mesmo
+recebimento pode ser operacional ou de financiamento conforme o que está por
+trás. O que o sistema garante é que não se esquece.
 """
 
 from datetime import date
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
-from src.db.models.contabilidade import Conta, Diario, DocumentoContabilistico
+from src.db.models.contabilidade import Fluxo, Lancamento, LancamentoLinha
 from src.db.models.tenancy import Empresa
-from src.services import contabilidade as svc
+from src.services import diferidos
+
+MARCA = "DIF"
 
 
 @pytest.fixture
 def base():
-    """Base real, numa transacção que se desfaz no fim."""
     from src.db.base import SessionLocal
 
     db = SessionLocal()
+    _limpar(db)
     yield db
-    db.rollback()
+    _limpar(db)
     db.close()
 
 
+def _limpar(db):
+    db.rollback()
+    ids = list(
+        db.scalars(select(Lancamento.id).where(Lancamento.descricao.like(f"{MARCA}%")))
+    )
+    if ids:
+        db.execute(delete(LancamentoLinha).where(LancamentoLinha.lancamento_id.in_(ids)))
+        db.execute(delete(Lancamento).where(Lancamento.id.in_(ids)))
+    db.commit()
+
+
 @pytest.fixture
-def cenario(base):
-    """Empresa, duas contas de movimento, um diário e um documento."""
-    empresa = base.scalar(select(Empresa).limit(1))
-    assert empresa is not None, "a base de demonstração precisa de uma empresa"
+def empresa(base):
+    e = base.scalar(select(Empresa).where(Empresa.codigo == "DC001"))
+    assert e is not None
+    return e
 
-    contas = list(
-        base.scalars(
-            select(Conta)
-            .where(Conta.empresa_id == empresa.id, Conta.tipo == "M")
-            .limit(2)
+
+def _lancamento(base, empresa, *, origem="comercial", conta="4511", fluxo=None, n=1):
+    x = Lancamento(
+        empresa_id=empresa.id,
+        numero=880_000 + n,
+        numero_op=f"08/1.{n:03d}",
+        data=date(2026, 8, 10),
+        mes="08",
+        diario_codigo="61",
+        documento_codigo="611",
+        descricao=f"{MARCA} recebimento {n}",
+        origem=origem,
+    )
+    base.add(x)
+    base.flush()
+    base.add_all(
+        [
+            LancamentoLinha(
+                lancamento_id=x.id, ordem=0, conta_codigo=conta,
+                conta_nome="Caixa", debito=Decimal("500"), credito=Decimal("0"),
+                fluxo_codigo=fluxo,
+            ),
+            LancamentoLinha(
+                lancamento_id=x.id, ordem=1, conta_codigo="31121",
+                conta_nome="Clientes", debito=Decimal("0"), credito=Decimal("500"),
+            ),
+        ]
+    )
+    base.flush()
+    return x
+
+
+# ---------------------------------------------------------------------------
+# O que conta como pendente
+# ---------------------------------------------------------------------------
+def test_uma_linha_de_caixa_sem_rubrica_fica_pendente(base, empresa):
+    antes = diferidos.contar(base, empresa.id)
+    _lancamento(base, empresa, n=1)
+    assert diferidos.contar(base, empresa.id) == antes + 1
+
+
+def test_a_linha_do_cliente_nao_conta(base, empresa):
+    """Só as contas de disponibilidades entram na Demonstração de Fluxos.
+
+    O lançamento tem duas linhas e só UMA passa por caixa — contar as duas
+    fazia o aviso dizer o dobro e mandava a pessoa procurar o que não existe.
+    """
+    antes = diferidos.contar(base, empresa.id)
+    _lancamento(base, empresa, n=2)
+    assert diferidos.contar(base, empresa.id) == antes + 1
+
+
+def test_um_lancamento_manual_nao_entra(base, empresa):
+    """Quem o escreveu já decidiu. Avisá-lo do que decidiu é ruído."""
+    antes = diferidos.contar(base, empresa.id)
+    _lancamento(base, empresa, origem="manual", n=3)
+    assert diferidos.contar(base, empresa.id) == antes
+
+
+def test_uma_linha_ja_classificada_sai_da_lista(base, empresa):
+    antes = diferidos.contar(base, empresa.id)
+    _lancamento(base, empresa, fluxo="RO1", n=4)
+    assert diferidos.contar(base, empresa.id) == antes
+
+
+def test_o_campo_em_branco_conta_como_por_indicar(base, empresa):
+    """Vazio e nulo são a mesma coisa aqui: nenhum classifica nada.
+
+    Verificar só o nulo deixava passar as linhas gravadas com o campo em
+    branco — e essas somem da demonstração exactamente na mesma.
+    """
+    antes = diferidos.contar(base, empresa.id)
+    _lancamento(base, empresa, fluxo="", n=5)
+    assert diferidos.contar(base, empresa.id) == antes + 1
+
+
+def test_conta_de_banco_tambem_conta(base, empresa):
+    antes = diferidos.contar(base, empresa.id)
+    _lancamento(base, empresa, conta="43101", n=6)
+    assert diferidos.contar(base, empresa.id) == antes + 1
+
+
+# ---------------------------------------------------------------------------
+# A listagem
+# ---------------------------------------------------------------------------
+def test_a_listagem_e_paginada_e_diz_o_total(base, empresa):
+    """Isto cresce com cada recebimento: nenhum histórico é infinito no ecrã."""
+    for i in range(4):
+        _lancamento(base, empresa, n=10 + i)
+
+    r = diferidos.listar(base, empresa.id, offset=0, limite=2)
+    assert len(r["linhas"]) <= 2
+    assert r["total"] >= 4
+    # A barra de paginação lê estes dois para dizer «1–2 de 40».
+    assert r["offset"] == 0
+    assert r["limite"] == 2
+
+
+def test_a_linha_traz_o_que_e_preciso_para_decidir(base, empresa):
+    """Quem classifica precisa de saber de que documento veio e de quanto é."""
+    _lancamento(base, empresa, n=20)
+    linha = diferidos.listar(base, empresa.id)["linhas"][0]
+    for campo in ("data", "origem", "conta_codigo", "debito", "credito", "numero_op"):
+        assert campo in linha
+
+
+# ---------------------------------------------------------------------------
+# Classificar
+# ---------------------------------------------------------------------------
+def test_indicar_a_rubrica_tira_a_linha_da_lista(base, empresa):
+    fluxo = base.scalar(
+        select(Fluxo).where(Fluxo.empresa_id == empresa.id, Fluxo.tipo == "M")
+    )
+    if fluxo is None:
+        pytest.skip("a empresa de teste não tem plano de fluxos")
+
+    _lancamento(base, empresa, n=30)
+    antes = diferidos.contar(base, empresa.id)
+    linha = diferidos.listar(base, empresa.id)["linhas"][0]
+
+    diferidos.indicar_fluxo(
+        base, empresa.id, linha_id=linha["linha_id"], fluxo_codigo=fluxo.codigo
+    )
+    assert diferidos.contar(base, empresa.id) == antes - 1
+
+
+def test_uma_rubrica_que_agrega_outras_e_recusada(base, empresa):
+    """Imputar um movimento a uma rubrica de agregação fazia o mapa somar duas
+    vezes o mesmo valor."""
+    agregadora = base.scalar(
+        select(Fluxo).where(Fluxo.empresa_id == empresa.id, Fluxo.tipo != "M")
+    )
+    if agregadora is None:
+        pytest.skip("a empresa de teste não tem rubricas de agregação")
+
+    _lancamento(base, empresa, n=31)
+    linha = diferidos.listar(base, empresa.id)["linhas"][0]
+
+    with pytest.raises(ValueError) as e:
+        diferidos.indicar_fluxo(
+            base, empresa.id, linha_id=linha["linha_id"], fluxo_codigo=agregadora.codigo
+        )
+    assert "agrupar" in str(e.value)
+
+
+def test_uma_rubrica_inexistente_e_recusada(base, empresa):
+    _lancamento(base, empresa, n=32)
+    linha = diferidos.listar(base, empresa.id)["linhas"][0]
+    with pytest.raises(ValueError) as e:
+        diferidos.indicar_fluxo(
+            base, empresa.id, linha_id=linha["linha_id"], fluxo_codigo="ZZZ9"
+        )
+    assert "não existe" in str(e.value)
+
+
+def test_uma_linha_de_outra_empresa_nao_se_classifica(base, empresa):
+    """A mesma regra de sempre: nunca se mexe nos dados de outra empresa."""
+    outra = base.scalar(select(Empresa).where(Empresa.id != empresa.id).limit(1))
+    if outra is None:
+        pytest.skip("só há uma empresa na base")
+
+    x = _lancamento(base, empresa, n=40)
+    x.empresa_id = outra.id
+    base.flush()
+    linha_id = x.linhas[0].id
+
+    with pytest.raises(ValueError) as e:
+        diferidos.indicar_fluxo(
+            base, empresa.id, linha_id=linha_id, fluxo_codigo="RO1"
+        )
+    assert "empresa" in str(e.value) or "não existe" in str(e.value)
+
+
+# ---------------------------------------------------------------------------
+# O aviso
+# ---------------------------------------------------------------------------
+def test_o_aviso_e_um_so_e_nao_um_por_documento(base, empresa):
+    """Dez facturas com o mesmo problema são um problema, não dez avisos."""
+    from src.db.models.notificacoes import Notificacao
+
+    for i in range(3):
+        _lancamento(base, empresa, n=50 + i)
+    diferidos.avisar_se_houver(base, empresa.id)
+    diferidos.avisar_se_houver(base, empresa.id)
+
+    quantos = len(
+        list(
+            base.scalars(
+                select(Notificacao).where(
+                    Notificacao.empresa_id == empresa.id,
+                    Notificacao.chave == diferidos.CHAVE_NOTIFICACAO,
+                    Notificacao.resolvida_em.is_(None),
+                )
+            )
         )
     )
-    assert len(contas) == 2, "faltam contas de movimento"
-    diario = base.scalar(select(Diario).where(Diario.empresa_id == empresa.id))
-    doc = base.scalar(
-        select(DocumentoContabilistico).where(
-            DocumentoContabilistico.empresa_id == empresa.id
+    assert quantos == 1
+
+
+def test_o_aviso_diz_quantos_e_para_onde_ir(base, empresa):
+    from src.db.models.notificacoes import Notificacao
+
+    _lancamento(base, empresa, n=60)
+    diferidos.avisar_se_houver(base, empresa.id)
+
+    n = base.scalar(
+        select(Notificacao).where(
+            Notificacao.empresa_id == empresa.id,
+            Notificacao.chave == diferidos.CHAVE_NOTIFICACAO,
+            Notificacao.resolvida_em.is_(None),
         )
     )
-    return {
-        "empresa_id": empresa.id,
-        "debito": contas[0].codigo,
-        "credito": contas[1].codigo,
-        "diario": diario.codigo,
-        "doc": doc.codigo,
-    }
-
-
-def _postar(db, c, *, valor="12345.00", diferido=False):
-    return svc.postar(
-        db,
-        empresa_id=c["empresa_id"],
-        data=date.today(),
-        diario_codigo=c["diario"],
-        documento_codigo=c["doc"],
-        descricao="Prova de diferido",
-        linhas=[
-            {"conta_codigo": c["debito"], "debito": valor, "credito": "0"},
-            {"conta_codigo": c["credito"], "debito": "0", "credito": valor},
-        ],
-        diferido=diferido,
-        criado_por="teste",
-    )
-
-
-def _total(db, empresa_id) -> Decimal:
-    return Decimal(svc.balancete(db, empresa_id=empresa_id)["totais"]["debito"])
-
-
-# ---------------------------------------------------------------------------
-# Fica de fora
-# ---------------------------------------------------------------------------
-def test_um_diferido_nao_conta_no_balancete(base, cenario):
-    """REGRESSÃO: é a única coisa que distingue um diferido de um lançamento
-    normal. Se contasse, o estado seria decorativo."""
-    antes = _total(base, cenario["empresa_id"])
-    _postar(base, cenario, diferido=True)
-    assert _total(base, cenario["empresa_id"]) == antes
-
-
-def test_um_lancamento_normal_conta(base, cenario):
-    """O contraste que dá sentido ao teste anterior."""
-    antes = _total(base, cenario["empresa_id"])
-    _postar(base, cenario, valor="500.00", diferido=False)
-    assert _total(base, cenario["empresa_id"]) == antes + Decimal("500.00")
-
-
-def test_o_balancete_so_conta_integrados_por_construcao():
-    """A regra está no `where`, não numa filtragem posterior que alguém possa
-    esquecer de repetir noutro relatório."""
-    import inspect
-
-    assert "diferido" in inspect.getsource(svc.balancete)
-
-
-# ---------------------------------------------------------------------------
-# Integrar
-# ---------------------------------------------------------------------------
-def test_integrar_passa_a_contar(base, cenario):
-    antes = _total(base, cenario["empresa_id"])
-    lanc = _postar(base, cenario, valor="777.00", diferido=True)
-    assert _total(base, cenario["empresa_id"]) == antes
-
-    svc.integrar(base, lanc, por="teste")
-
-    assert lanc.diferido is False
-    assert lanc.integrado_em is not None
-    assert lanc.integrado_por == "teste"
-    assert _total(base, cenario["empresa_id"]) == antes + Decimal("777.00")
-
-
-def test_integrar_duas_vezes_nao_duplica(base, cenario):
-    """REGRESSÃO: um duplo clique no botão não pode somar o movimento duas
-    vezes ao balancete."""
-    lanc = _postar(base, cenario, valor="333.00", diferido=True)
-    svc.integrar(base, lanc, por="teste")
-    depois = _total(base, cenario["empresa_id"])
-
-    svc.integrar(base, lanc, por="outro")
-
-    assert _total(base, cenario["empresa_id"]) == depois
-    # E não reescreve quem integrou primeiro.
-    assert lanc.integrado_por == "teste"
-
-
-def test_integrar_um_ja_integrado_devolve_o_mesmo(base, cenario):
-    lanc = _postar(base, cenario, diferido=False)
-    assert svc.integrar(base, lanc) is lanc
-
-
-# ---------------------------------------------------------------------------
-# A rota
-# ---------------------------------------------------------------------------
-def test_a_rota_de_integrar_exige_a_capacidade_de_lancar():
-    """Ver é uma coisa, mudar o que entra no balancete é outra."""
-    import inspect
-
-    from src.api.routers import contabilidade_router as r
-
-    fonte = inspect.getsource(r.integrar_lancamento)
-    assert "dependencies=[LANCAR]" in inspect.getsource(r).split(
-        "def integrar_lancamento"
-    )[0].rsplit("@router.post", 1)[-1]
-    # E confina à empresa da sessão — um id de outra empresa não abre.
-    assert "Lancamento.empresa_id == empresa.id" in fonte
-
-
-def test_a_rota_de_eliminar_confina_a_empresa():
-    """REGRESSÃO: sem o filtro por empresa, conhecer o id chegava para apagar
-    o movimento de outra."""
-    import inspect
-
-    from src.api.routers import contabilidade_router as r
-
-    assert "Lancamento.empresa_id == empresa.id" in inspect.getsource(
-        r.remover_lancamento
-    )
-
-
-def test_a_interface_tem_como_integrar():
-    """REGRESSÃO: o endpoint existia e não estava ligado a botão nenhum — um
-    diferido criado na aplicação ficava preso para sempre."""
-    from pathlib import Path
-
-    pagina = (
-        Path(__file__).resolve().parents[2]
-        / "frontend"
-        / "src"
-        / "app"
-        / "(app)"
-        / "contabilidade"
-        / "movimentos"
-        / "page.tsx"
-    )
-    fonte = pagina.read_text(encoding="utf-8")
-    assert "/integrar" in fonte
-    assert "api.delete(`/api/contabilidade/lancamentos/" in fonte
-    # Só a quem pode lançar.
-    assert 'pode("contab.lancar")' in fonte
+    assert n is not None
+    # Diz o impacto e o passo seguinte, não só que há pendentes.
+    assert "Fluxos de Caixa" in n.texto
+    assert n.ligacao == "/contabilidade/diferidos"
+    # E é para quem faz a contabilidade, não para quem factura.
+    assert n.capacidade == "contab.lancar"

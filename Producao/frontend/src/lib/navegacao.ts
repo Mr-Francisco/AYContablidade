@@ -117,6 +117,15 @@ const NAV_COMPLETO: GrupoNav[] = [
         icone: "fluxos",
       },
       {
+        // Ao lado dos Fluxos de Caixa de propósito: é o que falta preencher
+        // para aquele mapa estar completo.
+        href: "/contabilidade/diferidos",
+        rotulo: "Diferidos",
+        seccao: "Demonstrações",
+        cap: "contab.ver",
+        icone: "caixa",
+      },
+      {
         href: "/contabilidade/apuramento-iva",
         rotulo: "Apuramento do IVA",
         seccao: "Apuramentos",

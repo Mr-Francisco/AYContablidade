@@ -1,9 +1,10 @@
 "use client";
 
-import { FileText, Search, X } from "lucide-react";
+import { Ban, FileText, Search, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useDeferredValue, useState } from "react";
 import useSWR from "swr";
+import { AnularDocumento } from "@/components/comercial/AnularDocumento";
 import { DocumentoLegal } from "@/components/comercial/DocumentoLegal";
 import { SelectorDeCliente } from "@/components/comercial/SelectorDeCliente";
 import { GrelhaKpis } from "@/components/painel";
@@ -72,7 +73,11 @@ export default function ConsultaFaturas() {
   const chave = `/api/comercial/vendas?estado=emitida&${p.query}${
     tipo !== "todos" ? `&tipo_doc=${encodeURIComponent(tipo)}` : ""
   }${clienteId ? `&cliente_id=${clienteId}` : ""}${procuraAdiada.trim() ? `&procura=${encodeURIComponent(procuraAdiada.trim())}` : ""}`;
-  const { data: pagina, isLoading } = useSWR<PaginaVendas>(chave, buscador);
+  const {
+    data: pagina,
+    isLoading,
+    mutate,
+  } = useSWR<PaginaVendas>(chave, buscador);
   const visiveis = pagina?.linhas ?? [];
 
   return (
@@ -230,6 +235,7 @@ export default function ConsultaFaturas() {
           id={detalhe}
           moeda={moeda}
           aoFechar={() => setDetalhe(null)}
+          aoAnulado={() => mutate()}
         />
       )}
     </>
@@ -240,13 +246,18 @@ function DetalheFactura({
   id,
   moeda,
   aoFechar,
+  aoAnulado,
 }: {
   id: string;
   moeda: string;
   aoFechar: () => void;
+  /** Recarregar a listagem por trás: sem isto a factura anulada continuava a
+   *  aparecer como emitida na lista. */
+  aoAnulado?: () => void;
 }) {
   const [documento, setDocumento] = useState(false);
-  const { data, isLoading } = useSWR<Venda>(
+  const [aAnular, setAAnular] = useState(false);
+  const { data, isLoading, mutate } = useSWR<Venda>(
     `/api/comercial/vendas/${id}`,
     buscador,
   );
@@ -273,6 +284,19 @@ function DetalheFactura({
                 <FileText size={14} />
                 Ver documento
               </Botao>
+              {/* ANULAR. Só aparece num documento emitido: num rascunho
+                  elimina-se, e num já anulado não há nada a anular. */}
+              {data?.estado === "emitida" && (
+                <Botao
+                  tamanho="pequeno"
+                  variante="perigo"
+                  onClick={() => setAAnular(true)}
+                >
+                  <Ban size={14} />
+                  Anular
+                </Botao>
+              )}
+              {data?.estado === "anulada" && <Selo cor="#c62828">Anulado</Selo>}
               <Dialog.Close asChild>
                 <button
                   type="button"
@@ -284,6 +308,21 @@ function DetalheFactura({
               </Dialog.Close>
             </div>
           </div>
+
+          {aAnular && data && (
+            <AnularDocumento
+              id={id}
+              numero={data.numero ?? ""}
+              aoFechar={() => setAAnular(false)}
+              aoAnular={() => {
+                setAAnular(false);
+                // O detalhe E a listagem: sem o segundo, a factura anulada
+                // continuava a aparecer como emitida na lista por trás.
+                mutate();
+                aoAnulado?.();
+              }}
+            />
+          )}
 
           {documento && data && (
             <DocumentoLegal

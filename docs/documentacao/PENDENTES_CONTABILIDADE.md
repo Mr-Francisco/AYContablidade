@@ -10,7 +10,9 @@ obrigatórios.** Ficam aqui para não se perderem, com o estado de cada um.
 **O que se pede:** no Extracto de conta, dar duplo clique numa linha de
 operação deve levar ao movimento que a originou.
 
-**Estado:** por fazer.
+**Estado: FEITO.** Duplo clique e não clique simples: no extracto percorre-se a
+lista a ler, e um clique a navegar tirava a pessoa da página a cada engano.
+Usa a mesma convenção que já existia — `/contabilidade/movimentos?id=…`.
 
 ---
 
@@ -19,11 +21,17 @@ operação deve levar ao movimento que a originou.
 **O que se pede:** um lançamento que nasceu de uma venda tem de poder ser
 alterado na Contabilidade.
 
-**Estado:** por fazer.
+**Estado: FEITO**, com uma fronteira.
 
-**Nota técnica:** hoje o `EditorLancamento` bloqueia estes lançamentos —
-mostra «gerado automaticamente, só se altera no documento que o originou».
-A regra vai mudar; ver o que fica na secção do desenho.
+**Corrige-se a classificação; não se muda o valor.** Contas, centros de custo,
+rubricas de fluxo e descritivos passam a ser editáveis. O total de débitos e
+créditos não: o documento foi entregue ao cliente e à AGT, e a contabilidade a
+dizer outro número seria uma divergência sem nada a assinalá-la. Para mudar o
+valor, muda-se o documento — e a mensagem diz onde.
+
+A comparação é sobre os TOTAIS e não linha a linha, de propósito: dividir uma
+linha em duas — por centros de custo diferentes, por exemplo — é uma
+reclassificação legítima e não muda o valor de nada.
 
 ---
 
@@ -79,7 +87,7 @@ mentir; o contrário deixa os dois certos e deixa rasto.
 existe para o ecrã poder dizer o que vai acontecer antes de se carregar no
 botão. Cobertura em `tests/test_anulacao_documentos.py` (9 testes).
 
-**Falta:** o botão no ecrã de vendas.
+**O botão** está no detalhe de uma factura, em Comercial → Consulta de facturas. Antes de perguntar o motivo, o diálogo pergunta ao servidor se o documento pode ser anulado — para dizer o que vai acontecer em vez de mostrar um erro depois de a pessoa decidir.
 
 ---
 
@@ -92,7 +100,26 @@ movimento automaticamente, **como já acontece**. Mas:
 - a Contabilidade é **notificada** de que aquele movimento está pendente de
   indicação de fluxo de caixa.
 
-**Estado:** por fazer.
+**Estado: FEITO.**
+
+**Porque é que isto importa**, e não é arrumação: a Demonstração de Fluxos de
+Caixa é construída a partir da rubrica de cada linha que passa por caixa ou por
+banco. Uma linha sem ela **não desaparece do balancete** — o dinheiro está lá —
+mas **desaparece da demonstração**: o mapa fecha com um total que não bate com
+a tesouraria real, e quem o lê não tem como saber o que ficou de fora.
+
+O sistema não classifica sozinho e não deve adivinhar: o mesmo recebimento pode
+ser operacional ou de financiamento conforme o que está por trás. O que garante
+é que não se esquece.
+
+**Onde está:** `backend/src/services/diferidos.py`, ecrã em
+Contabilidade → Diferidos, ao lado dos Fluxos de Caixa — é o que falta
+preencher para aquele mapa estar completo. Classifica-se na própria linha, sem
+abrir o movimento. Cobertura em `tests/test_diferidos.py` (14 testes).
+
+**O aviso é um só**, actualizado, e não um por documento: dez facturas com o
+mesmo problema são um problema, não dez avisos. Desaparece sozinho quando a
+última linha for classificada.
 
 **Nota técnica:** o conceito já existe no modelo — `Lancamento.diferido`
 («pendente de integração: não entra em balancete, razão, extracto, fluxos,
@@ -102,10 +129,10 @@ dois.
 
 ---
 
-## Ordem de trabalho
+## Estado
 
-1. ~~**3 e 4** — a regra de negócio.~~ **Feito no servidor.** Falta o botão.
-2. **5** — a aba de diferidos e a notificação.
-3. **2** — alterar um lançamento vindo de vendas, com o cuidado de não deixar a
-   contabilidade a contradizer o documento.
-4. **1** — o duplo clique, que é o mais simples e o mais visível.
+**Os cinco pontos estão feitos.** 1, 2, 3, 4 e 5.
+
+Falta verificar no browser, que é a parte que não consigo fazer sozinho: o
+painel de pré-visualização não está aberto e o `admin@demo.ao` tem segundo
+factor real activo.

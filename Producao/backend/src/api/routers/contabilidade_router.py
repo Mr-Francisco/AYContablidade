@@ -919,6 +919,37 @@ def criar_lancamento(
 #: Editar aqui um lançamento gerado por outro módulo deixaria o documento de
 #: origem a discordar da contabilidade — a venda a dizer um valor e o razão
 #: outro. No Piloto o problema não existe porque lá não há essa ligação.
+def _exigir_mesmo_valor(lanc, dados, *, empresa_id, db) -> None:
+    """Um movimento automático pode ser reclassificado, não revalorizado.
+
+    O total de débitos e o de créditos têm de continuar os que o documento de
+    origem determinou. Compara-se o TOTAL e não linha a linha de propósito:
+    dividir uma linha em duas — por centros de custo diferentes, por exemplo —
+    é uma reclassificação legítima e não muda o valor de nada.
+    """
+    from decimal import Decimal
+
+    def soma(linhas, campo):
+        return sum((Decimal(str(getattr(x, campo, None) or 0)) for x in linhas), Decimal(0))
+
+    debito_actual = sum((l.debito or Decimal(0) for l in lanc.linhas), Decimal(0))
+    credito_actual = sum((l.credito or Decimal(0) for l in lanc.linhas), Decimal(0))
+    debito_novo = soma(dados.linhas, "debito")
+    credito_novo = soma(dados.linhas, "credito")
+
+    if debito_novo == debito_actual and credito_novo == credito_actual:
+        return
+
+    onde = ONDE_SE_ALTERA.get(lanc.origem, f"no módulo que o gerou ({lanc.origem})")
+    raise HTTPException(
+        status.HTTP_409_CONFLICT,
+        "Não é possível alterar o valor deste movimento aqui porque ele foi "
+        f"gerado por um documento, e o documento continuaria a dizer outra "
+        f"coisa. Pode corrigir contas, centros de custo e rubricas — o valor "
+        f"altera-se {onde}.",
+    )
+
+
 ONDE_SE_ALTERA = {
     "venda": "no documento de venda que o gerou",
     "compra": "no documento de compra que o gerou",
@@ -939,15 +970,21 @@ def actualizar_lancamento(
     empresa: EmpresaAtual,
     db: DB,
 ) -> dict:
-    """Altera um movimento já gravado, como o Piloto faz.
+    """Altera um movimento já gravado.
 
-    SÓ MOVIMENTOS MANUAIS. É a única diferença deliberada face ao Piloto neste
-    ecrã, e a razão só existe na Produção: aqui as vendas, compras,
-    processamentos de salários e amortizações guardam o `lancamento_id`. Editar
-    à mão o lançamento de um recibo de vencimento deixava o recibo a dizer uma
-    coisa e a contabilidade outra, sem nada a assinalar a divergência.
+    MOVIMENTOS AUTOMÁTICOS TAMBÉM SE ALTERAM AQUI, e é uma mudança deliberada:
+    estavam trancados por inteiro, e quem faz a contabilidade não tinha como
+    corrigir uma conta apanhada da parametrização, acrescentar um centro de
+    custo em falta ou indicar a rubrica de fluxo. Tinha de ir ao documento de
+    origem — onde nada disso se escolhe.
 
-    A mensagem diz ONDE se altera, para não ser um «não pode» sem saída.
+    O QUE CONTINUA TRANCADO É O VALOR. Alterar o total de um lançamento gerado
+    por uma factura deixava a contabilidade a dizer um número e o documento a
+    dizer outro, sem nada a assinalar a divergência — e o documento é o que foi
+    entregue ao cliente e à AGT. Para mudar o valor muda-se o documento.
+
+    Corrigir a CLASSIFICAÇÃO (contas, centros, rubricas, descrições) não tem
+    esse problema: o total continua o mesmo e nada passa a contradizer nada.
     """
     l = db.scalar(
         select(Lancamento).where(
@@ -958,13 +995,7 @@ def actualizar_lancamento(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Movimento não encontrado.")
 
     if l.origem != "manual":
-        onde = ONDE_SE_ALTERA.get(l.origem, f"no módulo que o gerou ({l.origem})")
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            f"Este movimento foi gerado automaticamente e altera-se {onde} — "
-            "não aqui. Assim a contabilidade e o documento de origem não se "
-            "contradizem.",
-        )
+        _exigir_mesmo_valor(l, dados, empresa_id=empresa.id, db=db)
 
     svc.actualizar(
         db,
@@ -1149,3 +1180,55 @@ def obter_analitica_detalhe(
         db, empresa_id=empresa.id, centro=centro,
         exercicio_id=exercicio_id, de=de, ate=ate,
     )
+
+
+# ---------------------------------------------------------------------------
+# Diferidos — movimentos automáticos à espera do fluxo de caixa
+#
+# A Demonstração de Fluxos de Caixa é construída a partir do `fluxo_codigo` de
+# cada linha que passa por caixa ou por banco. Uma linha sem esse código não
+# desaparece do balancete — o dinheiro está lá — mas DESAPARECE DA
+# DEMONSTRAÇÃO: o mapa fecha com um total que não bate com a tesouraria real, e
+# quem o lê não tem como saber o que ficou de fora.
+#
+# O documento comercial não classifica isto sozinho, e não deve adivinhar: o
+# mesmo recebimento pode ser operacional ou de financiamento conforme o que está
+# por trás. Quem decide é quem faz a contabilidade; o que o sistema garante é que
+# não se esquece.
+# ---------------------------------------------------------------------------
+@router.get("/diferidos", dependencies=[VER])
+def listar_diferidos(
+    empresa: EmpresaAtual, db: DB, offset: int = 0, limite: int = LIMITE_OMISSAO
+) -> dict:
+    """Os movimentos automáticos sem rubrica de fluxo de caixa indicada."""
+    from src.services import diferidos as svc_dif
+
+    return svc_dif.listar(db, empresa.id, offset=offset, limite=limite)
+
+
+class FluxoDaLinha(BaseModel):
+    linha_id: UUID
+    fluxo_codigo: str = Field(min_length=1, max_length=10)
+
+
+@router.post("/diferidos/indicar", dependencies=[LANCAR])
+def indicar_fluxo_da_linha(
+    dados: FluxoDaLinha, empresa: EmpresaAtual, db: DB
+) -> dict:
+    """Classifica uma linha e, se foi a última, levanta o aviso.
+
+    Levantar o aviso aqui e não numa tarefa periódica é o que faz a notificação
+    desaparecer no momento em que deixa de ser verdade.
+    """
+    from src.services import diferidos as svc_dif
+
+    try:
+        svc_dif.indicar_fluxo(
+            db, empresa.id, linha_id=dados.linha_id, fluxo_codigo=dados.fluxo_codigo
+        )
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e)) from e
+
+    svc_dif.avisar_se_houver(db, empresa.id)
+    db.commit()
+    return {"restantes": svc_dif.contar(db, empresa.id)}

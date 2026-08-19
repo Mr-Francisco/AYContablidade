@@ -238,3 +238,7 @@
 - `None` e lista vazia dizem coisas diferentes quando o vazio e um valor legitimo: nos modulos da licenca vazio = «todos», e herdar por `or` em vez de `is None` dava ao cliente menos do que se pediu.
 - Contrato grava-se, facto resolve-se a leitura: limites do plano ficam na licenca (o cliente contratou aquilo); a certificacao da AGT le-se sempre (e um facto sobre o programa).
 - Uma verificacao de limite tem de correr em TODOS os caminhos que criam o recurso: a das contas corria na criacao directa e nao ao aceitar pedidos, que e por onde entram quase todas.
+- Um bloqueio total onde bastava um parcial e um bloqueio sem saida: movimentos automaticos estavam trancados por inteiro e quem fazia contabilidade nao podia sequer corrigir uma conta. Trancar o VALOR chega; a classificacao nao contradiz nada.
+- Uma linha sem `fluxo_codigo` nao desaparece do balancete mas desaparece da Demonstracao de Fluxos: o mapa fecha errado e ninguem sabe porque. O sistema nao pode adivinhar a rubrica — tem e de garantir que nao se esquece.
+- Aviso por causa, nao por documento: dez facturas com o mesmo problema sao um problema. Chave unica, texto actualizado, e levanta-se sozinho quando deixa de ser verdade.
+- Duplo clique e nao clique simples em listas que se percorrem a ler: um clique a navegar tira a pessoa da pagina a cada engano.

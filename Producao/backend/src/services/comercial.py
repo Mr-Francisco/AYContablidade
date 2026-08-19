@@ -521,11 +521,27 @@ def emitir(
                 alvo_tipo="venda", alvo_id=venda.id,
             )
 
+    # O FLUXO DE CAIXA POR INDICAR. O movimento foi lançado — é o que se quer,
+    # e não muda —, mas a linha que passa por caixa ou por banco nasce sem
+    # rubrica de fluxo. Não a inventamos: o mesmo recebimento pode ser
+    # operacional ou de financiamento conforme o que está por trás, e quem
+    # decide é quem faz a contabilidade.
+    #
+    # O que o sistema garante é que não se esquece. Sem este aviso, a
+    # Demonstração de Fluxos de Caixa fechava com um total que não bate com a
+    # tesouraria real e ninguém sabia porquê.
+    from src.services import diferidos as svc_dif
+
+    svc_dif.avisar_se_houver(db, empresa_id)
+
     db.flush()
     return {
         "venda_id": venda.id, "numero": venda.numero, "numero_op": lanc.numero_op,
         "lancamento_id": lanc.id, "codigo_validacao": venda.codigo_validacao,
         "avisos_stock": avisos,
+        # Quantas linhas ficam à espera de classificação, para o ecrã da venda
+        # o poder dizer sem ter de ir perguntar noutro sítio.
+        "fluxos_por_indicar": svc_dif.contar(db, empresa_id),
     }
 
 

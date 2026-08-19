@@ -239,6 +239,21 @@ function Conteudo() {
                       {historico.visiveis.map((l) => (
                         <Tr
                           key={`${l.lancamento_id}-${l.numero_op}-${l.saldo}`}
+                          // DUPLO CLIQUE ABRE O MOVIMENTO. Uma linha de
+                          // extracto é a sombra de um lançamento, e quem a vê
+                          // quer quase sempre ver o lançamento inteiro — as
+                          // outras contas que ele tocou, o documento, o
+                          // descritivo. Sem isto, era copiar o número da
+                          // operação e ir procurá-lo a Movimentos.
+                          //
+                          // Duplo clique e não clique simples: no extracto
+                          // percorre-se a lista a ler, e um clique simples a
+                          // navegar tirava a pessoa da página a cada engano.
+                          className="cursor-pointer"
+                          title="Duplo clique para abrir o movimento"
+                          onDoubleClick={() => {
+                            window.location.href = `/contabilidade/movimentos?id=${l.lancamento_id}`;
+                          }}
                         >
                           <Td className="tabular">
                             {new Date(l.data).toLocaleDateString("pt-PT")}

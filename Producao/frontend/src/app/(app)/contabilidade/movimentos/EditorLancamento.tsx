@@ -339,10 +339,12 @@ export function EditorLancamento({
 
       {estado.origem !== "manual" && (
         <div className="mt-3">
-          <Alerta tipo="aviso">
-            Movimento gerado automaticamente (<b>{estado.origem}</b>) — só se
-            altera no documento que o originou, para a contabilidade e esse
-            documento não se contradizerem.
+          <Alerta tipo="info">
+            Este movimento foi gerado por um documento. Pode corrigir aqui as{" "}
+            <b>contas, centros de custo e rubricas de fluxo</b>.
+            <br />O <b>valor</b> não se altera aqui: é o do documento que lhe
+            deu origem, e mudá-lo só num dos lados deixava os dois a dizer
+            coisas diferentes.
           </Alerta>
         </div>
       )}

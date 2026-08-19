@@ -129,7 +129,16 @@ export default function Movimentos() {
     };
   })();
 
-  const editavel = estado.origem === "manual";
+  // UM MOVIMENTO AUTOMÁTICO TAMBÉM SE EDITA. Estava trancado por inteiro, e
+  // quem faz a contabilidade não tinha como corrigir uma conta apanhada da
+  // parametrização, acrescentar um centro de custo ou indicar a rubrica de
+  // fluxo — tinha de ir ao documento de origem, onde nada disso se escolhe.
+  //
+  // O que continua trancado é o VALOR, e é o servidor que o garante: alterar
+  // o total de um lançamento gerado por uma factura deixava a contabilidade a
+  // dizer um número e o documento outro. Aqui só se avisa.
+  const editavel = true;
+  const automatico = estado.origem !== "manual";
   const completo =
     Boolean(estado.diario) &&
     Boolean(estado.documento) &&

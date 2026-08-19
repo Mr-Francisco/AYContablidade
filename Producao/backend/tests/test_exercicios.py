@@ -330,23 +330,35 @@ def test_a_rota_de_editar_existe_e_exige_lancar():
     assert "dependencies=[LANCAR]" in decorador
 
 
-def test_so_se_edita_o_que_foi_lancado_a_mao():
-    """A única diferença deliberada face ao Piloto neste ecrã.
+def test_um_movimento_automatico_reclassifica_se_mas_nao_muda_de_valor():
+    """A regra mudou, e a garantia que importa continua de pé.
 
-    Na Produção há tabelas — vendas, compras, processamentos, amortizações —
-    que guardam o `lancamento_id`. Editar à mão o lançamento de um recibo de
-    vencimento deixava o recibo a dizer uma coisa e o razão outra, sem nada a
-    assinalar a divergência. No Piloto o problema não existe porque lá não há
-    essa ligação.
+    ANTES: um movimento gerado por uma venda estava trancado por inteiro. Quem
+    fazia a contabilidade não tinha como corrigir uma conta apanhada da
+    parametrização, acrescentar um centro de custo em falta ou indicar a
+    rubrica de fluxo — tinha de ir ao documento de origem, onde nada disso se
+    escolhe. Era um bloqueio sem saída.
+
+    AGORA: corrige-se a CLASSIFICAÇÃO e não se toca no VALOR. É o valor que não
+    pode divergir: o documento foi entregue ao cliente e à AGT, e a
+    contabilidade a dizer outro número seria uma divergência sem nada a
+    assinalá-la. Contas, centros e rubricas não têm esse problema — o total
+    continua o mesmo.
     """
     import inspect
 
     from src.api.routers import contabilidade_router as r
 
     fonte = inspect.getsource(r.actualizar_lancamento)
-    assert 'l.origem != "manual"' in fonte
-    # E a recusa diz ONDE se altera, em vez de um «não pode» sem saída.
-    assert "ONDE_SE_ALTERA" in fonte
+    assert "_exigir_mesmo_valor" in fonte
+
+    guarda = inspect.getsource(r._exigir_mesmo_valor)
+    # Compara TOTAIS e não linha a linha: dividir uma linha em duas, por
+    # centros de custo diferentes, é reclassificação legítima.
+    assert "debito_novo == debito_actual" in guarda
+    assert "credito_novo == credito_actual" in guarda
+    # E a recusa diz ONDE se altera o valor, em vez de um «não pode» sem saída.
+    assert "ONDE_SE_ALTERA" in guarda
     for origem in ("venda", "compra", "rh", "logistica", "imobilizado"):
         assert origem in r.ONDE_SE_ALTERA, f"falta dizer onde se altera «{origem}»"
 
