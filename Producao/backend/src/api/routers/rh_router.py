@@ -318,6 +318,36 @@ def _colaborador_publico(c: Colaborador) -> dict:
     }
 
 
+@router.get("/colaboradores/tabela")
+def tabela_de_colaboradores(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    """A tabela de colaboradores, para o F4 do RH e do mapa de remunerações.
+
+    Só os ACTIVOS por omissão: quem processa salários deste mês não quer ver
+    quem saiu no ano passado a meio da lista.
+    """
+    from sqlalchemy import or_ as _ou
+
+    from src.db.models.rh import Colaborador
+
+    q = select(Colaborador).where(
+        Colaborador.empresa_id == empresa.id, Colaborador.estado == "activo"
+    )
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(_ou(Colaborador.nome.ilike(termo), Colaborador.numero.ilike(termo)))
+    return [
+        {
+            "id": str(c.id),
+            "codigo": c.numero,
+            "nome": c.nome,
+            "detalhe": str(c.salario_base or ""),
+        }
+        for c in db.scalars(q.order_by(Colaborador.numero).limit(limite)).all()
+    ]
+
+
 @router.get("/colaboradores")
 def listar_colaboradores(
     empresa: EmpresaAtual, db: DB, so_ativos: bool = False

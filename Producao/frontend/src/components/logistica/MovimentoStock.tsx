@@ -17,7 +17,6 @@ import {
   Entrada,
   EnvolveTabela,
   Kpi,
-  Selector,
   Selo,
   Tabela,
   Td,
@@ -26,6 +25,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { CampoEntidade, type Registo } from "@/components/ui/CampoEntidade";
 import { Confirmar, DialogoMestre } from "@/components/ui/CrudMestre";
 import {
   BarraPaginacao,
@@ -87,7 +87,8 @@ export interface ConfigMovimento {
 export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
   const { empresa, pode } = useAuth();
   const { activo } = useExercicios();
-  const { artigos, porId } = useArtigos();
+  // A lista inteira deixou de ser precisa: a procura é do servidor.
+  const { porId } = useArtigos();
   const moeda = empresa?.moeda ?? "Kz";
 
   const { data: armazens } = useSWR<Armazem[]>(
@@ -108,6 +109,9 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
 
   const [artigoId, setArtigoId] = useState("");
   const [armazemId, setArmazemId] = useState("");
+  const [artigoEscolhido, setArtigoEscolhido] = useState<Registo | null>(null);
+  const [armazem, setArmazem] = useState<Registo | null>(null);
+  const [armazemDestino, setArmazemDestino] = useState<Registo | null>(null);
   const [armazemDestinoId, setArmazemDestinoId] = useState("");
   const [qtd, setQtd] = useState("");
   const [custoUnit, setCustoUnit] = useState("");
@@ -500,40 +504,56 @@ export function PaginaMovimento({ config }: { config: ConfigMovimento }) {
             </>
           }
         >
-          <Selector
+          <Campo
             rotulo="Artigo"
-            valor={artigoId}
-            aoMudar={setArtigoId}
-            opcoes={artigos.map((a) => ({
-              valor: a.id,
-              rotulo: `${a.codigo} — ${a.descricao}`,
-            }))}
-            placeholder="Escolher artigo…"
-            larguraMinima="16rem"
-          />
-          <Selector
-            rotulo={config.pedeDestino ? "Armazém de origem" : "Armazém"}
-            valor={armazemId}
-            aoMudar={setArmazemId}
-            opcoes={(armazens ?? []).map((a) => ({
-              valor: a.id,
-              rotulo: `${a.codigo} — ${a.nome}`,
-            }))}
-            placeholder="Escolher armazém…"
-          />
-          {config.pedeDestino && (
-            <Selector
-              rotulo="Armazém de destino"
-              valor={armazemDestinoId}
-              aoMudar={setArmazemDestinoId}
-              opcoes={(armazens ?? [])
-                .filter((a) => a.id !== armazemId)
-                .map((a) => ({
-                  valor: a.id,
-                  rotulo: `${a.codigo} — ${a.nome}`,
-                }))}
-              placeholder="Escolher destino…"
+            dica="F4 para procurar por código, descrição ou referência."
+            className="min-w-[16rem]"
+          >
+            <CampoEntidade
+              valor={artigoEscolhido}
+              aoEscolher={(r) => {
+                setArtigoEscolhido(r);
+                setArtigoId(r?.id ?? "");
+              }}
+              fonte="/api/logistica/artigos/tabela"
+              titulo="Artigos"
+              placeholder="Artigo (F4)"
+              colunas={["Código", "Descrição", "Unidade · Preço"]}
             />
+          </Campo>
+          <Campo rotulo={config.pedeDestino ? "Armazém de origem" : "Armazém"}>
+            <CampoEntidade
+              valor={armazem}
+              aoEscolher={(r) => {
+                setArmazem(r);
+                setArmazemId(r?.id ?? "");
+              }}
+              fonte="/api/logistica/armazens/tabela"
+              titulo="Armazéns"
+              placeholder="Armazém (F4)"
+              colunas={["Código", "Nome", "Localização"]}
+            />
+          </Campo>
+          {config.pedeDestino && (
+            <Campo rotulo="Armazém de destino">
+              <CampoEntidade
+                valor={armazemDestino}
+                aoEscolher={(r) => {
+                  // O MESMO ARMAZÉM NOS DOIS LADOS não é uma transferência —
+                  // é um movimento que não move nada. A lista antiga filtrava
+                  // a origem; aqui a tabela é a mesma para todos, e recusa-se
+                  // a escolha em vez de a esconder, porque esconder deixava a
+                  // pessoa a procurar um armazém que ela vê na lista de cima.
+                  if (r && r.id === armazemId) return;
+                  setArmazemDestino(r);
+                  setArmazemDestinoId(r?.id ?? "");
+                }}
+                fonte="/api/logistica/armazens/tabela"
+                titulo="Armazéns"
+                placeholder="Destino (F4)"
+                colunas={["Código", "Nome", "Localização"]}
+              />
+            </Campo>
           )}
           <Campo
             rotulo={`Quantidade${artigo?.unidade ? ` (${artigo.unidade})` : ""}`}

@@ -17,11 +17,12 @@ import {
   Th,
   Tr,
 } from "@/components/ui";
+import { CampoEntidade, type Registo } from "@/components/ui/CampoEntidade";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { big, formataMoeda, multiplica, soma } from "@/lib/dinheiro";
 import { useArtigos } from "@/lib/hooks";
-import type { Armazem, DocumentoCompra, Terceiro } from "@/types";
+import type { DocumentoCompra } from "@/types";
 
 interface Linha {
   /** Chave estável: com o índice, apagar uma linha faz as seguintes herdarem
@@ -54,20 +55,13 @@ export function FormularioCompra({
 }) {
   const { empresa } = useAuth();
   const moeda = empresa?.moeda ?? "Kz";
-  const { artigos, porId } = useArtigos();
+  // A LISTA INTEIRA DEIXOU DE SER PEDIDA — a procura é do servidor. `porId`
+  // fica: a linha guarda o `artigo_id` e o campo precisa do código e da
+  // descrição para os mostrar sem ir perguntar outra vez.
+  const { porId } = useArtigos();
 
   const { data: documentos } = useSWR<DocumentoCompra[]>(
     "/api/compras/documentos",
-    buscador,
-    { revalidateOnFocus: false },
-  );
-  const { data: armazens } = useSWR<Armazem[]>(
-    "/api/logistica/armazens",
-    buscador,
-    { revalidateOnFocus: false },
-  );
-  const { data: fornecedores } = useSWR<Terceiro[]>(
-    "/api/compras/fornecedores",
     buscador,
     { revalidateOnFocus: false },
   );
@@ -76,6 +70,10 @@ export function FormularioCompra({
   const [documentoCodigo, setDocumentoCodigo] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
   const [armazemId, setArmazemId] = useState("");
+  /** Os registos escolhidos nas tabelas de pesquisa — guardam código e nome
+   *  para o campo os mostrar sem ir buscar a lista toda. */
+  const [fornecedor, setFornecedor] = useState<Registo | null>(null);
+  const [armazem, setArmazem] = useState<Registo | null>(null);
   const [ivaPerc, setIvaPerc] = useState("14");
   const [linhas, setLinhas] = useState<Linha[]>([linhaVazia()]);
   const [erro, setErro] = useState<string | null>(null);
@@ -199,28 +197,38 @@ export function FormularioCompra({
                   required
                 />
               </Campo>
-              <Selector
+              <Campo
                 rotulo="Fornecedor"
-                valor={fornecedorId}
-                aoMudar={setFornecedorId}
-                opcoes={(fornecedores ?? []).map((f) => ({
-                  valor: f.id,
-                  rotulo: `${f.numero} — ${f.nome}`,
-                }))}
-                placeholder="Escolher fornecedor…"
-                larguraMinima="100%"
-              />
-              <Selector
+                dica="F4 ou duplo clique para procurar na tabela de fornecedores."
+              >
+                <CampoEntidade
+                  valor={fornecedor}
+                  aoEscolher={(r) => {
+                    setFornecedor(r);
+                    setFornecedorId(r?.id ?? "");
+                  }}
+                  fonte="/api/logistica/fornecedores/tabela"
+                  titulo="Fornecedores"
+                  placeholder="Fornecedor (F4)"
+                  colunas={["Nº", "Nome", "NIF · País"]}
+                />
+              </Campo>
+              <Campo
                 rotulo="Armazém de entrada"
-                valor={armazemId}
-                aoMudar={setArmazemId}
-                opcoes={(armazens ?? []).map((a) => ({
-                  valor: a.id,
-                  rotulo: `${a.codigo} — ${a.nome}`,
-                }))}
-                placeholder="Escolher armazém…"
-                larguraMinima="100%"
-              />
+                dica="F4 para procurar na tabela de armazéns."
+              >
+                <CampoEntidade
+                  valor={armazem}
+                  aoEscolher={(r) => {
+                    setArmazem(r);
+                    setArmazemId(r?.id ?? "");
+                  }}
+                  fonte="/api/logistica/armazens/tabela"
+                  titulo="Armazéns"
+                  placeholder="Armazém (F4)"
+                  colunas={["Código", "Nome", "Localização"]}
+                />
+              </Campo>
               <Campo rotulo="IVA dedutível (%)">
                 <Entrada
                   type="number"
@@ -250,16 +258,25 @@ export function FormularioCompra({
                   {linhas.map((l) => (
                     <Tr key={l.chave}>
                       <Td className="min-w-[220px]">
-                        <Selector
-                          rotulo=""
-                          valor={l.artigo_id}
-                          aoMudar={(v) => alterarLinha(l.chave, "artigo_id", v)}
-                          opcoes={artigos.map((a) => ({
-                            valor: a.id,
-                            rotulo: `${a.codigo} — ${a.descricao}`,
-                          }))}
-                          placeholder="Escolher…"
-                          larguraMinima="100%"
+                        <CampoEntidade
+                          valor={
+                            l.artigo_id
+                              ? {
+                                  id: l.artigo_id,
+                                  codigo: porId.get(l.artigo_id)?.codigo ?? "",
+                                  nome: porId.get(l.artigo_id)?.descricao ?? "",
+                                }
+                              : null
+                          }
+                          aoEscolher={(r) =>
+                            alterarLinha(l.chave, "artigo_id", r?.id ?? "")
+                          }
+                          fonte="/api/logistica/artigos/tabela"
+                          titulo="Artigos"
+                          placeholder="Artigo (F4)"
+                          colunas={["Código", "Descrição", "Unidade · Preço"]}
+                          emGrelha
+                          semBotao
                         />
                       </Td>
                       <Td className="min-w-[200px]">

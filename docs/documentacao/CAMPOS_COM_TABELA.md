@@ -11,12 +11,16 @@ contas (`CampoConta`): escreve-se o código e segue-se, ou carrega-se em **F4** 
 procura-se. Quem lança todos os dias sabe o código de cor; quem não sabe precisa
 de ver a tabela.
 
-| Campo | Tabela | Rota |
-|---|---|---|
-| Conta | Plano de contas | já existia — `CampoConta` |
-| Cliente | Clientes | `/api/comercial/clientes/tabela` |
-| Vendedor | Vendedores | `/api/comercial/vendedores/tabela` |
-| Artigo | Artigos / stock | `/api/logistica/artigos/tabela` |
+| Campo | Tabela | Rota | Onde |
+|---|---|---|---|
+| Conta | Plano de contas | já existia — `CampoConta` | oito ecrãs |
+| Cliente | Clientes | `/api/comercial/clientes/tabela` | Vendas |
+| Vendedor | Vendedores | `/api/comercial/vendedores/tabela` | Vendas |
+| Artigo | Artigos / stock | `/api/logistica/artigos/tabela` | Vendas, Compras, Movimentos de stock |
+| Fornecedor | Fornecedores | `/api/logistica/fornecedores/tabela` | Compras |
+| Armazém | Armazéns | `/api/logistica/armazens/tabela` | Compras, Movimentos de stock (origem e destino) |
+| Centro de custo | Centros de custo | `/api/contabilidade/centros/tabela` | Grelha do movimento |
+| Colaborador | Colaboradores | `/api/rh/colaboradores/tabela` | Recibos |
 
 O componente é **`components/ui/CampoEntidade.tsx`** e não sabe o que é um
 cliente: recebe de onde ler, o que mostrar e por onde procurar. Cada entidade
@@ -96,9 +100,26 @@ desde que nasce.
 `backend/tests/test_cliente_nacional_estrangeiro.py` — 13 testes, incluindo a
 verificação de que as duas contas existem mesmo no plano PGC-AR da empresa.
 
+## Decisões que aparecem ao aplicar o padrão
+
+**Só colaboradores activos** na tabela do RH: quem processa salários deste mês
+não quer ver quem saiu no ano passado a meio da lista.
+
+**O armazém de destino recusa o de origem** em vez de o esconder. A lista antiga
+filtrava-o para fora; a tabela é a mesma para todos, e esconder um armazém que
+a pessoa vê no campo de cima é pior do que recusar a escolha.
+
+**As listas inteiras deixaram de ser pedidas.** Os formulários de venda, de
+compra e de movimento de stock pediam todos os clientes, todos os fornecedores,
+todos os armazéns e todos os artigos só para encher caixas de opções. Com mil
+artigos, era um megabyte para mostrar quinze. O que se pede agora é o que se vê.
+
+`porId` continua a ser lido nos ecrãs com linhas: a linha guarda o `artigo_id`
+e o campo precisa do código e da descrição para os mostrar sem ir perguntar
+outra vez.
+
 ## O que falta
 
-A mesma regra deve chegar aos restantes campos que representam entidades:
-fornecedores nas compras, colaboradores no RH, armazéns na logística, centros de
-custo na analítica. O componente está feito e as rotas de tabela seguem o mesmo
-molde — é repetir o padrão, não desenhá-lo outra vez.
+Campos que ainda são listas de opções e que representam entidades — diários,
+documentos, exercícios, rubricas de fluxo. São listas curtas e fechadas, onde a
+tabela renderia menos; vale a pena rever caso a caso, não por regra.

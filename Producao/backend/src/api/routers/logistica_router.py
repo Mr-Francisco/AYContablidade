@@ -386,6 +386,57 @@ def tipos_movimento() -> list[dict]:
     return [{"cod": t["cod"], "nome": t["nome"]} for t in svc.TIPOS_MOV]
 
 
+@router.get("/fornecedores/tabela")
+def tabela_de_fornecedores(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    """A tabela de fornecedores, para o F4 das compras."""
+    from src.db.models.terceiros import Terceiro
+
+    q = select(Terceiro).where(
+        Terceiro.empresa_id == empresa.id, Terceiro.tipo == "fornecedor"
+    )
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(
+            or_(
+                Terceiro.nome.ilike(termo),
+                Terceiro.nif.ilike(termo),
+                Terceiro.numero.ilike(termo),
+            )
+        )
+    return [
+        {
+            "id": str(c.id),
+            "codigo": c.numero or "",
+            "nome": c.nome,
+            "detalhe": " · ".join(x for x in (c.nif, c.pais) if x),
+        }
+        for c in db.scalars(q.order_by(Terceiro.numero).limit(limite)).all()
+    ]
+
+
+@router.get("/armazens/tabela")
+def tabela_de_armazens(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    from src.db.models.logistica import Armazem
+
+    q = select(Armazem).where(Armazem.empresa_id == empresa.id)
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(or_(Armazem.codigo.ilike(termo), Armazem.nome.ilike(termo)))
+    return [
+        {
+            "id": str(a.id),
+            "codigo": a.codigo,
+            "nome": a.nome,
+            "detalhe": getattr(a, "localizacao", None) or "",
+        }
+        for a in db.scalars(q.order_by(Armazem.codigo).limit(limite)).all()
+    ]
+
+
 @router.get("/artigos/tabela")
 def tabela_de_artigos(
     empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50

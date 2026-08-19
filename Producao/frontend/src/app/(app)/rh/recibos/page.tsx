@@ -15,6 +15,7 @@ import {
   BarraFiltros,
   Botao,
   CabecalhoPagina,
+  Campo,
   Cartao,
   EnvolveTabela,
   Selector,
@@ -22,6 +23,7 @@ import {
   Tabela,
   Vazio,
 } from "@/components/ui";
+import { CampoEntidade, type Registo } from "@/components/ui/CampoEntidade";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -44,6 +46,9 @@ export default function Recibos() {
 
   const [mes, setMes] = useState(mesActual());
   const [colaboradorId, setColaboradorId] = useState("");
+  /** O registo escolhido na tabela de pesquisa — só código e nome. A ficha
+   *  completa continua a vir da lista, mais abaixo. */
+  const [escolhido, setEscolhido] = useState<Registo | null>(null);
 
   // TODOS os colaboradores, não só os activos: quem saiu em Março tem recibo
   // de Março, e é precisamente esse que se vai buscar mais tarde.
@@ -90,17 +95,23 @@ export default function Recibos() {
           }))}
           larguraMinima="14rem"
         />
-        <Selector
+        <Campo
           rotulo="Colaborador"
-          valor={colaboradorId}
-          aoMudar={setColaboradorId}
-          opcoes={(colaboradores ?? []).map((c) => ({
-            valor: c.id,
-            rotulo: `${c.numero} · ${c.nome}`,
-          }))}
-          placeholder="Escolher colaborador…"
-          larguraMinima="18rem"
-        />
+          dica="F4 para procurar por número ou nome."
+          className="min-w-[18rem]"
+        >
+          <CampoEntidade
+            valor={escolhido}
+            aoEscolher={(r) => {
+              setEscolhido(r);
+              setColaboradorId(r?.id ?? "");
+            }}
+            fonte="/api/rh/colaboradores/tabela"
+            titulo="Colaboradores"
+            placeholder="Colaborador (F4)"
+            colunas={["Nº", "Nome", "Salário base"]}
+          />
+        </Campo>
       </BarraFiltros>
 
       {isLoading ? (

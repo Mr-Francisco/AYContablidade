@@ -1196,6 +1196,30 @@ def obter_analitica_detalhe(
 # por trás. Quem decide é quem faz a contabilidade; o que o sistema garante é que
 # não se esquece.
 # ---------------------------------------------------------------------------
+@router.get("/centros/tabela", dependencies=[VER])
+def tabela_de_centros(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    """Os centros de custo, para o F4 da grelha do movimento."""
+    from sqlalchemy import or_ as _ou
+
+    from src.db.models.contabilidade import CentroCusto
+
+    q = select(CentroCusto).where(CentroCusto.empresa_id == empresa.id)
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(_ou(CentroCusto.codigo.ilike(termo), CentroCusto.nome.ilike(termo)))
+    return [
+        {
+            "id": c.codigo,
+            "codigo": c.codigo,
+            "nome": c.nome,
+            "detalhe": c.tipo or "",
+        }
+        for c in db.scalars(q.order_by(CentroCusto.codigo).limit(limite)).all()
+    ]
+
+
 @router.get("/diferidos", dependencies=[VER])
 def listar_diferidos(
     empresa: EmpresaAtual, db: DB, offset: int = 0, limite: int = LIMITE_OMISSAO

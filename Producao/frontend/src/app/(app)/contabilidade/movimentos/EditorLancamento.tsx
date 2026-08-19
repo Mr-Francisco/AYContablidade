@@ -7,6 +7,7 @@ import useSWR from "swr";
 
 import { SelectorData } from "@/components/contabilidade/SelectorData";
 import { Alerta, Selo } from "@/components/ui";
+import { CampoEntidade } from "@/components/ui/CampoEntidade";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
 import { useCentros, useDiarios, useDocumentos } from "@/lib/hooks";
@@ -266,22 +267,32 @@ export function EditorLancamento({
             titulo="Centro de custo"
             vazio="Sem linhas com conta."
             render={(l, i) => (
-              <select
-                value={l.centro_codigo}
-                onChange={(e) =>
-                  alterarLinha(i, "centro_codigo", e.target.value)
+              // CENTRO DE CUSTO — tabela e F4, como as contas ao lado.
+              // Era uma lista de opções: com quarenta centros de custo,
+              // encontrar o certo era percorrer quarenta.
+              <CampoEntidade
+                valor={
+                  l.centro_codigo
+                    ? {
+                        id: l.centro_codigo,
+                        codigo: l.centro_codigo,
+                        nome:
+                          centros.find((c) => c.codigo === l.centro_codigo)
+                            ?.nome ?? "",
+                      }
+                    : null
                 }
+                aoEscolher={(r) =>
+                  alterarLinha(i, "centro_codigo", r?.codigo ?? "")
+                }
+                fonte="/api/contabilidade/centros/tabela"
+                titulo="Centros de custo"
+                placeholder="Sem centro (F4)"
+                colunas={["Código", "Nome", "Tipo"]}
                 disabled={soLeitura}
-                aria-label="Centro de custo"
-                className={cn(CAMPO_CABECA, "py-1.5")}
-              >
-                <option value="">— Sem centro —</option>
-                {centros.map((c) => (
-                  <option key={c.id} value={c.codigo}>
-                    {c.codigo} · {c.nome}
-                  </option>
-                ))}
-              </select>
+                emGrelha
+                semBotao
+              />
             )}
           />
         </Tabs.Content>
