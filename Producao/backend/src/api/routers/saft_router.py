@@ -14,6 +14,7 @@ from sqlalchemy import select
 
 from src.api.deps import DB, EmpresaAtual, exigir_cap
 from src.db.models.comercial import SerieDocumento
+from src.services import certificacao as svc_certificacao
 from src.services.facturacao import saft
 from src.services.facturacao import series as svc_series
 
@@ -52,9 +53,13 @@ def _gerar(db, empresa, dados: "PedidoSaft") -> bytes:
         "contabilidade": saft.gerar_contabilidade,
     }.get(dados.tipo, saft.gerar)
 
+    # O NÚMERO VEM DO RESOLVEDOR, não do campo da empresa: uma empresa sem
+    # número próprio herda o da plataforma, e é esse que tem de sair no
+    # ficheiro. Ler o campo directamente fazia-a declarar «não certificado»
+    # tendo a plataforma certificação.
     return gerador(
         db, empresa=empresa, de=dados.de, ate=dados.ate,
-        numero_validacao=empresa.certificacao_agt or saft.SEM_CERTIFICACAO,
+        numero_validacao=svc_certificacao.efectiva(db, empresa),
     )
 
 

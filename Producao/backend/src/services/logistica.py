@@ -85,6 +85,13 @@ def cfg_log(db: Session, empresa_id: UUID) -> dict:
 
 
 def guardar_cfg_log(db: Session, empresa_id: UUID, novo: dict) -> dict:
+    # A MESMA REGRA DO OUTRO LADO: o que a empresa não escreve é deixado cair.
+    # Esta rota também aceita um dicionário solto, e sem isto era a porta que
+    # ficava aberta depois de se fechar a das parametrizações comerciais.
+    from src.services.comercial import SO_A_PLATAFORMA_ESCREVE
+
+    novo = {k: v for k, v in novo.items() if k not in SO_A_PLATAFORMA_ESCREVE}
+
     cfg = db.scalar(select(ConfigEmpresa).where(ConfigEmpresa.empresa_id == empresa_id))
     if cfg is None:
         cfg = ConfigEmpresa(empresa_id=empresa_id, modulos={}, parametrizacoes={}, agt={})

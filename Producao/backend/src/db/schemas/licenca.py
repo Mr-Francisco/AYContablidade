@@ -236,6 +236,37 @@ class PasswordTemporaria(BaseModel):
     password_temporaria: str
 
 
+class CertificacaoPlataforma(BaseModel):
+    """O número de certificação por omissão, e quem o está a usar."""
+
+    numero: str
+    #: Quantas empresas o herdam — as que não têm número próprio. Serve para
+    #: quem altera saber o alcance antes de o fazer.
+    empresas_a_herdar: int
+    #: E quantas têm um número seu, que este não afecta.
+    empresas_com_numero_proprio: int
+
+
+class CertificacaoPlataformaPedido(BaseModel):
+    """O número por omissão da plataforma. Vazio quer dizer «não há»."""
+
+    numero: str = Field(default="", max_length=30)
+    motivo: str | None = Field(default=None, max_length=300)
+
+    @field_validator("numero")
+    @classmethod
+    def _formato(cls, v: str) -> str:
+        v = (v or "").strip()
+        if v in ("", "0"):
+            return ""
+        if not re.match(r"^\d+/AGT/\d{4}$", v):
+            raise ValueError(
+                "O número de certificação tem de ter o formato 141/AGT/2026. "
+                "Deixe em branco enquanto o programa não estiver certificado."
+            )
+        return v
+
+
 class ConfigIaPublica(BaseModel):
     """Definições de IA da plataforma, com os limites de cada campo."""
 

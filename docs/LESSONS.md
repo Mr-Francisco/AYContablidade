@@ -228,3 +228,6 @@
 - O `default=` de uma coluna SQLAlchemy só se aplica ao GRAVAR: um `User(...)` construído em memória num teste fica com `None`, que uma verificação booleana lê como falso.
 - A mesma verificação escrita em dois sítios diverge: mudei a mensagem no `auth_router` e a de `deps.py` ficou a dizer outra coisa. Constante partilhada, não cópia.
 - `pkill` não garante porta livre no Windows: o uvicorn novo falha a ligar-se, o antigo continua a servir, e passa-se a depurar código que não está a correr. Confirmar quem está a ouvir na porta.
+- Valor herdado resolve-se À LEITURA, não se copia na criação: a certificação renova-se, e copiada obrigaria a ir empresa a empresa — bastando esquecer uma para ela entregar ficheiros com certificação caducada.
+- Um campo pode estar a ler de uma rota que nunca o devolveu: a certificação nas Parametrizações lia de `/api/logistica/config` e o valor vivia no comercial — aparecia sempre vazio, e ninguém deu por isso.
+- Ao fechar uma porta, procurar as outras que dão para o mesmo sítio: `guardar_cfg_com` e `guardar_cfg_log` aceitam ambas dicionários soltos para a mesma tabela.

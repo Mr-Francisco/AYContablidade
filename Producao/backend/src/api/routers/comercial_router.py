@@ -16,6 +16,7 @@ from src.api.deps import DB, EmpresaAtual, exigir_cap
 from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.db.models.comercial import TIPOS_DOC, Venda, VendaLinha, Vendedor
 from src.db.models.terceiros import PROVINCIAS, Terceiro
+from src.services import certificacao as svc_certificacao
 from src.services import comercial as svc
 
 router = APIRouter(
@@ -549,11 +550,7 @@ def obter_config(empresa: EmpresaAtual, db: DB) -> dict:
     # O número de certificação vai junto para a empresa o PODER VER, mas não é
     # uma parametrização: quem o define é a plataforma. Vem marcado como só de
     # leitura para o ecrã não ter de adivinhar.
-    return {
-        **svc.cfg_com(db, empresa.id),
-        "certificacao_agt": empresa.certificacao_agt or "",
-        "certificacao_agt_editavel": False,
-    }
+    return {**svc.cfg_com(db, empresa.id), **svc_certificacao.descrever(db, empresa)}
 
 
 @router.put("/config", dependencies=[GERIR])
@@ -565,8 +562,4 @@ def gravar_config(request: Request, dados: dict, empresa: EmpresaAtual, db: DB) 
     """
     r = svc.guardar_cfg_com(db, empresa.id, dados)
     db.commit()
-    return {
-        **r,
-        "certificacao_agt": empresa.certificacao_agt or "",
-        "certificacao_agt_editavel": False,
-    }
+    return {**r, **svc_certificacao.descrever(db, empresa)}

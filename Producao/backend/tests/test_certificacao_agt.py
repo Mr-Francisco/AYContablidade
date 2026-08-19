@@ -287,3 +287,134 @@ def test_a_alteracao_fica_na_auditoria(plataforma):
     assert registo.detalhes["antes"] is None
     assert registo.detalhes["depois"] == CERT_REAL
     assert registo.detalhes["motivo"] == "Certificação emitida pela AGT"
+
+
+# ---------------------------------------------------------------------------
+# A certificação por omissão da plataforma
+# ---------------------------------------------------------------------------
+def test_sem_numero_proprio_a_empresa_herda_o_da_plataforma(base, empresa):
+    """A razão de a plataforma ter um: o programa é o mesmo para toda a gente.
+
+    Escrever o número empresa a empresa era repetir a mesma coisa tantas vezes
+    quantos os clientes, com uma hipótese de engano em cada uma.
+    """
+    from src.services import certificacao
+    from src.services.ia import config as cfg_ia
+
+    cfg = cfg_ia.obter(base)
+    antes = cfg.certificacao_agt
+    cfg.certificacao_agt = CERT_REAL
+    base.flush()
+    try:
+        assert empresa.certificacao_agt is None
+        assert certificacao.efectiva(base, empresa) == CERT_REAL
+        assert certificacao.descrever(base, empresa)["certificacao_origem"] == (
+            "plataforma"
+        )
+    finally:
+        cfg.certificacao_agt = antes
+        base.flush()
+
+
+def test_o_numero_da_empresa_ganha_ao_da_plataforma(base, empresa):
+    """O caso específico existe para isto, e tem de ganhar."""
+    from src.services import certificacao
+    from src.services.ia import config as cfg_ia
+
+    cfg = cfg_ia.obter(base)
+    antes = cfg.certificacao_agt
+    cfg.certificacao_agt = CERT_REAL
+    empresa.certificacao_agt = "222/AGT/2027"
+    base.flush()
+    try:
+        assert certificacao.efectiva(base, empresa) == "222/AGT/2027"
+        assert certificacao.descrever(base, empresa)["certificacao_origem"] == (
+            "empresa"
+        )
+    finally:
+        cfg.certificacao_agt = antes
+        base.flush()
+
+
+def test_sem_nenhum_dos_dois_declara_se_a_verdade(base, empresa):
+    """`0` é como a norma diz «software ainda não certificado»."""
+    from src.services import certificacao
+    from src.services.ia import config as cfg_ia
+
+    cfg = cfg_ia.obter(base)
+    antes = cfg.certificacao_agt
+    cfg.certificacao_agt = None
+    base.flush()
+    try:
+        assert certificacao.efectiva(base, empresa) == "0"
+        assert certificacao.descrever(base, empresa)["certificacao_origem"] == (
+            "nenhuma"
+        )
+    finally:
+        cfg.certificacao_agt = antes
+        base.flush()
+
+
+def test_o_saft_sai_com_a_certificacao_herdada(base, empresa):
+    """A prova que interessa: o ficheiro entregue leva o número da plataforma.
+
+    Ler o campo da empresa directamente — que era o que se fazia — fazia-a
+    declarar «não certificado» tendo a plataforma certificação.
+    """
+    from src.api.routers.saft_router import PedidoSaft, _gerar
+    from src.services.ia import config as cfg_ia
+
+    cfg = cfg_ia.obter(base)
+    antes = cfg.certificacao_agt
+    cfg.certificacao_agt = CERT_REAL
+    base.flush()
+    try:
+        xml = _gerar(
+            base,
+            empresa,
+            PedidoSaft(
+                de=date(2026, 3, 1), ate=date(2026, 3, 31), tipo="facturacao"
+            ),
+        )
+        assert f"<SoftwareValidationNumber>{CERT_REAL}<".encode() in xml
+    finally:
+        cfg.certificacao_agt = antes
+        base.flush()
+
+
+def test_renovar_a_certificacao_e_um_campo_e_nao_uma_volta_pelos_clientes():
+    """Porque é resolvida à leitura e não copiada na criação.
+
+    No dia em que o número passar de 2026 para 2027, muda-se num sítio e todas
+    as empresas sem caso próprio passam a declarar o novo. Copiado na criação,
+    seria preciso ir empresa a empresa — e bastaria esquecer uma para ela
+    entregar ficheiros com uma certificação caducada.
+    """
+    import inspect
+
+    from src.services import certificacao
+
+    fonte = inspect.getsource(certificacao.efectiva)
+    # Lê os dois, sempre. Não há aqui nenhum valor guardado no momento da
+    # criação da empresa.
+    assert "da_plataforma(db)" in fonte
+    assert "empresa.certificacao_agt" in fonte
+
+
+def test_a_rota_da_logistica_tambem_barra_e_tambem_mostra(base, empresa):
+    """Era a porta que ficava aberta depois de se fechar a outra.
+
+    O ecrã das parametrizações lê e grava em `/api/logistica/config`, não no
+    comercial — e essa rota também aceita um dicionário solto. Além disso nunca
+    devolvia a certificação: o campo do ecrã aparecia sempre vazio, mesmo com
+    número atribuído.
+    """
+    from src.services import logistica as svc_log
+
+    guardado = svc_log.guardar_cfg_log(
+        base, empresa.id, {"software_validacao": CERT_DE_OUTRO, "doc_saida": "901"}
+    )
+    assert "software_validacao" not in guardado
+    base.refresh(empresa)
+    assert empresa.certificacao_agt is None
+    assert guardado["doc_saida"] == "901"

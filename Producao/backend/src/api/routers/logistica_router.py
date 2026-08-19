@@ -15,6 +15,7 @@ from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
 from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.db.models.logistica import Armazem, Artigo, MovimentoStock
+from src.services import certificacao as svc_certificacao
 from src.services import logistica as svc
 from src.services.contabilidade import ErroContabilistico
 from src.services.auditoria import auditar
@@ -387,11 +388,23 @@ def tipos_movimento() -> list[dict]:
 
 @router.get("/config")
 def obter_config(empresa: EmpresaAtual, db: DB) -> dict:
-    return svc.cfg_log(db, empresa.id)
+    # A certificação vai junto para a empresa a PODER VER — não é uma
+    # parametrização, e o ecrã mostra-a só de leitura. Estava a ser lida deste
+    # endereço e nunca era devolvida: o campo aparecia sempre vazio, mesmo com
+    # certificação atribuída.
+    return {
+        **svc.cfg_log(db, empresa.id),
+        **svc_certificacao.descrever(db, empresa),
+    }
 
 
 @router.put("/config", dependencies=[GERIR])
 def gravar_config(request: Request, dados: dict, empresa: EmpresaAtual, db: DB) -> dict:
+    """As parametrizações de logística da empresa.
+
+    A certificação NÃO se altera por aqui, mesmo que venha no pedido: o serviço
+    deixa-a cair. Ver `SO_A_PLATAFORMA_ESCREVE`.
+    """
     r = svc.guardar_cfg_log(db, empresa.id, dados)
     db.commit()
-    return r
+    return {**r, **svc_certificacao.descrever(db, empresa)}

@@ -21,7 +21,7 @@ Nota: NÃO usar `from __future__ import annotations` aqui — slowapi
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from src.api.deps import DB, UtilizadorAtual, exigir_superadmin
 from src.core.config import get_settings
@@ -32,6 +32,8 @@ from src.core.constants import EstadoEmpresa, EstadoLicenca, Perfil
 from src.db.models.tenancy import Empresa, Licenca
 from src.db.models.user import User
 from src.db.schemas.licenca import (
+    CertificacaoPlataforma,
+    CertificacaoPlataformaPedido,
     EmpresaCertificacaoPedido,
     ActivacaoPedido,
     ActivacaoResposta,
@@ -850,6 +852,90 @@ def _config_ia_publica(db: DB) -> ConfigIaPublica:
         modelo_ia=cfg_ia.modelo(db),
         ia_ativa=cfg_ia.ia_ativa(db),
     )
+
+
+# ---------------------------------------------------------------------------
+# Certificação da AGT — o valor por omissão da plataforma
+# ---------------------------------------------------------------------------
+@router.get("/certificacao", response_model=CertificacaoPlataforma)
+def certificacao_da_plataforma(db: DB) -> CertificacaoPlataforma:
+    """O número por omissão, e quantas empresas dependem dele."""
+    from src.services.ia import config as cfg_ia
+
+    cfg = cfg_ia.obter(db)
+    herdam = db.scalar(
+        select(func.count(Empresa.id)).where(
+            or_(Empresa.certificacao_agt.is_(None), Empresa.certificacao_agt == "")
+        )
+    )
+    proprias = db.scalar(
+        select(func.count(Empresa.id)).where(
+            Empresa.certificacao_agt.is_not(None), Empresa.certificacao_agt != ""
+        )
+    )
+    return CertificacaoPlataforma(
+        numero=cfg.certificacao_agt or "",
+        empresas_a_herdar=herdam or 0,
+        empresas_com_numero_proprio=proprias or 0,
+    )
+
+
+@router.patch("/certificacao", response_model=CertificacaoPlataforma)
+def definir_certificacao_da_plataforma(
+    request: Request,
+    dados: CertificacaoPlataformaPedido,
+    user: UtilizadorAtual,
+    db: DB,
+) -> CertificacaoPlataforma:
+    """O número de certificação que vale para as empresas sem número próprio.
+
+    Quem certifica é a AGT e o que ela certifica é o PROGRAMA — que é o mesmo
+    para todos os clientes. É por isso que o número normal é um só, e é aqui
+    que se escreve uma vez em vez de o repetir empresa a empresa.
+
+    ALTERAR AQUI MUDA O QUE MUITAS EMPRESAS DECLARAM à AGT, de uma vez. É essa
+    a utilidade — renovar a certificação passa a ser um campo e não uma volta
+    por todos os clientes — e é também a razão de a alteração ficar registada
+    com o antes, o depois e quem a fez.
+
+    As empresas com número próprio não são tocadas: o delas ganha sempre.
+    """
+    from src.services.ia import config as cfg_ia
+
+    cfg = cfg_ia.obter(db)
+    anterior = cfg.certificacao_agt or ""
+    novo = dados.numero
+    if anterior == novo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "A plataforma já tem esse número de certificação."
+            if novo
+            else "A plataforma já está sem número de certificação.",
+        )
+
+    afectadas = db.scalar(
+        select(func.count(Empresa.id)).where(
+            or_(Empresa.certificacao_agt.is_(None), Empresa.certificacao_agt == "")
+        )
+    )
+    cfg.certificacao_agt = novo or None
+
+    auditar(
+        db,
+        actor=user,
+        accao="plataforma.certificacao",
+        request=request,
+        alvo_tipo="plataforma",
+        alvo_desc="Certificação por omissão",
+        detalhes={
+            "antes": anterior or None,
+            "depois": novo or None,
+            "motivo": (dados.motivo or "").strip() or None,
+            "empresas_afectadas": afectadas or 0,
+        },
+    )
+    db.commit()
+    return certificacao_da_plataforma(db)
 
 
 @router.get("/config-ia", response_model=ConfigIaPublica)

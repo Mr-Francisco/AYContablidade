@@ -40,6 +40,8 @@ interface CfgLog {
   armazem_venda_id?: string;
   /** Nº de validação do software atribuído pela AGT (`141/AGT/2026`), ou `0`. */
   certificacao_agt?: string;
+  /** «empresa», «plataforma» ou «nenhuma» — de onde vem o número acima. */
+  certificacao_origem?: string;
 }
 
 interface Armazem {
@@ -122,16 +124,24 @@ export function Parametrizacoes({
             className="max-w-[22rem]"
           >
             <Entrada
-              value={campos.certificacao_agt || "Sem certificação atribuída"}
+              value={
+                campos.certificacao_agt && campos.certificacao_agt !== "0"
+                  ? campos.certificacao_agt
+                  : "Programa ainda não certificado"
+              }
               readOnly
               disabled
-              className={campos.certificacao_agt ? "tabular" : undefined}
+              className={
+                campos.certificacao_agt && campos.certificacao_agt !== "0"
+                  ? "tabular"
+                  : undefined
+              }
             />
           </Campo>
           <p className="mt-2 text-[12px] leading-relaxed text-texto-suave">
-            {campos.certificacao_agt
-              ? "Este número é impresso em cada documento fiscal e vai no cabeçalho dos ficheiros entregues à AGT. Para o alterar, contacte o fornecedor da plataforma."
-              : "Os ficheiros entregues à AGT vão indicar que o software ainda não está certificado — o que é permitido. Para registar a certificação, contacte o fornecedor da plataforma."}
+            {campos.certificacao_origem === "nenhuma"
+              ? "Os ficheiros entregues à AGT vão indicar que o programa ainda não está certificado — o que é permitido. Para registar a certificação, contacte o fornecedor da plataforma."
+              : "Este número é impresso em cada documento fiscal e vai no cabeçalho dos ficheiros entregues à AGT. Para o alterar, contacte o fornecedor da plataforma."}
           </p>
         </div>
 

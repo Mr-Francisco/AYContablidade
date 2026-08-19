@@ -304,5 +304,19 @@ class ConfigPlataforma(UUIDMixin, TimestampMixin, Base):
         Integer, default=365, server_default=text("365"), nullable=False
     )
 
+    #: NÚMERO DE CERTIFICAÇÃO DA AGT DA PLATAFORMA — o valor por omissão.
+    #:
+    #: Quem certifica é a AGT e o que ela certifica é o PROGRAMA. Sendo o mesmo
+    #: programa para todas as empresas, o normal é o número ser um só — e
+    #: escrevê-lo empresa a empresa era repetir a mesma coisa tantas vezes
+    #: quantos os clientes, com uma hipótese de engano em cada uma.
+    #:
+    #: A empresa continua a poder ter o SEU número, para os casos em que exista
+    #: um. Quando não tem, usa-se este. A resolução é feita À LEITURA e não
+    #: copiada na criação, e a diferença aparece no dia em que a certificação é
+    #: renovada: muda-se aqui e todas as empresas sem caso próprio passam a
+    #: declarar o número novo. Copiado, seria preciso ir empresa a empresa.
+    certificacao_agt: Mapped[str | None] = mapped_column(String(30))
+
     def __repr__(self) -> str:
         return f"<ConfigPlataforma max_saida={self.max_tokens_saida}>"
