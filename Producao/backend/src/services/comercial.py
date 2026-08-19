@@ -55,6 +55,11 @@ def tipo_doc(cod: str) -> dict:
 def cfg_com_default() -> dict:
     return {
         "conta_cliente": "31121",
+        # `31122` no plano PGC-AR: «Clientes não grupo · Estrangeiros». O par
+        # existe no plano desde sempre e não estava a ser usado — um cliente
+        # estrangeiro ia para a conta dos nacionais e o balancete dizia que a
+        # empresa não tinha clientes estrangeiros.
+        "conta_cliente_estrangeiro": "31122",
         "conta_vendas": "6111",
         "conta_servicos": "6211",
         "conta_iva": "345311111",
@@ -190,6 +195,44 @@ def calc_totais(linhas: list[dict], iva_perc: Decimal) -> dict:
 # ---------------------------------------------------------------------------
 # Conta corrente do cliente
 # ---------------------------------------------------------------------------
+#: Países que contam como nacionais. Angola nas formas em que aparece escrita.
+#:
+#: Comparar por país e não pelo NIF é deliberado: um NIF estrangeiro pode não
+#: ter forma reconhecível, e a ficha do terceiro já tem o país — que é o campo
+#: que quem preenche a ficha entende.
+NACIONAIS = frozenset({"angola", "ao", "república de angola", "republica de angola"})
+
+
+def eh_nacional(cliente) -> bool:
+    """O cliente é nacional?
+
+    Sem ficha — consumidor final — conta como nacional: é o caso normal ao
+    balcão, e a conta base dos nacionais é a que o Piloto usa nesse caso.
+    """
+    if cliente is None:
+        return True
+    return (getattr(cliente, "pais", None) or "Angola").strip().lower() in NACIONAIS
+
+
+def conta_base_do_cliente(cliente, cfg: dict) -> str:
+    """A conta-mãe da conta corrente: nacionais ou estrangeiros.
+
+    O PLANO PGC-AR JÁ TEM AS DUAS — `31121 Clientes não grupo · Nacionais` e
+    `31122 · Estrangeiros` —, e o Piloto usava sempre a primeira, fosse o
+    cliente de onde fosse. Um cliente estrangeiro na conta dos nacionais não dá
+    erro nenhum: dá um balancete que diz que a empresa não tem clientes
+    estrangeiros, e um SAF-T que declara o mesmo.
+
+    A conta dos estrangeiros é parametrizável como a dos nacionais. Em branco,
+    usa-se a dos nacionais — que é o comportamento de antes, e é melhor do que
+    lançar numa conta que a empresa possa não ter no plano.
+    """
+    nacionais = cfg["conta_cliente"]
+    if eh_nacional(cliente):
+        return nacionais
+    return (cfg.get("conta_cliente_estrangeiro") or "").strip() or nacionais
+
+
 def conta_corrente_cliente(
     db: Session, empresa_id: UUID, cliente: Terceiro | None, cfg: dict
 ) -> str:
@@ -200,7 +243,7 @@ def conta_corrente_cliente(
     final, que não tem ficha, usa a conta base enquanto esta for de movimento;
     quando deixar de ser, vai para "Clientes Diversos".
     """
-    base = cfg["conta_cliente"]
+    base = conta_base_do_cliente(cliente, cfg)
     from src.db.models.contabilidade import Conta
 
     base_conta = db.scalar(

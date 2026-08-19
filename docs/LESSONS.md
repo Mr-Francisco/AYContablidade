@@ -242,3 +242,7 @@
 - Uma linha sem `fluxo_codigo` nao desaparece do balancete mas desaparece da Demonstracao de Fluxos: o mapa fecha errado e ninguem sabe porque. O sistema nao pode adivinhar a rubrica — tem e de garantir que nao se esquece.
 - Aviso por causa, nao por documento: dez facturas com o mesmo problema sao um problema. Chave unica, texto actualizado, e levanta-se sozinho quando deixa de ser verdade.
 - Duplo clique e nao clique simples em listas que se percorrem a ler: um clique a navegar tira a pessoa da pagina a cada engano.
+- Verificar no Piloto antes de dizer que se «recuperou» a logica: o par de contas 31121/31122 e o campo pais existem la, mas a ESCOLHA entre as duas nunca existiu — usava sempre a dos nacionais.
+- Um campo que representa uma entidade nao e uma lista de opcoes: tem tabela por tras e F4, com procura NO SERVIDOR — devolver mil artigos para mostrar quinze e um megabyte por cada caixa.
+- Uma entidade comercial que nasce sem conta contabilistica so existe metade: o Piloto criava a conta do cliente no acto da facturacao, e ate la nao estava no plano de contas.
+- Corrigir um indice fora de alcance no desenho e nao num efeito: o efeito mostra a posicao errada durante um fotograma antes de saltar.

@@ -4,7 +4,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-
+import { CriarClienteRapido } from "@/components/comercial/CriarClienteRapido";
 import {
   Alerta,
   Botao,
@@ -16,11 +16,12 @@ import {
   Td,
   Th,
 } from "@/components/ui";
+import { CampoEntidade, type Registo } from "@/components/ui/CampoEntidade";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { big, formataMoeda, multiplica, paraApi, soma } from "@/lib/dinheiro";
 import { useArtigos } from "@/lib/hooks";
-import type { Terceiro, TipoDocumento, Vendedor } from "@/types";
+import type { TipoDocumento } from "@/types";
 
 interface Linha {
   id: string;
@@ -57,15 +58,14 @@ export function FormularioVenda({
     buscador,
     { revalidateOnFocus: false },
   );
-  const { data: clientes } = useSWR<Terceiro[]>(
-    "/api/comercial/clientes",
-    buscador,
-  );
-  const { data: vendedores } = useSWR<Vendedor[]>(
-    "/api/comercial/vendedores",
-    buscador,
-  );
-  const { artigos, porId } = useArtigos();
+  // AS LISTAS INTEIRAS DEIXARAM DE SER PEDIDAS. Vinham todos os clientes,
+  // todos os vendedores e todos os artigos só para encher três caixas de
+  // opções — e com mil artigos era um megabyte para mostrar quinze. A procura
+  // passou para o servidor, e o que se pede é o que se vê.
+  //
+  // `porId` fica: a linha guarda o `artigo_id` e o campo precisa do código e
+  // da descrição para os mostrar sem ir perguntar outra vez.
+  const { porId } = useArtigos();
 
   const [tipoDoc, setTipoDoc] = useState("FT");
   const [tipo, setTipo] = useState("mercadorias");
@@ -73,6 +73,13 @@ export function FormularioVenda({
   const [clienteId, setClienteId] = useState("");
   const [clienteNome, setClienteNome] = useState("");
   const [vendedorId, setVendedorId] = useState("");
+  /** O registo escolhido nas tabelas de pesquisa. Guarda-se o registo inteiro
+   *  e não só o id: o campo mostra «001 · Nome» sem ter de ir buscar a lista
+   *  toda para traduzir um identificador. */
+  const [cliente, setCliente] = useState<Registo | null>(null);
+  const [vendedor, setVendedor] = useState<Registo | null>(null);
+  /** Criar um cliente sem sair daqui, a partir do que já se escreveu. */
+  const [aCriarCliente, setACriarCliente] = useState<string | null>(null);
   const [ivaPerc, setIvaPerc] = useState("14");
   const [docOrigem, setDocOrigem] = useState("");
   const [linhas, setLinhas] = useState<Linha[]>([linhaVazia()]);
@@ -222,22 +229,30 @@ export function FormularioVenda({
                   { valor: "servicos", rotulo: "Prestação de serviços" },
                 ]}
               />
-              <Selector
+              {/* CLIENTE — tabela de clientes, com F4.
+                  Era uma lista de opções com «— Consumidor final —» à cabeça.
+                  Com trezentos clientes, escolher era rolar; e não havia forma
+                  de criar um sem abandonar a factura. */}
+              <Campo
                 rotulo={`Cliente${exigeCliente ? "" : " (opcional)"}`}
-                valor={clienteId}
-                aoMudar={(v) => {
-                  setClienteId(v);
-                  setClienteNome("");
-                }}
-                opcoes={[
-                  { valor: "", rotulo: "— Consumidor final —" },
-                  ...(clientes ?? []).map((c) => ({
-                    valor: c.id,
-                    rotulo: `${c.numero} — ${c.nome}`,
-                  })),
-                ]}
-                larguraMinima="16rem"
-              />
+                dica="F4 ou duplo clique para procurar. Em branco: consumidor final."
+                className="min-w-[16rem]"
+              >
+                <CampoEntidade
+                  valor={cliente}
+                  aoEscolher={(r) => {
+                    setCliente(r);
+                    setClienteId(r?.id ?? "");
+                    setClienteNome("");
+                  }}
+                  fonte="/api/comercial/clientes/tabela"
+                  titulo="Clientes"
+                  placeholder="Consumidor final (F4)"
+                  colunas={["Nº", "Nome", "NIF · País"]}
+                  aoCriar={(termo) => setACriarCliente(termo)}
+                  rotuloCriar="Criar cliente"
+                />
+              </Campo>
               {!clienteId && (
                 <Campo
                   rotulo="Nome do cliente"
@@ -253,18 +268,22 @@ export function FormularioVenda({
                   />
                 </Campo>
               )}
-              <Selector
+              <Campo
                 rotulo="Vendedor"
-                valor={vendedorId}
-                aoMudar={setVendedorId}
-                opcoes={[
-                  { valor: "", rotulo: "— Sem vendedor —" },
-                  ...(vendedores ?? []).map((v) => ({
-                    valor: v.id,
-                    rotulo: v.nome,
-                  })),
-                ]}
-              />
+                dica="F4 para procurar na tabela de vendedores."
+              >
+                <CampoEntidade
+                  valor={vendedor}
+                  aoEscolher={(r) => {
+                    setVendedor(r);
+                    setVendedorId(r?.id ?? "");
+                  }}
+                  fonte="/api/comercial/vendedores/tabela"
+                  titulo="Vendedores"
+                  placeholder="Sem vendedor (F4)"
+                  colunas={["Sigla", "Nome", "Comissão"]}
+                />
+              </Campo>
               {temIva && (
                 <Campo rotulo="Taxa de IVA (%)">
                   <Entrada
@@ -317,18 +336,29 @@ export function FormularioVenda({
                       className="border-b border-borda last:border-b-0"
                     >
                       <Td className="p-2">
-                        <Selector
-                          valor={l.artigo_id}
-                          aoMudar={(v) => alterar(l.id, "artigo_id", v)}
-                          opcoes={[
-                            { valor: "", rotulo: "— Linha livre —" },
-                            ...artigos.map((a) => ({
-                              valor: a.id,
-                              rotulo: `${a.codigo} — ${a.descricao}`,
-                            })),
-                          ]}
-                          placeholder="Artigo…"
-                          larguraMinima="15rem"
+                        {/* ARTIGO — tabela de artigos, com F4. Era uma lista
+                            de opções com todos os artigos lá dentro: com mil
+                            artigos, escolher um era percorrer mil. Aqui
+                            procura-se por código, descrição ou referência. */}
+                        <CampoEntidade
+                          valor={
+                            l.artigo_id
+                              ? {
+                                  id: l.artigo_id,
+                                  codigo: porId.get(l.artigo_id)?.codigo ?? "",
+                                  nome: porId.get(l.artigo_id)?.descricao ?? "",
+                                }
+                              : null
+                          }
+                          aoEscolher={(r) =>
+                            alterar(l.id, "artigo_id", r?.id ?? "")
+                          }
+                          fonte="/api/logistica/artigos/tabela"
+                          titulo="Artigos"
+                          placeholder="Linha livre (F4)"
+                          colunas={["Código", "Descrição", "Unidade · Preço"]}
+                          emGrelha
+                          semBotao
                         />
                       </Td>
                       <Td className="p-2">
@@ -448,6 +478,26 @@ export function FormularioVenda({
               {aGravar ? "A gravar…" : "Gravar rascunho"}
             </Botao>
           </div>
+          {aCriarCliente !== null && (
+            <CriarClienteRapido
+              nomeInicial={aCriarCliente}
+              aoFechar={() => setACriarCliente(null)}
+              aoCriar={(c) => {
+                // Criar e USAR: o cliente novo fica escolhido na factura que estava
+                // a ser preenchida. Criar e deixar a pessoa escolhê-lo outra vez na
+                // lista era metade do trabalho.
+                setCliente({
+                  id: c.id,
+                  codigo: c.numero,
+                  nome: c.nome,
+                  detalhe: [c.nif, c.pais].filter(Boolean).join(" · "),
+                });
+                setClienteId(c.id);
+                setClienteNome("");
+                setACriarCliente(null);
+              }}
+            />
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

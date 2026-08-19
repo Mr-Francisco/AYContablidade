@@ -9,7 +9,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
 from src.api.paginacao import LIMITE_OMISSAO, pagina
@@ -384,6 +384,46 @@ def obter_stock(
 @router.get("/tipos-movimento")
 def tipos_movimento() -> list[dict]:
     return [{"cod": t["cod"], "nome": t["nome"]} for t in svc.TIPOS_MOV]
+
+
+@router.get("/artigos/tabela")
+def tabela_de_artigos(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    """A tabela de artigos, para o F4 da facturação e das compras.
+
+    Procura pelo código, pela descrição e pela referência — que é como se
+    procura um artigo na vida real: uns sabem o código, outros só o nome, e
+    quem recebe uma encomenda tem a referência do fornecedor.
+    """
+    from src.db.models.logistica import Artigo
+
+    q = select(Artigo).where(Artigo.empresa_id == empresa.id)
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        campos = [Artigo.codigo.ilike(termo), Artigo.descricao.ilike(termo)]
+        if hasattr(Artigo, "referencia"):
+            campos.append(Artigo.referencia.ilike(termo))
+        q = q.where(or_(*campos))
+
+    return [
+        {
+            "id": str(a.id),
+            "codigo": a.codigo,
+            "nome": a.descricao,
+            # O preço e a unidade: é o que quem factura precisa de ver para
+            # escolher entre dois artigos com nomes parecidos.
+            "detalhe": " · ".join(
+                x
+                for x in (
+                    a.unidade,
+                    f"{a.preco_venda}" if getattr(a, "preco_venda", None) else None,
+                )
+                if x
+            ),
+        }
+        for a in db.scalars(q.order_by(Artigo.codigo).limit(limite)).all()
+    ]
 
 
 @router.get("/config")

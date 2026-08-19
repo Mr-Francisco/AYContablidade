@@ -206,6 +206,149 @@ def criar_cliente(
     return {"id": c.id, "numero": c.numero, "nome": c.nome}
 
 
+# ---------------------------------------------------------------------------
+# Tabelas de pesquisa (F4)
+#
+# Um campo que representa uma ENTIDADE tem uma tabela por trás, e procura-se lá
+# com F4 — como no plano de contas, que é o padrão do Piloto e o que já se fazia
+# aqui para as contas. O que estas rotas devolvem é a forma que o campo de
+# pesquisa entende: código, nome e uma linha de contexto.
+#
+# A PROCURA É DO SERVIDOR. Devolver tudo e filtrar no ecrã funciona com trinta
+# clientes e deixa de funcionar com três mil — e é com três mil que faz falta.
+# ---------------------------------------------------------------------------
+@router.get("/clientes/tabela")
+def tabela_de_clientes(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    q = select(Terceiro).where(
+        Terceiro.empresa_id == empresa.id, Terceiro.tipo == "cliente"
+    )
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(
+            or_(
+                Terceiro.nome.ilike(termo),
+                Terceiro.nif.ilike(termo),
+                Terceiro.numero.ilike(termo),
+            )
+        )
+    return [
+        {
+            "id": str(c.id),
+            "codigo": c.numero or "",
+            "nome": c.nome,
+            # O NIF e o país, que é o que distingue dois clientes com nomes
+            # parecidos — e o país diz logo se é nacional ou estrangeiro.
+            "detalhe": " · ".join(x for x in (c.nif, c.pais) if x),
+        }
+        for c in db.scalars(q.order_by(Terceiro.numero).limit(limite)).all()
+    ]
+
+
+@router.get("/vendedores/tabela")
+def tabela_de_vendedores(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    q = select(Vendedor).where(
+        Vendedor.empresa_id == empresa.id, Vendedor.estado == "activo"
+    )
+    if procura.strip():
+        q = q.where(Vendedor.nome.ilike(f"%{procura.strip()}%"))
+    return [
+        {
+            "id": str(v.id),
+            "codigo": (v.nome or "")[:3].upper(),
+            "nome": v.nome,
+            "detalhe": f"comissão {v.comissao_perc}%",
+        }
+        for v in db.scalars(q.order_by(Vendedor.nome).limit(limite)).all()
+    ]
+
+
+class ClienteRapido(BaseModel):
+    """O mínimo para criar um cliente sem sair da facturação.
+
+    A FICHA COMPLETA CONTINUA A EXISTIR e é onde se preenche o resto. Isto é
+    para o caso concreto de se descobrir a meio de uma factura que o cliente
+    não está registado: mandar a pessoa a outro ecrã fá-la perder o documento
+    que estava a preencher.
+    """
+
+    nome: str = Field(min_length=1, max_length=200)
+    nif: str | None = Field(default=None, max_length=20)
+    telefone: str | None = Field(default=None, max_length=40)
+    #: NACIONAL OU ESTRANGEIRO. Decide a conta corrente: o plano PGC-AR tem
+    #: `31121 Nacionais` e `31122 Estrangeiros`, e usar sempre a primeira dava
+    #: um balancete a dizer que a empresa não tem clientes estrangeiros.
+    pais: str = Field(default="Angola", max_length=60)
+
+
+@router.post(
+    "/clientes/rapido", status_code=status.HTTP_201_CREATED, dependencies=[GERIR]
+)
+def criar_cliente_rapido(
+    dados: ClienteRapido, empresa: EmpresaAtual, db: DB
+) -> dict:
+    """Cria o cliente E a sua conta corrente, sem sair da facturação.
+
+    O NÚMERO É SEQUENCIAL, como na ficha completa e como no Piloto: 001, 002…
+    por empresa. A CONTA também: a próxima subconta da conta-mãe que a
+    nacionalidade determinar — `31121001`, `31121002`… nos nacionais,
+    `31122001`… nos estrangeiros.
+
+    Criar a conta AQUI e não só na primeira factura é deliberado. O Piloto
+    criava-a no acto da facturação, e o resultado era um cliente que existia no
+    comercial e não existia na contabilidade até alguém lhe facturar alguma
+    coisa — quem fosse ver o plano de contas não o encontrava. Um cliente é uma
+    entidade contabilística desde que nasce.
+    """
+    nome = dados.nome.strip()
+    if db.scalar(
+        select(Terceiro.id).where(
+            Terceiro.empresa_id == empresa.id,
+            Terceiro.tipo == "cliente",
+            func.lower(Terceiro.nome) == nome.lower(),
+        )
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Já existe um cliente com o nome «{nome}». Procure-o na lista em "
+            "vez de criar outro — dois clientes com o mesmo nome acabam com os "
+            "movimentos repartidos entre os dois.",
+        )
+
+    c = Terceiro(
+        empresa_id=empresa.id,
+        tipo="cliente",
+        tipo_terceiro="Cliente",
+        numero=_proximo_numero_terceiro(db, empresa.id, "cliente"),
+        nome=nome,
+        nif=(dados.nif or "").strip() or None,
+        telefone=(dados.telefone or "").strip() or None,
+        pais=dados.pais.strip() or "Angola",
+        estado="activo",
+    )
+    db.add(c)
+    db.flush()
+
+    # A CONTA CORRENTE, já. `conta_corrente_cliente` escolhe a conta-mãe pela
+    # nacionalidade e cria a próxima subconta, gravando-a na ficha.
+    conta = svc.conta_corrente_cliente(db, empresa.id, c, svc.cfg_com(db, empresa.id))
+    db.commit()
+    db.refresh(c)
+
+    return {
+        "id": c.id,
+        "numero": c.numero,
+        "nome": c.nome,
+        "nif": c.nif,
+        "pais": c.pais,
+        "conta": conta,
+        "nacional": svc.eh_nacional(c),
+    }
+
+
 @router.get("/vendedores")
 def listar_vendedores(empresa: EmpresaAtual, db: DB) -> list[dict]:
     return [
