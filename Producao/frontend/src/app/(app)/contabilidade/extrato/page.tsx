@@ -69,6 +69,11 @@ function Conteudo() {
   const { exercicios, activo } = useExercicios();
 
   const [conta, setConta] = useState(parametros.get("conta") ?? "");
+  /** RUBRICA DE FLUXO DE CAIXA, quando se chega aqui a partir do mapa de
+   *  fluxos. É o mesmo ecrã a mostrar duas coisas — os movimentos de uma conta
+   *  ou os de uma rubrica —, porque o que se quer ver é o mesmo: o que
+   *  originou aquele número. Duas formas diferentes obrigariam a dois ecrãs. */
+  const fluxo = parametros.get("fluxo") ?? "";
   const [entidade, setEntidade] = useState(parametros.get("entidade") ?? "");
   const [exercicioId, setExercicioId] = useState<string | undefined>();
   const [de, setDe] = useState("");
@@ -89,7 +94,11 @@ function Conteudo() {
   if (incluirSubcontas) p.set("incluir_subcontas", "true");
 
   const { data, isLoading, error } = useSWR<Extrato>(
-    conta ? `/api/contabilidade/razao/${conta}?${p}` : null,
+    fluxo
+      ? `/api/contabilidade/extrato-fluxo/${encodeURIComponent(fluxo)}?${p}`
+      : conta
+        ? `/api/contabilidade/razao/${conta}?${p}`
+        : null,
     buscador,
   );
 
@@ -99,8 +108,12 @@ function Conteudo() {
   return (
     <>
       <CabecalhoPagina
-        titulo="Extratos"
-        descricao="Movimentos de uma conta e das suas subcontas, com filtro por entidade."
+        titulo={fluxo ? `Extrato — rubrica ${fluxo}` : "Extratos"}
+        descricao={
+          fluxo
+            ? "Movimentos que compõem esta rubrica da Demonstração de Fluxos de Caixa."
+            : "Movimentos de uma conta e das suas subcontas, com filtro por entidade."
+        }
         accoes={<AccoesDoMapa />}
       />
 

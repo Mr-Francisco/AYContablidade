@@ -14,17 +14,13 @@ import {
   Campo,
   Cartao,
   Entrada,
-  EnvolveTabela,
   Kpi,
   Selector,
   Selo,
-  Tabela,
-  Td,
-  Th,
-  Tr,
   Vazio,
 } from "@/components/ui";
 import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import { type Coluna, Grelha } from "@/components/ui/Grelha";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -272,56 +268,113 @@ function TabelaArtigos({
     ocupado: boolean;
   };
 }) {
+  // GRELHA COM FILTRO E ORDENAÇÃO POR COLUNA. Era uma tabela sem nada: com
+  // mil artigos, encontrar um de código `MAT-0412` era rolar até lá. Cada
+  // coluna filtra à medida que se escreve, e o título ordena.
+  const colunas: Coluna<Artigo>[] = [
+    {
+      chave: "codigo",
+      titulo: "Código",
+      valor: (a) => a.codigo,
+      largura: "120px",
+      celula: (a) => <span className="tabular font-bold">{a.codigo}</span>,
+    },
+    {
+      chave: "descricao",
+      titulo: "Descrição",
+      valor: (a) => a.descricao,
+      celula: (a) => (
+        <span className="block max-w-[300px] truncate font-semibold">
+          {a.descricao}
+        </span>
+      ),
+    },
+    {
+      chave: "tipo",
+      titulo: "Tipo",
+      valor: (a) => a.tipo_artigo ?? "",
+      largura: "120px",
+      celula: (a) => (
+        <span className="text-texto-suave">{a.tipo_artigo || "—"}</span>
+      ),
+    },
+    {
+      chave: "unidade",
+      titulo: "Un.",
+      valor: (a) => a.unidade ?? "",
+      largura: "80px",
+      celula: (a) => a.unidade || "—",
+    },
+    {
+      chave: "preco_venda",
+      titulo: "Preço venda",
+      tipo: "numero",
+      valor: (a) => Number(a.preco_venda),
+      celula: (a) => formataMoeda(a.preco_venda, moeda),
+    },
+    {
+      chave: "preco_compra",
+      titulo: "Preço compra",
+      tipo: "numero",
+      valor: (a) => Number(a.preco_compra),
+      celula: (a) => formataMoeda(a.preco_compra, moeda),
+    },
+    {
+      chave: "iva",
+      titulo: "IVA",
+      tipo: "numero",
+      valor: (a) => Number(a.taxa_iva),
+      largura: "90px",
+      celula: (a) => `${numeroLimpo(a.taxa_iva)} %`,
+    },
+    {
+      chave: "stock_min",
+      titulo: "Stock mín.",
+      tipo: "numero",
+      valor: (a) => Number(a.stock_min),
+      largura: "110px",
+      celula: (a) => numeroLimpo(a.stock_min),
+    },
+    {
+      chave: "estado",
+      titulo: "Estado",
+      // Filtra-se por «activo» ou «inactivo», que é o que se lê na coluna —
+      // e não pelo valor interno, que é o mesmo mas não se vê.
+      valor: (a) => (a.estado === "activo" ? "Activo" : "Inactivo"),
+      largura: "110px",
+      celula: (a) => (
+        <Selo cor={a.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}>
+          {a.estado === "activo" ? "Activo" : "Inactivo"}
+        </Selo>
+      ),
+    },
+  ];
+
+  if (accoes) {
+    colunas.push({
+      chave: "accoes",
+      titulo: " ",
+      largura: "110px",
+      // Sem `valor`: uma coluna de acções não filtra nem ordena.
+      celula: (a) => (
+        <AccoesDaLinha
+          nome={`artigo ${a.codigo}`}
+          aoEditar={() => accoes.editar(a)}
+          aoApagar={() => accoes.apagar(a)}
+          desactivado={accoes.ocupado}
+        />
+      ),
+    });
+  }
+
   return (
-    <EnvolveTabela className="rounded-none border-0">
-      <Tabela>
-        <thead>
-          <tr>
-            <Th>Código</Th>
-            <Th>Descrição</Th>
-            <Th>Tipo</Th>
-            <Th>Un.</Th>
-            <Th numerico>Preço venda</Th>
-            <Th numerico>Preço compra</Th>
-            <Th numerico>IVA</Th>
-            <Th numerico>Stock mín.</Th>
-            <Th>Estado</Th>
-            {accoes && <Th> </Th>}
-          </tr>
-        </thead>
-        <tbody>
-          {artigos.map((a) => (
-            <Tr key={a.id}>
-              <Td className="tabular font-bold">{a.codigo}</Td>
-              <Td className="max-w-[300px] truncate font-semibold">
-                {a.descricao}
-              </Td>
-              <Td className="text-texto-suave">{a.tipo_artigo || "—"}</Td>
-              <Td>{a.unidade || "—"}</Td>
-              <Td numerico>{formataMoeda(a.preco_venda, moeda)}</Td>
-              <Td numerico>{formataMoeda(a.preco_compra, moeda)}</Td>
-              <Td numerico>{numeroLimpo(a.taxa_iva)} %</Td>
-              <Td numerico>{numeroLimpo(a.stock_min)}</Td>
-              <Td>
-                <Selo cor={a.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}>
-                  {a.estado === "activo" ? "Activo" : "Inactivo"}
-                </Selo>
-              </Td>
-              {accoes && (
-                <Td>
-                  <AccoesDaLinha
-                    nome={`artigo ${a.codigo}`}
-                    aoEditar={() => accoes.editar(a)}
-                    aoApagar={() => accoes.apagar(a)}
-                    desactivado={accoes.ocupado}
-                  />
-                </Td>
-              )}
-            </Tr>
-          ))}
-        </tbody>
-      </Tabela>
-    </EnvolveTabela>
+    <Grelha
+      linhas={artigos}
+      colunas={colunas}
+      chaveDaLinha={(a) => a.id}
+      vazio="Ainda não há artigos."
+      altura={520}
+    />
   );
 }
 

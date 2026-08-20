@@ -37,7 +37,7 @@ const SUJEITOS: [string, string][] = [
   ["compensacao_rescisao", "Compensação Por Rescisão"],
   ["sub_ferias", "Subsídio de Férias"],
   ["horas_extras", "Horas Extras"],
-  ["sub_atavio", "Subsídio de Atávio"],
+  ["sub_atavio", "Subsídio de Atavio"],
   ["sub_representacao", "Subsídio de Representação"],
   ["premios", "Prémios"],
   ["sub_natal", "Subsídio de Natal"],

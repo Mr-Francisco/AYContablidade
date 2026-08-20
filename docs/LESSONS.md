@@ -246,3 +246,7 @@
 - Um campo que representa uma entidade nao e uma lista de opcoes: tem tabela por tras e F4, com procura NO SERVIDOR — devolver mil artigos para mostrar quinze e um megabyte por cada caixa.
 - Uma entidade comercial que nasce sem conta contabilistica so existe metade: o Piloto criava a conta do cliente no acto da facturacao, e ate la nao estava no plano de contas.
 - Corrigir um indice fora de alcance no desenho e nao num efeito: o efeito mostra a posicao errada durante um fotograma antes de saltar.
+- Antes de dizer «nao consegue», medir: a consulta de NIF devolvia `fonte: formato` e a propria mensagem dizia que nao estava configurada — os dois enderecos da AGT dao 401 a quem nao se identifica.
+- `.env.producao.example` a apontar para o ambiente de TESTES (`sifphml`) e uma armadilha silenciosa: as credenciais de producao nao servem la e ninguem percebe porque.
+- Uma rubrica de fluxo de caixa NAO e uma conta: o extracto pedia conta e nao havia caminho. Devolver a MESMA forma do razao deixa o mesmo ecra mostrar as duas coisas.
+- Nem tudo o que e tabela vira grelha plana: o Plano de Contas e uma arvore, e achata-lo destruia a hierarquia que ali serve para navegar.

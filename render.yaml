@@ -81,6 +81,20 @@ services:
         value: gpt-4o-mini
       - key: PASSWORD_MIN_CARACTERES
         value: "10"
+      # CONSULTA DE NIF NA AGT. Sem estas, a consulta devolve so a validacao do
+      # formato do numero e o nome fica por preencher a mao — o servico responde
+      # 401 a quem nao se identifica, nos dois ambientes.
+      #
+      # O endereco e o de PRODUCAO (`sifp`). O de testes e `sifphml`, e as
+      # credenciais de um nao servem no outro.
+      - key: AGT_ATIVO
+        value: "true"
+      - key: AGT_ENDPOINT
+        value: https://sifp.minfin.gov.ao/sigt/contribuinte/consultarNIF/v5/obter
+      - key: AGT_USERNAME
+        sync: false
+      - key: AGT_PASSWORD
+        sync: false
 
   # --------------------------------------------------------------- frontend --
   - type: web

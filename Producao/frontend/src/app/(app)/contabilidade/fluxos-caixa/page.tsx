@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
+
 import { CampoData } from "@/components/contabilidade/CampoData";
 import {
   ACarregar,
@@ -49,6 +51,7 @@ const CORES_GRUPO: Record<string, string> = {
 };
 
 export default function FluxosCaixa() {
+  const router = useRouter();
   const { empresa } = useAuth();
   const { exercicios, activo } = useExercicios();
   const [exercicioId, setExercicioId] = useState<string | undefined>();
@@ -185,6 +188,17 @@ export default function FluxosCaixa() {
                             entradas={entradas}
                             subtotal={data.subtotais[nomeGrupo]}
                             moeda={moeda}
+                            aoAbrirRubrica={(rubrica) => {
+                              // A tabela agrupada mostra a DESCRIÇÃO da
+                              // rubrica, não o código. O extracto precisa do
+                              // código: procura-se no mapa, que traz os dois.
+                              const m = (mapa ?? []).find(
+                                (x) => x.descricao === rubrica,
+                              );
+                              router.push(
+                                `/contabilidade/extrato?fluxo=${encodeURIComponent(m?.codigo ?? rubrica)}`,
+                              );
+                            }}
                           />
                         );
                       },
@@ -223,7 +237,33 @@ export default function FluxosCaixa() {
                     </thead>
                     <tbody>
                       {mapaComValor.map((l) => (
-                        <Tr key={l.codigo}>
+                        <Tr
+                          key={l.codigo}
+                          // O MESMO GESTO DO BALANCETE: valor → duplo clique →
+                          // os movimentos que o originaram. Sem isto, um número
+                          // no mapa de fluxos é um número e mais nada, e quem
+                          // quisesse saber de onde vinha tinha de o procurar
+                          // conta a conta no razão.
+                          //
+                          // Só nas rubricas de MOVIMENTO: as de agregação
+                          // somam outras e não têm movimentos próprios.
+                          className={
+                            l.tipo === "M"
+                              ? "cursor-pointer hover:bg-marca/[0.07]"
+                              : undefined
+                          }
+                          title={
+                            l.tipo === "M" ? "Duplo clique: extrato" : undefined
+                          }
+                          onDoubleClick={
+                            l.tipo === "M"
+                              ? () =>
+                                  router.push(
+                                    `/contabilidade/extrato?fluxo=${encodeURIComponent(l.codigo)}`,
+                                  )
+                              : undefined
+                          }
+                        >
                           <Td className="tabular font-semibold">{l.codigo}</Td>
                           <Td
                             className={
@@ -254,11 +294,14 @@ function FragmentoGrupo({
   entradas,
   subtotal,
   moeda,
+  aoAbrirRubrica,
 }: {
   nome: string;
   entradas: [string, string][];
   subtotal: string;
   moeda: string;
+  /** Duplo clique numa rubrica abre o extracto dos movimentos que a compõem. */
+  aoAbrirRubrica: (rubrica: string) => void;
 }) {
   const total = subtotal ?? soma(...entradas.map(([, v]) => v)).toString();
 
@@ -284,7 +327,15 @@ function FragmentoGrupo({
         </tr>
       ) : (
         entradas.map(([rubrica, valor]) => (
-          <Tr key={`${nome}-${rubrica}`}>
+          <Tr
+            key={`${nome}-${rubrica}`}
+            // Também aqui, e é onde faz mais falta: é esta a tabela que mostra
+            // «Recebimentos de clientes» e os restantes movimentos, e é o
+            // número que se olha primeiro.
+            className="cursor-pointer hover:bg-marca/[0.07]"
+            title="Duplo clique: extrato dos movimentos desta rubrica"
+            onDoubleClick={() => aoAbrirRubrica(rubrica)}
+          >
             <Td className="pl-7">{rubrica}</Td>
             <Td numerico>{formataMoeda(valor, moeda)}</Td>
           </Tr>

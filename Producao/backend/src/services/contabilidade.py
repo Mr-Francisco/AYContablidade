@@ -970,3 +970,85 @@ def analitica_detalhe(
         "total_credito": total_c,
         "saldo": total_d - total_c,
     }
+
+
+def extrato_por_fluxo(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    fluxo_codigo: str,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> dict:
+    """Os movimentos que compõem uma rubrica da Demonstração de Fluxos de Caixa.
+
+    O MESMO GESTO DO BALANCETE, aplicado ao mapa de fluxos: valor → duplo
+    clique → os movimentos que o originaram. Sem isto, um número no mapa de
+    fluxos é um número e mais nada — quem quisesse saber de onde vinha tinha de
+    o ir procurar conta a conta no razão, e o mapa não diz por que contas
+    passou.
+
+    Devolve a MESMA FORMA do razão de uma conta, de propósito: é o mesmo ecrã a
+    mostrar as duas coisas, e duas formas diferentes obrigariam a dois ecrãs.
+
+    A diferença é o saldo: aqui acumula-se entrada menos saída, porque uma
+    rubrica de fluxo não tem natureza devedora nem credora — tem sentido de
+    tesouraria.
+    """
+    q = (
+        select(Lancamento, LancamentoLinha)
+        .join(LancamentoLinha, Lancamento.id == LancamentoLinha.lancamento_id)
+        .where(
+            Lancamento.empresa_id == empresa_id,
+            Lancamento.diferido.is_(False),
+            LancamentoLinha.fluxo_codigo == fluxo_codigo,
+        )
+        .order_by(Lancamento.data, Lancamento.numero)
+    )
+    if exercicio_id is not None:
+        q = q.where(Lancamento.exercicio_id == exercicio_id)
+    if de is not None:
+        q = q.where(Lancamento.data >= de)
+    if ate is not None:
+        q = q.where(Lancamento.data <= ate)
+
+    linhas: list[dict] = []
+    saldo = tot_d = tot_c = Decimal("0")
+
+    for lanc, linha in db.execute(q):
+        debito = linha.debito or Decimal("0")
+        credito = linha.credito or Decimal("0")
+        saldo += debito - credito
+        tot_d += debito
+        tot_c += credito
+        linhas.append(
+            {
+                "lancamento_id": lanc.id,
+                "numero": lanc.numero,
+                "numero_op": lanc.numero_op or "",
+                "data": lanc.data,
+                "diario": lanc.diario_codigo,
+                "documento": lanc.documento_codigo,
+                "documento_ref": lanc.documento_ref or "",
+                "descricao": linha.descricao or lanc.descricao,
+                "entidade": linha.entidade or "",
+                # A CONTA por onde o dinheiro passou. No razão de uma conta esta
+                # coluna mostra a contrapartida; aqui mostra a própria conta,
+                # que é o que falta saber quando se parte da rubrica.
+                "contraparte": f"{linha.conta_codigo} {linha.conta_nome or ''}".strip(),
+                "iva_perc": linha.iva_perc,
+                "debito": debito,
+                "credito": credito,
+                "saldo": saldo,
+            }
+        )
+
+    return {
+        "codigo": fluxo_codigo,
+        "linhas": linhas,
+        "total_debito": tot_d,
+        "total_credito": tot_c,
+        "saldo_final": saldo,
+        "natureza": "D",
+    }

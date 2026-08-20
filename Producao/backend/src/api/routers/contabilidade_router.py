@@ -1137,6 +1137,27 @@ def obter_razao(
     )
 
 
+@router.get("/extrato-fluxo/{fluxo_codigo}", dependencies=[VER])
+def obter_extrato_de_fluxo(
+    fluxo_codigo: str,
+    empresa: EmpresaAtual,
+    db: DB,
+    exercicio_id: UUID | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
+) -> dict:
+    """Os movimentos que compõem uma rubrica de fluxo de caixa.
+
+    O mesmo gesto do Balancete, aplicado ao mapa de fluxos: valor → duplo
+    clique → os movimentos que o originaram. Devolve a mesma forma do razão,
+    para ser o mesmo ecrã a mostrar as duas coisas.
+    """
+    return svc.extrato_por_fluxo(
+        db, empresa_id=empresa.id, fluxo_codigo=fluxo_codigo,
+        exercicio_id=exercicio_id, de=de, ate=ate,
+    )
+
+
 @router.get("/contas-correntes", dependencies=[VER])
 def obter_contas_correntes(
     empresa: EmpresaAtual,
