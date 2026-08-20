@@ -128,6 +128,11 @@ Ou seja: o `ayobras.com` consegue porque tem credenciais; nós não temos.
 `backend/.env` (`AGT_ATIVO=true`, `AGT_USERNAME`, `AGT_PASSWORD`) e, no Render,
 nas variáveis do serviço — já estão declaradas no `render.yaml`.
 
+**Como se obtêm:** por e-mail para `produtores.dfe.dcrr.agt@minfin.gov.ao`, com
+o nome e o NIF da empresa. O passo a passo está em
+[`docs/facturacao/06-CREDENCIAIS-DA-AGT.md`](../facturacao/06-CREDENCIAIS-DA-AGT.md),
+e há um guião para as testar mal cheguem: `python scripts/testar_nif.py`.
+
 **E uma correcção:** o `.env.producao.example` apontava para `sifphml`, que é o
 ambiente de **testes**. Passou a `sifp`. São dois serviços diferentes e as
 credenciais de um não servem no outro.
