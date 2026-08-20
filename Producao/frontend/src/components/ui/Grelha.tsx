@@ -38,6 +38,12 @@ export interface Coluna<T> {
   /** O que se filtra e se ordena. Sem isto, a coluna não filtra nem ordena —
    *  é o caso das colunas de acções. */
   valor?: (linha: T) => string | number | null | undefined;
+  /** Quando ordenar não é o mesmo que filtrar.
+   *
+   *  O caso são as datas: escreve-se `21/08` para filtrar, porque é o que está
+   *  à vista, mas `21/08/2026` ordenado como texto põe Agosto antes de Janeiro.
+   *  Aqui filtra-se pelo que se lê e ordena-se pela data verdadeira. */
+  ordem?: (linha: T) => string | number | null | undefined;
   /** `numero` alinha à direita e ordena por grandeza. */
   tipo?: "texto" | "numero";
   largura?: string;
@@ -51,18 +57,59 @@ export function Grelha<T>({
   colunas,
   chaveDaLinha,
   aoAbrir,
+  aoClicar,
   vazio = "Sem registos.",
   altura = 460,
   rodape,
+  soEstaPagina = false,
+  grupos,
+  rodapeTabela,
+  avisoAoFiltrar,
+  classeTabela,
 }: {
   linhas: T[];
   colunas: Coluna<T>[];
   chaveDaLinha: (linha: T, i: number) => string;
   /** Duplo clique numa linha. O gesto do Piloto para saltar ao detalhe. */
   aoAbrir?: (linha: T) => void;
+  /** Clique simples numa linha.
+   *
+   *  Existe para as listagens que já abriam ao primeiro clique antes de terem
+   *  grelha — trocar-lhes o gesto para duplo clique não trazia nada e
+   *  desfazia um hábito. Nas listagens novas usa-se `aoAbrir`. */
+  aoClicar?: (linha: T) => void;
   vazio?: ReactNode;
   altura?: number;
   rodape?: ReactNode;
+  /** A lista veio paginada do servidor e isto é UMA página.
+   *
+   *  Importa porque o filtro e a ordenação desta grelha são feitos aqui, sobre
+   *  as linhas que recebeu. Numa lista paginada isso são as linhas da página
+   *  visível e mais nenhumas — procurar um nome que está na página seguinte
+   *  não devolve nada. Uma grelha que filtrasse sem o dizer parecia funcionar
+   *  e escondia registos, que é pior do que não filtrar.
+   *
+   *  Com isto ligado, os campos e o rodapé dizem que o âmbito é a página. */
+  soEstaPagina?: boolean;
+  /** Uma linha de bandas por cima dos títulos — um `<tr>` inteiro, com os
+   *  `colSpan` decididos por quem chama.
+   *
+   *  Existe por causa dos mapas fiscais, onde as colunas estão agrupadas
+   *  («Identificação do Trabalhador», «Segurança Social», «IRT») e o
+   *  agrupamento faz parte do modelo oficial. Sem isto, dar filtro ao mapa
+   *  obrigava a destruir o cabeçalho que a AGT espera. */
+  grupos?: ReactNode;
+  /** Um `<tr>` no fim da tabela — a linha de totais dos mapas. Fica em
+   *  `tfoot`, por isso não é filtrada nem ordenada com as outras. */
+  rodapeTabela?: ReactNode;
+  /** Mostrado quando há filtro ou ordenação por aplicar.
+   *
+   *  Num mapa que se imprime e se entrega, ver menos linhas do que o mapa tem
+   *  não é um pormenor: é preciso dizê-lo antes de alguém imprimir. */
+  avisoAoFiltrar?: ReactNode;
+  /** Classe da `<table>`. Os mapas trazem a sua, com as cores das bandas e as
+   *  regras de impressão. */
+  classeTabela?: string;
 }) {
   const [filtros, setFiltros] = useState<Record<string, string>>({});
   const [ordem, setOrdem] = useState<Ordem>(null);
@@ -93,10 +140,13 @@ export function Grelha<T>({
       const col = colunas.find((c) => c.chave === ordem.chave);
       if (col?.valor) {
         const sinal = ordem.ascendente ? 1 : -1;
+        // Ordena-se pela chave própria quando a coluna tem uma — as datas —
+        // e senão pelo mesmo valor que se filtra.
+        const chaveDeOrdem = col.ordem ?? col.valor;
         // Cópia: ordenar no sítio mexia na lista que veio de fora.
         r = [...r].sort((a, b) => {
-          const va = col.valor?.(a);
-          const vb = col.valor?.(b);
+          const va = chaveDeOrdem(a);
+          const vb = chaveDeOrdem(b);
           // Vazios sempre no fim, suba ou desça a ordenação: uma coluna
           // ordenada que começa com dez linhas em branco não mostra nada.
           const av = va === null || va === undefined || va === "";
@@ -130,8 +180,9 @@ export function Grelha<T>({
         className="overflow-auto overscroll-contain"
         style={{ maxHeight: altura }}
       >
-        <table className="w-full border-collapse text-sm">
+        <table className={cn("w-full border-collapse text-sm", classeTabela)}>
           <thead className="sticky top-0 z-10">
+            {grupos}
             <tr className="bg-superficie-2">
               {colunas.map((c) => (
                 <th
@@ -182,8 +233,12 @@ export function Grelha<T>({
                             [c.chave]: e.target.value,
                           }))
                         }
-                        placeholder="filtrar"
-                        aria-label={`Filtrar por ${c.titulo}`}
+                        placeholder={soEstaPagina ? "nesta página" : "filtrar"}
+                        aria-label={
+                          soEstaPagina
+                            ? `Filtrar por ${c.titulo}, nesta página`
+                            : `Filtrar por ${c.titulo}`
+                        }
                         className={cn(
                           "w-full rounded-md border border-borda bg-superficie py-1 pl-7 pr-2 text-[12px] font-normal outline-none placeholder:text-texto-suave/70 focus:border-acento",
                           c.tipo === "numero" && "text-right",
@@ -224,10 +279,12 @@ export function Grelha<T>({
                 <tr
                   key={chaveDaLinha(linha, i)}
                   onDoubleClick={aoAbrir ? () => aoAbrir(linha) : undefined}
+                  onClick={aoClicar ? () => aoClicar(linha) : undefined}
                   title={aoAbrir ? "Duplo clique para abrir" : undefined}
                   className={cn(
                     "border-b border-borda/60",
-                    aoAbrir && "cursor-pointer hover:bg-marca/[0.07]",
+                    (aoAbrir || aoClicar) &&
+                      "cursor-pointer hover:bg-marca/[0.07]",
                   )}
                 >
                   {colunas.map((c) => (
@@ -246,15 +303,28 @@ export function Grelha<T>({
               ))
             )}
           </tbody>
+          {/* Em `tfoot` e não em `tbody`: a linha de totais não é um registo,
+              e não pode ser filtrada nem ordenada com os outros. */}
+          {rodapeTabela && <tfoot>{rodapeTabela}</tfoot>}
         </table>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-borda px-3 py-2 text-[12.5px] text-texto-suave">
         <span>
           {visiveis.length === linhas.length
-            ? `${linhas.length} registos`
-            : `${visiveis.length} de ${linhas.length} registos`}
+            ? `${linhas.length} registos${soEstaPagina ? " nesta página" : ""}`
+            : `${visiveis.length} de ${linhas.length} registos${
+                soEstaPagina ? " nesta página" : ""
+              }`}
         </span>
+        {/* DITO UMA VEZ, e só quando há filtro: sem isto, a pessoa procura um
+            documento que existe, não o vê, e conclui que se perdeu. */}
+        {soEstaPagina && comFiltro && (
+          <span className="text-texto-suave/80">
+            Para procurar em todos os registos, use a pesquisa no topo.
+          </span>
+        )}
+        {avisoAoFiltrar && (comFiltro || ordem) ? avisoAoFiltrar : null}
         {comFiltro && (
           <button
             type="button"

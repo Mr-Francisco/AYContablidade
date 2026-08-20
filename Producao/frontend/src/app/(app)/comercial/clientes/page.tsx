@@ -4,6 +4,7 @@ import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import useSWR from "swr";
 import { FichaTerceiro } from "@/components/comercial/FichaTerceiro";
+import { GrelhaTerceiros } from "@/components/comercial/GrelhaTerceiros";
 import {
   ACarregar,
   Alerta,
@@ -13,15 +14,8 @@ import {
   Campo,
   Cartao,
   Entrada,
-  EnvolveTabela,
-  Selo,
-  Tabela,
-  Td,
-  Th,
-  Tr,
-  Vazio,
 } from "@/components/ui";
-import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import { ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import type { Terceiro } from "@/types";
@@ -104,71 +98,22 @@ export default function Clientes() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
-        ) : !data?.length ? (
-          <Vazio>
-            {procura.trim()
-              ? "Nenhum cliente corresponde à pesquisa."
-              : "Ainda não há clientes registados."}
-          </Vazio>
         ) : (
-          <EnvolveTabela className="rounded-none border-0">
-            <Tabela>
-              <thead>
-                <tr>
-                  <Th>Nº</Th>
-                  <Th>Nome</Th>
-                  <Th>NIF</Th>
-                  <Th>Localidade</Th>
-                  <Th>Telefone</Th>
-                  <Th>Conta corrente</Th>
-                  <Th>Estado</Th>
-                  {podeGerir && <Th> </Th>}
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((c) => (
-                  <Tr key={c.id}>
-                    <Td className="tabular font-bold">{c.numero}</Td>
-                    <Td className="max-w-[280px] truncate font-semibold">
-                      {c.nome}
-                    </Td>
-                    <Td className="tabular">{c.nif || "—"}</Td>
-                    <Td>{c.localidade || "—"}</Td>
-                    <Td className="tabular">{c.telefone || "—"}</Td>
-                    <Td className="tabular">
-                      {c.conta ? (
-                        <a
-                          href={`/contabilidade/extrato?conta=${c.conta}`}
-                          className="font-semibold text-marca hover:underline"
-                        >
-                          {c.conta}
-                        </a>
-                      ) : (
-                        <span className="text-texto-suave">
-                          na 1.ª facturação
-                        </span>
-                      )}
-                    </Td>
-                    <Td>
-                      <Selo cor={c.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}>
-                        {c.estado === "activo" ? "Activo" : "Inactivo"}
-                      </Selo>
-                    </Td>
-                    {podeGerir && (
-                      <Td>
-                        <AccoesDaLinha
-                          nome={`cliente ${c.numero}`}
-                          aoEditar={() => setEmEdicao(c)}
-                          aoApagar={() => setAApagar(c)}
-                          desactivado={ocupado}
-                        />
-                      </Td>
-                    )}
-                  </Tr>
-                ))}
-              </tbody>
-            </Tabela>
-          </EnvolveTabela>
+          <GrelhaTerceiros
+            registos={data ?? []}
+            singular="cliente"
+            semConta="na 1.ª facturação"
+            vazio={
+              procura.trim()
+                ? "Nenhum cliente corresponde à pesquisa."
+                : "Ainda não há clientes registados."
+            }
+            accoes={
+              podeGerir
+                ? { editar: setEmEdicao, apagar: setAApagar, ocupado }
+                : undefined
+            }
+          />
         )}
       </Cartao>
 

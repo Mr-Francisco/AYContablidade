@@ -24,8 +24,8 @@ import {
   Td,
   Th,
   Tr,
-  Vazio,
 } from "@/components/ui";
+import { type Coluna, Grelha } from "@/components/ui/Grelha";
 import {
   BarraPaginacao,
   type Pagina,
@@ -79,6 +79,80 @@ export default function ConsultaFaturas() {
     mutate,
   } = useSWR<PaginaVendas>(chave, buscador);
   const visiveis = pagina?.linhas ?? [];
+
+  const colunas: Coluna<Venda>[] = [
+    {
+      chave: "numero",
+      titulo: "Número",
+      valor: (v) => v.numero ?? "",
+      largura: "150px",
+      celula: (v) => <span className="tabular font-bold">{v.numero}</span>,
+    },
+    {
+      chave: "tipo_doc",
+      titulo: "Tipo",
+      valor: (v) => v.tipo_doc,
+      largura: "100px",
+      celula: (v) => <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>,
+    },
+    {
+      chave: "data",
+      titulo: "Data",
+      // Filtra-se por `21/08`, que é o que está à vista; ordena-se pela data
+      // verdadeira, senão Agosto vinha antes de Janeiro.
+      valor: (v) => new Date(v.data).toLocaleDateString("pt-PT"),
+      ordem: (v) => v.data,
+      largura: "115px",
+      celula: (v) => (
+        <span className="tabular">
+          {new Date(v.data).toLocaleDateString("pt-PT")}
+        </span>
+      ),
+    },
+    {
+      chave: "cliente",
+      titulo: "Cliente",
+      // «Consumidor final» filtra-se pelo que se lê — não é um nome guardado,
+      // mas é o que a pessoa vê e é por isso que o procura.
+      valor: (v) => v.cliente_nome || "Consumidor final",
+      celula: (v) => (
+        <span className="block max-w-[240px] truncate">
+          {v.cliente_nome || (
+            <span className="text-texto-suave">Consumidor final</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      chave: "total",
+      titulo: "Total",
+      tipo: "numero",
+      valor: (v) => Number(v.total),
+      celula: (v) => (
+        <span className="font-semibold">{formataMoeda(v.total, moeda)}</span>
+      ),
+    },
+    {
+      chave: "codigo_validacao",
+      titulo: "Cód. validação",
+      valor: (v) => v.codigo_validacao ?? "",
+      largura: "140px",
+      celula: (v) => (
+        <span className="tabular text-texto-suave">
+          {v.codigo_validacao ?? "—"}
+        </span>
+      ),
+    },
+    {
+      chave: "numero_op",
+      titulo: "Nº Operação",
+      valor: (v) => v.numero_op ?? "",
+      largura: "130px",
+      celula: (v) => (
+        <span className="tabular text-texto-suave">{v.numero_op ?? "—"}</span>
+      ),
+    },
+  ];
 
   return (
     <>
@@ -169,63 +243,34 @@ export default function ConsultaFaturas() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
-        ) : visiveis.length === 0 ? (
-          <Vazio>
-            {procura.trim()
-              ? "Nenhum documento corresponde à pesquisa."
-              : "Ainda não há documentos emitidos."}
-          </Vazio>
         ) : (
           <>
-            <EnvolveTabela className="rounded-none border-0">
-              <Tabela>
-                <thead>
-                  <tr>
-                    <Th>Número</Th>
-                    <Th>Tipo</Th>
-                    <Th>Data</Th>
-                    <Th>Cliente</Th>
-                    <Th numerico>Total</Th>
-                    <Th>Cód. validação</Th>
-                    <Th>Nº Operação</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visiveis.map((v) => (
-                    <Tr
-                      key={v.id}
-                      className="cursor-pointer"
-                      onClick={() => setDetalhe(v.id)}
-                    >
-                      <Td className="tabular font-bold">{v.numero}</Td>
-                      <Td>
-                        <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>
-                      </Td>
-                      <Td className="tabular">
-                        {new Date(v.data).toLocaleDateString("pt-PT")}
-                      </Td>
-                      <Td className="max-w-[240px] truncate">
-                        {v.cliente_nome || (
-                          <span className="text-texto-suave">
-                            Consumidor final
-                          </span>
-                        )}
-                      </Td>
-                      <Td numerico className="font-semibold">
-                        {formataMoeda(v.total, moeda)}
-                      </Td>
-                      <Td className="tabular text-texto-suave">
-                        {v.codigo_validacao ?? "—"}
-                      </Td>
-                      <Td className="tabular text-texto-suave">
-                        {v.numero_op ?? "—"}
-                      </Td>
-                    </Tr>
-                  ))}
-                </tbody>
-              </Tabela>
-            </EnvolveTabela>
-            <BarraPaginacao pagina={pagina} {...p.controlos} nome="facturas" />
+            <Grelha
+              linhas={visiveis}
+              colunas={colunas}
+              chaveDaLinha={(v) => v.id}
+              // Abria ao primeiro clique antes de ter grelha. Fica na mesma:
+              // trocar o gesto por duplo clique não trazia nada e desfazia um
+              // hábito de quem passa o dia aqui.
+              aoClicar={(v) => setDetalhe(v.id)}
+              altura={520}
+              // A listagem vem paginada do servidor, por isso o filtro procura
+              // na página à vista — e a grelha di-lo, em vez de deixar
+              // concluir que a factura desapareceu.
+              soEstaPagina
+              vazio={
+                procura.trim()
+                  ? "Nenhum documento corresponde à pesquisa."
+                  : "Ainda não há documentos emitidos."
+              }
+            />
+            {visiveis.length > 0 && (
+              <BarraPaginacao
+                pagina={pagina}
+                {...p.controlos}
+                nome="facturas"
+              />
+            )}
           </>
         )}
       </Cartao>

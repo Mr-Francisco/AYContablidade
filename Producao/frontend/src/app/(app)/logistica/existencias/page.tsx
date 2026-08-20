@@ -9,21 +9,16 @@ import {
   BarraFiltros,
   CabecalhoPagina,
   Cartao,
-  EnvolveTabela,
   Kpi,
   Selector,
   Selo,
-  Tabela,
-  Td,
-  Th,
-  Tr,
-  Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { type Coluna, Grelha } from "@/components/ui/Grelha";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataCompacto, formataMoeda } from "@/lib/dinheiro";
-import type { Armazem, Existencias } from "@/types";
+import type { Armazem, Existencias, LinhaExistencia } from "@/types";
 
 export default function ExistenciasPagina() {
   const { empresa } = useAuth();
@@ -50,6 +45,82 @@ export default function ExistenciasPagina() {
   const linhas = (data?.linhas ?? []).filter((l) =>
     soRutura === "sim" ? l.rutura : true,
   );
+
+  const colunas: Coluna<LinhaExistencia>[] = [
+    {
+      chave: "codigo",
+      titulo: "Código",
+      valor: (l) => l.codigo,
+      largura: "120px",
+      celula: (l) => <span className="tabular font-bold">{l.codigo}</span>,
+    },
+    {
+      chave: "descricao",
+      titulo: "Descrição",
+      valor: (l) => l.descricao,
+      celula: (l) => (
+        <span className="block max-w-[300px] truncate font-semibold">
+          {l.descricao}
+        </span>
+      ),
+    },
+    {
+      chave: "unidade",
+      titulo: "Un.",
+      valor: (l) => l.unidade ?? "",
+      largura: "80px",
+      celula: (l) => l.unidade || "—",
+    },
+    {
+      chave: "stock",
+      titulo: "Stock",
+      tipo: "numero",
+      valor: (l) => Number(l.stock),
+      celula: (l) => (
+        <span className={l.rutura ? "text-perigo" : undefined}>{l.stock}</span>
+      ),
+    },
+    {
+      chave: "stock_min",
+      titulo: "Stock mín.",
+      tipo: "numero",
+      valor: (l) => Number(l.stock_min),
+      celula: (l) => <span className="text-texto-suave">{l.stock_min}</span>,
+    },
+    {
+      chave: "custo_medio",
+      titulo: "Custo médio",
+      tipo: "numero",
+      valor: (l) => Number(l.custo_medio),
+      celula: (l) => formataMoeda(l.custo_medio, moeda),
+    },
+    {
+      chave: "valor",
+      titulo: "Valor",
+      tipo: "numero",
+      valor: (l) => Number(l.valor),
+      celula: (l) => (
+        <span className="font-semibold">{formataMoeda(l.valor, moeda)}</span>
+      ),
+    },
+    {
+      chave: "estado",
+      titulo: "Estado",
+      // Escrever «ruptura» no filtro deixa à vista o que falta comprar — é
+      // para isto que se abre este mapa.
+      valor: (l) => (l.rutura ? "Ruptura" : "Normal"),
+      largura: "120px",
+      celula: (l) =>
+        l.rutura ? (
+          <Selo cor="#c62828">
+            <AlertTriangle size={11} aria-hidden />
+            Ruptura
+          </Selo>
+        ) : (
+          <Selo cor="#1a9c5f">Normal</Selo>
+        ),
+    },
+  ];
 
   return (
     <>
@@ -135,12 +206,6 @@ export default function ExistenciasPagina() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
-        ) : !linhas.length ? (
-          <Vazio>
-            {soRutura === "sim"
-              ? "Nenhum artigo está em ruptura."
-              : "Sem existências para mostrar."}
-          </Vazio>
         ) : (
           <>
             <div className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-borda px-4 py-3">
@@ -155,53 +220,17 @@ export default function ExistenciasPagina() {
                 Valores em {moeda}
               </span>
             </div>
-            <EnvolveTabela className="rounded-none border-0">
-              <Tabela>
-                <thead>
-                  <tr>
-                    <Th>Código</Th>
-                    <Th>Descrição</Th>
-                    <Th>Un.</Th>
-                    <Th numerico>Stock</Th>
-                    <Th numerico>Stock mín.</Th>
-                    <Th numerico>Custo médio</Th>
-                    <Th numerico>Valor</Th>
-                    <Th>Estado</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {linhas.map((l) => (
-                    <Tr key={l.artigo_id}>
-                      <Td className="tabular font-bold">{l.codigo}</Td>
-                      <Td className="max-w-[300px] truncate font-semibold">
-                        {l.descricao}
-                      </Td>
-                      <Td>{l.unidade || "—"}</Td>
-                      <Td numerico className={l.rutura ? "text-perigo" : ""}>
-                        {l.stock}
-                      </Td>
-                      <Td numerico className="text-texto-suave">
-                        {l.stock_min}
-                      </Td>
-                      <Td numerico>{formataMoeda(l.custo_medio, moeda)}</Td>
-                      <Td numerico className="font-semibold">
-                        {formataMoeda(l.valor, moeda)}
-                      </Td>
-                      <Td>
-                        {l.rutura ? (
-                          <Selo cor="#c62828">
-                            <AlertTriangle size={11} aria-hidden />
-                            Ruptura
-                          </Selo>
-                        ) : (
-                          <Selo cor="#1a9c5f">Normal</Selo>
-                        )}
-                      </Td>
-                    </Tr>
-                  ))}
-                </tbody>
-              </Tabela>
-            </EnvolveTabela>
+            <Grelha
+              linhas={linhas}
+              colunas={colunas}
+              chaveDaLinha={(l) => l.artigo_id}
+              altura={520}
+              vazio={
+                soRutura === "sim"
+                  ? "Nenhum artigo está em ruptura."
+                  : "Sem existências para mostrar."
+              }
+            />
           </>
         )}
       </Cartao>

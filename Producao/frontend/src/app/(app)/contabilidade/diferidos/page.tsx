@@ -8,19 +8,11 @@ import {
   Alerta,
   CabecalhoPagina,
   Cartao,
-  EnvolveTabela,
   Selector,
   Selo,
-  Tabela,
-  Td,
-  Th,
-  Tr,
 } from "@/components/ui";
-import {
-  BarraPaginacao,
-  CaixaHistorico,
-  usePaginacao,
-} from "@/components/ui/Paginacao";
+import { type Coluna, Grelha } from "@/components/ui/Grelha";
+import { BarraPaginacao, usePaginacao } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -130,6 +122,101 @@ export default function Diferidos() {
 
   const total = data?.total ?? 0;
 
+  const colunas: Coluna<LinhaDiferida>[] = [
+    {
+      chave: "data",
+      titulo: "Data",
+      // Filtra-se pelo que está à vista — `21/08` — e ordena-se pela data
+      // verdadeira, senão Agosto vinha antes de Janeiro.
+      valor: (l) => new Date(l.data).toLocaleDateString("pt-PT"),
+      ordem: (l) => l.data,
+      largura: "115px",
+      celula: (l) => (
+        <span className="tabular">
+          {new Date(l.data).toLocaleDateString("pt-PT")}
+        </span>
+      ),
+    },
+    {
+      chave: "numero",
+      titulo: "Nº Operação",
+      valor: (l) => l.numero_op ?? String(l.numero),
+      largura: "130px",
+      celula: (l) => (
+        <span className="tabular font-semibold">{l.numero_op ?? l.numero}</span>
+      ),
+    },
+    {
+      chave: "origem",
+      titulo: "Origem",
+      // Pelo nome que se lê — «Vendas» — e não pelo código interno.
+      valor: (l) => ORIGEM[l.origem] ?? l.origem,
+      largura: "130px",
+      celula: (l) => <Selo cor="#3d7fe0">{ORIGEM[l.origem] ?? l.origem}</Selo>,
+    },
+    {
+      chave: "documento",
+      titulo: "Documento",
+      valor: (l) => l.documento_ref ?? l.descricao ?? "",
+      celula: (l) => (
+        <span className="block max-w-[200px] truncate text-texto-suave">
+          {l.documento_ref ?? l.descricao ?? "—"}
+        </span>
+      ),
+    },
+    {
+      chave: "conta",
+      titulo: "Conta",
+      // Código e nome no mesmo filtro: procura-se tanto por `43` como por
+      // «Caixa», conforme o que se tem na cabeça.
+      valor: (l) => `${l.conta_codigo} ${l.conta_nome ?? ""}`,
+      celula: (l) => (
+        <span className="tabular">
+          {l.conta_codigo}
+          {l.conta_nome && (
+            <span className="ml-1.5 text-[12px] text-texto-suave">
+              {l.conta_nome}
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      chave: "valor",
+      titulo: "Valor",
+      tipo: "numero",
+      valor: (l) => Number(Number(l.debito) > 0 ? l.debito : l.credito),
+      celula: (l) => (
+        <span className="font-semibold">
+          {formataMoeda(Number(l.debito) > 0 ? l.debito : l.credito, moeda)}
+          <span className="ml-1 text-[11px] font-normal text-texto-suave">
+            {Number(l.debito) > 0 ? "entrada" : "saída"}
+          </span>
+        </span>
+      ),
+    },
+    {
+      chave: "fluxo",
+      titulo: "Rubrica de fluxo",
+      // Sem `valor`: a coluna é um campo de escolha, não há nada para filtrar.
+      largura: "16rem",
+      celula: (l) => (
+        // Escolher AQUI, na linha. Obrigar a abrir o movimento para
+        // classificar uma linha era mandar a pessoa a outro ecrã e trazê-la de
+        // volta, vezes sem conta.
+        <Selector
+          valor=""
+          aoMudar={(v) => indicar(l, v)}
+          opcoes={opcoes}
+          placeholder={
+            aGravar === l.linha_id ? "A guardar…" : "Escolher rubrica"
+          }
+          larguraMinima="15rem"
+        />
+      ),
+    },
+  ];
+
   return (
     <>
       <CabecalhoPagina
@@ -178,78 +265,18 @@ export default function Diferidos() {
 
           <Cartao className="p-0">
             {/* O SCROLL É DO COMPONENTE, não da página: a lista cresce com
-                cada recebimento e a página não pode crescer com ela. */}
-            <CaixaHistorico altura={420}>
-              <EnvolveTabela className="rounded-none border-0">
-                <Tabela>
-                  <thead>
-                    <tr>
-                      <Th>Data</Th>
-                      <Th>Nº Operação</Th>
-                      <Th>Origem</Th>
-                      <Th>Documento</Th>
-                      <Th>Conta</Th>
-                      <Th numerico>Valor</Th>
-                      <Th>Rubrica de fluxo</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data?.linhas ?? []).map((l) => (
-                      <Tr key={l.linha_id}>
-                        <Td className="tabular">
-                          {new Date(l.data).toLocaleDateString("pt-PT")}
-                        </Td>
-                        <Td className="tabular font-semibold">
-                          {l.numero_op ?? l.numero}
-                        </Td>
-                        <Td>
-                          <Selo cor="#3d7fe0">
-                            {ORIGEM[l.origem] ?? l.origem}
-                          </Selo>
-                        </Td>
-                        <Td className="max-w-[200px] truncate text-texto-suave">
-                          {l.documento_ref ?? l.descricao ?? "—"}
-                        </Td>
-                        <Td className="tabular">
-                          {l.conta_codigo}
-                          {l.conta_nome && (
-                            <span className="ml-1.5 text-[12px] text-texto-suave">
-                              {l.conta_nome}
-                            </span>
-                          )}
-                        </Td>
-                        <Td numerico className="font-semibold">
-                          {formataMoeda(
-                            Number(l.debito) > 0 ? l.debito : l.credito,
-                            moeda,
-                          )}
-                          <span className="ml-1 text-[11px] text-texto-suave">
-                            {Number(l.debito) > 0 ? "entrada" : "saída"}
-                          </span>
-                        </Td>
-                        <Td>
-                          {/* Escolher AQUI, na linha. Obrigar a abrir o
-                              movimento para classificar uma linha era mandar a
-                              pessoa a outro ecrã e trazê-la de volta, vezes sem
-                              conta. */}
-                          <Selector
-                            valor=""
-                            aoMudar={(v) => indicar(l, v)}
-                            opcoes={opcoes}
-                            placeholder={
-                              aGravar === l.linha_id
-                                ? "A guardar…"
-                                : "Escolher rubrica"
-                            }
-                            larguraMinima="15rem"
-                          />
-                        </Td>
-                      </Tr>
-                    ))}
-                  </tbody>
-                </Tabela>
-              </EnvolveTabela>
-            </CaixaHistorico>
+                cada recebimento e a página não pode crescer com ela. A grelha
+                trata do scroll, por isso já não precisa da caixa à volta. */}
+            <Grelha
+              linhas={data?.linhas ?? []}
+              colunas={colunas}
+              chaveDaLinha={(l) => l.linha_id}
+              altura={420}
+              // A lista vem paginada: o filtro procura na página visível e a
+              // grelha di-lo, em vez de deixar concluir que o registo sumiu.
+              soEstaPagina
+              vazio="Não há movimentos à espera de rubrica."
+            />
             <BarraPaginacao pagina={data} {...p.controlos} nome="movimentos" />
           </Cartao>
 

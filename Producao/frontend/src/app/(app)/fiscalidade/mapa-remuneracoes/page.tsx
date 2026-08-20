@@ -14,10 +14,10 @@ import {
   Campo,
   Cartao,
   Entrada,
-  EnvolveTabela,
   Selector,
 } from "@/components/ui";
 import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
+import { type Coluna, Grelha } from "@/components/ui/Grelha";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -253,6 +253,92 @@ export default function MapaRemuneracoes() {
 
   const semLinhas = !linhas.length;
 
+  // O conteúdo de uma célula de valor — um traço quando é zero, para o mapa
+  // não ficar um muro de zeros. Era o que o `Numero` fazia enquanto a tabela
+  // era escrita à mão.
+  const valorNaCelula = (valor: string, forte?: boolean) =>
+    !Number(valor) && !forte ? (
+      <span className="text-texto-suave">—</span>
+    ) : (
+      formataMoeda(valor, moeda === "Kz" ? "" : moeda)
+    );
+
+  // As nove colunas de dinheiro são a mesma coluna com outro campo. Escritas
+  // uma a uma, mudavam nove sítios de cada vez que a formatação mudasse.
+  const dinheiro = (
+    chave: keyof LinhaMapaIrt,
+    titulo: string,
+    forte?: boolean,
+  ): Coluna<LinhaMapaIrt> => ({
+    chave,
+    titulo,
+    tipo: "numero",
+    valor: (l) => Number(l[chave]),
+    celula: (l) => valorNaCelula(String(l[chave]), forte),
+  });
+
+  const colunas: Coluna<LinhaMapaIrt>[] = [
+    {
+      chave: "nif",
+      titulo: "NIF",
+      valor: (l) => l.nif,
+      celula: (l) => <span className="tabular">{l.nif || "—"}</span>,
+    },
+    {
+      chave: "nome",
+      titulo: "Nome",
+      valor: (l) => l.nome,
+      celula: (l) => <span className="font-semibold">{l.nome}</span>,
+    },
+    {
+      chave: "num_ss",
+      titulo: "Nº Seg. Social",
+      valor: (l) => l.num_ss,
+      celula: (l) => <span className="tabular">{l.num_ss || "—"}</span>,
+    },
+    {
+      chave: "provincia",
+      titulo: "Província",
+      valor: (l) => l.provincia,
+      celula: (l) => l.provincia || "—",
+    },
+    {
+      chave: "municipio",
+      titulo: "Município",
+      valor: (l) => l.municipio,
+      celula: (l) => l.municipio || "—",
+    },
+    dinheiro("salario_base", "Salário Base"),
+    dinheiro("descontos_falta", "Descontos p/ Falta"),
+    dinheiro("sub_nao_suj", "Subsídios Não Sujeitos"),
+    dinheiro("sub_suj", "Subsídios Sujeitos"),
+    dinheiro("salario_iliquido", "Salário Ilíquido", true),
+    // Duas colunas chamam-se «Base Tributável» — é assim no modelo da AGT,
+    // uma para a Segurança Social e outra para o IRT. Distinguem-se pela
+    // banda por cima, e cada uma tem a sua chave, por isso os filtros não se
+    // confundem.
+    dinheiro("base_ss", "Base Tributável"),
+    dinheiro("contrib_ss", "Contribuição (3%)"),
+    dinheiro("base_irt", "Base Tributável"),
+    dinheiro("irt", "IRT Apurado", true),
+  ];
+
+  if (podeGerir) {
+    colunas.push({
+      chave: "accoes",
+      titulo: " ",
+      // Sem `valor`: não filtra nem ordena. E `sem-imprimir` porque um botão
+      // não vai no mapa que se entrega.
+      className: "sem-imprimir text-right",
+      celula: (l) => (
+        <Botao tamanho="pequeno" onClick={() => setEmRubricas(l)}>
+          <Pencil size={12} />
+          Rubricas
+        </Botao>
+      ),
+    });
+  }
+
   return (
     <>
       <CabecalhoPagina
@@ -365,120 +451,74 @@ export default function MapaRemuneracoes() {
         ) : error ? (
           <FalhaAoCarregar erro={error} oQue="o mapa de remunerações" />
         ) : (
-          <EnvolveTabela>
-            <table className="mapa-remun w-full border-collapse text-left">
-              <thead>
-                <tr className="grupos">
-                  <th colSpan={5} className="g-id">
-                    Identificação do Trabalhador
-                  </th>
-                  <th colSpan={2}> </th>
-                  <th className="g-nao">Não Sujeito a IRT</th>
-                  <th className="g-sim">Sujeito a IRT</th>
-                  <th> </th>
-                  <th colSpan={2} className="g-ss">
-                    Segurança Social
-                  </th>
-                  <th colSpan={2} className="g-irt">
-                    IRT
-                  </th>
-                  {podeGerir && <th className="sem-imprimir"> </th>}
-                </tr>
-                <tr className="text-[11px] uppercase tracking-[0.3px] text-texto-suave">
-                  <th>NIF</th>
-                  <th>Nome</th>
-                  <th>Nº Seg. Social</th>
-                  <th>Província</th>
-                  <th>Município</th>
-                  <th className="text-right">Salário Base</th>
-                  <th className="text-right">Descontos p/ Falta</th>
-                  <th className="text-right">Subsídios Não Sujeitos</th>
-                  <th className="text-right">Subsídios Sujeitos</th>
-                  <th className="text-right">Salário Ilíquido</th>
-                  <th className="text-right">Base Tributável</th>
-                  <th className="text-right">Contribuição (3%)</th>
-                  <th className="text-right">Base Tributável</th>
-                  <th className="text-right">IRT Apurado</th>
-                  {podeGerir && <th className="sem-imprimir"> </th>}
-                </tr>
-              </thead>
-              <tbody>
-                {semLinhas ? (
-                  <tr>
-                    <td
-                      colSpan={podeGerir ? 15 : 14}
-                      className="py-8 text-center text-texto-suave"
-                    >
-                      Sem colaboradores activos. Registe em RH → Funcionários.
-                    </td>
-                  </tr>
-                ) : (
-                  linhas.map((l) => (
-                    <tr key={l.colaborador_id}>
-                      <td className="tabular">{l.nif || "—"}</td>
-                      <td className="font-semibold">{l.nome}</td>
-                      <td className="tabular">{l.num_ss || "—"}</td>
-                      <td>{l.provincia || "—"}</td>
-                      <td>{l.municipio || "—"}</td>
-                      <Numero valor={l.salario_base} moeda={moeda} />
-                      <Numero valor={l.descontos_falta} moeda={moeda} />
-                      <Numero valor={l.sub_nao_suj} moeda={moeda} />
-                      <Numero valor={l.sub_suj} moeda={moeda} />
-                      <Numero valor={l.salario_iliquido} moeda={moeda} forte />
-                      <Numero valor={l.base_ss} moeda={moeda} />
-                      <Numero valor={l.contrib_ss} moeda={moeda} />
-                      <Numero valor={l.base_irt} moeda={moeda} />
-                      <Numero valor={l.irt} moeda={moeda} forte />
-                      {podeGerir && (
-                        <td className="sem-imprimir text-right">
-                          <Botao
-                            tamanho="pequeno"
-                            onClick={() => setEmRubricas(l)}
-                          >
-                            <Pencil size={12} />
-                            Rubricas
-                          </Botao>
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-              <tfoot>
-                <tr className="font-bold">
-                  <td colSpan={5}>TOTAIS</td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.salario_base ?? "0", "")}
-                  </td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.descontos_falta ?? "0", "")}
-                  </td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.sub_nao_suj ?? "0", "")}
-                  </td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.sub_suj ?? "0", "")}
-                  </td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.salario_iliquido ?? "0", "")}
-                  </td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.base_ss ?? "0", "")}
-                  </td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.contrib_ss ?? "0", "")}
-                  </td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.base_irt ?? "0", "")}
-                  </td>
-                  <td className="tabular text-right">
-                    {formataMoeda(t.irt ?? "0", "")}
-                  </td>
-                  {podeGerir && <td className="sem-imprimir"> </td>}
-                </tr>
-              </tfoot>
-            </table>
-          </EnvolveTabela>
+          <Grelha
+            linhas={linhas}
+            colunas={colunas}
+            chaveDaLinha={(l) => l.colaborador_id}
+            altura={560}
+            classeTabela="mapa-remun text-left"
+            vazio="Sem colaboradores activos. Registe em RH → Funcionários."
+            // O MAPA IMPRIME-SE E ENTREGA-SE. Filtrar para encontrar um
+            // trabalhador é útil; imprimir nesse estado entregava um mapa com
+            // menos linhas do que os totais dizem. Daí o aviso.
+            avisoAoFiltrar={
+              <span className="font-semibold text-aviso">
+                Está a ver parte do mapa. Os totais são de todos os
+                trabalhadores — limpe os filtros antes de imprimir ou exportar.
+              </span>
+            }
+            grupos={
+              <tr className="grupos">
+                <th colSpan={5} className="g-id">
+                  Identificação do Trabalhador
+                </th>
+                <th colSpan={2}> </th>
+                <th className="g-nao">Não Sujeito a IRT</th>
+                <th className="g-sim">Sujeito a IRT</th>
+                <th> </th>
+                <th colSpan={2} className="g-ss">
+                  Segurança Social
+                </th>
+                <th colSpan={2} className="g-irt">
+                  IRT
+                </th>
+                {podeGerir && <th className="sem-imprimir"> </th>}
+              </tr>
+            }
+            rodapeTabela={
+              <tr className="font-bold">
+                <td colSpan={5}>TOTAIS</td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.salario_base ?? "0", "")}
+                </td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.descontos_falta ?? "0", "")}
+                </td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.sub_nao_suj ?? "0", "")}
+                </td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.sub_suj ?? "0", "")}
+                </td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.salario_iliquido ?? "0", "")}
+                </td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.base_ss ?? "0", "")}
+                </td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.contrib_ss ?? "0", "")}
+                </td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.base_irt ?? "0", "")}
+                </td>
+                <td className="tabular text-right">
+                  {formataMoeda(t.irt ?? "0", "")}
+                </td>
+                {podeGerir && <td className="sem-imprimir"> </td>}
+              </tr>
+            }
+          />
         )}
 
         {/* Sem mapa não há totais: mostrá-los por baixo de «a sessão
@@ -517,23 +557,6 @@ export default function MapaRemuneracoes() {
 }
 
 /** Célula numérica: zero mostra-se como «—», como no Piloto. */
-function Numero({
-  valor,
-  moeda,
-  forte,
-}: {
-  valor: string;
-  moeda: string;
-  forte?: boolean;
-}) {
-  const zero = !Number(valor);
-  return (
-    <td className={`tabular text-right ${forte ? "font-bold" : ""}`}>
-      {zero && !forte ? (
-        <span className="text-texto-suave">—</span>
-      ) : (
-        formataMoeda(valor, moeda === "Kz" ? "" : moeda)
-      )}
-    </td>
-  );
-}
+// A célula de valor deixou de ser um componente: a grelha já monta o `<td>`,
+// e o que resta — o traço no zero — vive em `valorNaCelula`, dentro do
+// componente, onde tem a moeda à mão.

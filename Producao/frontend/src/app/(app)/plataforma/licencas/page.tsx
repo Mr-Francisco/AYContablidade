@@ -19,17 +19,12 @@ import {
   Campo,
   Cartao,
   Entrada,
-  EnvolveTabela,
   Kpi,
   Selector,
   Selo,
-  Tabela,
-  Td,
-  Th,
-  Tr,
-  Vazio,
 } from "@/components/ui";
 import { CampoNif } from "@/components/ui/CampoNif";
+import { type Coluna, Grelha } from "@/components/ui/Grelha";
 import {
   BarraPaginacao,
   type Pagina,
@@ -52,6 +47,15 @@ const CORES: Record<string, string> = {
   suspensa: "#c98a10",
   cancelada: "#c62828",
 };
+
+/** O prazo da licença numa frase — uma coisa antes de ser activada, outra
+ *  depois. Está numa função porque a coluna precisa dela duas vezes: para
+ *  mostrar e para filtrar. */
+function prazoEmTexto(l: LicencaPlataforma): string {
+  const data = (d: string) => new Date(d).toLocaleDateString("pt-PT");
+  if (!l.activada_em) return `activar até ${data(l.expira_activacao)}`;
+  return l.validade ? `até ${data(l.validade)}` : "sem termo";
+}
 
 export default function Licencas() {
   const [estado, setEstado] = useState("todos");
@@ -106,6 +110,120 @@ export default function Licencas() {
       setARevogar(null);
     }
   }
+
+  const colunas: Coluna<LicencaPlataforma>[] = [
+    {
+      chave: "chave",
+      titulo: "Chave",
+      valor: (l) => l.chave_prefixo,
+      largura: "150px",
+      celula: (l) => (
+        <span className="tabular font-bold">{l.chave_prefixo}…</span>
+      ),
+    },
+    {
+      chave: "empresa",
+      titulo: "Empresa",
+      valor: (l) => l.nome_previsto,
+      celula: (l) => (
+        <span className="block max-w-[220px] truncate font-semibold">
+          {l.nome_previsto}
+        </span>
+      ),
+    },
+    {
+      chave: "nif",
+      titulo: "NIF",
+      valor: (l) => l.nif_previsto,
+      largura: "130px",
+      celula: (l) => <span className="tabular">{l.nif_previsto}</span>,
+    },
+    {
+      chave: "plano",
+      titulo: "Plano",
+      valor: (l) => l.plano,
+      largura: "150px",
+      celula: (l) => <PlanoNaLinha licenca={l} />,
+    },
+    {
+      chave: "estado",
+      titulo: "Estado",
+      valor: (l) => l.estado,
+      largura: "120px",
+      celula: (l) => <Selo cor={CORES[l.estado] ?? "#62657a"}>{l.estado}</Selo>,
+    },
+    {
+      chave: "prazo",
+      titulo: "Prazo / Validade",
+      // Filtra-se pelo que está escrito: «activar» deixa à vista as que ainda
+      // não foram activadas, que é a pergunta que se faz a este ecrã.
+      valor: (l) => prazoEmTexto(l),
+      // Ordena-se pela data verdadeira, não pela frase.
+      ordem: (l) => l.validade ?? l.expira_activacao,
+      largura: "185px",
+      celula: (l) => (
+        <span className="tabular text-texto-suave">{prazoEmTexto(l)}</span>
+      ),
+    },
+    {
+      chave: "contas",
+      titulo: "Contas",
+      tipo: "numero",
+      // O que se lê é «∞» quando não há limite; é por isso que o filtro
+      // trabalha sobre o texto e a ordenação sobre o número.
+      valor: (l) => l.limite_utilizadores ?? "∞",
+      ordem: (l) => l.limite_utilizadores,
+      largura: "100px",
+      celula: (l) =>
+        l.limite_utilizadores ?? (
+          <span className="text-texto-suave" title="Sem limite de contas">
+            ∞
+          </span>
+        ),
+    },
+    {
+      chave: "ia",
+      titulo: "IA / mês",
+      tipo: "numero",
+      valor: (l) =>
+        l.limite_tokens_mes ? formataInteiro(l.limite_tokens_mes) : "∞",
+      ordem: (l) => l.limite_tokens_mes,
+      largura: "120px",
+      celula: (l) =>
+        l.limite_tokens_mes ? (
+          formataInteiro(l.limite_tokens_mes)
+        ) : (
+          <span className="text-texto-suave" title="Assistente sem tecto">
+            ∞
+          </span>
+        ),
+    },
+    {
+      chave: "accoes",
+      titulo: " ",
+      // Sem `valor`: uma coluna de acções não filtra nem ordena.
+      largura: "110px",
+      celula: (l) => (
+        <div className="flex justify-end gap-1.5">
+          <Botao
+            tamanho="pequeno"
+            onClick={() => setAEditar(l)}
+            aria-label={`Editar licença de ${l.nome_previsto}`}
+          >
+            <Pencil size={13} />
+          </Botao>
+          <Botao
+            tamanho="pequeno"
+            variante="perigo"
+            onClick={() => setARevogar(l)}
+            aria-label={`Revogar licença de ${l.nome_previsto}`}
+          >
+            <Ban size={13} />
+          </Botao>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <>
@@ -186,95 +304,27 @@ export default function Licencas() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
-        ) : !todas.length ? (
-          <Vazio>Ainda não foi gerada nenhuma licença.</Vazio>
         ) : (
           <>
-            <EnvolveTabela className="rounded-none border-0">
-              <Tabela>
-                <thead>
-                  <tr>
-                    <Th>Chave</Th>
-                    <Th>Empresa</Th>
-                    <Th>NIF</Th>
-                    <Th>Plano</Th>
-                    <Th>Estado</Th>
-                    <Th>Prazo / Validade</Th>
-                    <Th numerico>Contas</Th>
-                    <Th numerico>IA / mês</Th>
-                    <Th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {todas.map((l) => (
-                    <Tr key={l.id}>
-                      <Td className="tabular font-bold">{l.chave_prefixo}…</Td>
-                      <Td className="max-w-[220px] truncate font-semibold">
-                        {l.nome_previsto}
-                      </Td>
-                      <Td className="tabular">{l.nif_previsto}</Td>
-                      <Td>
-                        <PlanoNaLinha licenca={l} />
-                      </Td>
-                      <Td>
-                        <Selo cor={CORES[l.estado] ?? "#62657a"}>
-                          {l.estado}
-                        </Selo>
-                      </Td>
-                      <Td className="tabular text-texto-suave">
-                        {l.activada_em
-                          ? l.validade
-                            ? `até ${new Date(l.validade).toLocaleDateString("pt-PT")}`
-                            : "sem termo"
-                          : `activar até ${new Date(l.expira_activacao).toLocaleDateString("pt-PT")}`}
-                      </Td>
-                      <Td numerico>
-                        {l.limite_utilizadores ?? (
-                          <span
-                            className="text-texto-suave"
-                            title="Sem limite de contas"
-                          >
-                            ∞
-                          </span>
-                        )}
-                      </Td>
-                      <Td numerico>
-                        {l.limite_tokens_mes ? (
-                          formataInteiro(l.limite_tokens_mes)
-                        ) : (
-                          <span
-                            className="text-texto-suave"
-                            title="Assistente sem tecto"
-                          >
-                            ∞
-                          </span>
-                        )}
-                      </Td>
-                      <Td numerico>
-                        <div className="flex justify-end gap-1.5">
-                          <Botao
-                            tamanho="pequeno"
-                            onClick={() => setAEditar(l)}
-                            aria-label={`Editar licença de ${l.nome_previsto}`}
-                          >
-                            <Pencil size={13} />
-                          </Botao>
-                          <Botao
-                            tamanho="pequeno"
-                            variante="perigo"
-                            onClick={() => setARevogar(l)}
-                            aria-label={`Revogar licença de ${l.nome_previsto}`}
-                          >
-                            <Ban size={13} />
-                          </Botao>
-                        </div>
-                      </Td>
-                    </Tr>
-                  ))}
-                </tbody>
-              </Tabela>
-            </EnvolveTabela>
-            <BarraPaginacao pagina={data} {...p.controlos} nome="licenças" />
+            <Grelha
+              linhas={todas}
+              colunas={colunas}
+              chaveDaLinha={(l) => l.id}
+              aoAbrir={(l) => setAEditar(l)}
+              altura={520}
+              // Tal como a pesquisa em cima, a grelha procura na página que
+              // está no ecrã — e di-lo, para ninguém concluir que uma licença
+              // se perdeu.
+              soEstaPagina
+              vazio={
+                procura.trim()
+                  ? "Nenhuma licença corresponde à pesquisa."
+                  : "Ainda não foi gerada nenhuma licença."
+              }
+            />
+            {todas.length > 0 && (
+              <BarraPaginacao pagina={data} {...p.controlos} nome="licenças" />
+            )}
           </>
         )}
       </Cartao>

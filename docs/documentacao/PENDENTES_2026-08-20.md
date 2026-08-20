@@ -53,8 +53,8 @@ ordenação, Agrupar por este Campo, Caixa de Agrupamento, Lista de Colunas,
 Melhor Ajuste, Melhor Ajuste (Todas as colunas), Fixar a coluna, Remover
 Filtro, Editar Filtro, Expandir Todos, Fechar Todos, Procurar.
 
-**Estado: o componente está feito e aplicado a uma tabela.**
-`components/ui/Grelha.tsx`.
+**Estado: FEITO.** O componente é `components/ui/Grelha.tsx`, e está nas oito
+tabelas.
 
 O que faz: linha de filtros sempre à vista por baixo dos títulos, a filtrar à
 medida que se escreve; clique no título alterna a ordenação; menu com Ordenar
@@ -70,11 +70,45 @@ ascendente, Ordenar descendente, Limpar ordenação e Remover filtro; rodapé co
 - **Ordena por tipo.** `1000` vem depois de `999` num número e antes num texto;
   a coluna diz o que é.
 
-**Aplicado em:** Artigos (Logística).
+**Aplicado em TODAS as oito:** Artigos, Clientes, Fornecedores, Existências,
+Consulta de Facturas, Licenças, Diferidos e o Mapa de Remunerações.
 
-**Por aplicar:** Consulta de facturas, Clientes, Fornecedores, Existências,
-Licenças, Diferidos e o Mapa de Remunerações. É repetir o padrão — declarar as
-colunas e trocar a tabela.
+**Três coisas que a aplicação obrigou a resolver, e que não se viam de início:**
+
+**1. Clientes e Fornecedores eram o mesmo ficheiro de 210 linhas com os nomes
+trocados.** Declarar as colunas duas vezes garantia que, à segunda melhoria,
+uma delas ficava para trás. Passaram a partilhar `GrelhaTerceiros`, como já
+partilhavam a ficha. O que muda entre elas — «na 1.ª facturação» contra «na 1.ª
+recepção» — é uma propriedade, não um ficheiro.
+
+**2. Metade das listagens vem paginada do servidor**, e a grelha filtra as
+linhas que tem. Numa lista paginada isso é a página visível e mais nenhuma:
+procurar uma factura que está na página seguinte não devolvia nada, sem dizer
+porquê. Uma grelha que filtra sem o dizer parece funcionar e esconde registos —
+é pior do que não filtrar. Daí `soEstaPagina`: os campos passam a dizer «nesta
+página» e o rodapé indica onde procurar em tudo.
+
+**3. Filtrar e ordenar não são a mesma chave.** Escreve-se `21/08` porque é o
+que está à vista, mas `21/08/2026` ordenado como texto punha Agosto antes de
+Janeiro. As colunas de data filtram pelo que se lê e ordenam pela data
+verdadeira (`ordem`). O mesmo serve o `∞` das Licenças: filtra-se pelo símbolo,
+ordena-se pelo número.
+
+**O Mapa de Remunerações foi o caso difícil, e ganhou capacidades novas na
+grelha:** é um documento que se imprime e se entrega à AGT, com bandas de grupo
+por cima das colunas e uma linha de TOTAIS. Achatá-lo destruía o cabeçalho do
+modelo oficial. A grelha aprendeu `grupos` (a linha de bandas), `rodapeTabela`
+(os totais, em `tfoot`, fora do que se filtra e ordena) e `classeTabela` (as
+cores das bandas e as regras de impressão).
+
+E ganhou um aviso: **filtrar um mapa que se vai imprimir é perigoso** — ficava
+um documento com menos linhas do que os totais declaram. Com filtro activo, a
+grelha di-lo e pede que se limpe antes de imprimir ou exportar.
+
+**Gestos preservados:** a Consulta de Facturas abria ao primeiro clique e
+continua a abrir — trocar-lhe o gesto por duplo clique não trazia nada e
+desfazia um hábito de quem passa o dia ali. As restantes usam duplo clique,
+como o Piloto.
 
 **O Plano de Contas fica de fora, e é deliberado:** é uma ÁRVORE, com classes
 que abrem e contas com filhas. Achatá-lo numa grelha destruía a hierarquia, que
@@ -101,8 +135,9 @@ certo com as do modelo, uma a uma.
 **Uma diferença encontrada e corrigida:** tínhamos «Subsídio de At**á**vio» e o
 modelo da AGT diz «Subsídio de Atavio», sem acento. Alinhado.
 
-**O que falta é a GRELHA** — filtro e ordenação por coluna — nesta tabela. É o
-ponto 2 aplicado aqui.
+**A GRELHA já lá está** — filtro e ordenação por coluna, com as bandas de grupo
+e a linha de TOTAIS preservadas, e o aviso para limpar os filtros antes de
+imprimir. Ver o ponto 2.
 
 ---
 
@@ -144,6 +179,11 @@ credenciais de um não servem no outro.
 | | |
 |---|---|
 | 1. Fluxo de Caixa | **Feito** |
-| 2. Grelhas | **Componente feito**, aplicado a Artigos; falta espalhar |
-| 3. Tabela de IRT | **Analisada** — já corresponde; falta a grelha |
-| 4. NIF | **Diagnosticado** — faltam credenciais, não é código |
+| 2. Grelhas | **Feito** — nas oito tabelas |
+| 3. Tabela de IRT | **Feito** — já correspondia ao modelo; agora com grelha |
+| 4. NIF | **Bloqueado por credenciais**, não por código — ver abaixo |
+
+O ponto 4 é o único que não depende de nós: o código está escrito e correcto, e
+espera um utilizador e uma palavra-passe da AGT. Pedem-se por e-mail a
+`produtores.dfe.dcrr.agt@minfin.gov.ao`, e há um guião para os testar mal
+cheguem — `python scripts/testar_nif.py`.
