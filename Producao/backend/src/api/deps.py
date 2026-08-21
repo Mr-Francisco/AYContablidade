@@ -33,7 +33,13 @@ from src.auth.security import (
     TokenInvalido,
     descodificar_token,
 )
-from src.core.constants import Accao, EstadoEmpresa, Modulo, Perfil
+from src.core.constants import (
+    MODULO_LABEL,
+    Accao,
+    EstadoEmpresa,
+    Modulo,
+    Perfil,
+)
 from src.db.base import get_db
 from src.db.models.tenancy import ConfigEmpresa, Empresa, Licenca
 from src.db.models.user import User
@@ -193,6 +199,38 @@ def empresa_atual(user: UtilizadorAtual, db: DB) -> Empresa:
 EmpresaAtual = Annotated[Empresa, Depends(empresa_atual)]
 
 
+def _area(modulo: Modulo | None) -> str:
+    """O nome da área como a pessoa a conhece do menu."""
+    if modulo is None:
+        return "esta área"
+    return MODULO_LABEL.get(modulo, str(modulo))
+
+
+def _sem_permissao(acao: str, modulo: Modulo | None) -> str:
+    """A recusa dita a quem a lê, e não a quem escreveu o código.
+
+    O QUE ISTO SUBSTITUI: «Sem permissão para esta operação (comercial.ver).»
+    Está correcta e é inútil — `comercial.ver` é um nome interno, não aparece
+    em lado nenhum do ecrã, e quem o lê não fica a saber o que fazer a seguir.
+
+    O detalhe continua a existir: vai para os registos do servidor, que é onde
+    serve para diagnosticar. O que muda é o que a pessoa lê.
+    """
+    area = _area(modulo)
+    # `ver` é consultar; tudo o resto (gerir, lancar, plano, fechar) é alterar.
+    # A diferença importa: numa é falta de acesso à área, na outra a pessoa já
+    # lá está e só não pode mexer.
+    if str(acao).split(".", 1)[-1] == "ver":
+        return (
+            f"Não tem acesso à área de {area}. "
+            "Peça ao administrador da sua empresa para lho atribuir."
+        )
+    return (
+        f"O seu perfil permite consultar {area}, mas não fazer alterações. "
+        "Para avançar com esta operação, peça ao administrador da sua empresa."
+    )
+
+
 def exigir_cap(acao: str):
     """Exige uma capacidade da matriz CAPS **e** o módulo a que ela pertence.
 
@@ -213,9 +251,14 @@ def exigir_cap(acao: str):
 
     def _verificar(user: UtilizadorAtual, db: DB) -> User:
         if not pode_capacidade(user, acao):
+            # O NOME DA CAPACIDADE FICA AQUI, no registo, que é onde serve
+            # para diagnosticar. Não vai no que a pessoa lê.
+            log.info(
+                "acesso recusado: utilizador=%s capacidade=%s", user.id, acao
+            )
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN,
-                f"Sem permissão para esta operação ({acao}).",
+                _sem_permissao(acao, modulo),
             )
 
         # Capacidades transversais (`empresa.ver`) não pertencem a módulo
@@ -229,9 +272,16 @@ def exigir_cap(acao: str):
         if not modulo_ativo(
             modulo, user, config=cfg, licenca=licenca_da_empresa(db, user.empresa_id)
         ):
+            log.info(
+                "modulo indisponivel: utilizador=%s modulo=%s", user.id, modulo
+            )
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN,
-                f"O módulo {modulo} não está disponível para esta conta.",
+                # `{modulo}` dava «comercial», o valor interno, e não
+                # «Comercial», que é o que está escrito no menu.
+                f"A área de {_area(modulo)} não está activa nesta empresa. "
+                "Pode não estar incluída no plano contratado ou ter sido "
+                "desactivada. Fale com o administrador da sua empresa.",
             )
         return user
 
@@ -243,9 +293,15 @@ def exigir_accao(modulo: Modulo, accao: Accao):
 
     def _verificar(user: UtilizadorAtual) -> User:
         if not pode_accao(user, modulo, accao):
+            log.info(
+                "accao recusada: utilizador=%s modulo=%s accao=%s",
+                user.id,
+                modulo,
+                accao,
+            )
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN,
-                f"Sem permissão para {accao} em {modulo}.",
+                _sem_permissao(f"{modulo}.{accao}", modulo),
             )
         return user
 

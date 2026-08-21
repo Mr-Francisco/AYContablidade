@@ -150,6 +150,51 @@ dar-lhe a grelha **sem** achatar. Ficou assim:
   via a hierarquia desaparecer sem saber que foi o clique.
 - Escrever na coluna vale **o que se lê na coluna**: «dev» na Natureza encontra
   as devedoras, sem ninguém ter de saber que por dentro isso é um `D`.
+- **A célula do código ao gesto do DataGrid do Windows Forms:** um clique
+  selecciona, o seguinte abre para escrita a partir daquele código, e escrever
+  filtra já. F2 e Enter também abrem; Escape fecha. A linha em edição **não
+  desaparece** quando o filtro deixa de a apanhar — senão o campo saía do ecrã
+  com ela e perdia-se o que se estava a escrever.
+
+### Desempenho: medido, não suposto
+
+Com as 1631 contas todas no ecrã, **cada tecla custava 410 ms**. O trabalho não
+era decidir que linhas mostrar — era desenhá-las.
+
+`components/ui/useJanelaVirtual.ts` desenha só as linhas que se vêem, mais uma
+margem, e põe duas linhas vazias com a altura do que fica de fora. **410 ms →
+~150 ms**, com 24 a 37 linhas no DOM em vez de 1631. Verificado a rolar: a soma
+espaçadores + linhas dá sempre 63 609 px (1631 × 39), zero derrapagem, e ao
+fundo aparece mesmo a última conta do plano.
+
+Três coisas que isto obrigou a resolver:
+
+- **Altura de linha fixa e igual.** Eram 37, 39 e 56 px. Os 56 não vinham das
+  designações — eram os **três botões de acção a quebrarem** numa coluna de
+  150 px. Passou a 190 px e as linhas ficaram todas a 39.
+- **`table-fixed`.** Numa tabela de largura automática a célula nunca encolhe
+  abaixo do conteúdo, e o `truncate` da designação não pegava.
+- **Uma *callback ref*, não um `useEffect` com `[]`.** A tabela só existe
+  depois de as contas chegarem; na montagem o elemento ainda não existe, o
+  efeito desistia e nunca mais tentava. A barra de scroll andava com o conteúdo
+  parado nas primeiras linhas, sem erro nenhum a apontar o problema.
+
+### UX
+
+- **Rodapé com «X de Y contas»** e atalhos para limpar filtros e voltar à
+  árvore. As outras grelhas já o tinham; aqui, com a lista a rolar dentro de
+  uma caixa, não havia como saber se o filtro apanhou três contas ou trezentas
+  sem rolar até ao fim.
+- **Uma tabela vazia não é uma resposta.** Sem permissão para o Comercial, os
+  Clientes mostravam «0 registos» — indistinguível de uma empresa sem clientes.
+  Seis listagens novas ignoravam o erro; passam a usar o `FalhaAoCarregar`, que
+  já distinguia sessão expirada, licença caducada e falta de acesso.
+- **A recusa passou a falar português.** Lia-se *«Sem permissão para esta
+  operação (comercial.ver).»* — correcta e inútil: `comercial.ver` não aparece
+  em ecrã nenhum. Agora: *«Não tem acesso à área de Comercial. Peça ao
+  administrador da sua empresa para lho atribuir.»* O nome da capacidade
+  continua a existir, nos registos do servidor. Dois testes travam a
+  regressão.
 
 ---
 

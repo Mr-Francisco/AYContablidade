@@ -26,6 +26,7 @@ import {
 } from "@/components/ui";
 import { Confirmar } from "@/components/ui/CrudMestre";
 import { CampoFiltroColuna, MenuDaColuna } from "@/components/ui/Grelha";
+import { useJanelaVirtual } from "@/components/ui/useJanelaVirtual";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ErroApi } from "@/lib/api";
 import { useContas } from "@/lib/hooks";
@@ -49,6 +50,14 @@ import { ImportarPlano } from "./ImportarPlano";
  *  ignorar-se a si próprio e mostrar tudo — escrever «xpto» na Natureza dava a
  *  lista completa, como se não se tivesse escrito nada. */
 const SEM_CORRESPONDENCIA = "(nada)";
+
+/** A altura de uma linha, em pixels, e a classe que a impõe.
+ *
+ *  TÊM DE ANDAR JUNTAS. A janela virtual calcula onde está cada linha a partir
+ *  deste número; se a classe mudar e o número não, o conteúdo passa a saltar
+ *  ao rolar — e é o género de defeito que ninguém liga à altura de uma linha. */
+const ALTURA_LINHA = 39;
+const ALTURA_LINHA_CLASSE = "h-[39px]";
 
 /**
  * Plano de Contas — a árvore do Piloto.
@@ -310,6 +319,45 @@ export default function PlanoDeContas() {
     return saida;
   }, [contas, arvore, visiveis, classe, aberto, ordem]);
 
+  // CONTAS, e não linhas: as linhas incluem os cabeçalhos de classe, que não
+  // são contas. Dizer «34 registos» quando 8 deles são títulos de classe é dar
+  // um número que não corresponde a nada que se possa contar no ecrã.
+  const contasVisiveis = linhas.filter((l) => l.tipo === "conta").length;
+  const totalDeContas = contas.length;
+
+  const temFiltroDeColuna = Boolean(
+    procuraCodigo.trim() ||
+      filtroNome.trim() ||
+      filtroIva.trim() ||
+      filtroNatureza.trim() ||
+      filtroTipo.trim(),
+  );
+
+  function limparFiltrosDeColuna() {
+    setProcuraCodigo("");
+    setFiltroNome("");
+    setFiltroIva("");
+    setFiltroNatureza("");
+    setFiltroTipo("");
+    // A célula deixa de estar em escrita: o campo aberto ficaria a mostrar um
+    // filtro que já não existe.
+    setCelulaEdit(null);
+  }
+
+  // A LINHA QUE ESTÁ A SER ESCRITA TEM DE FICAR DESENHADA, mesmo que o scroll
+  // já vá longe dela: se a janela a deixasse cair, o campo era desmontado a
+  // meio da palavra. É a mesma preocupação que a fixa no filtro, agora ao
+  // nível do que se desenha.
+  const indiceEmEdicao = celulaEdit
+    ? linhas.findIndex((l) => l.conta?.codigo === celulaEdit)
+    : -1;
+
+  const janela = useJanelaVirtual({
+    total: linhas.length,
+    alturaLinha: ALTURA_LINHA,
+    indiceObrigatorio: indiceEmEdicao >= 0 ? indiceEmEdicao : null,
+  });
+
   async function eliminar() {
     if (!aApagar) return;
     setErro(null);
@@ -464,8 +512,23 @@ export default function PlanoDeContas() {
         ) : linhas.length === 0 ? (
           <Vazio>Sem contas para o filtro.</Vazio>
         ) : (
-          <div className="min-w-0 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+          // O SCROLL É DESTA CAIXA, não da página — e agora tem de ser: é o
+          // que a janela virtual mede para saber quantas linhas desenhar. Dá
+          // também o que a regra do projecto pede: uma listagem que não faz a
+          // página crescer sem fim.
+          <div
+            ref={janela.referencia}
+            className="min-w-0 overflow-auto overscroll-contain"
+            style={{ maxHeight: 620 }}
+          >
+            {/* `table-fixed` NÃO É COSMÉTICA. Numa tabela de largura
+                automática, uma célula nunca encolhe abaixo do seu conteúdo:
+                o `truncate` da designação não pegava, os nomes longos
+                quebravam para duas linhas e as linhas ficavam a 56 px em vez
+                de 39 — e a janela virtual, que conta com uma altura só, punha
+                o conteúdo a saltar ao rolar. Com o layout fixo, as larguras
+                mandam e o texto corta. */}
+            <table className="w-full table-fixed border-collapse text-sm">
               {/* Larguras do Piloto: código 30%, e as três colunas de
                   classificação fixas para não dançarem entre páginas. */}
               {/* A GRELHA DO PRIMAVERA, aqui também: uma linha de filtros por
@@ -477,7 +540,11 @@ export default function PlanoDeContas() {
                   que se sabe onde a conta vive. Só a ORDENAÇÃO desfaz a
                   hierarquia, porque ordenar uma árvore por designação não quer
                   dizer nada; nesse caso passa a lista e o ecrã di-lo. */}
-              <thead>
+              {/* FIXO AO ROLAR. Sem isto, a caixa de scroll levava os títulos
+                  e os filtros para fora do ecrã à primeira volta da roda —
+                  numa lista de 1631 linhas isso acontece nos primeiros dois
+                  segundos, e ficava-se sem saber que coluna é qual. */}
+              <thead className="sticky top-0 z-10 bg-superficie">
                 <tr>
                   <Th className="w-[30%]">
                     <MenuDaColuna
@@ -539,7 +606,11 @@ export default function PlanoDeContas() {
                       aoLimparFiltro={() => setFiltroTipo("")}
                     />
                   </Th>
-                  {podeGerir && <Th className="w-[150px]"> </Th>}
+                  {/* 190 px e não 150: com «＋ Sub», «Editar» e o eliminar, os
+                      três botões não cabiam em 150 e quebravam para uma
+                      segunda linha. Era isso — e não as designações — que
+                      punha metade das linhas a 56 px em vez de 39. */}
+                  {podeGerir && <Th className="w-[190px]"> </Th>}
                 </tr>
 
                 {/* A linha dos filtros, sempre à vista — como nas restantes
@@ -587,12 +658,21 @@ export default function PlanoDeContas() {
                 </tr>
               </thead>
               <tbody>
-                {linhas.map((l) =>
+                {/* As linhas que ficam por cima do que se vê, reduzidas a uma
+                    altura. A barra de scroll fica do tamanho certo e quem rola
+                    não distingue isto de ter as 1631 desenhadas. */}
+                {janela.alturaAcima > 0 && (
+                  <tr aria-hidden style={{ height: janela.alturaAcima }} />
+                )}
+                {linhas.slice(janela.inicio, janela.fim).map((l) =>
                   l.tipo === "classe" ? (
                     <tr
                       key={`cls-${l.classe}`}
                       onClick={() => alternar(`cls-${l.classe}`)}
-                      className="cursor-pointer border-b border-borda bg-[color-mix(in_srgb,var(--color-indigo)_12%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-indigo)_18%,transparent)]"
+                      className={cn(
+                        ALTURA_LINHA_CLASSE,
+                        "cursor-pointer border-b border-borda bg-[color-mix(in_srgb,var(--color-indigo)_12%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-indigo)_18%,transparent)]",
+                      )}
                     >
                       <td colSpan={podeGerir ? 6 : 5} className="px-3.5 py-2">
                         <span className="mr-1 inline-block w-3 text-texto-suave">
@@ -641,8 +721,45 @@ export default function PlanoDeContas() {
                     />
                   ),
                 )}
+                {janela.alturaAbaixo > 0 && (
+                  <tr aria-hidden style={{ height: janela.alturaAbaixo }} />
+                )}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* O RODAPÉ QUE AS OUTRAS GRELHAS JÁ TÊM. Faltava aqui, e é onde mais
+            falta fazia: com a lista a rolar dentro de uma caixa, não há forma
+            de saber se o filtro apanhou três contas ou trezentas sem rolar
+            até ao fim. */}
+        {!isLoading && (
+          <div className="flex flex-wrap items-center gap-3 border-t border-borda px-3.5 py-2 text-[12.5px] text-texto-suave">
+            <span>
+              {contasVisiveis === totalDeContas
+                ? `${totalDeContas} contas`
+                : `${contasVisiveis} de ${totalDeContas} contas`}
+            </span>
+            {temFiltroDeColuna && (
+              <button
+                type="button"
+                onClick={limparFiltrosDeColuna}
+                className="inline-flex items-center gap-1 font-semibold text-marca hover:underline"
+              >
+                <X size={12} />
+                Limpar filtros
+              </button>
+            )}
+            {ordem && (
+              <button
+                type="button"
+                onClick={() => setOrdem(null)}
+                className="inline-flex items-center gap-1 font-semibold text-marca hover:underline"
+              >
+                <X size={12} />
+                Voltar à árvore
+              </button>
+            )}
           </div>
         )}
       </Cartao>
@@ -827,6 +944,9 @@ function LinhaConta({
   return (
     <tr
       className={cn(
+        // ALTURA FIXA: é o que permite à janela virtual saber onde está cada
+        // linha sem a medir. Igual à das linhas de classe, de propósito.
+        ALTURA_LINHA_CLASSE,
         "border-b border-borda hover:bg-superficie-2",
         !conta.ativa && "opacity-55",
       )}
@@ -861,13 +981,22 @@ function LinhaConta({
           <CelulaCodigo conta={conta} temFilhos={temFilhos} {...celula} />
         </span>
       </td>
-      <td className="px-3.5 py-1.5">
-        {temFilhos ? <b>{conta.nome}</b> : conta.nome}
-        {!conta.ativa && (
-          <Selo cor="#8a8a8a" className="ml-2">
-            Inactiva
-          </Selo>
-        )}
+      {/* UMA LINHA DE TEXTO, sempre. Duas coisas dependem disto: a janela
+          virtual, que precisa de saber a altura de uma linha sem a medir; e a
+          leitura, que numa lista de mil e seiscentas contas se faz a correr o
+          olho pela coluna — linhas de alturas diferentes tornam isso um
+          exercício. O nome completo continua a chegar, no tooltip. */}
+      <td className="max-w-0 px-3.5 py-1.5">
+        <span className="flex items-center gap-2 truncate" title={conta.nome}>
+          <span className="truncate">
+            {temFilhos ? <b>{conta.nome}</b> : conta.nome}
+          </span>
+          {!conta.ativa && (
+            <Selo cor="#8a8a8a" className="shrink-0">
+              Inactiva
+            </Selo>
+          )}
+        </span>
       </td>
       {/* Em branco quando não há: o Piloto só desenha a etiqueta se a conta
           tiver classe de IVA, e uma coluna de travessões não diz nada. */}
@@ -885,7 +1014,7 @@ function LinhaConta({
         </Selo>
       </td>
       {podeGerir && (
-        <td className="px-3.5 py-1.5">
+        <td className="whitespace-nowrap px-3.5 py-1.5">
           <div className="flex items-center justify-end gap-1">
             {/* Só nas contas de movimento, como no Piloto: criar uma
                 subconta de uma integradora não muda nada — ela já o é. */}

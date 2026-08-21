@@ -16,6 +16,7 @@ import {
   Entrada,
 } from "@/components/ui";
 import { ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import type { Terceiro } from "@/types";
@@ -59,7 +60,10 @@ export default function Clientes() {
   }
 
   const chave = `/api/comercial/clientes${procura.trim() ? `?procura=${encodeURIComponent(procura.trim())}` : ""}`;
-  const { data, isLoading, mutate } = useSWR<Terceiro[]>(chave, buscador);
+  const { data, isLoading, error, mutate } = useSWR<Terceiro[]>(
+    chave,
+    buscador,
+  );
 
   return (
     <>
@@ -98,6 +102,14 @@ export default function Clientes() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
+        ) : error ? (
+          // UMA TABELA VAZIA NÃO É UMA RESPOSTA. Sem isto, quem não tem
+          // permissão para o Comercial via «0 registos» — a mesma coisa que
+          // uma empresa sem clientes nenhuns. Passava por avaria, e era só
+          // falta de acesso.
+          <div className="p-4">
+            <FalhaAoCarregar erro={error} oQue="os clientes" />
+          </div>
         ) : (
           <GrelhaTerceiros
             registos={data ?? []}

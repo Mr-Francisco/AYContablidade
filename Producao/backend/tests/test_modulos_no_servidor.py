@@ -255,3 +255,40 @@ def test_a_restricao_e_por_modulo(ambiente):
     # O admin passa em tudo por `eh_admin`; o que aqui se fixa é que a leitura
     # de outro módulo não é afectada pela restrição declarada no comercial.
     assert cliente.get("/api/rh/colaboradores").status_code == 200
+
+
+def test_a_recusa_nao_mostra_o_nome_interno_da_permissao():
+    """O que se lê é a área; o nome da capacidade fica no registo.
+
+    A mensagem era «Sem permissão para esta operação (comercial.ver).» — está
+    correcta e não serve: `comercial.ver` não aparece em lado nenhum do ecrã,
+    e quem a lê não fica a saber o que fazer a seguir.
+
+    Este teste trava as duas metades da regra do projecto: o texto fala da
+    área e diz o passo seguinte, e o nome interno não vai lá dentro.
+    """
+    from src.api.deps import _sem_permissao
+    from src.core.constants import Modulo
+
+    ver = _sem_permissao("comercial.ver", Modulo.COMERCIAL)
+    assert "comercial.ver" not in ver
+    assert "Comercial" in ver
+    # Diz o que fazer a seguir, e não só o que correu mal.
+    assert "administrador" in ver.lower()
+
+    gerir = _sem_permissao("comercial.gerir", Modulo.COMERCIAL)
+    assert "comercial.gerir" not in gerir
+    # Consultar e alterar são recusas diferentes: quem já vê a área precisa de
+    # saber que o que lhe falta é poder mexer, não o acesso.
+    assert gerir != ver
+    assert "alterações" in gerir or "alterar" in gerir
+
+
+def test_a_recusa_de_modulo_usa_o_nome_do_menu():
+    """«comercial» é o valor interno; «Comercial» é o que está no menu."""
+    from src.api.deps import _area
+    from src.core.constants import Modulo
+
+    assert _area(Modulo.COMERCIAL) == "Comercial"
+    assert _area(Modulo.RH) == "Recursos Humanos"
+    assert _area(None) == "esta área"

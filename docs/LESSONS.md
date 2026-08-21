@@ -257,3 +257,9 @@
 - Uma conta de teste cria-se NOVA, nunca alterando as existentes — há 2FA real configurado em contas de demonstração, e um guião de reposição já quase o apagou. `scripts/criar_conta_teste.py` só insere.
 - `form_input` não chega em inputs controlados do React: escreve no DOM e o React não regista. Usar o setter nativo do prototype e disparar `input` com `bubbles`.
 - Ler o DOM logo a seguir a `.click()` lê o estado ANTES do React voltar a desenhar — uma ordenação parece não funcionar quando funciona. Esperar entre o gesto e a leitura.
+- Virtualizar exige altura de linha FIXA e igual: aqui eram 37/39/56 px, e os 56 não vinham das designações — eram os três botões de acção a quebrarem numa coluna de 150 px.
+- `table-fixed` não é cosmética: numa tabela de largura automática a célula nunca encolhe abaixo do conteúdo e o `truncate` não pega.
+- Uma callback ref, não `useEffect` com `[]`, para ligar ouvintes a um nó que só aparece depois dos dados: na montagem `ref.current` é nulo, o efeito desiste e nunca mais tenta — a barra rolava com o conteúdo parado.
+- Um 403 mostrado como tabela vazia lê-se como «não há registos». Distinguir sempre «sem dados» de «sem acesso» — `FalhaAoCarregar` já o fazia e as grelhas novas não o usavam.
+- «Sem permissão para esta operação (comercial.ver)» é linguagem interna: o nome da capacidade vai para o registo, o que se lê é a área e o passo seguinte.
+- Ao medir no ecrã, uma expressão regular sobre `innerText` apanha a primeira linha que casa e não a que interessa — duas vezes me disse que algo estava partido quando funcionava.

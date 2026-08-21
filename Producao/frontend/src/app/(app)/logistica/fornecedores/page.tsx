@@ -16,6 +16,7 @@ import {
   Entrada,
 } from "@/components/ui";
 import { ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import type { Terceiro } from "@/types";
@@ -59,7 +60,10 @@ export default function Fornecedores() {
   }
 
   const chave = `/api/compras/fornecedores${procura.trim() ? `?procura=${encodeURIComponent(procura.trim())}` : ""}`;
-  const { data, isLoading, mutate } = useSWR<Terceiro[]>(chave, buscador);
+  const { data, isLoading, error, mutate } = useSWR<Terceiro[]>(
+    chave,
+    buscador,
+  );
 
   return (
     <>
@@ -98,6 +102,12 @@ export default function Fornecedores() {
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
+        ) : error ? (
+          // Ver a nota igual nos Clientes: uma tabela vazia e uma falta de
+          // permissão não se podem ler da mesma maneira.
+          <div className="p-4">
+            <FalhaAoCarregar erro={error} oQue="os fornecedores" />
+          </div>
         ) : (
           <GrelhaTerceiros
             registos={data ?? []}
