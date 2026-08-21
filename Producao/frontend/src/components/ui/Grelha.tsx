@@ -220,31 +220,15 @@ export function Grelha<T>({
               {colunas.map((c) => (
                 <th key={c.chave} className="border-b border-borda p-1">
                   {c.valor ? (
-                    <div className="relative">
-                      <Search
-                        size={12}
-                        className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-texto-suave"
-                      />
-                      <input
-                        value={filtros[c.chave] ?? ""}
-                        onChange={(e) =>
-                          setFiltros((f) => ({
-                            ...f,
-                            [c.chave]: e.target.value,
-                          }))
-                        }
-                        placeholder={soEstaPagina ? "nesta página" : "filtrar"}
-                        aria-label={
-                          soEstaPagina
-                            ? `Filtrar por ${c.titulo}, nesta página`
-                            : `Filtrar por ${c.titulo}`
-                        }
-                        className={cn(
-                          "w-full rounded-md border border-borda bg-superficie py-1 pl-7 pr-2 text-[12px] font-normal outline-none placeholder:text-texto-suave/70 focus:border-acento",
-                          c.tipo === "numero" && "text-right",
-                        )}
-                      />
-                    </div>
+                    <CampoFiltroColuna
+                      valor={filtros[c.chave] ?? ""}
+                      aoMudar={(v) =>
+                        setFiltros((f) => ({ ...f, [c.chave]: v }))
+                      }
+                      titulo={c.titulo}
+                      numerico={c.tipo === "numero"}
+                      soEstaPagina={soEstaPagina}
+                    />
                   ) : null}
                 </th>
               ))}
@@ -352,9 +336,55 @@ export function Grelha<T>({
   );
 }
 
+/** O campo de filtro de uma coluna.
+ *
+ *  EXPORTADO de propósito: o Plano de Contas não pode usar a `Grelha` — é uma
+ *  árvore, e achatá-la destruía a hierarquia que ali serve para navegar —, mas
+ *  tem de ter os MESMOS filtros, com o mesmo aspecto e o mesmo gesto. Duas
+ *  cópias do campo divergiam à primeira alteração. */
+export function CampoFiltroColuna({
+  valor,
+  aoMudar,
+  titulo,
+  numerico,
+  soEstaPagina,
+}: {
+  valor: string;
+  aoMudar: (v: string) => void;
+  titulo: string;
+  numerico?: boolean;
+  soEstaPagina?: boolean;
+}) {
+  return (
+    <div className="relative">
+      <Search
+        size={12}
+        className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-texto-suave"
+      />
+      <input
+        value={valor}
+        onChange={(e) => aoMudar(e.target.value)}
+        placeholder={soEstaPagina ? "nesta página" : "filtrar"}
+        aria-label={
+          soEstaPagina
+            ? `Filtrar por ${titulo}, nesta página`
+            : `Filtrar por ${titulo}`
+        }
+        className={cn(
+          "w-full rounded-md border border-borda bg-superficie py-1 pl-7 pr-2 text-[12px] font-normal normal-case tracking-normal outline-none placeholder:text-texto-suave/70 focus:border-acento",
+          numerico && "text-right",
+        )}
+      />
+    </div>
+  );
+}
+
 /** O menu do título: ordenar e limpar. Abre com o botão direito também, que é
- *  como se faz no Primavera. */
-function MenuDaColuna({
+ *  como se faz no Primavera.
+ *
+ *  EXPORTADO pela mesma razão que o campo de filtro: o Plano de Contas precisa
+ *  do mesmo menu sem poder usar a grelha inteira. */
+export function MenuDaColuna({
   titulo,
   ordem,
   aoOrdenar,

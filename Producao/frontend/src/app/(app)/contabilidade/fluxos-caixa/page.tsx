@@ -9,9 +9,7 @@ import {
   ACarregar,
   BarraFiltros,
   CabecalhoPagina,
-  Campo,
   Cartao,
-  Entrada,
   EnvolveTabela,
   Kpi,
   Selector,
@@ -188,13 +186,32 @@ export default function FluxosCaixa() {
                             entradas={entradas}
                             subtotal={data.subtotais[nomeGrupo]}
                             moeda={moeda}
-                            aoAbrirRubrica={(rubrica) => {
+                            aoAbrirRubrica={(rubrica, valor) => {
                               // A tabela agrupada mostra a DESCRIÇÃO da
                               // rubrica, não o código. O extracto precisa do
                               // código: procura-se no mapa, que traz os dois.
-                              const m = (mapa ?? []).find(
+                              //
+                              // E A DESCRIÇÃO NÃO CHEGA PARA IDENTIFICAR UMA
+                              // RUBRICA. «Imobilizações corpóreas» existe duas
+                              // vezes — 2100 nos recebimentos, 2200 nos
+                              // pagamentos —, e o mesmo acontece nas outras
+                              // rubricas de investimento. Procurar só pela
+                              // descrição devolvia sempre a primeira, por isso
+                              // um pagamento abria o extracto dos recebimentos
+                              // e vinha vazio.
+                              //
+                              // Desempata-se pelo VALOR da linha, e só depois
+                              // pelas rubricas que têm movimento: uma rubrica
+                              // a zero não é a que originou aquele número.
+                              const candidatos = (mapa ?? []).filter(
                                 (x) => x.descricao === rubrica,
                               );
+                              const m =
+                                candidatos.find((x) =>
+                                  big(x.valor).eq(big(valor)),
+                                ) ??
+                                candidatos.find((x) => !big(x.valor).eq(0)) ??
+                                candidatos[0];
                               router.push(
                                 `/contabilidade/extrato?fluxo=${encodeURIComponent(m?.codigo ?? rubrica)}`,
                               );
@@ -300,8 +317,12 @@ function FragmentoGrupo({
   entradas: [string, string][];
   subtotal: string;
   moeda: string;
-  /** Duplo clique numa rubrica abre o extracto dos movimentos que a compõem. */
-  aoAbrirRubrica: (rubrica: string) => void;
+  /** Duplo clique numa rubrica abre o extracto dos movimentos que a compõem.
+   *
+   *  Leva o valor além da descrição porque a descrição sozinha não identifica
+   *  a rubrica: há duas «Imobilizações corpóreas», uma a receber e outra a
+   *  pagar. */
+  aoAbrirRubrica: (rubrica: string, valor: string) => void;
 }) {
   const total = subtotal ?? soma(...entradas.map(([, v]) => v)).toString();
 
@@ -334,7 +355,7 @@ function FragmentoGrupo({
             // número que se olha primeiro.
             className="cursor-pointer hover:bg-marca/[0.07]"
             title="Duplo clique: extrato dos movimentos desta rubrica"
-            onDoubleClick={() => aoAbrirRubrica(rubrica)}
+            onDoubleClick={() => aoAbrirRubrica(rubrica, valor)}
           >
             <Td className="pl-7">{rubrica}</Td>
             <Td numerico>{formataMoeda(valor, moeda)}</Td>

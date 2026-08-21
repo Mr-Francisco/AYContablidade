@@ -134,15 +134,21 @@ export function visiveisComFiltros(
     procura?: string;
     /** Só o código, para a pesquisa inline na coluna «Código». */
     codigo?: string;
+    /** Só a designação, para o filtro da coluna «Designação». */
+    nome?: string;
+    /** A classe de IVA, para o filtro da coluna «Cl. IVA». */
+    iva?: string;
     natureza?: string;
     tipo?: string;
   },
 ): Set<string> | null {
   const q = (filtros.procura ?? "").toLowerCase().trim();
   const cod = (filtros.codigo ?? "").toLowerCase().trim();
+  const nome = (filtros.nome ?? "").toLowerCase().trim();
+  const iva = (filtros.iva ?? "").toLowerCase().trim();
   const nat = filtros.natureza ?? "";
   const tipo = filtros.tipo ?? "";
-  if (!q && !cod && !nat && !tipo) return null;
+  if (!q && !cod && !nome && !iva && !nat && !tipo) return null;
 
   const visiveis = new Set<string>();
   for (const c of contas) {
@@ -155,6 +161,11 @@ export function visiveisComFiltros(
     // A pesquisa da coluna é por PREFIXO e não por conter: escrever «43» quer
     // dizer «o ramo do 43», e não toda a conta que tenha um 43 pelo meio.
     if (cod && !c.codigo.toLowerCase().startsWith(cod)) continue;
+    // A designação e a classe de IVA procuram-se por CONTER, ao contrário do
+    // código: ninguém sabe de cor por que letra começa o nome de uma conta,
+    // mas toda a gente se lembra de uma palavra que está lá.
+    if (nome && !c.nome.toLowerCase().includes(nome)) continue;
+    if (iva && !(c.classe_iva ?? "").toLowerCase().includes(iva)) continue;
     if (nat && (c.natureza || "D") !== nat) continue;
     if (tipo) {
       const mov = ehMovimento(c, contas);

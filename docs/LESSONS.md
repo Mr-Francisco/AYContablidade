@@ -250,3 +250,10 @@
 - `.env.producao.example` a apontar para o ambiente de TESTES (`sifphml`) e uma armadilha silenciosa: as credenciais de producao nao servem la e ninguem percebe porque.
 - Uma rubrica de fluxo de caixa NAO e uma conta: o extracto pedia conta e nao havia caminho. Devolver a MESMA forma do razao deixa o mesmo ecra mostrar as duas coisas.
 - Nem tudo o que e tabela vira grelha plana: o Plano de Contas e uma arvore, e achata-lo destruia a hierarquia que ali serve para navegar.
+- Corrigir a lição anterior: nem tudo o que é árvore fica sem grelha. O Plano de Contas leva filtros de coluna SEM achatar — filtrar mostra a conta no seu ramo, só ordenar é que desfaz, e aí o ecrã avisa e dá o caminho de volta.
+- Procurar por DESCRIÇÃO com `.find()` devolve a primeira, e as descrições repetem-se: «Imobilizações corpóreas» é 2100 a receber e 2200 a pagar. Um pagamento abria o extracto dos recebimentos e vinha vazio, como se a funcionalidade não existisse.
+- Uma condição de ecrã que só olha para UM caminho de entrada bloqueia o outro: o extracto pedia «escolha uma conta» a quem chegava por rubrica, com os dados já carregados por baixo do aviso.
+- Escrever a funcionalidade não é entregá-la: os dois defeitos acima só apareceram a abrir o browser e a clicar. Verificar no ecrã, com a conta certa, antes de dizer que está feito.
+- Uma conta de teste cria-se NOVA, nunca alterando as existentes — há 2FA real configurado em contas de demonstração, e um guião de reposição já quase o apagou. `scripts/criar_conta_teste.py` só insere.
+- `form_input` não chega em inputs controlados do React: escreve no DOM e o React não regista. Usar o setter nativo do prototype e disparar `input` com `bubbles`.
+- Ler o DOM logo a seguir a `.click()` lê o estado ANTES do React voltar a desenhar — uma ordenação parece não funcionar quando funciona. Esperar entre o gesto e a leitura.

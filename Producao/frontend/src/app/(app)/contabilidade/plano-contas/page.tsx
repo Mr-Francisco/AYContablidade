@@ -10,7 +10,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 
 import {
   ACarregar,
@@ -25,6 +25,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { Confirmar } from "@/components/ui/CrudMestre";
+import { CampoFiltroColuna, MenuDaColuna } from "@/components/ui/Grelha";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ErroApi } from "@/lib/api";
 import { useContas } from "@/lib/hooks";
@@ -32,6 +33,7 @@ import {
   CLASSES,
   construirArvore,
   ehMovimento,
+  maeDe,
   NATUREZAS,
   visiveisComFiltros,
 } from "@/lib/plano";
@@ -40,6 +42,13 @@ import type { Conta } from "@/types";
 
 import { FichaConta } from "./FichaConta";
 import { ImportarPlano } from "./ImportarPlano";
+
+/** O que se devolve quando o que foi escrito na coluna não corresponde a nada.
+ *
+ *  Tem de ser um valor que NENHUMA conta tenha: devolver vazio fazia o filtro
+ *  ignorar-se a si próprio e mostrar tudo — escrever «xpto» na Natureza dava a
+ *  lista completa, como se não se tivesse escrito nada. */
+const SEM_CORRESPONDENCIA = "(nada)";
 
 /**
  * Plano de Contas — a árvore do Piloto.
@@ -66,6 +75,24 @@ export default function PlanoDeContas() {
   const [classe, setClasse] = useState("");
   const [natureza, setNatureza] = useState("");
   const [tipo, setTipo] = useState("");
+
+  // OS FILTROS DE COLUNA, o padrão do Primavera que as outras tabelas já têm.
+  // Vivem à parte dos selectores da barra de cima de propósito: aqueles são
+  // escolhas fechadas, estes são o que se escreve na coluna.
+  const [filtroNome, setFiltroNome] = useState("");
+  const [filtroIva, setFiltroIva] = useState("");
+  const [filtroNatureza, setFiltroNatureza] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState("");
+  const [ordem, setOrdem] = useState<{
+    chave: string;
+    ascendente: boolean;
+  } | null>(null);
+
+  // A CÉLULA DO CÓDIGO, ao gesto do Windows Forms: um clique selecciona, o
+  // seguinte abre para escrita. Guarda-se o código da conta, não o índice da
+  // linha — as linhas mudam de sítio quando se filtra, os códigos não.
+  const [celulaSel, setCelulaSel] = useState<string | null>(null);
+  const [celulaEdit, setCelulaEdit] = useState<string | null>(null);
   const [fechados, setFechados] = useState<Set<string>>(new Set());
   const [tudoFechado, setTudoFechado] = useState(false);
 
@@ -80,16 +107,82 @@ export default function PlanoDeContas() {
   const [ocupado, setOcupado] = useState(false);
 
   const arvore = useMemo(() => construirArvore(contas), [contas]);
-  const visiveis = useMemo(
-    () =>
-      visiveisComFiltros(contas, arvore, {
-        procura,
-        codigo: procuraCodigo,
-        natureza,
-        tipo,
-      }),
-    [contas, arvore, procura, procuraCodigo, natureza, tipo],
-  );
+
+  // O QUE SE ESCREVE APARECE JÁ; a árvore alcança a seguir.
+  //
+  // MEDIDO, não suposto: com as 1631 contas no ecrã, cada tecla custava 410 ms
+  // de trabalho — o cursor prendia-se e as letras chegavam aos saltos. O plano
+  // de contas é a maior tabela do sistema e é onde isto mais se nota.
+  //
+  // `useDeferredValue` separa as duas coisas: o campo responde à tecla de
+  // imediato, e a lista volta a desenhar-se logo a seguir, com a prioridade
+  // mais baixa. É o mesmo que a `Grelha` faz nas outras tabelas.
+  const procuraAdiada = useDeferredValue(procura);
+  const procuraCodigoAdiada = useDeferredValue(procuraCodigo);
+  const filtroNomeAdiado = useDeferredValue(filtroNome);
+  const filtroIvaAdiado = useDeferredValue(filtroIva);
+
+  // O QUE SE ESCREVE NA COLUNA vale o que se lê na coluna: escrever «dev» na
+  // Natureza tem de encontrar as devedoras, e não obrigar a saber que por
+  // dentro isso é um `D`. O mesmo para «movimento» e «integração».
+  const codigoDoRotulo = (texto: string, pares: [string, string][]) => {
+    const t = texto.trim().toLowerCase();
+    if (!t) return "";
+    const achado = pares.find(([, rotulo]) =>
+      rotulo.toLowerCase().startsWith(t),
+    );
+    // Sem correspondência devolve-se um valor impossível, para o filtro dar
+    // vazio em vez de se ignorar a si próprio e mostrar tudo.
+    return achado ? achado[0] : SEM_CORRESPONDENCIA;
+  };
+  const naturezaFiltrada =
+    filtroNatureza.trim() === ""
+      ? natureza
+      : codigoDoRotulo(filtroNatureza, [
+          ["D", "Devedora"],
+          ["C", "Credora"],
+          ["M", "Mista"],
+        ]);
+  const tipoFiltrado =
+    filtroTipo.trim() === ""
+      ? tipo
+      : codigoDoRotulo(filtroTipo, [
+          ["M", "Movimento"],
+          ["I", "Integração"],
+        ]);
+
+  const visiveis = useMemo(() => {
+    const conjunto = visiveisComFiltros(contas, arvore, {
+      procura: procuraAdiada,
+      codigo: procuraCodigoAdiada,
+      nome: filtroNomeAdiado,
+      iva: filtroIvaAdiado,
+      natureza: naturezaFiltrada,
+      tipo: tipoFiltrado,
+    });
+    // A LINHA QUE ESTÁ A SER ESCRITA FICA. Sem isto, escrever mais um dígito
+    // no código tirava a linha do ecrã, o campo saía com ela e perdia-se o que
+    // se estava a escrever a meio da palavra. Ela e as mães, senão aparecia
+    // pendurada fora do ramo.
+    if (conjunto && celulaEdit) {
+      let actual: Conta | null = arvore.porCodigo.get(celulaEdit) ?? null;
+      while (actual) {
+        conjunto.add(actual.codigo);
+        actual = maeDe(actual.codigo, arvore.porCodigo);
+      }
+    }
+    return conjunto;
+  }, [
+    contas,
+    arvore,
+    procuraAdiada,
+    procuraCodigoAdiada,
+    filtroNomeAdiado,
+    filtroIvaAdiado,
+    naturezaFiltrada,
+    tipoFiltrado,
+    celulaEdit,
+  ]);
 
   // A filtrar, está tudo aberto: um resultado escondido num ramo fechado é um
   // resultado que não se encontrou.
@@ -140,6 +233,62 @@ export default function PlanoDeContas() {
         for (const f of filhos) descer(f, nivel + 1);
     }
 
+    // ORDENAR DESFAZ A ÁRVORE, e não há como não desfazer: pôr as contas por
+    // designação é dizer que a ordem alfabética importa mais do que o ramo
+    // onde a conta vive. Passa a lista simples, e o ecrã avisa — assim quem
+    // ordenou percebe porque é que a hierarquia desapareceu, e como a trazer
+    // de volta.
+    if (ordem) {
+      const rotuloNatureza: Record<string, string> = {
+        D: "Devedora",
+        C: "Credora",
+        M: "Mista",
+      };
+      const chaveDe = (c: Conta): string => {
+        switch (ordem.chave) {
+          case "nome":
+            return c.nome;
+          case "iva":
+            return c.classe_iva ?? "";
+          case "natureza":
+            return rotuloNatureza[c.natureza || "D"] ?? "";
+          case "tipo":
+            return ehMovimento(c, contas) ? "Movimento" : "Integração";
+          default:
+            return c.codigo;
+        }
+      };
+      const sinal = ordem.ascendente ? 1 : -1;
+      const lista = contas
+        .filter((c) => !visiveis || visiveis.has(c.codigo))
+        .filter((c) => !classe || c.codigo[0] === classe)
+        // As integradoras que só entraram por serem mães de um resultado não
+        // fazem sentido numa lista ordenada: aqui não há ramo para sustentar.
+        .sort((a, b) => {
+          const va = chaveDe(a);
+          const vb = chaveDe(b);
+          if (!va && !vb) return 0;
+          if (!va) return 1;
+          if (!vb) return -1;
+          return (
+            va.localeCompare(vb, "pt", {
+              numeric: true,
+              sensitivity: "base",
+            }) * sinal
+          );
+        });
+      for (const c of lista) {
+        saida.push({
+          tipo: "conta",
+          conta: c,
+          nivel: 0,
+          temFilhos: false,
+          movimento: ehMovimento(c, contas),
+        });
+      }
+      return saida;
+    }
+
     for (const cl of Object.keys(CLASSES)) {
       if (classe && cl !== classe) continue;
       const raizes = (arvore.raizesPorClasse[cl] ?? []).filter(
@@ -159,7 +308,7 @@ export default function PlanoDeContas() {
         for (const r of raizes) descer(r, 0);
     }
     return saida;
-  }, [contas, arvore, visiveis, classe, aberto]);
+  }, [contas, arvore, visiveis, classe, aberto, ordem]);
 
   async function eliminar() {
     if (!aApagar) return;
@@ -277,6 +426,38 @@ export default function PlanoDeContas() {
       {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
+      {/* ORDENAR TIRA A HIERARQUIA DO ECRÃ. Sem este aviso, quem clicasse num
+          título via a árvore desaparecer e não tinha como saber que foi o
+          clique — nem como a trazer de volta. */}
+      {ordem && (
+        <Alerta tipo="info" className="mb-4">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span>
+              As contas estão em lista, ordenadas por{" "}
+              <b>
+                {ordem.chave === "nome"
+                  ? "designação"
+                  : ordem.chave === "iva"
+                    ? "classe de IVA"
+                    : ordem.chave === "natureza"
+                      ? "natureza"
+                      : ordem.chave === "tipo"
+                        ? "tipo"
+                        : "código"}
+              </b>
+              . Enquanto assim estiverem, não se vê a que ramo pertencem.
+            </span>
+            <button
+              type="button"
+              onClick={() => setOrdem(null)}
+              className="font-semibold text-marca hover:underline"
+            >
+              Voltar à árvore
+            </button>
+          </span>
+        </Alerta>
+      )}
+
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
@@ -287,31 +468,122 @@ export default function PlanoDeContas() {
             <table className="w-full border-collapse text-sm">
               {/* Larguras do Piloto: código 30%, e as três colunas de
                   classificação fixas para não dançarem entre páginas. */}
+              {/* A GRELHA DO PRIMAVERA, aqui também: uma linha de filtros por
+                  baixo dos títulos e o menu de ordenação em cada título.
+
+                  A DIFERENÇA PARA AS OUTRAS TABELAS, e é o que torna esta
+                  especial: filtrar NÃO achata a árvore. As contas que passam o
+                  filtro aparecem no seu ramo, com as mães por cima — é assim
+                  que se sabe onde a conta vive. Só a ORDENAÇÃO desfaz a
+                  hierarquia, porque ordenar uma árvore por designação não quer
+                  dizer nada; nesse caso passa a lista e o ecrã di-lo. */}
               <thead>
                 <tr>
-                  {/* PESQUISA INLINE na própria coluna: escreve-se «43» e a
-                      árvore fica no ramo do 43. É por prefixo, que é como se
-                      pensa um código de conta, e convive com a pesquisa geral
-                      da barra de cima — esta filtra o código, aquela procura
-                      também no nome. */}
-                  <Th className="w-[30%] align-top">
-                    <div className="flex flex-col gap-1">
-                      <span>Código</span>
-                      <input
-                        type="search"
-                        value={procuraCodigo}
-                        onChange={(e) => setProcuraCodigo(e.target.value)}
-                        placeholder="Filtrar…"
-                        aria-label="Filtrar por código de conta"
-                        className="w-[7.5rem] rounded-md border border-borda bg-superficie px-2 py-1 text-[12px] font-normal normal-case tracking-normal text-texto outline-none focus:border-acento"
-                      />
-                    </div>
+                  <Th className="w-[30%]">
+                    <MenuDaColuna
+                      titulo="Código"
+                      ordem={ordem?.chave === "codigo" ? ordem : null}
+                      aoOrdenar={(asc) =>
+                        setOrdem({ chave: "codigo", ascendente: asc })
+                      }
+                      aoLimparOrdem={() => setOrdem(null)}
+                      temFiltro={Boolean(procuraCodigo.trim())}
+                      aoLimparFiltro={() => setProcuraCodigo("")}
+                    />
                   </Th>
-                  <Th>Designação</Th>
-                  <Th className="w-[110px]">Cl. IVA</Th>
-                  <Th className="w-[110px]">Natureza</Th>
-                  <Th className="w-[120px]">Tipo</Th>
+                  <Th>
+                    <MenuDaColuna
+                      titulo="Designação"
+                      ordem={ordem?.chave === "nome" ? ordem : null}
+                      aoOrdenar={(asc) =>
+                        setOrdem({ chave: "nome", ascendente: asc })
+                      }
+                      aoLimparOrdem={() => setOrdem(null)}
+                      temFiltro={Boolean(filtroNome.trim())}
+                      aoLimparFiltro={() => setFiltroNome("")}
+                    />
+                  </Th>
+                  <Th className="w-[110px]">
+                    <MenuDaColuna
+                      titulo="Cl. IVA"
+                      ordem={ordem?.chave === "iva" ? ordem : null}
+                      aoOrdenar={(asc) =>
+                        setOrdem({ chave: "iva", ascendente: asc })
+                      }
+                      aoLimparOrdem={() => setOrdem(null)}
+                      temFiltro={Boolean(filtroIva.trim())}
+                      aoLimparFiltro={() => setFiltroIva("")}
+                    />
+                  </Th>
+                  <Th className="w-[110px]">
+                    <MenuDaColuna
+                      titulo="Natureza"
+                      ordem={ordem?.chave === "natureza" ? ordem : null}
+                      aoOrdenar={(asc) =>
+                        setOrdem({ chave: "natureza", ascendente: asc })
+                      }
+                      aoLimparOrdem={() => setOrdem(null)}
+                      temFiltro={Boolean(filtroNatureza.trim())}
+                      aoLimparFiltro={() => setFiltroNatureza("")}
+                    />
+                  </Th>
+                  <Th className="w-[120px]">
+                    <MenuDaColuna
+                      titulo="Tipo"
+                      ordem={ordem?.chave === "tipo" ? ordem : null}
+                      aoOrdenar={(asc) =>
+                        setOrdem({ chave: "tipo", ascendente: asc })
+                      }
+                      aoLimparOrdem={() => setOrdem(null)}
+                      temFiltro={Boolean(filtroTipo.trim())}
+                      aoLimparFiltro={() => setFiltroTipo("")}
+                    />
+                  </Th>
                   {podeGerir && <Th className="w-[150px]"> </Th>}
+                </tr>
+
+                {/* A linha dos filtros, sempre à vista — como nas restantes
+                    grelhas. Escondê-la atrás de um ícone poupa trinta pixels e
+                    custa um clique em cada utilização. */}
+                <tr>
+                  <th className="border-b border-borda bg-superficie p-1">
+                    <CampoFiltroColuna
+                      valor={procuraCodigo}
+                      aoMudar={setProcuraCodigo}
+                      titulo="Código"
+                    />
+                  </th>
+                  <th className="border-b border-borda bg-superficie p-1">
+                    <CampoFiltroColuna
+                      valor={filtroNome}
+                      aoMudar={setFiltroNome}
+                      titulo="Designação"
+                    />
+                  </th>
+                  <th className="border-b border-borda bg-superficie p-1">
+                    <CampoFiltroColuna
+                      valor={filtroIva}
+                      aoMudar={setFiltroIva}
+                      titulo="Cl. IVA"
+                    />
+                  </th>
+                  <th className="border-b border-borda bg-superficie p-1">
+                    <CampoFiltroColuna
+                      valor={filtroNatureza}
+                      aoMudar={setFiltroNatureza}
+                      titulo="Natureza"
+                    />
+                  </th>
+                  <th className="border-b border-borda bg-superficie p-1">
+                    <CampoFiltroColuna
+                      valor={filtroTipo}
+                      aoMudar={setFiltroTipo}
+                      titulo="Tipo"
+                    />
+                  </th>
+                  {podeGerir && (
+                    <th className="border-b border-borda bg-superficie p-1" />
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -349,6 +621,23 @@ export default function PlanoDeContas() {
                         setACriar(`${(l.conta as Conta).codigo}001`);
                       }}
                       aoApagar={() => setAApagar(l.conta as Conta)}
+                      celula={{
+                        seleccionada:
+                          celulaSel === (l.conta as Conta).codigo &&
+                          celulaEdit !== (l.conta as Conta).codigo,
+                        emEdicao: celulaEdit === (l.conta as Conta).codigo,
+                        aoSeleccionar: () =>
+                          setCelulaSel((l.conta as Conta).codigo),
+                        aoAbrirEscrita: () => {
+                          // Começa com o código da própria linha: é a partir
+                          // dele que se quer subir ou descer no ramo.
+                          setProcuraCodigo((l.conta as Conta).codigo);
+                          setCelulaEdit((l.conta as Conta).codigo);
+                        },
+                        valor: procuraCodigo,
+                        aoMudar: setProcuraCodigo,
+                        aoTerminar: () => setCelulaEdit(null),
+                      }}
                     />
                   ),
                 )}
@@ -415,6 +704,93 @@ export default function PlanoDeContas() {
 }
 
 // ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+   A CÉLULA DO CÓDIGO — o gesto da grelha do Windows Forms.
+
+   Um clique SELECCIONA. O clique seguinte, na célula já seleccionada, ABRE
+   PARA ESCRITA, e o que se escreve filtra a tabela imediatamente. É o gesto do
+   DataGridView, e o que o distingue de um campo de texto normal é não precisar
+   de janela nenhuma: aponta-se ao código que se tem à frente e começa-se a
+   escrever a partir dele.
+
+   PORQUE É QUE COMEÇA COM O CÓDIGO DA LINHA e não em branco: chega-se aqui
+   com uma conta à vista e o que se quer quase sempre é o RAMO dela — clicar na
+   `1201` e apagar o `1` deixa o `120`, que é o ramo acima. Começar em branco
+   obrigava a escrever tudo outra vez.
+
+   A LINHA EM EDIÇÃO NÃO DESAPARECE, mesmo que o filtro deixe de a apanhar.
+   Sem isso, escrever mais um dígito tirava a linha do ecrã, o campo saía com
+   ela e perdia-se o que se estava a escrever a meio da palavra.
+--------------------------------------------------------------------------- */
+function CelulaCodigo({
+  conta,
+  temFilhos,
+  seleccionada,
+  emEdicao,
+  aoSeleccionar,
+  aoAbrirEscrita,
+  valor,
+  aoMudar,
+  aoTerminar,
+}: {
+  conta: Conta;
+  temFilhos: boolean;
+  seleccionada: boolean;
+  emEdicao: boolean;
+  aoSeleccionar: () => void;
+  aoAbrirEscrita: () => void;
+  valor: string;
+  aoMudar: (v: string) => void;
+  aoTerminar: () => void;
+}) {
+  if (emEdicao) {
+    return (
+      <input
+        // `autoFocus` é o ponto todo do gesto: se depois do segundo clique
+        // fosse preciso clicar uma terceira vez para escrever, não se tinha
+        // poupado nada.
+        // biome-ignore lint/a11y/noAutofocus: é o segundo clique do utilizador
+        autoFocus
+        value={valor}
+        onChange={(e) => aoMudar(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" || e.key === "Enter") {
+            e.preventDefault();
+            aoTerminar();
+          }
+        }}
+        onBlur={aoTerminar}
+        aria-label={`Filtrar por código, a partir de ${conta.codigo}`}
+        className="tabular w-full rounded-md border border-acento bg-superficie px-1.5 py-0.5 text-sm outline-none"
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      // Primeiro clique selecciona, segundo abre para escrita — como na
+      // grelha do Windows Forms.
+      onClick={() => (seleccionada ? aoAbrirEscrita() : aoSeleccionar())}
+      onKeyDown={(e) => {
+        // F2 é a tecla de editar da grelha do Windows; Enter faz o mesmo para
+        // quem não a conhece.
+        if (e.key === "F2" || e.key === "Enter") {
+          e.preventDefault();
+          aoAbrirEscrita();
+        }
+      }}
+      title="Clique para seleccionar, clique de novo para filtrar a partir deste código"
+      className={cn(
+        "tabular -mx-1 w-full rounded px-1 text-left",
+        seleccionada && "bg-marca/15 ring-1 ring-marca",
+      )}
+    >
+      {temFilhos ? <b>{conta.codigo}</b> : conta.codigo}
+    </button>
+  );
+}
+
 function LinhaConta({
   conta,
   temFilhos,
@@ -425,6 +801,7 @@ function LinhaConta({
   aoEditar,
   aoSubconta,
   aoApagar,
+  celula,
 }: {
   conta: Conta;
   temFilhos: boolean;
@@ -435,6 +812,16 @@ function LinhaConta({
   aoEditar: () => void;
   aoSubconta: () => void;
   aoApagar: () => void;
+  /** O estado e os gestos da célula do código. */
+  celula: {
+    seleccionada: boolean;
+    emEdicao: boolean;
+    aoSeleccionar: () => void;
+    aoAbrirEscrita: () => void;
+    valor: string;
+    aoMudar: (v: string) => void;
+    aoTerminar: () => void;
+  };
 }) {
   const nat = NATUREZAS[conta.natureza] ?? NATUREZAS.M;
   return (
@@ -471,7 +858,7 @@ function LinhaConta({
           ) : (
             <span className="w-3.5 text-center text-texto-suave">·</span>
           )}
-          {temFilhos ? <b>{conta.codigo}</b> : conta.codigo}
+          <CelulaCodigo conta={conta} temFilhos={temFilhos} {...celula} />
         </span>
       </td>
       <td className="px-3.5 py-1.5">

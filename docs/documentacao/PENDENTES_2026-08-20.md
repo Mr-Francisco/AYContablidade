@@ -18,7 +18,27 @@ gerar o extracto detalhado do item seleccionado.
 **O padrão já existe:** valor → duplo clique → extracto. Está no Balancete e no
 Mapa de Custos, e agora também no Extracto (que abre o movimento).
 
-**Estado: FEITO.**
+**Estado: FEITO — e verificado no browser, onde apareceram DOIS defeitos que só
+se viam a usar.** Estava tudo escrito e nada funcionava de ponta a ponta.
+
+**1. O extracto pedia uma conta a quem chegava por rubrica.** A condição do
+ecrã olhava só para `conta`: quem vinha do Fluxo de Caixa lia «Escolha uma conta
+para ver o extracto» com o extracto da rubrica já pedido ao servidor e pronto,
+por baixo do aviso.
+
+**2. Abria sempre a rubrica errada.** A tabela agrupada mostra a DESCRIÇÃO da
+rubrica e o extracto precisa do código, por isso procurava-se pela descrição —
+com `.find()`, que devolve a primeira. E **«Imobilizações corpóreas» existe duas
+vezes**: `2100` nos recebimentos e `2200` nos pagamentos. Um pagamento abria
+sempre o extracto dos recebimentos, que está a zero, e o ecrã dizia «sem
+movimentos no período». Parecia que a funcionalidade não existia.
+
+Desempata-se agora pelo valor da linha, e só depois pelas rubricas com
+movimento: uma rubrica a zero não é a que originou aquele número.
+
+Verificado ao vivo: duplo clique em «Imobilizações corpóreas −8 500 000,00 Kz»
+→ `?fluxo=2200` → mostra o movimento *«10/01/2026 · VFE 120 — Compra de viatura
+· 43101 Banco · 8 500 000,00 Kz»*.
 
 Uma rubrica de fluxo **não é uma conta**, e o extracto pedia uma conta. Foi
 preciso um caminho novo: `GET /api/contabilidade/extrato-fluxo/{codigo}`,
@@ -110,9 +130,26 @@ continua a abrir — trocar-lhe o gesto por duplo clique não trazia nada e
 desfazia um hábito de quem passa o dia ali. As restantes usam duplo clique,
 como o Piloto.
 
-**O Plano de Contas fica de fora, e é deliberado:** é uma ÁRVORE, com classes
-que abrem e contas com filhas. Achatá-lo numa grelha destruía a hierarquia, que
-é o que ali serve para navegar. Continua com o filtro por código que já tinha.
+**O Plano de Contas TAMBÉM TEM A GRELHA** — e era ali que mais fazia falta.
+
+Tinha ficado de fora por ser uma árvore, e achatá-la destrói a hierarquia que
+ali serve para navegar. Mas a conclusão certa não era deixá-lo sem filtros: era
+dar-lhe a grelha **sem** achatar. Ficou assim:
+
+- **Cinco filtros de coluna** — Código, Designação, Cl. IVA, Natureza, Tipo — e
+  menu de ordenação em cada título, com o mesmo aspecto das outras tabelas. Não
+  é uma cópia: o campo de filtro e o menu são os mesmos componentes, exportados
+  de `Grelha.tsx`. Duas cópias divergiam à primeira alteração.
+- **Filtrar NÃO desfaz a árvore.** As contas que passam aparecem no seu ramo,
+  com as mães por cima. Filtrar «banco» na Designação dá 34 linhas de 1631, e
+  vê-se que a `1201 Banco` vive debaixo de `12 IMOBILIZAÇÕES INCORPÓREAS`. É
+  essa a informação que um plano de contas carrega.
+- **Ordenar desfaz**, e não há como não desfazer: pôr as contas por designação é
+  dizer que o alfabeto importa mais do que o ramo. Nesse caso passa a lista, e o
+  ecrã diz porquê e dá um **«Voltar à árvore»** — senão quem clicou num título
+  via a hierarquia desaparecer sem saber que foi o clique.
+- Escrever na coluna vale **o que se lê na coluna**: «dev» na Natureza encontra
+  as devedoras, sem ninguém ter de saber que por dentro isso é um `D`.
 
 ---
 

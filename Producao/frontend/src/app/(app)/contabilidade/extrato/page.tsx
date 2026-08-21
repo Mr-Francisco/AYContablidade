@@ -183,7 +183,11 @@ function Conteudo() {
         </label>
       </BarraFiltros>
 
-      {!conta ? (
+      {/* CHEGA-SE AQUI DE DOIS SÍTIOS: escolhendo uma conta, ou por duplo
+          clique numa rubrica do Fluxo de Caixa. Este aviso só olhava para a
+          conta, por isso quem vinha do Fluxo de Caixa via «escolha uma conta»
+          com o extracto da rubrica já pedido e pronto por baixo. */}
+      {!conta && !fluxo ? (
         <Alerta tipo="info">
           Escolha uma conta para ver o extracto. As contas de terceiros
           (clientes 31…, fornecedores 32…) aparecem no topo da lista.
