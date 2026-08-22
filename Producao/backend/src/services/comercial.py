@@ -60,6 +60,17 @@ def cfg_com_default() -> dict:
         # estrangeiro ia para a conta dos nacionais e o balancete dizia que a
         # empresa não tinha clientes estrangeiros.
         "conta_cliente_estrangeiro": "31122",
+        # `3791 Outros Devedores` e `3792 Outros Credores`: existem no plano e
+        # não estavam a ser usados. Servem o que não é uma venda nem uma
+        # compra — e que, indo para `31121`/`32121`, ficava a inflar o saldo
+        # de clientes ou de fornecedores sem o ser.
+        "conta_outros_devedores": "3791",
+        # As três do lado dos fornecedores, a par das dos clientes. A primeira
+        # já existia noutro sítio (`conta_contrapartida` da logística) e passa
+        # a estar declarada aqui com as irmãs.
+        "conta_fornecedor": "32121",
+        "conta_fornecedor_estrangeiro": "32221",
+        "conta_outros_credores": "3792",
         "conta_vendas": "6111",
         "conta_servicos": "6211",
         "conta_iva": "345311111",
@@ -214,23 +225,71 @@ def eh_nacional(cliente) -> bool:
     return (getattr(cliente, "pais", None) or "Angola").strip().lower() in NACIONAIS
 
 
-def conta_base_do_cliente(cliente, cfg: dict) -> str:
-    """A conta-mãe da conta corrente: nacionais ou estrangeiros.
+#: As três categorias, e a chave de configuração da conta-mãe de cada uma,
+#: para clientes e para fornecedores.
+#:
+#: TRÊS E NÃO DUAS: «Outros Devedores» (`3791`) e «Outros Credores» (`3792`)
+#: existem no plano PGC-AR e não são um país — são uma decisão de quem regista.
+#: Uma conta a receber que não vem de uma venda não pertence a `31121`, seja o
+#: titular de onde for.
+CATEGORIAS_TERCEIRO = ("nacional", "estrangeiro", "outros")
 
-    O PLANO PGC-AR JÁ TEM AS DUAS — `31121 Clientes não grupo · Nacionais` e
-    `31122 · Estrangeiros` —, e o Piloto usava sempre a primeira, fosse o
-    cliente de onde fosse. Um cliente estrangeiro na conta dos nacionais não dá
-    erro nenhum: dá um balancete que diz que a empresa não tem clientes
-    estrangeiros, e um SAF-T que declara o mesmo.
+_CHAVE_DA_CONTA: dict[tuple[str, str], str] = {
+    ("cliente", "nacional"): "conta_cliente",
+    ("cliente", "estrangeiro"): "conta_cliente_estrangeiro",
+    ("cliente", "outros"): "conta_outros_devedores",
+    ("fornecedor", "nacional"): "conta_fornecedor",
+    ("fornecedor", "estrangeiro"): "conta_fornecedor_estrangeiro",
+    ("fornecedor", "outros"): "conta_outros_credores",
+}
 
-    A conta dos estrangeiros é parametrizável como a dos nacionais. Em branco,
-    usa-se a dos nacionais — que é o comportamento de antes, e é melhor do que
-    lançar numa conta que a empresa possa não ter no plano.
+
+def categoria_do_terceiro(terceiro) -> str:
+    """A categoria escolhida na ficha, ou a que se deduz do país.
+
+    A DEDUÇÃO PELO PAÍS FICA, e é o que mantém os registos antigos a funcionar
+    exactamente como antes: quem foi criado sem categoria continua a ir para
+    nacionais ou estrangeiros conforme o país, que era a única regra que havia.
+    Só quem escolher explicitamente «Outros» é que sai desse caminho.
     """
-    nacionais = cfg["conta_cliente"]
-    if eh_nacional(cliente):
-        return nacionais
-    return (cfg.get("conta_cliente_estrangeiro") or "").strip() or nacionais
+    escolhida = (getattr(terceiro, "categoria_conta", None) or "").strip().lower()
+    if escolhida in CATEGORIAS_TERCEIRO:
+        return escolhida
+    return "nacional" if eh_nacional(terceiro) else "estrangeiro"
+
+
+def conta_base_do_terceiro(terceiro, cfg: dict, *, tipo: str = "cliente") -> str:
+    """A conta-mãe da conta corrente, pela categoria.
+
+    O PLANO PGC-AR JÁ TEM AS SEIS — `31121`/`31122`/`3791` do lado dos clientes
+    e `32121`/`32221`/`3792` do lado dos fornecedores —, e o Piloto usava
+    sempre a primeira de cada lado. Um cliente estrangeiro na conta dos
+    nacionais não dá erro nenhum: dá um balancete que diz que a empresa não tem
+    clientes estrangeiros, e um SAF-T que declara o mesmo.
+
+    Todas são parametrizáveis. Faltando a da categoria escolhida, usa-se a dos
+    nacionais — é melhor do que lançar numa conta que a empresa possa não ter
+    no plano, e é o comportamento de antes.
+    """
+    lado = "fornecedor" if str(tipo).lower().startswith("forn") else "cliente"
+    base_nacionais = (
+        cfg.get(_CHAVE_DA_CONTA[(lado, "nacional")]) or ""
+    ).strip() or cfg["conta_cliente"]
+
+    categoria = categoria_do_terceiro(terceiro)
+    chave = _CHAVE_DA_CONTA.get((lado, categoria))
+    if not chave:
+        return base_nacionais
+    return (cfg.get(chave) or "").strip() or base_nacionais
+
+
+def conta_base_do_cliente(cliente, cfg: dict) -> str:
+    """A conta-mãe do lado dos clientes.
+
+    Continua a existir porque é assim que o resto do módulo lhe chama; o que
+    faz é delegar, para a regra viver num sítio só.
+    """
+    return conta_base_do_terceiro(cliente, cfg, tipo="cliente")
 
 
 def conta_corrente_cliente(

@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe, MapPin, X } from "lucide-react";
+import { Globe, Landmark, MapPin, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type FormEvent, useState } from "react";
 import { Alerta, Botao, Campo, Entrada } from "@/components/ui";
@@ -20,18 +20,27 @@ import { cn } from "@/lib/utils";
    - **número sequencial** (001, 002…), como na ficha completa e como no Piloto;
    - **conta corrente própria**, a próxima subconta da conta-mãe — `31121001`,
      `31121002`… — gravada na ficha para os documentos seguintes;
-   - a conta-mãe escolhida pela **nacionalidade**: `31121 Nacionais` ou
-     `31122 Estrangeiros`, que são as duas contas que o plano PGC-AR traz.
+   - a conta-mãe escolhida pela **categoria**: `31121 Nacionais`,
+     `31122 Estrangeiros` ou `3791 Outros Devedores` — as três que o plano
+     PGC-AR traz.
 
-   Essa última parte não existia. O Piloto tem as duas contas no plano e o campo
-   do país na ficha, mas usa sempre a dos nacionais — um cliente estrangeiro
+   Essa última parte não existia. O Piloto tem as contas no plano e o campo do
+   país na ficha, mas usa sempre a dos nacionais — um cliente estrangeiro
    ficava na conta dos nacionais e o balancete dizia que a empresa não tinha
    clientes estrangeiros.
+
+   E «OUTROS DEVEDORES» NÃO É UM PAÍS. É uma conta a receber que não vem de uma
+   venda — um adiantamento, um reembolso a haver. Deduzi-la do país era
+   impossível: o titular é de cá na mesma. Por isso a escolha passou de duas
+   opções derivadas da morada para três explícitas.
 
    A FICHA COMPLETA CONTINUA A EXISTIR. Aqui pede-se o mínimo; o resto —
    moradas, condições, crédito, bancos — preenche-se depois, sem pressa e sem
    uma factura à espera.
 --------------------------------------------------------------------------- */
+
+/** As três categorias do plano PGC-AR, do lado dos clientes. */
+export type Categoria = "nacional" | "estrangeiro" | "outros";
 
 export interface ClienteCriado {
   id: string;
@@ -41,6 +50,7 @@ export interface ClienteCriado {
   pais: string;
   conta: string;
   nacional: boolean;
+  categoria_conta: Categoria;
 }
 
 export function CriarClienteRapido({
@@ -56,7 +66,7 @@ export function CriarClienteRapido({
   const [nome, setNome] = useState(nomeInicial);
   const [nif, setNif] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [nacional, setNacional] = useState(true);
+  const [categoria, setCategoria] = useState<Categoria>("nacional");
   const [pais, setPais] = useState("Angola");
   const [erro, setErro] = useState<string | null>(null);
   const [aCriar, setACriar] = useState(false);
@@ -72,7 +82,12 @@ export function CriarClienteRapido({
           nome: nome.trim(),
           nif: nif.trim() || null,
           telefone: telefone.trim() || null,
-          pais: nacional ? "Angola" : pais.trim() || "Estrangeiro",
+          // O país continua a ir na ficha; a conta é decidida pela categoria.
+          pais:
+            categoria === "estrangeiro"
+              ? pais.trim() || "Estrangeiro"
+              : "Angola",
+          categoria_conta: categoria,
         },
       );
       aoCriar(c);
@@ -125,36 +140,50 @@ export function CriarClienteRapido({
               />
             </Campo>
 
-            {/* NACIONAL OU ESTRANGEIRO — decide a conta contabilística.
-                Fica à vista e não escondido num campo «país» qualquer, porque
-                é uma decisão contabilística e não um dado de morada. */}
+            {/* A CATEGORIA DECIDE A CONTA CONTABILÍSTICA, e fica à vista em
+                vez de escondida num campo «país»: é uma decisão de
+                contabilidade, não um dado de morada.
+
+                TRÊS E NÃO DUAS. «Outros devedores» não é um país — é uma conta
+                a receber que não vem de uma venda, e ia parar à conta dos
+                clientes a inflar um saldo que não é de clientes. */}
             <div className="flex flex-col gap-2">
-              <span className="text-[13px] font-bold">Origem</span>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <span className="text-[13px] font-bold">Categoria</span>
+              <div className="grid gap-2 sm:grid-cols-3">
                 <Escolha
-                  activo={nacional}
+                  activo={categoria === "nacional"}
                   icone={<MapPin size={16} />}
                   titulo="Nacional"
                   nota="Conta 31121 · Clientes nacionais"
                   aoEscolher={() => {
-                    setNacional(true);
+                    setCategoria("nacional");
                     setPais("Angola");
                   }}
                 />
                 <Escolha
-                  activo={!nacional}
+                  activo={categoria === "estrangeiro"}
                   icone={<Globe size={16} />}
                   titulo="Estrangeiro"
                   nota="Conta 31122 · Clientes estrangeiros"
                   aoEscolher={() => {
-                    setNacional(false);
+                    setCategoria("estrangeiro");
                     setPais("");
+                  }}
+                />
+                <Escolha
+                  activo={categoria === "outros"}
+                  icone={<Landmark size={16} />}
+                  titulo="Outro devedor"
+                  nota="Conta 3791 · Não vem de uma venda"
+                  aoEscolher={() => {
+                    setCategoria("outros");
+                    setPais("Angola");
                   }}
                 />
               </div>
             </div>
 
-            {!nacional && (
+            {categoria === "estrangeiro" && (
               <Campo rotulo="País" dica="Fica na ficha do cliente.">
                 <Entrada
                   value={pais}

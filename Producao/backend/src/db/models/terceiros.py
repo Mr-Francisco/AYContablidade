@@ -85,6 +85,24 @@ class Terceiro(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     # (contaCorrenteCliente no Piloto). Ex.: 31121001.
     conta: Mapped[str | None] = mapped_column(String(20), index=True)
 
+    #: Sob que conta-mãe nasce a conta corrente: `nacional`, `estrangeiro` ou
+    #: `outros`.
+    #:
+    #: PORQUE NÃO CHEGA O PAÍS: até aqui a conta-mãe saía de `pais` — Angola ia
+    #: para os nacionais, o resto para os estrangeiros. Isso resolve duas das
+    #: três, mas «Outros Devedores» (`3791`) e «Outros Credores` (`3792`) não
+    #: são um país: são uma decisão de quem regista. Um adiantamento a um
+    #: trabalhador ou uma conta a receber que não vem de uma venda são de cá e
+    #: não pertencem a `31121`.
+    #:
+    #: A MESMA COLUNA SERVE OS DOIS LADOS. O que muda é a conta a que cada
+    #: categoria corresponde, e isso depende do `tipo` — ver
+    #: `conta_base_do_terceiro()` em `services/comercial.py`.
+    #:
+    #: Em branco nos registos antigos, e continua a valer: sem categoria,
+    #: decide-se pelo país, como antes.
+    categoria_conta: Mapped[str | None] = mapped_column(String(20))
+
     observacoes: Mapped[str | None] = mapped_column(Text)
 
     def __repr__(self) -> str:

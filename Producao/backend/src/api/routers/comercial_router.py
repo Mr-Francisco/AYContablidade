@@ -8,7 +8,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, or_, select
 
 from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
@@ -115,7 +115,30 @@ class TerceiroEntrada(BaseModel):
 
     # ---- Contabilidade e notas ----
     conta: str | None = None
+    #: `nacional`, `estrangeiro` ou `outros` — decide a conta-mãe da conta
+    #: corrente. Em branco, decide-se pelo país, como antes.
+    categoria_conta: str | None = None
     observacoes: str | None = None
+
+    @field_validator("categoria_conta")
+    @classmethod
+    def _categoria_conhecida(cls, v: str | None) -> str | None:
+        """Recusa uma categoria que não exista, em vez de a ignorar.
+
+        Guardada tal e qual, uma categoria inventada não dava erro nenhum: caía
+        no ramo por omissão e a ficha ia parar à conta dos nacionais, sem
+        ninguém perceber porquê. Um erro à entrada é mais barato do que uma
+        conta corrente na conta errada descoberta no balancete.
+        """
+        if v is None or not v.strip():
+            return None
+        limpo = v.strip().lower()
+        if limpo not in svc.CATEGORIAS_TERCEIRO:
+            raise ValueError(
+                "Categoria de conta desconhecida. Escolha nacional, "
+                "estrangeiro ou outros."
+            )
+        return limpo
 
 
 def _terceiro_publico(c: Terceiro) -> dict:
@@ -141,7 +164,20 @@ def _terceiro_publico(c: Terceiro) -> dict:
         "responsavel": c.responsavel,
         "limite_credito": c.limite_credito, "dias_credito": c.dias_credito,
         "conta": c.conta, "observacoes": c.observacoes,
+        "categoria_conta": c.categoria_conta,
     }
+
+
+def _categoria_valida(valor: str | None) -> str | None:
+    """Só as três categorias conhecidas entram na ficha.
+
+    Uma categoria inventada não daria erro — daria uma ficha que cai no ramo
+    do `else` e vai parar à conta dos nacionais sem ninguém saber porquê.
+    Guardar `None` é honesto: significa «decide-se pelo país», que é o
+    comportamento de sempre.
+    """
+    v = (valor or "").strip().lower()
+    return v if v in svc.CATEGORIAS_TERCEIRO else None
 
 
 def _proximo_numero_terceiro(db: DB, empresa_id: UUID, tipo: str) -> str:
@@ -278,10 +314,18 @@ class ClienteRapido(BaseModel):
     nome: str = Field(min_length=1, max_length=200)
     nif: str | None = Field(default=None, max_length=20)
     telefone: str | None = Field(default=None, max_length=40)
-    #: NACIONAL OU ESTRANGEIRO. Decide a conta corrente: o plano PGC-AR tem
-    #: `31121 Nacionais` e `31122 Estrangeiros`, e usar sempre a primeira dava
-    #: um balancete a dizer que a empresa não tem clientes estrangeiros.
+    #: O país da ficha. Continua a decidir entre nacional e estrangeiro quando
+    #: não se escolhe categoria — é o comportamento de sempre.
     pais: str = Field(default="Angola", max_length=60)
+    #: A CATEGORIA DA CONTA: `nacional`, `estrangeiro` ou `outros`.
+    #:
+    #: O plano PGC-AR tem as três — `31121 Nacionais`, `31122 Estrangeiros` e
+    #: `3791 Outros Devedores` —, e usar sempre a primeira dava um balancete a
+    #: dizer que a empresa não tem clientes estrangeiros nem outros devedores.
+    #:
+    #: «Outros devedores» não é um país: é uma conta a receber que não vem de
+    #: uma venda. Por isso é uma escolha e não uma dedução.
+    categoria_conta: str | None = Field(default=None, max_length=20)
 
 
 @router.post(
@@ -327,6 +371,7 @@ def criar_cliente_rapido(
         nif=(dados.nif or "").strip() or None,
         telefone=(dados.telefone or "").strip() or None,
         pais=dados.pais.strip() or "Angola",
+        categoria_conta=_categoria_valida(dados.categoria_conta),
         estado="activo",
     )
     db.add(c)
@@ -346,6 +391,7 @@ def criar_cliente_rapido(
         "pais": c.pais,
         "conta": conta,
         "nacional": svc.eh_nacional(c),
+        "categoria_conta": svc.categoria_do_terceiro(c),
     }
 
 

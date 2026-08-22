@@ -203,3 +203,93 @@ def test_o_numero_do_cliente_e_sequencial_por_empresa(base, empresa):
     base.flush()
     assert n1.isdigit()
     assert len(n1) >= 3
+
+
+# ---------------------------------------------------------------------------
+# A terceira categoria: Outros Devedores
+#
+# «Outros devedores» NÃO É UM PAÍS. Uma conta a receber que não vem de uma
+# venda — um adiantamento, um reembolso a haver — é de cá e não pertence a
+# `31121`. Por isso é uma escolha de quem regista, e não uma dedução.
+# ---------------------------------------------------------------------------
+def test_outros_devedores_tem_conta_propria():
+    cfg = svc.cfg_com_default()
+    outro = type("C", (), {"pais": "Angola", "categoria_conta": "outros"})()
+    assert svc.conta_base_do_cliente(outro, cfg) == "3791"
+
+
+def test_a_categoria_ganha_ao_pais():
+    """Um devedor com morada em Angola vai para «outros» se assim for marcado.
+
+    É o ponto da categoria: sem ela, o país mandava sempre e não havia forma de
+    exprimir uma conta a receber que não é de um cliente.
+    """
+    cfg = svc.cfg_com_default()
+    de_angola = type("C", (), {"pais": "Angola", "categoria_conta": "outros"})()
+    de_fora = type("C", (), {"pais": "Portugal", "categoria_conta": "outros"})()
+
+    assert svc.conta_base_do_cliente(de_angola, cfg) == "3791"
+    assert svc.conta_base_do_cliente(de_fora, cfg) == "3791"
+
+
+def test_sem_categoria_decide_o_pais_como_sempre():
+    """Os registos antigos não mudam de conta.
+
+    A coluna nasceu vazia em toda a gente. Se a ausência de categoria mudasse
+    alguma coisa, a migração tinha mexido nas contas correntes de todos os
+    clientes já existentes — que é exactamente o que não pode acontecer.
+    """
+    cfg = svc.cfg_com_default()
+    nacional = type("C", (), {"pais": "Angola", "categoria_conta": None})()
+    estrangeiro = type("C", (), {"pais": "Portugal", "categoria_conta": ""})()
+
+    assert svc.conta_base_do_cliente(nacional, cfg) == "31121"
+    assert svc.conta_base_do_cliente(estrangeiro, cfg) == "31122"
+
+
+def test_uma_categoria_desconhecida_nao_muda_a_conta():
+    """Cair no ramo por omissão é o comportamento seguro.
+
+    A porta da API recusa categorias que não existam; isto garante que, mesmo
+    que uma escapasse, a conta escolhida continuava a ser a do país e não uma
+    conta ao acaso.
+    """
+    cfg = svc.cfg_com_default()
+    estranho = type("C", (), {"pais": "Angola", "categoria_conta": "xpto"})()
+    assert svc.conta_base_do_cliente(estranho, cfg) == "31121"
+
+
+def test_as_tres_contas_de_clientes_existem_no_plano(base, empresa):
+    from src.db.models.contabilidade import Conta
+
+    for codigo in ("31121", "31122", "3791"):
+        c = base.scalar(
+            select(Conta).where(Conta.empresa_id == empresa.id, Conta.codigo == codigo)
+        )
+        assert c is not None, f"a conta {codigo} tem de existir no plano"
+
+
+def test_o_lado_dos_fornecedores_usa_as_contas_dos_fornecedores():
+    """A mesma categoria, contas diferentes conforme o lado.
+
+    É o que permite os pontos 2 e 4 reutilizarem esta estrutura em vez de
+    criarem uma paralela.
+    """
+    cfg = svc.cfg_com_default()
+    nacional = type("F", (), {"pais": "Angola", "categoria_conta": "nacional"})()
+    estrangeiro = type("F", (), {"pais": "Angola", "categoria_conta": "estrangeiro"})()
+    outros = type("F", (), {"pais": "Angola", "categoria_conta": "outros"})()
+
+    assert svc.conta_base_do_terceiro(nacional, cfg, tipo="fornecedor") == "32121"
+    assert svc.conta_base_do_terceiro(estrangeiro, cfg, tipo="fornecedor") == "32221"
+    assert svc.conta_base_do_terceiro(outros, cfg, tipo="fornecedor") == "3792"
+
+
+def test_as_tres_contas_de_fornecedores_existem_no_plano(base, empresa):
+    from src.db.models.contabilidade import Conta
+
+    for codigo in ("32121", "32221", "3792"):
+        c = base.scalar(
+            select(Conta).where(Conta.empresa_id == empresa.id, Conta.codigo == codigo)
+        )
+        assert c is not None, f"a conta {codigo} tem de existir no plano"
