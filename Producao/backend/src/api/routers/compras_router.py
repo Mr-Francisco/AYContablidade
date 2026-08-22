@@ -9,7 +9,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
 from src.api.deps import DB, EmpresaAtual, exigir_cap
@@ -18,9 +18,11 @@ from src.db.models.comercial import Compra, CompraLinha
 from src.api.routers.comercial_router import (
     TerceiroAtualizar,
     TerceiroEntrada,
+    _categoria_valida,
     _terceiro_publico,
 )
 from src.db.models.terceiros import Terceiro
+from src.services import comercial as svc_com
 from src.services import compras as svc
 
 router = APIRouter(
@@ -108,6 +110,96 @@ def criar_fornecedor(
     db.refresh(f)
     return {"id": f.id, "numero": f.numero, "nome": f.nome}
 
+
+
+class FornecedorRapido(BaseModel):
+    """O mínimo para criar um fornecedor sem sair do documento de compra.
+
+    O ESPELHO DO QUE JÁ EXISTE NAS VENDAS. O caso é o mesmo: descobre-se a meio
+    de uma compra que o fornecedor não está registado, e mandar a pessoa a
+    Logística → Fornecedores é fazê-la perder o documento que estava a
+    preencher.
+    """
+
+    nome: str = Field(min_length=1, max_length=200)
+    nif: str | None = Field(default=None, max_length=20)
+    telefone: str | None = Field(default=None, max_length=40)
+    #: O país da ficha. Decide entre nacional e estrangeiro quando não se
+    #: escolhe categoria.
+    pais: str = Field(default="Angola", max_length=60)
+    #: `nacional`, `estrangeiro` ou `outros` — decide a conta-mãe da conta
+    #: corrente: `32121`, `32221` ou `3792 Outros Credores`.
+    categoria_conta: str | None = Field(default=None, max_length=20)
+
+
+@router.post(
+    "/fornecedores/rapido",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[GERIR],
+)
+def criar_fornecedor_rapido(
+    dados: FornecedorRapido, empresa: EmpresaAtual, db: DB
+) -> dict:
+    """Cria o fornecedor E a sua conta corrente, sem sair da compra.
+
+    Igual ao lado dos clientes, e pelas mesmas razões: número sequencial por
+    empresa, e conta corrente criada JÁ — não só na primeira compra. Um
+    fornecedor que existisse nas compras e não existisse na contabilidade até
+    alguém lhe comprar alguma coisa não aparecia a quem fosse ver o plano de
+    contas.
+    """
+    nome = dados.nome.strip()
+    if db.scalar(
+        select(Terceiro.id).where(
+            Terceiro.empresa_id == empresa.id,
+            Terceiro.tipo == "fornecedor",
+            func.lower(Terceiro.nome) == nome.lower(),
+        )
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Já existe um fornecedor com o nome «{nome}». Procure-o na lista "
+            "em vez de criar outro — dois fornecedores com o mesmo nome acabam "
+            "com os movimentos repartidos entre os dois.",
+        )
+
+    numeros = db.scalars(
+        select(Terceiro.numero).where(
+            Terceiro.empresa_id == empresa.id, Terceiro.tipo == "fornecedor"
+        )
+    ).all()
+    proximo = f"{max((int(n) for n in numeros if n and n.isdigit()), default=0) + 1:03d}"
+
+    f = Terceiro(
+        empresa_id=empresa.id,
+        tipo="fornecedor",
+        tipo_terceiro="Fornecedor",
+        numero=proximo,
+        nome=nome,
+        nif=(dados.nif or "").strip() or None,
+        telefone=(dados.telefone or "").strip() or None,
+        pais=dados.pais.strip() or "Angola",
+        categoria_conta=_categoria_valida(dados.categoria_conta),
+        estado="activo",
+    )
+    db.add(f)
+    db.flush()
+
+    conta = svc_com.conta_corrente_fornecedor(
+        db, empresa.id, f, svc_com.cfg_com(db, empresa.id)
+    )
+    db.commit()
+    db.refresh(f)
+
+    return {
+        "id": f.id,
+        "numero": f.numero,
+        "nome": f.nome,
+        "nif": f.nif,
+        "pais": f.pais,
+        "conta": conta,
+        "categoria_conta": svc_com.categoria_do_terceiro(f),
+    }
 
 
 @router.patch("/fornecedores/{fornecedor_id}", dependencies=[GERIR])

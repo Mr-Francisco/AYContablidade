@@ -4,7 +4,10 @@ import { Plus, Trash2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
-
+import {
+  CriarTerceiroRapido,
+  LADO_FORNECEDOR,
+} from "@/components/comercial/CriarTerceiroRapido";
 import {
   Alerta,
   Botao,
@@ -73,6 +76,8 @@ export function FormularioCompra({
   /** Os registos escolhidos nas tabelas de pesquisa — guardam código e nome
    *  para o campo os mostrar sem ir buscar a lista toda. */
   const [fornecedor, setFornecedor] = useState<Registo | null>(null);
+  /** O nome escrito na pesquisa quando se pediu para criar — não se perde. */
+  const [aCriarFornecedor, setACriarFornecedor] = useState<string | null>(null);
   const [armazem, setArmazem] = useState<Registo | null>(null);
   const [ivaPerc, setIvaPerc] = useState("14");
   const [linhas, setLinhas] = useState<Linha[]>([linhaVazia()]);
@@ -211,6 +216,11 @@ export function FormularioCompra({
                   titulo="Fornecedores"
                   placeholder="Fornecedor (F4)"
                   colunas={["Nº", "Nome", "NIF · País"]}
+                  // O mesmo gesto que já existia nas vendas: descobre-se a
+                  // meio da compra que o fornecedor não está registado, e cria-
+                  // se sem perder o documento que se estava a preencher.
+                  aoCriar={(termo) => setACriarFornecedor(termo)}
+                  rotuloCriar="Criar fornecedor"
                 />
               </Campo>
               <Campo
@@ -392,6 +402,27 @@ export function FormularioCompra({
               {aGravar ? "A gravar…" : "Gravar rascunho"}
             </Botao>
           </div>
+
+          {aCriarFornecedor !== null && (
+            <CriarTerceiroRapido
+              lado={LADO_FORNECEDOR}
+              nomeInicial={aCriarFornecedor}
+              aoFechar={() => setACriarFornecedor(null)}
+              aoCriar={(f) => {
+                // Criar e USAR: o fornecedor novo fica escolhido na compra que
+                // estava a ser preenchida. Criar e obrigar a procurá-lo outra
+                // vez na lista era metade do trabalho.
+                setFornecedor({
+                  id: f.id,
+                  codigo: f.numero,
+                  nome: f.nome,
+                  detalhe: [f.nif, f.pais].filter(Boolean).join(" · "),
+                });
+                setFornecedorId(f.id);
+                setACriarFornecedor(null);
+              }}
+            />
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

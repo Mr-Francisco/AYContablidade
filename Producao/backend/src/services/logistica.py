@@ -309,6 +309,16 @@ def registar_movimento(
     documento: str | None = None,
     descricao: str | None = None,
     entidade: str | None = None,
+    #: A conta corrente do terceiro, quando o documento tem ficha.
+    #:
+    #: SEM ISTO, a conta saía sempre debaixo de `conta_contrapartida` (`32121`)
+    #: e era procurada pelo NOME escrito no documento. Duas consequências: um
+    #: fornecedor estrangeiro ou um outro credor ficavam na conta dos
+    #: nacionais, e mudar o nome na ficha deixava a conta antiga órfã.
+    #:
+    #: Em branco, mantém-se o caminho de antes — uma compra escrita só com o
+    #: nome do fornecedor continua a funcionar como sempre funcionou.
+    conta_terceiro: str | None = None,
     diario_contab: str | None = None,
     documento_contab: str | None = None,
     exercicio_id: UUID | None = None,
@@ -388,7 +398,10 @@ def registar_movimento(
         if td["contab"] == "entrada":
             diario = diario_contab or c2["diario_entrada"]
             documento_cod = documento_contab or c2["doc_entrada"]
-            conta_forn = (
+            # A conta da FICHA ganha a frente: é a que respeita a categoria do
+            # fornecedor. Sem ficha, o caminho antigo — subconta pelo nome,
+            # debaixo da conta de contrapartida.
+            conta_forn = conta_terceiro or (
                 conta_corrente(db, empresa_id, c2["conta_contrapartida"], entidade)
                 if entidade
                 else c2["conta_contrapartida"]

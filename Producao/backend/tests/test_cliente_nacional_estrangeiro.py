@@ -293,3 +293,82 @@ def test_as_tres_contas_de_fornecedores_existem_no_plano(base, empresa):
             select(Conta).where(Conta.empresa_id == empresa.id, Conta.codigo == codigo)
         )
         assert c is not None, f"a conta {codigo} tem de existir no plano"
+
+
+# ---------------------------------------------------------------------------
+# A conta corrente do FORNECEDOR — o espelho do lado dos clientes
+# ---------------------------------------------------------------------------
+def _fornecedor(base, empresa, *, categoria=None, pais="Angola", nome="Forn"):
+    f = Terceiro(
+        empresa_id=empresa.id,
+        tipo="fornecedor",
+        tipo_terceiro="Fornecedor",
+        numero=f"{MARCA}{abs(hash(nome)) % 900 + 100}",
+        nome=f"{MARCA} {nome}",
+        pais=pais,
+        categoria_conta=categoria,
+    )
+    base.add(f)
+    base.flush()
+    return f
+
+
+def test_um_fornecedor_nacional_recebe_subconta_dos_nacionais(base, empresa):
+    f = _fornecedor(base, empresa, categoria="nacional", nome="FornNac")
+    conta = svc.conta_corrente_fornecedor(
+        base, empresa.id, f, svc.cfg_com(base, empresa.id)
+    )
+    assert conta.startswith("32121"), conta
+    assert conta != "32121", "tem de ser uma SUBCONTA, não a conta-mãe"
+    assert f.conta == conta
+
+
+def test_um_fornecedor_estrangeiro_nao_vai_para_a_conta_dos_nacionais(base, empresa):
+    """A peça que faltava, igual à dos clientes.
+
+    Até aqui a compra criava a subconta debaixo de `32121` fosse o fornecedor
+    de onde fosse, e o balancete dizia que a empresa só tinha fornecedores
+    nacionais.
+    """
+    f = _fornecedor(base, empresa, categoria="estrangeiro", nome="FornEst")
+    conta = svc.conta_corrente_fornecedor(
+        base, empresa.id, f, svc.cfg_com(base, empresa.id)
+    )
+    assert conta.startswith("32221"), conta
+
+
+def test_um_outro_credor_vai_para_a_conta_dos_outros_credores(base, empresa):
+    f = _fornecedor(base, empresa, categoria="outros", nome="FornOut")
+    conta = svc.conta_corrente_fornecedor(
+        base, empresa.id, f, svc.cfg_com(base, empresa.id)
+    )
+    assert conta.startswith("3792"), conta
+
+
+def test_o_fornecedor_que_ja_tem_conta_nao_recebe_outra(base, empresa):
+    """Emitir duas compras ao mesmo fornecedor não pode criar duas contas."""
+    cfg = svc.cfg_com(base, empresa.id)
+    f = _fornecedor(base, empresa, categoria="nacional", nome="FornRepetido")
+    primeira = svc.conta_corrente_fornecedor(base, empresa.id, f, cfg)
+    segunda = svc.conta_corrente_fornecedor(base, empresa.id, f, cfg)
+    assert primeira == segunda
+
+
+def test_mudar_a_categoria_nao_mexe_na_conta_ja_atribuida(base, empresa):
+    """Os lançamentos já feitos ficam onde estão.
+
+    Mudar a categoria de uma ficha com movimentos e arrastar a conta antiga
+    consigo era reescrever contabilidade fechada. A conta nova nasce no
+    documento seguinte; a antiga fica com o que já lá está.
+    """
+    cfg = svc.cfg_com(base, empresa.id)
+    f = _fornecedor(base, empresa, categoria="nacional", nome="FornMuda")
+    antiga = svc.conta_corrente_fornecedor(base, empresa.id, f, cfg)
+    assert antiga.startswith("32121")
+
+    f.categoria_conta = "estrangeiro"
+    base.flush()
+    nova = svc.conta_corrente_fornecedor(base, empresa.id, f, cfg)
+
+    assert nova.startswith("32221"), "a conta nova segue a categoria nova"
+    assert nova != antiga, "e é outra conta, não a antiga renomeada"

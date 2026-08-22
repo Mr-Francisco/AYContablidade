@@ -15,7 +15,7 @@ assinalado.
 | | Ponto | Estado |
 |---|---|---|
 | 1 | Notificações: estados e filtro por módulo | Analisado — falta o filtro |
-| 2 | Criar fornecedores nas Compras | Analisado |
+| 2 | Criar fornecedores nas Compras | **FEITO** |
 | 3 | Clientes: 3.ª categoria «Outros devedores» | **FEITO** |
 | 4 | Criar fornecedores nos Imobilizados | Analisado |
 | 5–8 | Imobilizado em Curso | **BLOQUEADO — contas não batem** |
@@ -145,6 +145,35 @@ Ecrã: `CriarClienteRapido.tsx` passou de duas opções derivadas da morada para
 três explícitas. O campo «País» só aparece em Estrangeiro.
 
 7 testes novos (690 no total).
+
+### ✅ Ponto 2 — FEITO
+
+**O que faltava não era criar fornecedores** — isso já existia. Era criá-los a
+partir do documento de compra, e as categorias.
+
+- `conta_corrente_fornecedor()` em `services/comercial.py`, espelho do lado dos
+  clientes. O núcleo passou a ser partilhado (`_subconta_do_terceiro`): estava
+  escrito duas vezes e a segunda cópia ficaria para trás à primeira correcção.
+- `POST /api/compras/fornecedores/rapido`, igual ao dos clientes: número
+  sequencial e conta corrente criadas **já**, não só na primeira compra.
+- **A compra passou a lançar na conta da ficha.** Até aqui criava a subconta a
+  partir do NOME escrito no documento, sempre debaixo de `32121`. Duas
+  consequências: um fornecedor estrangeiro ou um outro credor ficavam na conta
+  dos nacionais — o mesmo que acontecia com os clientes antes de terem
+  categoria —, e a conta ficava presa a um texto, por isso corrigir o nome na
+  ficha deixava a conta antiga órfã e criava outra.
+  `registar_movimento` ganhou `conta_terceiro`; em branco, o caminho antigo
+  mantém-se e uma compra escrita só com o nome continua a funcionar.
+- **Mudar a categoria não mexe na conta já atribuída** — os lançamentos feitos
+  ficam onde estão; a conta nova nasce no documento seguinte. Há teste.
+
+Ecrã: `CriarTerceiroRapido.tsx` — **um componente para os dois lados**, porque
+as duas janelas pedem o mesmo, criam o mesmo e diferem em três coisas: a
+palavra, a rota e as contas. `CriarClienteRapido` ficou uma casca fina, para os
+chamadores não quebrarem. Na compra, o `CampoEntidade` já tinha o gancho
+`aoCriar` — foi ligá-lo.
+
+5 testes novos (695 no total).
 
 Nota: `31121` e `32121` são de **integração** (`I`), não de movimento — é por
 isso que a lógica actual cria uma subconta por cliente em vez de lançar na

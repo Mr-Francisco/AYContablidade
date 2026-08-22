@@ -292,6 +292,75 @@ def conta_base_do_cliente(cliente, cfg: dict) -> str:
     return conta_base_do_terceiro(cliente, cfg, tipo="cliente")
 
 
+def conta_corrente_fornecedor(
+    db: Session, empresa_id: UUID, fornecedor: Terceiro, cfg: dict
+) -> str:
+    """Subconta de conta corrente do fornecedor, pela sua categoria.
+
+    O ESPELHO DO LADO DOS CLIENTES, e de propósito: um fornecedor registado
+    fica com a sua própria subconta (`32121001`, `32121002`…) gravada na ficha,
+    e a conta-mãe sai da categoria — nacionais, estrangeiros ou outros
+    credores.
+
+    O QUE ISTO SUBSTITUI: até aqui a compra criava a subconta a partir do NOME
+    escrito no documento, sempre debaixo de `32121`. Duas consequências: um
+    fornecedor estrangeiro ficava na conta dos nacionais, como acontecia com os
+    clientes antes de terem categoria; e a conta ficava ligada a um texto, por
+    isso corrigir o nome do fornecedor na ficha deixava a conta antiga órfã e
+    criava outra.
+
+    Não tendo ficha — uma compra escrita só com o nome —, devolve-se a conta
+    base e o caminho antigo continua a valer.
+    """
+    if fornecedor is None or fornecedor.id is None:
+        return conta_base_do_terceiro(None, cfg, tipo="fornecedor")
+    return _subconta_do_terceiro(
+        db,
+        empresa_id,
+        fornecedor,
+        conta_base_do_terceiro(fornecedor, cfg, tipo="fornecedor"),
+    )
+
+
+def _subconta_do_terceiro(
+    db: Session, empresa_id: UUID, terceiro: Terceiro, base: str
+) -> str:
+    """A subconta própria de um terceiro com ficha, criando-a se preciso.
+
+    O núcleo é o mesmo para clientes e para fornecedores — o que muda é a
+    conta-mãe, e essa vem decidida de fora. Estava escrito duas vezes e a
+    segunda ficaria para trás à primeira correcção.
+    """
+    from src.db.models.contabilidade import Conta
+
+    base_conta = db.scalar(
+        select(Conta).where(Conta.empresa_id == empresa_id, Conta.codigo == base)
+    )
+    if base_conta is None:
+        return base
+
+    todas = db.scalars(select(Conta).where(Conta.empresa_id == empresa_id)).all()
+    # A que já tem, se ainda pertencer a esta conta-mãe. Mudar a categoria de
+    # uma ficha com movimentos não muda a conta antiga: os lançamentos já
+    # feitos ficam onde estão, e a conta nova nasce no documento seguinte.
+    if (
+        terceiro.conta
+        and terceiro.conta != base
+        and terceiro.conta.startswith(base)
+        and any(c.codigo == terceiro.conta for c in todas)
+    ):
+        return terceiro.conta
+
+    codigo = proxima_subconta(db, empresa_id, base)
+    try:
+        criar_subconta(db, empresa_id, base, codigo, terceiro.nome)
+    except ErroContabilistico:
+        return terceiro.conta or base
+    terceiro.conta = codigo
+    db.flush()
+    return codigo
+
+
 def conta_corrente_cliente(
     db: Session, empresa_id: UUID, cliente: Terceiro | None, cfg: dict
 ) -> str:
@@ -313,22 +382,9 @@ def conta_corrente_cliente(
     todas = db.scalars(select(Conta).where(Conta.empresa_id == empresa_id)).all()
     base_eh_mov = eh_movimento(base_conta, todas)
 
+    # Cliente com ficha: a subconta é a mesma mecânica dos fornecedores.
     if cliente is not None and cliente.id is not None:
-        if (
-            cliente.conta
-            and cliente.conta != base
-            and cliente.conta.startswith(base)
-            and any(c.codigo == cliente.conta for c in todas)
-        ):
-            return cliente.conta
-        codigo = proxima_subconta(db, empresa_id, base)
-        try:
-            criar_subconta(db, empresa_id, base, codigo, cliente.nome)
-        except ErroContabilistico:
-            return cliente.conta or base
-        cliente.conta = codigo
-        db.flush()
-        return codigo
+        return _subconta_do_terceiro(db, empresa_id, cliente, base)
 
     # Consumidor final
     if base_eh_mov:

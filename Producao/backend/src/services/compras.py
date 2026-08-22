@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from src.db.base import agora
 from src.db.models.comercial import Compra
 from src.db.models.contabilidade import DocumentoContabilistico
+from src.db.models.terceiros import Terceiro
 from src.services.contabilidade import ErroContabilistico
 from src.services.comercial import proximo_numero
 from src.services.notificacoes import notificar
@@ -102,6 +103,30 @@ def emitir_compra(
             db, empresa_id, compra.documento_codigo, compra.data.year
         )
 
+    # A CONTA CORRENTE DO FORNECEDOR, quando ele tem ficha.
+    #
+    # Até aqui a compra criava a subconta a partir do NOME escrito no
+    # documento, sempre debaixo de `32121`. Um fornecedor estrangeiro ou um
+    # outro credor ficavam na conta dos nacionais — o mesmo que acontecia com
+    # os clientes antes de terem categoria —, e o balancete dizia que a empresa
+    # só tinha fornecedores nacionais.
+    #
+    # Sem ficha, `conta_forn` fica a `None` e o caminho antigo mantém-se.
+    conta_forn = None
+    if compra.fornecedor_id:
+        from src.services import comercial as svc_com
+
+        fornecedor = db.scalar(
+            select(Terceiro).where(
+                Terceiro.id == compra.fornecedor_id,
+                Terceiro.empresa_id == empresa_id,
+            )
+        )
+        if fornecedor is not None:
+            conta_forn = svc_com.conta_corrente_fornecedor(
+                db, empresa_id, fornecedor, svc_com.cfg_com(db, empresa_id)
+            )
+
     movimentos, lancamentos, erros = [], [], []
     for l in linhas:
         try:
@@ -109,7 +134,8 @@ def emitir_compra(
                 db, empresa_id=empresa_id, tipo="entrada", artigo_id=l.artigo_id,
                 armazem_id=compra.armazem_id, qtd=l.qtd, custo_unit=l.preco,
                 iva_perc=compra.iva_perc, data=compra.data, documento=compra.numero,
-                entidade=compra.fornecedor_nome, descricao=f"Compra {compra.numero}",
+                entidade=compra.fornecedor_nome, conta_terceiro=conta_forn,
+                descricao=f"Compra {compra.numero}",
                 diario_contab=doc.diario_codigo, documento_contab=doc.codigo,
                 exercicio_id=exercicio_id,
             )
