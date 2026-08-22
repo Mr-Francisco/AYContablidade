@@ -24,6 +24,7 @@ def listar(
     quem: UtilizadorAtual,
     db: DB,
     apenas_por_resolver: bool = False,
+    origem: str | None = None,
     offset: int = 0,
     limite: int = LIMITE_OMISSAO,
 ) -> dict:
@@ -32,14 +33,27 @@ def listar(
     Vêm por capacidade: quem tem `contab.lancar` vê as da contabilidade. As já
     resolvidas continuam na lista — o histórico não se apaga — mas não contam
     para o sino.
+
+    `origem` filtra por módulo, no servidor. Filtrar no cliente só filtrava a
+    página carregada: com o histórico paginado, escolher «Comercial» devolvia
+    as comerciais das últimas vinte e cinco e mais nenhumas.
     """
     p = svc.listar(
         db, empresa_id=empresa.id, utilizador=quem,
-        apenas_por_resolver=apenas_por_resolver, offset=offset, limite=limite,
+        apenas_por_resolver=apenas_por_resolver, origem=origem,
+        offset=offset, limite=limite,
     )
-    return {**p, "por_ler": svc.contar_por_ler(
-        db, empresa_id=empresa.id, utilizador=quem
-    )}
+    return {
+        **p,
+        "por_ler": svc.contar_por_ler(
+            db, empresa_id=empresa.id, utilizador=quem
+        ),
+        # As contagens vão sobre TODAS as notificações, não sobre a página —
+        # é o que permite ao filtro dizer quantas há em cada módulo.
+        "por_origem": svc.contar_por_origem(
+            db, empresa_id=empresa.id, utilizador=quem
+        ),
+    }
 
 
 @router.post("/{notificacao_id}/lida", status_code=status.HTTP_204_NO_CONTENT)

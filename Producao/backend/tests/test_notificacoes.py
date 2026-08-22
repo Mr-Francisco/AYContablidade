@@ -240,3 +240,78 @@ def test_a_lista_e_paginada(base, empresa_id):
     assert p1["total"] == p2["total"]
     # Páginas diferentes trazem linhas diferentes.
     assert not ({x["id"] for x in p1["linhas"]} & {x["id"] for x in p2["linhas"]})
+
+
+# ---------------------------------------------------------------------------
+# Filtrar por MÓDULO
+#
+# A origem já era guardada e já aparecia no ecrã; o que faltava era filtrar por
+# ela. E tem de ser no servidor: o histórico é paginado, por isso filtrar no
+# cliente devolvia só as que estivessem na página carregada.
+# ---------------------------------------------------------------------------
+def test_o_filtro_por_modulo_e_do_servidor(base, empresa_id):
+    quem = _user(empresa_id, perfil=Perfil.ADMIN)
+
+    svc.notificar(
+        base, empresa_id=empresa_id, capacidade="contab.lancar",
+        origem="comercial", chave="mod-com", titulo="Do comercial", texto="x",
+    )
+    svc.notificar(
+        base, empresa_id=empresa_id, capacidade="contab.lancar",
+        origem="rh", chave="mod-rh", titulo="Do RH", texto="y",
+    )
+
+    so_rh = svc.listar(base, empresa_id=empresa_id, utilizador=quem, origem="rh")
+    origens = {l["origem"] for l in so_rh["linhas"]}
+    assert origens == {"rh"}, origens
+    # E o total acompanha o filtro: senão a paginação contava o conjunto todo e
+    # oferecia páginas que não existem.
+    assert so_rh["total"] == len(
+        [l for l in svc.listar(
+            base, empresa_id=empresa_id, utilizador=quem, limite=500
+        )["linhas"] if l["origem"] == "rh"]
+    )
+
+
+def test_sem_modulo_indicado_vem_tudo(base, empresa_id):
+    quem = _user(empresa_id, perfil=Perfil.ADMIN)
+    svc.notificar(
+        base, empresa_id=empresa_id, capacidade="contab.lancar",
+        origem="logistica", chave="mod-log", titulo="Da logística", texto="z",
+    )
+    todas = svc.listar(base, empresa_id=empresa_id, utilizador=quem, limite=500)
+    assert any(l["origem"] == "logistica" for l in todas["linhas"])
+
+
+def test_a_contagem_por_modulo_e_sobre_todas_e_nao_sobre_a_pagina(base, empresa_id):
+    """«Comercial (3)» quando há trinta é pior do que não dizer número nenhum."""
+    quem = _user(empresa_id, perfil=Perfil.ADMIN)
+    for i in range(4):
+        svc.notificar(
+            base, empresa_id=empresa_id, capacidade="contab.lancar",
+            origem="apuramento", chave=f"cont-{i}", titulo=f"N{i}", texto="t",
+        )
+
+    # Uma página pequena de propósito: a contagem não pode depender dela.
+    svc.listar(base, empresa_id=empresa_id, utilizador=quem, limite=1)
+    contagens = svc.contar_por_origem(base, empresa_id=empresa_id, utilizador=quem)
+    apur = next((c for c in contagens if c["origem"] == "apuramento"), None)
+
+    assert apur is not None
+    assert apur["total"] >= 4, apur
+
+
+def test_quem_nao_ve_uma_notificacao_tambem_nao_a_conta(base, empresa_id):
+    """A contagem respeita as capacidades, como a listagem.
+
+    Sem isto, o filtro anunciava «Contabilidade (7)» a quem, ao escolher, via
+    uma lista vazia — e ficava a pensar que o sistema tinha perdido as sete.
+    """
+    svc.notificar(
+        base, empresa_id=empresa_id, capacidade="contab.lancar",
+        origem="contabilidade", chave="so-contab", titulo="Só contab", texto="t",
+    )
+    # Um perfil comercial não tem `contab.lancar`.
+    de_fora = _user(empresa_id, perfil=Perfil.COMERCIAL)
+    contagens = svc.contar_por_origem(base, empresa_id=empresa_id, utilizador=de_fora)
+    assert all(c["origem"] != "contabilidade" for c in contagens), contagens

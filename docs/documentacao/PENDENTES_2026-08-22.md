@@ -14,7 +14,7 @@ assinalado.
 
 | | Ponto | Estado |
 |---|---|---|
-| 1 | Notificações: estados e filtro por módulo | Analisado — falta o filtro |
+| 1 | Notificações: estados e filtro por módulo | **FEITO** (falta responder sobre «atendida») |
 | 2 | Criar fornecedores nas Compras | **FEITO** |
 | 3 | Clientes: 3.ª categoria «Outros devedores» | **FEITO** |
 | 4 | Criar fornecedores nos Imobilizados | Analisado |
@@ -58,9 +58,22 @@ cegas:
 | `services/imobilizados.py` | 305, 323 | amortizações |
 | `services/rh.py` | 553 | processamento |
 
-**O QUE FALTA, e é só isto:** filtrar/agrupar **por módulo**. O selector actual
-filtra por estado; `origem` está no modelo e chega ao ecrã, mas não há por onde
-filtrar. Falta no servidor (`listar()` não aceita `origem`) e no ecrã.
+### ✅ O filtro por módulo — FEITO
+
+`listar()` aceita `origem` e filtra **no servidor**. Tinha de ser: o histórico
+é paginado, por isso filtrar no ecrã devolvia as comerciais das últimas vinte e
+cinco e mais nenhumas — e parecia que não havia mais.
+
+`contar_por_origem()` dá as contagens **de todas**, não da página, para o
+filtro poder dizer «Comercial (12)». Respeita as capacidades: anunciar
+«Contabilidade (7)» a quem depois vê uma lista vazia é pior do que não dizer
+número nenhum.
+
+**Um defeito encontrado pelo caminho:** `apuramento` era usado como origem nos
+serviços e faltava na tabela de rótulos do ecrã — aparecia o código cru
+«apuramento» ao lado de nomes como «Contabilidade». Corrigido.
+
+4 testes novos (699 no total).
 
 ### ⚠️ A confirmar antes de mexer
 

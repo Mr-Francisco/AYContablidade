@@ -143,6 +143,7 @@ def listar(
     empresa_id: UUID,
     utilizador: User,
     apenas_por_resolver: bool = False,
+    origem: str | None = None,
     offset: int = 0,
     limite: int = 25,
 ) -> dict:
@@ -165,6 +166,11 @@ def listar(
         q = q.where(filtro)
     if apenas_por_resolver:
         q = q.where(Notificacao.resolvida_em.is_(None))
+    # POR MÓDULO, e no servidor. Filtrar no cliente só filtrava a página que
+    # estivesse carregada — com o histórico paginado, escolher «Comercial»
+    # devolvia as comerciais das últimas vinte e cinco e mais nenhumas.
+    if origem:
+        q = q.where(Notificacao.origem == origem)
 
     total = db.scalar(
         select(func.count()).select_from(q.order_by(None).subquery())
@@ -197,6 +203,48 @@ def listar(
         "offset": offset,
         "limite": limite,
     }
+
+
+def contar_por_origem(
+    db: Session, *, empresa_id: UUID, utilizador: User
+) -> list[dict]:
+    """Quantas notificações há em cada módulo, para quem as pode ver.
+
+    VAI COM A LISTA E NÃO SE CALCULA NO CLIENTE. O histórico é paginado: contar
+    as origens da página carregada dava «Comercial (3)» quando havia trinta, e
+    escondia por completo os módulos cujas notificações estivessem todas para
+    lá da primeira página — que é o mesmo que dizer a quem procura que ali não
+    há nada.
+
+    Respeita as capacidades: quem não vê uma notificação também não a conta.
+    """
+    filtro = _filtro_capacidade(utilizador)
+    if filtro is False:
+        return []
+
+    q = (
+        select(
+            Notificacao.origem,
+            func.count().label("total"),
+            func.count(Notificacao.resolvida_em).label("resolvidas"),
+        )
+        .where(Notificacao.empresa_id == empresa_id)
+        .group_by(Notificacao.origem)
+        .order_by(Notificacao.origem)
+    )
+    if filtro is not None:
+        q = q.where(filtro)
+
+    return [
+        {
+            "origem": r.origem,
+            "total": r.total,
+            # `count()` sobre uma coluna ignora os nulos, por isso conta as que
+            # TÊM data de resolução.
+            "por_resolver": r.total - r.resolvidas,
+        }
+        for r in db.execute(q).all()
+    ]
 
 
 def contar_por_ler(db: Session, *, empresa_id: UUID, utilizador: User) -> int:

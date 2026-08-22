@@ -26,6 +26,8 @@ import { api, buscador } from "@/lib/api";
 
 interface Resposta extends Pagina<Notificacao> {
   por_ler: number;
+  /** Quantas há em cada módulo — de TODAS, não só da página. */
+  por_origem: { origem: string; total: number; por_resolver: number }[];
 }
 
 const ROTULO_ORIGEM: Record<string, string> = {
@@ -35,6 +37,9 @@ const ROTULO_ORIGEM: Record<string, string> = {
   rh: "Recursos Humanos",
   imobilizado: "Imobilizados",
   contabilidade: "Contabilidade",
+  // Faltava, e o ecrã mostrava o código cru «apuramento» ao lado de nomes
+  // como «Contabilidade». Os apuramentos de IVA notificam com esta origem.
+  apuramento: "Apuramentos",
 };
 
 /**
@@ -49,12 +54,20 @@ const ROTULO_ORIGEM: Record<string, string> = {
  */
 export default function GestaoNotificacoes() {
   const [filtro, setFiltro] = useState("todas");
+  /** O MÓDULO DE ORIGEM. Vazio = todos. */
+  const [origem, setOrigem] = useState("");
   const p = usePaginacao();
 
-  // «Por resolver» filtra-se NO SERVIDOR, para a paginação contar o conjunto
-  // certo. Os outros filtros são sobre o estado de leitura, que é por pessoa
-  // e não se consulta em SQL — esses ficam do lado do ecrã, sobre a página.
-  const q = filtro === "por_resolver" ? "&apenas_por_resolver=true" : "";
+  // «Por resolver» e o MÓDULO filtram-se NO SERVIDOR, para a paginação contar
+  // o conjunto certo. Filtrar o módulo no ecrã só filtrava a página carregada:
+  // escolher «Comercial» devolvia as comerciais das últimas vinte e cinco e
+  // mais nenhumas, e parecia que não havia mais.
+  //
+  // Os restantes são sobre o estado de LEITURA, que é por pessoa e não se
+  // consulta em SQL — esses ficam do lado do ecrã, sobre a página.
+  const q =
+    (filtro === "por_resolver" ? "&apenas_por_resolver=true" : "") +
+    (origem ? `&origem=${encodeURIComponent(origem)}` : "");
   const { data, isLoading, mutate } = useSWR<Resposta>(
     `/api/notificacoes?${p.query}${q}`,
     buscador,
@@ -103,6 +116,31 @@ export default function GestaoNotificacoes() {
             { valor: "resolvidas", rotulo: "Resolvidas" },
           ]}
           larguraMinima="13rem"
+        />
+
+        {/* POR MÓDULO. A notificação já sabia de onde vinha — o módulo está
+            guardado desde que ela nasce e aparece em cada linha —, mas não
+            havia por onde filtrar. Com trinta avisos de cinco módulos, ver só
+            os da contabilidade era percorrer a lista com os olhos.
+
+            A CONTAGEM VEM DO SERVIDOR e é sobre TODAS, não sobre a página:
+            «Comercial (3)» quando havia trinta seria pior do que não dizer
+            número nenhum. */}
+        <Selector
+          rotulo="Módulo"
+          valor={origem}
+          aoMudar={(v) => {
+            setOrigem(v);
+            p.reiniciar();
+          }}
+          opcoes={[
+            { valor: "", rotulo: "Todos os módulos" },
+            ...(data?.por_origem ?? []).map((o) => ({
+              valor: o.origem,
+              rotulo: `${ROTULO_ORIGEM[o.origem] ?? o.origem} (${o.total})`,
+            })),
+          ]}
+          larguraMinima="15rem"
         />
         <span className="flex-1" />
         {(data?.por_ler ?? 0) > 0 && (
