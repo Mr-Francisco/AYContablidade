@@ -61,6 +61,11 @@ export interface DocumentoParaImprimir {
   codigo_validacao?: string | null;
   doc_origem_num?: string | null;
   local_operacao?: string | null;
+  /** Retenção na fonte, quando existe. */
+  retencao_perc?: string | null;
+  retencao?: string | null;
+  /** O total menos a retenção — o que o cliente vai mesmo transferir. */
+  liquido?: string | null;
   linhas?: Linha[];
 }
 
@@ -183,6 +188,16 @@ export function DocumentoLegal({
                   <span className="mt-1 inline-block rounded border border-[#b8189355] px-1.5 py-px text-[10px] uppercase tracking-[1px] text-[#b81893]">
                     {fiscal ? "Original" : "Não fiscal"}
                   </span>
+                  {/* O AVISO JUNTO AO NÚMERO, e não só no rodapé. É a
+                      primeira coisa que se olha num documento, e uma proforma
+                      confundida com uma factura é uma factura a menos na
+                      contabilidade de alguém. Fica nos dois sítios: aqui para
+                      quem olha, no rodapé para quem lê. */}
+                  {!fiscal && (
+                    <div className="mt-1 text-[10.5px] font-bold italic text-[#b81893]">
+                      Este documento não serve de factura
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -287,55 +302,102 @@ export function DocumentoLegal({
                 </table>
               )}
 
-              {/* ---- Resumo de impostos e totais ---- */}
+              {/* ---- Resumo de impostos e totais ----
+
+                  NUM RECIBO NÃO HÁ RESUMO DE IMPOSTOS, e mostrá-lo era pior do
+                  que inútil: o recibo dizia «Total Ilíquido 53 475,94» meia
+                  dúzia de linhas depois de o bloco azul dizer «Total Ilíquido
+                  100 000,00». São dois números com o mesmo nome no mesmo
+                  documento — um é o que a factura tem, o outro é o que este
+                  recibo move —, e quem o lesse tinha de adivinhar qual valia.
+
+                  O recibo já diz o que regulariza nos três blocos. Aqui só lhe
+                  falta o valor do próprio recibo. */}
               <div className="mt-3 flex flex-wrap items-start justify-between gap-5">
                 <div className="text-[12px]">
-                  <div className={KEY}>Resumo de Impostos</div>
-                  <table className="mt-1 border-collapse">
-                    <thead>
-                      <tr>
-                        {["Taxa(%)", "Incidência", "Imposto"].map((h) => (
-                          <th
-                            key={h}
-                            className="border-b border-[#ddd] px-3 py-1 text-right text-[10.5px] uppercase text-[#666]"
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="tabular">
-                        <td className="px-3 py-1 text-right">
-                          {percentagem(doc.iva_perc)}
-                        </td>
-                        <td className="px-3 py-1 text-right">
-                          {formata(doc.subtotal)}
-                        </td>
-                        <td className="px-3 py-1 text-right">
-                          {formata(doc.iva)}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  {!ehRecibo && (
+                    <>
+                      <div className={KEY}>Resumo de Impostos</div>
+                      <table className="mt-1 border-collapse">
+                        <thead>
+                          <tr>
+                            {["Taxa(%)", "Incidência", "Imposto"].map((h) => (
+                              <th
+                                key={h}
+                                className="border-b border-[#ddd] px-3 py-1 text-right text-[10.5px] uppercase text-[#666]"
+                              >
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="tabular">
+                            <td className="px-3 py-1 text-right">
+                              {percentagem(doc.iva_perc)}
+                            </td>
+                            <td className="px-3 py-1 text-right">
+                              {formata(doc.subtotal)}
+                            </td>
+                            <td className="px-3 py-1 text-right">
+                              {formata(doc.iva)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </>
+                  )}
                 </div>
 
                 <div className="min-w-[260px] text-[12.5px]">
-                  {[
-                    ["Total Ilíquido", doc.subtotal],
-                    ["Total Imposto", doc.iva],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between px-2 py-0.5">
-                      <span className="text-[#555]">{k}</span>
-                      <b className="tabular">{formata(v as string)}</b>
+                  {!ehRecibo &&
+                    [
+                      ["Total Ilíquido", doc.subtotal],
+                      ["Total Imposto", doc.iva],
+                    ].map(([k, v]) => (
+                      <div key={k} className="flex justify-between px-2 py-0.5">
+                        <span className="text-[#555]">{k}</span>
+                        <b className="tabular">{formata(v as string)}</b>
+                      </div>
+                    ))}
+                  {/* A RETENÇÃO SÓ APARECE QUANDO EXISTE. Uma linha a zero em
+                      todas as facturas de mercadorias era ruído — e num
+                      documento fiscal o ruído lê-se como erro. */}
+                  {!ehRecibo && Number(doc.retencao ?? 0) > 0 && (
+                    <div className="flex justify-between px-2 py-0.5">
+                      <span className="text-[#555]">
+                        Retenção Na Fonte ({percentagem(doc.retencao_perc)})
+                      </span>
+                      <b className="tabular">{formata(doc.retencao ?? "0")}</b>
                     </div>
-                  ))}
+                  )}
                   <div className="mt-1 flex justify-between border-t-2 border-[#1a1a2e] px-2 pt-1.5 text-[15px]">
-                    <span className="font-extrabold">Total da {nomeTipo}</span>
+                    {/* «Total do Recibo», não «Total da Recibo». O artigo saía
+                        sempre feminino porque estava escrito à mão antes do
+                        nome do tipo, e a maioria dos tipos é feminina —
+                        factura, nota, guia. O recibo não é. */}
+                    <span className="font-extrabold">
+                      {ehRecibo ? "Total do Recibo" : `Total da ${nomeTipo}`}
+                    </span>
                     <b className="tabular font-extrabold">
                       {formataMoeda(doc.total, moeda)}
                     </b>
                   </div>
+                  {/* O QUE O CLIENTE VAI MESMO TRANSFERIR. Com retenção, o
+                      total do documento e o valor da transferência são números
+                      diferentes, e quem paga precisa de ver o segundo — senão
+                      transfere o primeiro e fica a dever a diferença ao
+                      Estado, não ao fornecedor. */}
+                  {!ehRecibo && Number(doc.retencao ?? 0) > 0 && (
+                    <div className="flex justify-between px-2 pt-1 text-[13px]">
+                      <span className="font-bold text-[#555]">
+                        Total Com Retenção
+                      </span>
+                      <b className="tabular">
+                        {formataMoeda(doc.liquido ?? doc.total, moeda)}
+                      </b>
+                    </div>
+                  )}
                 </div>
               </div>
 

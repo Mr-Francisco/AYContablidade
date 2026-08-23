@@ -580,6 +580,13 @@ def _venda_publica(v: Venda) -> dict:
         "estado_agt": v.estado_agt,
         "doc_origem_num": v.doc_origem_num,
         "local_operacao": v.local_operacao,
+        # A RETENÇÃO VAI PARA O DOCUMENTO: sem ela, a proforma não mostra o
+        # «Total Com Retenção» — que é o que o cliente vai mesmo transferir, e
+        # a diferença entre esse número e o total é a razão de ele existir.
+        "retencao_perc": v.retencao_perc,
+        "retencao_base": v.retencao_base,
+        "retencao": v.retencao,
+        "liquido": svc.liquido_a_receber(v.total, v.retencao),
     }
 
 
@@ -664,6 +671,13 @@ def obter_venda(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
         "doc_origem_num": v.doc_origem_num,
         "local_operacao": v.local_operacao,
         "cliente_pais": v.cliente_pais,
+        # A RETENÇÃO VAI PARA O DOCUMENTO: sem ela, a factura não mostra o
+        # «Total Com Retenção» — que é o que o cliente vai mesmo transferir, e
+        # a diferença entre esse número e o total é a razão de ele existir.
+        "retencao_perc": v.retencao_perc,
+        "retencao_base": v.retencao_base,
+        "retencao": v.retencao,
+        "liquido": svc.liquido_a_receber(v.total, v.retencao),
         "linhas": [
             {"ordem": l.ordem, "artigo_id": l.artigo_id, "descricao": l.descricao,
              "unidade": l.unidade, "qtd": l.qtd, "preco": l.preco, "total": l.total,
