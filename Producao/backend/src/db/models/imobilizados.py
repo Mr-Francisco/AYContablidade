@@ -103,6 +103,45 @@ class Ativo(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
         return f"<Ativo {self.codigo} {self.designacao!r}>"
 
 
+class ItemImobilizado(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
+    """Um custo somado a um imobilizado em curso.
+
+    PORQUE É UMA TABELA E NÃO UM CAMPO DE VALOR: uma obra não se compra de uma
+    vez. Compra-se o terreno, paga-se a licença, contrata-se a empreitada,
+    acrescenta-se a instalação eléctrica. Guardar só o total acumulado dava um
+    número sem história — e quem visse a ficha seis meses depois não sabia de
+    onde vinham os oito milhões.
+
+    Cada item é uma linha com a sua data, a sua descrição e o seu valor, e o
+    acumulado é a soma delas. É também o que permite corrigir um item sem
+    refazer a ficha inteira.
+    """
+
+    __tablename__ = "ativo_itens"
+
+    ativo_id: Mapped[UUID] = mapped_column(
+        ForeignKey("ativos.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    data: Mapped[date] = mapped_column(Date, nullable=False)
+    descricao: Mapped[str] = mapped_column(String(300), nullable=False)
+    valor: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
+
+    #: Quem forneceu. Texto, como no resto da ficha de activo.
+    fornecedor: Mapped[str | None] = mapped_column(String(200))
+    #: O documento que o suporta — a factura, o auto de medição.
+    documento: Mapped[str | None] = mapped_column(String(60))
+
+    #: O lançamento que este item gerou, quando gerou.
+    #:
+    #: Guardado para se poder desfazer: apagar um item que já contabilizou tem
+    #: de desfazer o lançamento, senão o saldo da conta do activo deixa de bater
+    #: com a soma dos itens — e essa diferença só aparece no fecho.
+    lancamento_id: Mapped[UUID | None] = mapped_column()
+
+    def __repr__(self) -> str:
+        return f"<ItemImobilizado {self.descricao!r} {self.valor}>"
+
+
 class ProcessoAmortizacao(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     """Processamento de amortizações de um exercício × período.
 

@@ -11,10 +11,14 @@ from datetime import date as Date
 from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from src.db.models.imobilizados import Ativo, ProcessoAmortizacao
+from src.db.models.imobilizados import (
+    Ativo,
+    ItemImobilizado,
+    ProcessoAmortizacao,
+)
 from src.db.models.tenancy import ConfigEmpresa
 from src.services.notificacoes import notificar, resolver
 from src.services.contabilidade import ErroContabilistico, postar
@@ -75,6 +79,140 @@ def conta_compra_imobilizado(tipo: str, categoria_fornecedor: str) -> str | None
     if not nacionalidade:
         return None
     return f"371{digito}2{nacionalidade}"
+
+
+def valor_acumulado(db: Session, ativo: Ativo) -> Decimal:
+    """A soma dos itens — o que a obra já custou até agora."""
+    total = db.scalar(
+        select(func.coalesce(func.sum(ItemImobilizado.valor), 0)).where(
+            ItemImobilizado.ativo_id == ativo.id
+        )
+    )
+    return r2(total or ZERO)
+
+
+def fechar_e_transferir(
+    db: Session,
+    *,
+    empresa_id: UUID,
+    ativo: Ativo,
+    conta_destino: str,
+    data: Date,
+    exercicio_id: UUID | None = None,
+    por: str | None = None,
+) -> dict:
+    """Fecha o imobilizado em curso e transfere-o para o património.
+
+    O QUE MOVIMENTA, e é o que foi pedido: credita a conta do activo em curso
+    — a sua própria, `141001` e não a mãe `141` — e debita a conta de
+    imobilizado indicada, dentro de `11`, `12` ou `13` conforme o tipo.
+
+    O LANÇAMENTO NASCE DIFERIDO. Foi o que se pediu: «lança na contabilidade
+    mas em movimentos diferidos, o contabilista indica a conta onde vai
+    efectivamente ser colocado». Um lançamento diferido existe, é visível e
+    fica à espera — não entra no balancete, no razão nem nos mapas enquanto a
+    contabilidade não o integrar. Assim quem fecha a obra não fica à espera da
+    contabilidade, e a contabilidade não fica com um lançamento feito à sua
+    revelia.
+
+    O VALOR DE AQUISIÇÃO PASSA A SER O ACUMULADO. É o que o activo custou, e é
+    sobre ele que a amortização vai incidir daqui em diante.
+    """
+    from src.db.models.contabilidade import Conta
+
+    if not ativo.em_curso:
+        raise ErroContabilistico(
+            "Este activo não está em curso — já faz parte do património."
+        )
+
+    total = valor_acumulado(db, ativo)
+    if total <= ZERO:
+        raise ErroContabilistico(
+            "A obra ainda não tem custos registados. Acrescente pelo menos um "
+            "item antes de a fechar — senão não há valor nenhum a transferir."
+        )
+
+    origem = ativo.conta_imob
+    if not origem:
+        raise ErroContabilistico(
+            "Este activo não tem conta própria de imobilizado em curso. Grave "
+            "a ficha antes de a fechar."
+        )
+
+    destino = (conta_destino or "").strip()
+    classe = CLASSE_DE_DESTINO.get((ativo.tipo_imobilizado or "").lower())
+    if not destino:
+        raise ErroContabilistico(
+            "Indique a conta de imobilizado para onde a obra vai ser "
+            "transferida."
+        )
+    # A CLASSE TEM DE BATER COM O TIPO. Um edifício transferido para uma conta
+    # de investimentos financeiros não dá erro nenhum: dá um balanço que diz
+    # que a empresa tem participações que não tem.
+    if classe and not destino.startswith(classe):
+        raise ErroContabilistico(
+            f"A conta {destino} não pertence a "
+            f"{TIPO_LABEL.get(ativo.tipo_imobilizado, ativo.tipo_imobilizado)}, "
+            f"que agrupa na classe {classe}. Escolha uma conta da classe "
+            f"{classe}."
+        )
+
+    existe = db.scalar(
+        select(Conta).where(Conta.empresa_id == empresa_id, Conta.codigo == destino)
+    )
+    if existe is None:
+        raise ErroContabilistico(
+            f"A conta {destino} não existe no plano de contas desta empresa."
+        )
+
+    cfg = cfg_imob(db, empresa_id)
+    lanc = postar(
+        db,
+        empresa_id=empresa_id,
+        data=data,
+        diario_codigo=cfg["diario"],
+        documento_codigo=cfg["documento"],
+        descricao=f"Transferência de imobilizado em curso — {ativo.designacao}",
+        documento_ref=ativo.codigo,
+        origem="imobilizado",
+        exercicio_id=exercicio_id,
+        # À ESPERA DA CONTABILIDADE, de propósito. Ver o docstring.
+        diferido=True,
+        criado_por=por,
+        linhas=[
+            {
+                "conta_codigo": destino,
+                "debito": total,
+                "descricao": ativo.designacao,
+            },
+            {
+                "conta_codigo": origem,
+                "credito": total,
+                "descricao": f"Transferência de {ativo.designacao}",
+            },
+        ],
+    )
+
+    ativo.em_curso = False
+    ativo.fechado_em = data
+    ativo.conta_destino = destino
+    ativo.conta_imob = destino
+    ativo.valor_aquisicao = total
+    # A DATA DE AQUISIÇÃO só se preenche se estiver vazia: numa obra, a data
+    # que interessa pode ser a da primeira despesa, e quem a tiver escrito na
+    # ficha não a quer perder por causa do fecho.
+    if ativo.data_aquisicao is None:
+        ativo.data_aquisicao = data
+    db.flush()
+
+    return {
+        "ativo_id": ativo.id,
+        "lancamento_id": lanc.id,
+        "valor_transferido": total,
+        "conta_origem": origem,
+        "conta_destino": destino,
+        "diferido": True,
+    }
 
 
 def cfg_imob_default() -> dict:

@@ -316,3 +316,78 @@ def test_a_conta_principal_em_falta_diz_qual_e_o_que_fazer(base, empresa):
     texto = str(e.value)
     assert "143" in texto
     assert "Plano de Contas" in texto or "parametriza" in texto.lower()
+
+
+# ---------------------------------------------------------------------------
+# Itens, fecho e transferência
+#
+# Uma obra não se compra de uma vez: acumula custos até estar pronta, e só aí
+# passa a património. O lançamento da transferência nasce DIFERIDO — existe e
+# vê-se, mas só conta no balancete quando a contabilidade o integrar.
+# ---------------------------------------------------------------------------
+from datetime import date as _Date
+
+from src.db.models.imobilizados import ItemImobilizado
+
+
+def _item(base, empresa, ativo, valor, descricao="Custo"):
+    i = ItemImobilizado(
+        empresa_id=empresa.id,
+        ativo_id=ativo.id,
+        data=_Date(2026, 3, 10),
+        descricao=f"{MARCA_IMOB} {descricao}",
+        valor=Decimal(valor),
+    )
+    base.add(i)
+    base.flush()
+    return i
+
+
+def test_o_acumulado_e_a_soma_dos_itens(base, empresa):
+    a = _em_curso(base, empresa, tipo="corporeo", nome="Obra")
+    assert svc.valor_acumulado(base, a) == Decimal("0.00")
+
+    _item(base, empresa, a, "1500.00", "Terreno")
+    _item(base, empresa, a, "2500.50", "Empreitada")
+    assert svc.valor_acumulado(base, a) == Decimal("4000.50")
+
+
+def test_uma_obra_sem_custos_nao_se_fecha(base, empresa):
+    """Não há valor nenhum a transferir, e um lançamento de zero não diz nada."""
+    a = _em_curso(base, empresa, tipo="corporeo", nome="Vazia")
+    svc.conta_em_curso_do_ativo(base, empresa.id, a, svc.cfg_imob_default())
+    with pytest.raises(ErroContabilistico) as e:
+        svc.fechar_e_transferir(
+            base, empresa_id=empresa.id, ativo=a,
+            conta_destino="1121", data=_Date(2026, 6, 30),
+        )
+    assert "custos registados" in str(e.value)
+
+
+def test_a_classe_de_destino_tem_de_bater_com_o_tipo(base, empresa):
+    """Um edifício transferido para investimentos financeiros não dá erro
+    nenhum: dá um balanço que diz que a empresa tem participações que não tem."""
+    a = _em_curso(base, empresa, tipo="corporeo", nome="Edificio")
+    svc.conta_em_curso_do_ativo(base, empresa.id, a, svc.cfg_imob_default())
+    _item(base, empresa, a, "1000.00")
+
+    with pytest.raises(ErroContabilistico) as e:
+        svc.fechar_e_transferir(
+            base, empresa_id=empresa.id, ativo=a,
+            # `131` é investimento financeiro; o activo é corpóreo.
+            conta_destino="131", data=_Date(2026, 6, 30),
+        )
+    texto = str(e.value)
+    assert "11" in texto, texto
+
+
+def test_uma_obra_ja_fechada_nao_se_fecha_outra_vez(base, empresa):
+    a = _em_curso(base, empresa, tipo="corporeo", nome="Fechada")
+    a.em_curso = False
+    base.flush()
+    with pytest.raises(ErroContabilistico) as e:
+        svc.fechar_e_transferir(
+            base, empresa_id=empresa.id, ativo=a,
+            conta_destino="1121", data=_Date(2026, 6, 30),
+        )
+    assert "não está em curso" in str(e.value)
