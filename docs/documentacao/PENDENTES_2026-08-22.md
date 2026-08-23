@@ -38,6 +38,27 @@ Recebidas por mensagem, e registadas aqui porque mudam o que estava bloqueado.
 | Conta de destino no fecho | Uma de `11`/`12`/`13` — **«a que for indicada»** |
 | A transferência movimenta contas? | **Sim** — «as contas a movimentar serão…» |
 
+### Regra acrescentada — cada ficha é uma conta
+
+O cliente esclareceu: as contas que indicou são **contas principais**, e cada
+ficha cria a **sua própria subconta** debaixo delas, com o nome do bem.
+
+> Comprei um computador → `141001 Computador X`.
+> Comprei outro → `141002 Computador Y`.
+
+A conta principal **não recebe movimentos: agrupa**. É a mesma mecânica das
+contas correntes de clientes e fornecedores, e pela mesma razão — sem conta
+própria, todos os imobilizados em curso somavam no mesmo saldo, e ao fechar um
+deles era preciso adivinhar que parte lhe pertencia.
+
+`conta_em_curso_do_ativo()` faz isso. `criar_subconta` trata do resto: a
+primeira subconta converte a mãe em integradora e leva-lhe os movimentos que
+tivesse — senão a mãe ficava integradora com saldo próprio, que é o estado que
+o balancete conta duas vezes.
+
+**No fecho** — também esclarecido — o lançamento é gerado e vai para
+**movimentos diferidos**, onde o contabilista indica a conta de destino.
+
 ### 🛑 Continua por resolver: a conta `143` não existe
 
 O cliente indicou `143` para o investimento financeiro em curso. **Não existe

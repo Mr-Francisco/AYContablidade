@@ -179,3 +179,140 @@ def test_sem_condicoes_especiais_o_valor_indicado_e_ignorado():
         valor_sujeito_amortizacao=Decimal("4000.00"),
     )
     assert svc.base_amortizavel(a) == Decimal("10000.00")
+
+
+# ---------------------------------------------------------------------------
+# Cada ficha é uma conta
+#
+# `141` agrupa; quem recebe movimentos é a subconta de cada ficha. Comprar um
+# computador cria `141001 Computador X`; o seguinte cria `141002`. Sem isso,
+# todos os imobilizados em curso somavam no mesmo saldo e, ao fechar um deles,
+# era preciso adivinhar que parte lhe pertencia.
+# ---------------------------------------------------------------------------
+import pytest
+from sqlalchemy import delete, select
+
+from src.db.models.contabilidade import Conta
+from src.db.models.tenancy import Empresa
+from src.services.contabilidade import ErroContabilistico
+
+MARCA_IMOB = "ZZIMOB"
+
+
+@pytest.fixture
+def base():
+    from src.db.base import SessionLocal
+
+    db = SessionLocal()
+    _limpar_imob(db)
+    yield db
+    _limpar_imob(db)
+    db.close()
+
+
+def _limpar_imob(db):
+    db.execute(delete(Ativo).where(Ativo.designacao.like(f"{MARCA_IMOB}%")))
+    db.execute(delete(Conta).where(Conta.nome.like(f"{MARCA_IMOB}%")))
+    db.commit()
+
+
+@pytest.fixture
+def empresa(base):
+    e = base.scalar(select(Empresa).where(Empresa.codigo == "DC001"))
+    assert e is not None, "a base de demonstração precisa da empresa DC001"
+    return e
+
+
+def _em_curso(base, empresa, *, tipo, nome):
+    a = Ativo(
+        empresa_id=empresa.id,
+        codigo=f"{MARCA_IMOB}{abs(hash(nome)) % 9000 + 1000}",
+        designacao=f"{MARCA_IMOB} {nome}",
+        valor_aquisicao=Decimal("0.00"),
+        taxa=Decimal("0.00"),
+        metodo="quotas",
+        amort_acumulada=Decimal("0.00"),
+        estado="activo",
+        tipo_imobilizado=tipo,
+        em_curso=True,
+        nao_amortizavel=False,
+        condicoes_especiais=False,
+    )
+    base.add(a)
+    base.flush()
+    return a
+
+
+def test_cada_ficha_recebe_a_sua_propria_conta(base, empresa):
+    cfg = svc.cfg_imob_default()
+    a = _em_curso(base, empresa, tipo="corporeo", nome="Computador X")
+    conta = svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+
+    assert conta.startswith("141"), conta
+    assert conta != "141", "a conta principal AGRUPA, não recebe movimentos"
+    assert a.conta_imob == conta, "e fica gravada na ficha"
+
+
+def test_as_contas_sao_sequenciais_debaixo_da_principal(base, empresa):
+    """`141001`, `141002`… — o segundo computador não vai para a conta do
+    primeiro."""
+    cfg = svc.cfg_imob_default()
+    um = svc.conta_em_curso_do_ativo(
+        base, empresa.id, _em_curso(base, empresa, tipo="corporeo", nome="Um"), cfg
+    )
+    dois = svc.conta_em_curso_do_ativo(
+        base, empresa.id, _em_curso(base, empresa, tipo="corporeo", nome="Dois"), cfg
+    )
+    assert um != dois
+    assert um.startswith("141") and dois.startswith("141")
+    assert int(dois[3:]) == int(um[3:]) + 1, (um, dois)
+
+
+def test_a_conta_tem_o_nome_do_imobilizado(base, empresa):
+    """Quem abre o plano de contas tem de saber o que é a 141001."""
+    cfg = svc.cfg_imob_default()
+    a = _em_curso(base, empresa, tipo="corporeo", nome="Retroescavadora")
+    conta = svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+
+    nome = base.scalar(
+        select(Conta.nome).where(
+            Conta.empresa_id == empresa.id, Conta.codigo == conta
+        )
+    )
+    assert nome == a.designacao
+
+
+def test_o_incorporeo_agrupa_noutra_conta(base, empresa):
+    cfg = svc.cfg_imob_default()
+    a = _em_curso(base, empresa, tipo="incorporeo", nome="Programa")
+    conta = svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+    assert conta.startswith("142"), conta
+
+
+def test_a_mesma_ficha_nao_recebe_duas_contas(base, empresa):
+    """Gravar a ficha duas vezes não pode criar duas contas para o mesmo bem."""
+    cfg = svc.cfg_imob_default()
+    a = _em_curso(base, empresa, tipo="corporeo", nome="Repetido")
+    primeira = svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+    segunda = svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+    assert primeira == segunda
+
+
+def test_sem_tipo_indicado_recusa_e_diz_porque(base, empresa):
+    cfg = svc.cfg_imob_default()
+    a = _em_curso(base, empresa, tipo=None, nome="SemTipo")
+    with pytest.raises(ErroContabilistico) as e:
+        svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+    assert "tipo de imobilizado" in str(e.value).lower()
+
+
+def test_a_conta_principal_em_falta_diz_qual_e_o_que_fazer(base, empresa):
+    """O caso da `143`: não existe no plano, e a mensagem tem de dizer isso e
+    o que fazer — não rebentar com um erro que ninguém liga a uma conta."""
+    cfg = svc.cfg_imob_default()
+    a = _em_curso(base, empresa, tipo="financeiro", nome="Participacao")
+    with pytest.raises(ErroContabilistico) as e:
+        svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+    texto = str(e.value)
+    assert "143" in texto
+    assert "Plano de Contas" in texto or "parametriza" in texto.lower()

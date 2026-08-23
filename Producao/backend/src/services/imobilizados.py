@@ -95,7 +95,11 @@ def cfg_imob_default() -> dict:
 
 
 def conta_em_curso(tipo: str, cfg: dict) -> str | None:
-    """A conta onde o imobilizado em curso acumula, pelo tipo."""
+    """A conta PRINCIPAL do tipo — a mãe, não a que recebe movimentos.
+
+    `141` corpóreo, `142` incorpóreo, `143` investimento financeiro. Debaixo
+    dela é que nasce a conta de cada ficha; ver `conta_em_curso_do_ativo`.
+    """
     chave = {
         "corporeo": "conta_curso_corporeo",
         "incorporeo": "conta_curso_incorporeo",
@@ -104,6 +108,72 @@ def conta_em_curso(tipo: str, cfg: dict) -> str | None:
     if not chave:
         return None
     return (cfg.get(chave) or "").strip() or None
+
+
+def conta_em_curso_do_ativo(
+    db: Session, empresa_id: UUID, ativo: Ativo, cfg: dict
+) -> str:
+    """A conta PRÓPRIA desta ficha, debaixo da conta principal do seu tipo.
+
+    CADA FICHA É UMA CONTA. Comprar um computador cria `141001 Computador X`;
+    o computador seguinte cria `141002 Computador Y`. A conta principal —
+    `141` — não recebe movimentos: agrupa.
+
+    É a mesma mecânica das contas correntes de clientes e fornecedores, e pela
+    mesma razão: sem conta própria, todos os imobilizados em curso somavam no
+    mesmo saldo e não havia como saber quanto já custou cada obra. Ao fechar
+    uma delas era preciso adivinhar que parte do saldo lhe pertencia.
+
+    `criar_subconta` trata do resto: a PRIMEIRA subconta converte a mãe em
+    integradora e leva-lhe os movimentos que ela já tivesse — senão a mãe
+    ficava integradora com saldo próprio, que é o estado que o balancete conta
+    duas vezes.
+    """
+    from src.services.contabilidade import criar_subconta, proxima_subconta
+    from src.db.models.contabilidade import Conta
+
+    tipo = (ativo.tipo_imobilizado or "").strip().lower()
+    if not tipo:
+        raise ErroContabilistico(
+            "Indique o tipo de imobilizado — corpóreo, incorpóreo ou "
+            "investimento financeiro. É ele que determina em que conta o "
+            "activo vai ser agrupado."
+        )
+
+    mae = conta_em_curso(tipo, cfg)
+    if not mae:
+        raise ErroContabilistico(
+            f"Não está indicada a conta de imobilizado em curso para "
+            f"{TIPO_LABEL.get(tipo, tipo)}. Defina-a nas parametrizações dos "
+            "imobilizados."
+        )
+
+    existe = db.scalar(
+        select(Conta).where(Conta.empresa_id == empresa_id, Conta.codigo == mae)
+    )
+    if existe is None:
+        raise ErroContabilistico(
+            f"A conta {mae}, onde os {TIPO_LABEL.get(tipo, tipo).lower()} em "
+            "curso são agrupados, não existe no plano de contas desta "
+            "empresa. Crie-a no Plano de Contas, ou indique outra nas "
+            "parametrizações dos imobilizados."
+        )
+
+    # A que já tem, se ainda pertencer a esta mãe. Mudar o tipo de uma ficha
+    # com movimentos não muda a conta antiga: o que já foi lançado fica onde
+    # está, e a conta nova nasce daí para a frente.
+    if (
+        ativo.conta_imob
+        and ativo.conta_imob != mae
+        and ativo.conta_imob.startswith(mae)
+    ):
+        return ativo.conta_imob
+
+    codigo = proxima_subconta(db, empresa_id, mae)
+    criar_subconta(db, empresa_id, mae, codigo, ativo.designacao)
+    ativo.conta_imob = codigo
+    db.flush()
+    return codigo
 
 
 def cfg_imob(db: Session, empresa_id: UUID) -> dict:
