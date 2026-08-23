@@ -266,3 +266,5 @@
 - Criar a primeira subconta converte a mãe em integradora, e apagar a subconta NÃO a desconverte: a mãe fica integradora sem filhas — não recebe lançamentos e não agrega nada. Os testes que criam subcontas têm de repor a mãe.
 - Um teste que verifica a FALTA de uma conta deixa de valer quando a conta passa a existir. Substituir pela garantia nova — «existe e é lá que agrupa» — e não apagar.
 - As filhas directas de 11/12/13 são todas integradoras: a conta que recebe o lançamento está um nível abaixo (11211, não 112). Não há «uma conta 11» para onde transferir.
+- `python -m pytest` na raiz do backend apanha o Python do sistema (3.14) e nao o do projecto: 49 modulos falham na recolha com «No module named 'sqlalchemy'» e parece o codigo partido. Correr sempre `./.venv/Scripts/python.exe -m pytest`.
+- O browser da ao PDF o nome do TITULO DA PAGINA, e nao ha forma de o escolher na janela de impressao: sem trocar o `document.title` antes de imprimir, dez facturas guardam-se como dez ficheiros com o nome da aplicacao. Usar `imprimirComoPdf` / `imprimirPagina` (`lib/impressao.ts`) e repor o titulo no `afterprint`.

@@ -18,11 +18,12 @@ assinalado.
 | 2 | Criar fornecedores nas Compras | **FEITO** |
 | 3 | Clientes: 3.ª categoria «Outros devedores» | **FEITO** |
 | 4 | Criar fornecedores nos Imobilizados | Por fazer |
-| 5, 7, 8, 12 | Ficha de Imobilizado em Curso, fecho e transferência | Desbloqueado — por fazer |
+| 5, 7, 8, 12 | Ficha de Imobilizado em Curso, fecho e transferência | **FEITO** — `fechar_e_transferir` e `ObraEmCurso.tsx` |
 | 6 | Tipo de imobilizado | **FEITO** |
 | 9 | Condições especiais de amortização | **FEITO** no cálculo; falta a ficha |
 | 10 | Imobilizado não amortizável | **FEITO** no cálculo; falta a ficha |
-| 14–19 | Classificação automática de fluxos | Aguarda resposta ao âmbito |
+| 14–19 | Classificação automática de fluxos | **FEITO** para 311/321/361/341–349 — ver «A confirmar» |
+| — | Guardar em PDF com nome, em todos os documentos | **FEITO** — 24 de Agosto |
 
 ---
 
@@ -510,3 +511,78 @@ Faz-se um a um, e pela ordem em que se desbloqueiam:
    das contas por confirmar.
 6. **Ponto 19** — as três regras automáticas de fluxo.
 7. **Pontos 5, 7, 8, 9, 11, 12** — só depois das respostas a A, B, C, D, E.
+
+---
+
+# PARTE IV — Guardar em PDF (24 de Agosto)
+
+Pedido: *«também deve ser imprimido em pdf, deve ter essa opção para cada tipo
+de documento. tanto a Ft, Rc, PP e outros.»*
+
+## O que faltava mesmo
+
+A impressão já funcionava em todo o lado, e as regras `@media print` do
+`globals.css` já escondiam a moldura da aplicação e forçavam preto sobre
+branco. Guardar em PDF é a MESMA janela — escolhe-se «Guardar como PDF» em vez
+de uma impressora, e não há botão separado a inventar.
+
+O que estava mal era o **nome do ficheiro**: o browser dá ao PDF o nome do
+título da página, e não há forma de o escolher na janela de impressão. Quem
+guardasse a factura, o recibo e a proforma ficava com três ficheiros chamados
+«SGD — Software de Gestão Dirigida.pdf» e tinha de os abrir um a um.
+
+## Porque não se gera o PDF no servidor
+
+Geraria, e será o caminho quando houver comunicação de documentos à AGT — um
+PDF do servidor arquiva-se e envia-se por e-mail sem ninguém à frente do ecrã.
+Mas obrigava a redesenhar cada documento em Python, e o que ficasse diferente
+do ecrã só se descobriria com o cliente a olhar para os dois. Esta via imprime
+EXACTAMENTE o que está no ecrã, que é o que foi conferido.
+
+## Onde ficou
+
+`frontend/src/lib/impressao.ts`:
+
+- `imprimirComoPdf(nome)` — troca o `document.title`, abre a janela, e repõe o
+  título no `afterprint` (com uma rede de segurança de 60 s, porque há browsers
+  que não disparam esse evento e a aplicação ficava com o nome de uma factura
+  no separador até se recarregar a página).
+- `nomeDoDocumento(tipo, numero, titular)` — o nome de um documento comercial.
+- `imprimirPagina(nome?)` — para os mapas. Sem `nome`, vai buscá-lo ao **título
+  do ecrã**: cada mapa já escreve o seu nome no cabeçalho, e ir buscá-lo ali
+  evita repeti-lo em dezasseis páginas e evita que os dois deixem de coincidir.
+
+O caracter `/` é substituído por `-` — o Windows não o aceita num nome de
+ficheiro, e todos os números de documento o têm.
+
+## O que sai, verificado no browser
+
+| Onde | Nome do ficheiro |
+|---|---|
+| Documento comercial (FT, RC, PP, NC…) | `Recibo DEMO-RC 2026-80 — TEAM FILMS, LDA` |
+| Mapas (16 ecrãs, via `AccoesDoMapa`) | `Balancete Geral` |
+| Razão | `Razão 3211` |
+| Extrato | `Extrato 3211` |
+| Mapa de Remunerações | `Mapa de Remunerações IRT A2.1 2026-08` |
+| Recibo de vencimento | `Recibo de Vencimento — António Manuel — Agosto de 2026` |
+
+O Razão e o Extrato levam nome próprio porque são sempre de UMA conta: sem o
+código no nome, dois razões seguidos gravam-se como «Razão.pdf» e
+«Razão (1).pdf». O mesmo para o mapa de remunerações, que se entrega todos os
+meses.
+
+O botão passou a dizer **«Imprimir / PDF»** em todo o lado, com a explicação
+por baixo do rato: «Abre a janela de impressão. Escolha "Guardar como PDF"
+para gravar o ficheiro.» Um botão só, e não dois: dois botões que abrissem a
+mesma janela era fingir uma escolha que se faz lá dentro.
+
+## Por fazer
+
+- **PDF gerado no servidor**, para anexar a e-mails e arquivar sem ninguém à
+  frente do ecrã. Fica para a comunicação à AGT, que o vai exigir de qualquer
+  forma.
+Só isso. O tamanho do papel ficou resolvido: o `@page` do `globals.css` passou
+a dizer `size: A4 portrait`, porque sem ele o tamanho vinha das preferências do
+sistema e quem o tenha em inglês recebia papel Letter — mais curto, com a
+última linha do balancete a saltar para uma página nova. A folha deitada do
+mapa de remunerações tem a sua própria `@page deitado` e continua a mandar.

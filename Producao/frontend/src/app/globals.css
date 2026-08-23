@@ -338,7 +338,13 @@
     content: "";
   }
 
+  /* A4 EXPLÍCITO, e não o que o browser achar. Sem `size`, o tamanho vem
+     das preferências do sistema — quem o tenha em inglês recebe papel
+     Letter, que é mais curto, e a última linha do balancete salta para
+     uma página nova. A folha deitada do mapa de remunerações tem a sua
+     própria `@page deitado`, mais abaixo, e continua a mandar nela. */
   @page {
+    size: A4 portrait;
     margin: 14mm 12mm;
   }
 }

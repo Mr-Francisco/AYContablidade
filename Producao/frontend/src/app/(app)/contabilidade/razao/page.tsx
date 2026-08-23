@@ -130,7 +130,7 @@ function Conteudo() {
                 Conta {data.natureza === "D" ? "devedora" : "credora"}
               </Selo>
             )}
-            <AccoesDoMapa />
+            <AccoesDoMapa nome={conta ? `Razão ${conta}` : undefined} />
           </div>
         }
       />

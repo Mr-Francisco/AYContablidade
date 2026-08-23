@@ -114,7 +114,11 @@ function Conteudo() {
             ? "Movimentos que compõem esta rubrica da Demonstração de Fluxos de Caixa."
             : "Movimentos de uma conta e das suas subcontas, com filtro por entidade."
         }
-        accoes={<AccoesDoMapa />}
+        accoes={
+          <AccoesDoMapa
+            nome={!fluxo && conta ? `Extrato ${conta}` : undefined}
+          />
+        }
       />
 
       {/* A ORDEM É A DO PILOTO: conta, datas, entidade, subcontas. Aqui

@@ -27,6 +27,7 @@ import { CampoEntidade, type Registo } from "@/components/ui/CampoEntidade";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
+import { imprimirComoPdf } from "@/lib/impressao";
 import type { Colaborador, Folha, LinhaRecibo } from "@/types";
 
 /**
@@ -76,9 +77,16 @@ export default function Recibos() {
         descricao="Recibo individual por colaborador e mês, pronto a imprimir."
         accoes={
           linha && (
-            <Botao onClick={() => window.print()}>
+            <Botao
+              onClick={() =>
+                imprimirComoPdf(
+                  `Recibo de Vencimento — ${colaborador?.nome ?? linha.colaborador} — ${mesPorExtenso(mes)}`,
+                )
+              }
+              title="Abre a janela de impressão. Escolha «Guardar como PDF» para gravar o ficheiro."
+            >
               <Printer size={16} />
-              Imprimir
+              Imprimir / PDF
             </Botao>
           )
         }

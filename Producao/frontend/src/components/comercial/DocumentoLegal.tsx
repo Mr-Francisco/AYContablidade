@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formata, formataMoeda } from "@/lib/dinheiro";
 import { valorPorExtenso } from "@/lib/extenso";
+import { imprimirComoPdf, nomeDoDocumento } from "@/lib/impressao";
 
 /**
  * O documento legal — factura, nota de crédito, recibo — como se imprime.
@@ -137,9 +138,25 @@ export function DocumentoLegal({
               {nomeTipo} {doc.numero ?? "(rascunho)"}
             </Dialog.Title>
             <div className="flex items-center gap-2">
-              <Botao tamanho="pequeno" onClick={() => window.print()}>
+              {/* UM SÓ BOTÃO PARA OS DOIS. A janela do browser é a mesma:
+                  escolhe-se a impressora ou «Guardar como PDF». Dois botões
+                  que abrissem a mesma janela era fingir uma escolha que se faz
+                  lá dentro.
+
+                  O que muda é o NOME: o PDF sai como `FT 2026-0001 — Cliente`
+                  e não com o nome da aplicação. Vale para todos os tipos —
+                  factura, recibo, proforma, nota. */}
+              <Botao
+                tamanho="pequeno"
+                onClick={() =>
+                  imprimirComoPdf(
+                    nomeDoDocumento(nomeTipo, doc.numero, doc.cliente_nome),
+                  )
+                }
+                title="Abre a janela de impressão. Escolha «Guardar como PDF» para gravar o ficheiro."
+              >
                 <Printer size={14} />
-                Imprimir
+                Imprimir / PDF
               </Botao>
               <Dialog.Close asChild>
                 <button

@@ -3,6 +3,7 @@
 import { Download, Printer } from "lucide-react";
 
 import { Botao } from "@/components/ui";
+import { imprimirPagina } from "@/lib/impressao";
 
 /**
  * Imprimir e exportar, para os mapas contabilísticos.
@@ -14,17 +15,28 @@ import { Botao } from "@/components/ui";
  * moldura da aplicação e forçam preto sobre branco. Este componente é marcado
  * `sem-imprimir` para não sair no papel — imprimir o botão de imprimir seria
  * exactamente o género de pormenor que denuncia uma impressão feita à pressa.
+ *
+ * GUARDAR EM PDF é a mesma janela: escolhe-se «Guardar como PDF» em vez de uma
+ * impressora. O que este componente acrescenta é o NOME do ficheiro — sem ele,
+ * o browser grava tudo com o nome da aplicação, e uma pasta com o balancete, o
+ * balanço e a demonstração de resultados fica com três ficheiros iguais.
  */
 export function AccoesDoMapa({
   aoExportar,
   nomeDoFicheiro,
   desactivado,
+  nome,
 }: {
   /** Devolve as linhas a exportar. Chamado só quando se carrega no botão —
    *  não vale a pena construir o CSV de um mapa que ninguém vai exportar. */
   aoExportar?: () => { cabecalho: string[]; linhas: (string | number)[][] };
   nomeDoFicheiro?: string;
   desactivado?: boolean;
+  /** O nome com que o PDF é gravado. Sem isto, é o TÍTULO DO ECRÃ — e não o
+   *  `nomeDoFicheiro`, que é o do CSV e costuma ser mais curto («Balancete»
+   *  num mapa que se chama «Balancete Geral»). Passar só quando o título não
+   *  chegar: um extracto de uma conta, um mapa de um mês em particular. */
+  nome?: string;
 }) {
   function exportar() {
     if (!aoExportar) return;
@@ -50,13 +62,13 @@ export function AccoesDoMapa({
       <Botao
         variante="neutro"
         tamanho="pequeno"
-        onClick={() => window.print()}
+        onClick={() => imprimirPagina(nome)}
         disabled={desactivado}
         motivoBloqueio="Não há nada para imprimir — o mapa está vazio."
-        title="Imprimir ou guardar em PDF"
+        title="Abre a janela de impressão. Escolha «Guardar como PDF» para gravar o ficheiro."
       >
         <Printer size={14} />
-        Imprimir
+        Imprimir / PDF
       </Botao>
     </div>
   );
