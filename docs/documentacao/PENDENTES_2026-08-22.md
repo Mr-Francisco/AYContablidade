@@ -83,6 +83,41 @@ parametrização a outra conta — sem tocar no programa. **Mas alguém tem de
 decidir qual**, e enquanto não decidir, um imobilizado financeiro em curso não
 tem onde acumular.
 
+### ✅ As duas últimas, decididas por nós a pedido do cliente
+
+**Quando começa a amortização.** A análise mostrou que a pergunta era em parte
+falsa: o sistema **não amortiza por data** — amortiza cada activo em todos os
+períodos processados, sem olhar à data de aquisição. É o que o Piloto faz, e
+inventar uma regra de datas só para os activos transferidos fá-los-ia comportar
+diferente de todos os outros.
+
+Fica: **o activo transferido amortiza como qualquer outro**, com uma guarda —
+não amortiza em meses ANTERIORES ao fecho da obra. Fechar em Junho e processar
+Janeiro amortizava seis meses de um bem que ainda estava a ser construído. A
+guarda usa `fechado_em`, que só os activos vindos de obra têm; para os
+restantes nada muda.
+
+**O âmbito da classificação automática.** Restringida às contas **correntes** —
+`311` entrada → Recebimento de Clientes, `321` saída → Pagamentos a
+Fornecedores, `361` saída → Pagamentos a Pessoal. Mais o **Estado**, e só na
+saída: `341`, `342`, `343`, `344`, `345`, `347`, `349` → Impostos.
+
+Fora, com razão para cada: `314`/`316` (são compras dentro da classe Clientes),
+`312`/`313` (títulos), `318` (cobrança duvidosa), `319`/`329` (saldos
+invertidos), `363` (adiantamentos a pessoal, que são empréstimos), `346`
+(crédito fiscal — activo sobre o Estado), `348` (subsídios — vêm do Estado) e
+os juros.
+
+**Duas salvaguardas que valem mais do que as regras:** uma operação com
+contrapartidas de naturezas diferentes não se classifica — pagar um fornecedor
+e um imposto no mesmo movimento não é uma coisa nem outra; e uma contrapartida
+desconhecida contamina a operação inteira, porque não se classifica metade de
+um movimento.
+
+Vive em `services/diferidos.py` e é chamada de `postar()`, por onde passam
+todos os lançamentos. O que não souber classificar continua a aparecer em
+Diferidos, como sempre.
+
 ### Ainda por responder
 
 - **Quando começa a amortização** depois do fecho — data do fecho, mês

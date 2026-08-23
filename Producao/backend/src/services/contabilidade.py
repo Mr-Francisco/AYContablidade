@@ -465,6 +465,21 @@ def postar(
 
     objs = construir_linhas(db, empresa_id, linhas)
 
+    # CLASSIFICAR O FLUXO DE CAIXA, quando a contrapartida e o sentido não
+    # deixam dúvida — banco a receber de um cliente corrente, a pagar a um
+    # fornecedor corrente, a pagar salários ou impostos.
+    #
+    # AQUI E NÃO EM CADA SÍTIO QUE LANÇA: é por esta função que passam todos os
+    # lançamentos, os automáticos e os feitos à mão. Espalhado pelos módulos,
+    # ficava a faltar naquele que se esquecesse.
+    #
+    # NÃO MEXE NO QUE JÁ VEM CLASSIFICADO, e o que atribui pode ser mudado
+    # depois: adianta trabalho, não o tranca. O que não souber classificar
+    # continua a aparecer em Diferidos, como sempre apareceu.
+    from src.services.diferidos import classificar as _classificar_fluxos
+
+    _classificar_fluxos(objs)
+
     seq = proximo_numero_doc(db, empresa_id, documento_codigo, exercicio_id)
 
     lanc = Lancamento(

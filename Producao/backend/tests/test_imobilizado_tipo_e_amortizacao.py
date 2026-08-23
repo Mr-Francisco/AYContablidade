@@ -539,3 +539,45 @@ def test_depois_de_fechada_a_obra_volta_a_amortizar(base, empresa):
 
     # 25% de 10 000 — o que a obra custou.
     assert svc.amort_anual(a) == Decimal("2500.00")
+
+
+# ---------------------------------------------------------------------------
+# Um activo não amortiza antes de existir
+#
+# O sistema amortiza cada activo em todos os períodos processados, sem olhar à
+# data de aquisição — é o que o Piloto faz e não se mexeu nisso. Mas um
+# imobilizado em curso tem uma data em que passou a existir: a do fecho.
+# ---------------------------------------------------------------------------
+def test_um_activo_transferido_nao_amortiza_nos_meses_anteriores_ao_fecho():
+    """Fechar a obra em Junho e processar Janeiro amortizava seis meses de um
+    bem que ainda estava a ser construído."""
+    a = _ativo(fechado_em=_Date(2026, 6, 30), taxa=Decimal("24.00"))
+
+    # Janeiro a Maio: o bem ainda não existia.
+    for mes in ("01", "03", "05"):
+        assert svc.amort_do_periodo(a, mes, 2026) == Decimal("0.00"), mes
+
+    # Junho — o mês do fecho — já amortiza.
+    assert svc.amort_do_periodo(a, "06", 2026) == Decimal("200.00")
+    assert svc.amort_do_periodo(a, "12", 2026) == Decimal("200.00")
+
+
+def test_um_ano_posterior_amortiza_todos_os_meses():
+    a = _ativo(fechado_em=_Date(2026, 6, 30), taxa=Decimal("24.00"))
+    assert svc.amort_do_periodo(a, "01", 2027) == Decimal("200.00")
+
+
+def test_um_activo_que_nunca_esteve_em_curso_nao_muda_de_comportamento():
+    """A regra aplica-se SÓ a quem veio de uma obra. Os activos que sempre
+    existiram não têm data de fecho, e nada muda para eles — nem sequer quando
+    o ano não é dado."""
+    a = _ativo(taxa=Decimal("24.00"))
+    assert svc.amort_do_periodo(a, "01", 2026) == Decimal("200.00")
+    assert svc.amort_do_periodo(a, "01") == Decimal("200.00")
+
+
+def test_sem_ano_indicado_a_regra_nao_se_aplica():
+    """Quem chamar sem o ano recebe o comportamento de antes — a regra não pode
+    calar uma amortização por falta de um parâmetro."""
+    a = _ativo(fechado_em=_Date(2026, 6, 30), taxa=Decimal("24.00"))
+    assert svc.amort_do_periodo(a, "01") == Decimal("200.00")

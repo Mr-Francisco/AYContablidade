@@ -213,3 +213,121 @@ def avisar_se_houver(db: Session, empresa_id: UUID) -> None:
         ligacao="/contabilidade/diferidos",
         tipo="aviso",
     )
+
+
+# ---------------------------------------------------------------------------
+# Classificação automática
+# ---------------------------------------------------------------------------
+#: A regra: CONTA EM CONTRAPARTIDA + SENTIDO DO MOVIMENTO → rubrica de fluxo.
+#:
+#: RESTRINGE-SE ÀS CONTAS CORRENTES, e não às classes inteiras. Foi verificado
+#: no plano carregado e não suposto: dentro da classe `31 CLIENTES` vivem
+#: `314 Compras — Embalagens` e `316 Compras — Matérias-primas`, que NÃO são
+#: contas de cliente. Uma regra sobre a classe inteira apanhava-as e
+#: chamava-lhes recebimentos de clientes.
+#:
+#: Ficam DELIBERADAMENTE de fora, por não serem inequívocas:
+#:
+#: - `312`/`313` títulos a receber e descontados — o recebimento do título e o
+#:   desconto do título não são a mesma operação;
+#: - `318` clientes de cobrança duvidosa;
+#: - `319`/`329` saldos invertidos — um saldo credor de cliente não é uma
+#:   venda por receber;
+#: - `363` adiantamentos a pessoal — é um empréstimo, não uma remuneração;
+#: - `346` crédito fiscal a compensar — é um activo sobre o Estado;
+#: - `348` subsídios a preços — vem do Estado, não vai para ele;
+#: - os JUROS, em qualquer conta: conforme a operação, são actividade
+#:   operacional ou de financiamento, e a conta sozinha não distingue.
+_REGRAS: tuple[tuple[str, str, str], ...] = (
+    # (prefixo da contrapartida, sentido no banco/caixa, rubrica)
+    ("311", "entrada", "1100"),  # Clientes correntes → Recebimento de Clientes
+    ("321", "saida", "1101"),    # Fornecedores correntes → Pagamentos a Fornecedores
+    ("361", "saida", "1102"),    # Pessoal-remunerações → Pagamentos a Pessoal
+    # O ESTADO, e só onde o sentido não deixa dúvida: dinheiro que SAI do banco
+    # para uma conta de imposto é um pagamento de imposto. As duas contas de
+    # Estado que não são impostos a pagar — `346` e `348` — estão fora.
+    ("341", "saida", "1202"),  # Imposto sobre lucros
+    ("342", "saida", "1202"),  # Produção e consumo
+    ("343", "saida", "1202"),  # Rendimento do trabalho
+    ("344", "saida", "1202"),  # Imposto de circulação
+    ("345", "saida", "1202"),  # IVA
+    ("347", "saida", "1202"),  # Imposto de selo
+    ("349", "saida", "1202"),  # Outros impostos
+)
+
+
+def _eh_disponibilidade(codigo: str) -> bool:
+    return str(codigo or "").startswith(PREFIXOS_DISPONIBILIDADES)
+
+
+def rubrica_automatica(contrapartidas: list[str], sentido: str) -> str | None:
+    """A rubrica que se deduz da contrapartida e do sentido, ou `None`.
+
+    SÓ CLASSIFICA QUANDO NÃO HÁ DÚVIDA. Com mais do que uma contrapartida,
+    exige que TODAS levem à mesma rubrica: um pagamento que salda um fornecedor
+    e paga imposto na mesma operação não é uma coisa nem outra, e escolher uma
+    delas seria inventar.
+
+    Devolver `None` não é uma falha — é o sistema a dizer que não sabe, e a
+    deixar a linha para quem faz a contabilidade decidir em Diferidos.
+    """
+    if not contrapartidas:
+        return None
+
+    rubricas = set()
+    for codigo in contrapartidas:
+        c = str(codigo or "").strip()
+        achou = None
+        for prefixo, sent, rubrica in _REGRAS:
+            if sent == sentido and c.startswith(prefixo):
+                achou = rubrica
+                break
+        if achou is None:
+            # Uma contrapartida que não se sabe classificar contamina a
+            # operação inteira: não se classifica metade de um movimento.
+            return None
+        rubricas.add(achou)
+
+    return rubricas.pop() if len(rubricas) == 1 else None
+
+
+def classificar(linhas) -> int:
+    """Preenche o `fluxo_codigo` das linhas de banco e caixa que o permitam.
+
+    Recebe as linhas de UM lançamento, já construídas. Devolve quantas
+    classificou.
+
+    NÃO MEXE NO QUE JÁ ESTÁ CLASSIFICADO. Quem escreveu uma rubrica à mão
+    decidiu, e uma regra automática não tem mais informação do que essa pessoa
+    tinha.
+
+    E É REVERSÍVEL: a rubrica atribuída aqui pode ser mudada depois, como
+    qualquer outra. O automatismo adianta trabalho, não o tranca.
+    """
+    disponibilidades = [
+        l for l in linhas if _eh_disponibilidade(getattr(l, "conta_codigo", ""))
+    ]
+    if not disponibilidades:
+        return 0
+
+    contrapartidas = [
+        str(l.conta_codigo)
+        for l in linhas
+        if not _eh_disponibilidade(getattr(l, "conta_codigo", ""))
+    ]
+    if not contrapartidas:
+        return 0
+
+    quantas = 0
+    for linha in disponibilidades:
+        if (getattr(linha, "fluxo_codigo", None) or "").strip():
+            continue
+        # Dinheiro que ENTRA no banco é um débito na conta de banco.
+        entrou = (linha.debito or 0) > 0
+        rubrica = rubrica_automatica(
+            contrapartidas, "entrada" if entrou else "saida"
+        )
+        if rubrica:
+            linha.fluxo_codigo = rubrica
+            quantas += 1
+    return quantas

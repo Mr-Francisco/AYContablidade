@@ -394,13 +394,30 @@ def amort_exercicio(a: Ativo) -> Decimal:
     return r2(min(amort_anual(a), max(ZERO, valor_liquido(a))))
 
 
-def amort_do_periodo(a: Ativo, mes: str) -> Decimal:
+def amort_do_periodo(a: Ativo, mes: str, ano: int | None = None) -> Decimal:
     """Quota do mês, limitada ao valor líquido restante.
 
     O período 00 (Abertura) não tem amortização — não é um mês.
+
+    UM ACTIVO NÃO AMORTIZA ANTES DE EXISTIR. O sistema amortiza cada activo em
+    todos os períodos processados, sem olhar à data de aquisição — é o que o
+    Piloto faz e não se mexe nisso. Mas um imobilizado em curso tem uma data em
+    que passou a existir: a do fecho. Processar Janeiro depois de fechar uma
+    obra em Junho amortizava seis meses de um bem que ainda estava a ser
+    construído.
+
+    A regra aplica-se SÓ a quem veio de uma obra — `fechado_em` preenchido. Os
+    activos que sempre existiram não têm essa data e nada muda para eles.
     """
     if a.estado == "abatido" or mes == "00":
         return ZERO
+
+    fechado = getattr(a, "fechado_em", None)
+    if fechado is not None and ano is not None and str(mes).isdigit():
+        # O mês do fecho já amortiza; os anteriores não.
+        if (ano, int(mes)) < (fechado.year, fechado.month):
+            return ZERO
+
     return r2(min(amort_mensal(a), max(ZERO, valor_liquido(a))))
 
 
@@ -482,6 +499,12 @@ def mapa_periodo(
     itens_por_ativo = (
         {str(i["ativo_id"]): i for i in (batch.itens or [])} if batch else {}
     )
+    # O ANO, para não mostrar amortização de um activo em meses anteriores ao
+    # fecho da obra que lhe deu origem. Vem do exercício, que é onde vive.
+    from src.db.models.tenancy import Exercicio
+
+    ex = db.get(Exercicio, exercicio_id)
+    ano = ex.inicio.year if ex else None
 
     q = select(Ativo).where(Ativo.empresa_id == empresa_id)
     if so_ativos:
@@ -490,7 +513,11 @@ def mapa_periodo(
     linhas = []
     for a in db.scalars(q.order_by(Ativo.codigo)).all():
         item = itens_por_ativo.get(str(a.id))
-        valor = Decimal(str(item["valor"])) if item else amort_do_periodo(a, mes)
+        valor = (
+            Decimal(str(item["valor"]))
+            if item
+            else amort_do_periodo(a, mes, ano)
+        )
         linhas.append(
             {
                 "id": a.id, "codigo": a.codigo, "designacao": a.designacao,
@@ -555,7 +582,7 @@ def processar_periodo(
     for a in db.scalars(
         select(Ativo).where(Ativo.empresa_id == empresa_id).order_by(Ativo.codigo)
     ).all():
-        valor = amort_do_periodo(a, mes)
+        valor = amort_do_periodo(a, mes, data.year if data else None)
         if valor <= 0:
             continue
 
