@@ -1,10 +1,11 @@
 "use client";
 
-import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Hammer, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { AlertDialog, Dialog } from "radix-ui";
 import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 import { CampoConta } from "@/components/contabilidade/CampoConta";
+import { ObraEmCurso } from "@/components/imobilizados/ObraEmCurso";
 import {
   ACarregar,
   Alerta,
@@ -24,6 +25,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { Interruptor } from "@/components/ui/Interruptor";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataCompacto, formataMoeda, soma } from "@/lib/dinheiro";
@@ -40,6 +42,8 @@ export default function Ativos() {
   const [aEditar, setAEditar] = useState<Ativo | null>(null);
   const [novoAberto, setNovoAberto] = useState(false);
   const [aEliminar, setAEliminar] = useState<Ativo | null>(null);
+  /** A obra em curso aberta, com os seus itens e o botão de fecho. */
+  const [obra, setObra] = useState<Ativo | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -225,13 +229,33 @@ export default function Ativos() {
                       <BarraProgresso valor={a.percent_amortizado} />
                     </Td>
                     <Td>
-                      <Selo cor={a.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}>
-                        {a.estado === "activo" ? "Activo" : "Abatido"}
-                      </Selo>
+                      {/* EM CURSO GANHA AO ESTADO. Um activo em curso está
+                          «activo», mas o que interessa saber ao correr a lista
+                          é que ainda não é património e não amortiza. */}
+                      {a.em_curso ? (
+                        <Selo cor="#c98a10">Em curso</Selo>
+                      ) : (
+                        <Selo
+                          cor={a.estado === "activo" ? "#1a9c5f" : "#8a8a8a"}
+                        >
+                          {a.estado === "activo" ? "Activo" : "Abatido"}
+                        </Selo>
+                      )}
                     </Td>
                     {pode("imob.gerir") && (
                       <Td numerico>
                         <div className="flex justify-end gap-1.5">
+                          {a.em_curso && (
+                            <Botao
+                              tamanho="pequeno"
+                              variante="neutro"
+                              onClick={() => setObra(a)}
+                              aria-label={`Itens da obra ${a.designacao}`}
+                              title="Custos da obra, e fecho"
+                            >
+                              <Hammer size={13} />
+                            </Botao>
+                          )}
                           <Botao
                             tamanho="pequeno"
                             onClick={() => setAEditar(a)}
@@ -257,6 +281,21 @@ export default function Ativos() {
           </EnvolveTabela>
         )}
       </Cartao>
+
+      {obra && (
+        <ObraEmCurso
+          ativo={obra}
+          moeda={moeda}
+          podeGerir={pode("imob.gerir")}
+          aoFechar={() => setObra(null)}
+          aoMudar={() => {
+            // A obra fechou: a linha da listagem passa a mostrar «Activo» e o
+            // valor de aquisição passa a ser o acumulado.
+            setObra(null);
+            mutate();
+          }}
+        />
+      )}
 
       {(novoAberto || aEditar) && (
         <FormularioAtivo
@@ -359,7 +398,19 @@ function FormularioAtivo({
     metodo: ativo?.metodo ?? "quotas",
     amort_acumulada: ativo?.amort_acumulada ?? "0",
     estado: ativo?.estado ?? "activo",
+    tipo_imobilizado: ativo?.tipo_imobilizado ?? "",
+    condicoes_texto: ativo?.condicoes_texto ?? "",
+    valor_sujeito_amortizacao: ativo?.valor_sujeito_amortizacao ?? "",
   });
+  // Os três interruptores. Fora do `campos` porque são booleanos e aquele
+  // guarda texto — misturá-los obrigava a converter em todos os sítios.
+  const [naoAmortizavel, setNaoAmortizavel] = useState(
+    ativo?.nao_amortizavel ?? false,
+  );
+  const [condicoesEspeciais, setCondicoesEspeciais] = useState(
+    ativo?.condicoes_especiais ?? false,
+  );
+  const [emCurso, setEmCurso] = useState(ativo?.em_curso ?? false);
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
 
@@ -399,6 +450,14 @@ function FormularioAtivo({
     e.preventDefault();
     setErro(null);
     if (!campos.designacao.trim()) return setErro("Indique a designação.");
+    // O TIPO DECIDE AS CONTAS — a de compra, a de acumulação em curso e a
+    // classe de destino. Sem ele, um imobilizado em curso não tem onde
+    // acumular, e isso só se descobria ao tentar fechar a obra.
+    if (emCurso && !campos.tipo_imobilizado) {
+      return setErro(
+        "Escolha o tipo de imobilizado. É ele que determina em que conta a obra vai acumular.",
+      );
+    }
     setAGravar(true);
     const corpo = {
       ...campos,
@@ -409,6 +468,20 @@ function FormularioAtivo({
       conta_amort_acum: campos.conta_amort_acum || null,
       conta_custo_amort: campos.conta_custo_amort || null,
       data_aquisicao: campos.data_aquisicao || null,
+      tipo_imobilizado: campos.tipo_imobilizado || null,
+      nao_amortizavel: naoAmortizavel,
+      condicoes_especiais: condicoesEspeciais,
+      // Desligar as condições especiais limpa o que lá estava: um valor
+      // esquecido a mandar no cálculo sem aparecer em lado nenhum é a pior
+      // espécie de campo escondido.
+      condicoes_texto: condicoesEspeciais
+        ? campos.condicoes_texto.trim() || null
+        : null,
+      valor_sujeito_amortizacao:
+        condicoesEspeciais && campos.valor_sujeito_amortizacao !== ""
+          ? campos.valor_sujeito_amortizacao
+          : null,
+      em_curso: emCurso,
     };
     try {
       if (ativo) await api.patch(`/api/imobilizados/ativos/${ativo.id}`, corpo);
@@ -476,6 +549,21 @@ function FormularioAtivo({
                   autoFocus
                 />
               </Campo>
+              {/* O TIPO DECIDE AS CONTAS: a de compra dentro de `371`, a de
+                  acumulação em curso (`141`/`142`/`143`) e a classe para onde
+                  a obra é transferida (`11`/`12`/`13`). Fica ao lado da
+                  designação porque é uma decisão do início, não um detalhe. */}
+              <Selector
+                rotulo="Tipo de imobilizado"
+                valor={campos.tipo_imobilizado}
+                aoMudar={(v) => alterar("tipo_imobilizado", v)}
+                opcoes={[
+                  { valor: "", rotulo: "Por indicar" },
+                  { valor: "corporeo", rotulo: "Imobilizado Corpóreo" },
+                  { valor: "incorporeo", rotulo: "Imobilizado Incorpóreo" },
+                  { valor: "financeiro", rotulo: "Investimento Financeiro" },
+                ]}
+              />
               <Campo rotulo="Fornecedor">
                 <Entrada
                   value={campos.fornecedor}
@@ -542,6 +630,82 @@ function FormularioAtivo({
                   ? ` Nas quotas decrescentes a taxa é multiplicada pelo coeficiente ${previsao.coef} e incide sobre o valor ainda por amortizar, pelo que a quota desce todos os anos.`
                   : " Nas quotas constantes a quota incide sempre sobre o valor de aquisição."}
               </Alerta>
+            )}
+
+            {/* OS TRÊS INTERRUPTORES, e cada um muda o que o activo faz.
+                Ficam juntos porque respondem à mesma pergunta — como é que
+                este bem amortiza — e separá-los obrigava a procurar em três
+                sítios a resposta a uma coisa só. */}
+            <div className="mt-4 grid gap-2.5">
+              <Interruptor
+                ligado={emCurso}
+                aoMudar={setEmCurso}
+                titulo="Imobilizado em curso"
+                notaLigado="O bem ainda está a ser construído ou adquirido. Acumula itens e NÃO amortiza até ser fechado e transferido para o património."
+                notaDesligado="O bem já faz parte do património e amortiza pelas regras acima."
+                desactivado={Boolean(ativo && !ativo.em_curso)}
+              />
+
+              <Interruptor
+                ligado={naoAmortizavel}
+                aoMudar={setNaoAmortizavel}
+                titulo="Imobilizado não amortizável"
+                notaLigado="Este bem NÃO amortiza, mesmo com taxa preenchida. É o caso dos terrenos."
+                notaDesligado="O bem amortiza pela taxa e pelo método indicados."
+              />
+
+              <Interruptor
+                ligado={condicoesEspeciais}
+                aoMudar={setCondicoesEspeciais}
+                titulo="Condições especiais de amortização"
+                notaLigado="A amortização incide apenas sobre o valor indicado abaixo. A parte restante fica no activo e nunca amortiza."
+                notaDesligado="A amortização incide sobre o valor de aquisição."
+              />
+            </div>
+
+            {/* A ABA DAS CONDIÇÕES ESPECIAIS. Só aparece quando são ligadas —
+                um campo de valor sujeito a amortização sempre à vista, quase
+                sempre vazio, é ruído em todas as fichas normais. */}
+            {condicoesEspeciais && (
+              <div className="mt-3 rounded-xl border border-marca/40 bg-marca/[0.04] p-4">
+                <div className="mb-3 text-[13.5px] font-bold">
+                  Condições especiais
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Campo
+                    rotulo="Valor sujeito a amortização"
+                    dica="Em branco, amortiza o valor de aquisição inteiro."
+                    className="sm:col-span-1"
+                  >
+                    <Entrada
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={campos.valor_sujeito_amortizacao}
+                      onChange={(e) =>
+                        alterar("valor_sujeito_amortizacao", e.target.value)
+                      }
+                      placeholder={campos.valor_aquisicao}
+                      className="text-right tabular"
+                    />
+                  </Campo>
+                  <Campo
+                    rotulo="Porquê"
+                    dica="Fica na ficha, para quem a ler daqui a um ano."
+                    className="sm:col-span-2"
+                  >
+                    <textarea
+                      value={campos.condicoes_texto}
+                      onChange={(e) =>
+                        alterar("condicoes_texto", e.target.value)
+                      }
+                      rows={3}
+                      placeholder="Ex.: o terreno onde o edifício assenta não é amortizável e representa 40% do valor de aquisição."
+                      className="w-full rounded-lg border border-borda bg-superficie px-3 py-2 text-sm outline-none focus:border-acento"
+                    />
+                  </Campo>
+                </div>
+              </div>
             )}
 
             {/* TRÊS CAMPOS DE CONTA, e não três caixas de opções.

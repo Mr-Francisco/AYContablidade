@@ -211,6 +211,35 @@ def base():
 
 
 def _limpar_imob(db):
+    """A ORDEM IMPORTA: as contas criadas pelos testes ficam referidas pelos
+    lançamentos do fecho, e o plano de contas recusa apagar uma conta com
+    movimentos — que é exactamente a protecção que se quer em produção.
+
+    Por isso apagam-se primeiro os lançamentos, depois as linhas, e só no fim
+    as contas."""
+    from src.db.models.contabilidade import Lancamento, LancamentoLinha
+
+    contas = [
+        c for (c,) in db.execute(
+            select(Conta.codigo).where(Conta.nome.like(f"{MARCA_IMOB}%"))
+        )
+    ]
+    if contas:
+        ids = [
+            i for (i,) in db.execute(
+                select(LancamentoLinha.lancamento_id).where(
+                    LancamentoLinha.conta_codigo.in_(contas)
+                )
+            )
+        ]
+        if ids:
+            db.execute(
+                delete(LancamentoLinha).where(
+                    LancamentoLinha.lancamento_id.in_(ids)
+                )
+            )
+            db.execute(delete(Lancamento).where(Lancamento.id.in_(ids)))
+
     db.execute(delete(Ativo).where(Ativo.designacao.like(f"{MARCA_IMOB}%")))
     db.execute(delete(Conta).where(Conta.nome.like(f"{MARCA_IMOB}%")))
     db.commit()
@@ -391,3 +420,84 @@ def test_uma_obra_ja_fechada_nao_se_fecha_outra_vez(base, empresa):
             conta_destino="1121", data=_Date(2026, 6, 30),
         )
     assert "não está em curso" in str(e.value)
+
+
+def test_o_fecho_gera_um_lancamento_diferido_com_as_duas_pontas(base, empresa):
+    """O caminho inteiro: obra → itens → fecho → lançamento.
+
+    O QUE ISTO PROVA, e é o que interessa:
+
+    - o lançamento existe e nasce DIFERIDO — não conta no balancete até a
+      contabilidade o integrar, que foi o que se pediu;
+    - CREDITA a conta própria da obra (`141001`) e não a mãe `141`;
+    - DEBITA a conta de destino indicada;
+    - o valor é o acumulado dos itens, não um número escrito à mão;
+    - e a ficha deixa de estar em curso, passando a valer o que custou.
+    """
+    from src.db.models.contabilidade import Lancamento, LancamentoLinha
+
+    cfg = svc.cfg_imob_default()
+    a = _em_curso(base, empresa, tipo="corporeo", nome="ObraCompleta")
+    conta_obra = svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+
+    _item(base, empresa, a, "3000.00", "Terreno")
+    _item(base, empresa, a, "5000.00", "Empreitada")
+
+    r = svc.fechar_e_transferir(
+        base,
+        empresa_id=empresa.id,
+        ativo=a,
+        # `11211` — uma conta de MOVIMENTO da classe 11. As filhas directas
+        # de 11/12/13 são todas integradoras: a conta que recebe o lançamento
+        # está um nível abaixo, e é por isso que o destino tem de ser escolhido
+        # e não deduzido do tipo.
+        conta_destino="11211",
+        data=_Date(2026, 6, 30),
+    )
+
+    assert r["valor_transferido"] == Decimal("8000.00")
+    assert r["conta_origem"] == conta_obra
+    assert r["conta_destino"] == "11211"
+
+    lanc = base.scalar(
+        select(Lancamento).where(Lancamento.id == r["lancamento_id"])
+    )
+    assert lanc is not None
+    assert lanc.diferido is True, "tem de ficar à espera da contabilidade"
+
+    linhas = base.scalars(
+        select(LancamentoLinha).where(
+            LancamentoLinha.lancamento_id == lanc.id
+        )
+    ).all()
+    porconta = {l.conta_codigo: l for l in linhas}
+
+    assert porconta["11211"].debito == Decimal("8000.00")
+    assert porconta[conta_obra].credito == Decimal("8000.00")
+    assert conta_obra != "141", "credita a conta da OBRA, não a conta-mãe"
+
+    # E a ficha passou a património.
+    assert a.em_curso is False
+    assert a.fechado_em == _Date(2026, 6, 30)
+    assert a.valor_aquisicao == Decimal("8000.00")
+    assert a.conta_imob == "11211"
+
+
+def test_depois_de_fechada_a_obra_volta_a_amortizar(base, empresa):
+    """Enquanto em curso não amortizava; fechada, amortiza sobre o acumulado."""
+    cfg = svc.cfg_imob_default()
+    a = _em_curso(base, empresa, tipo="corporeo", nome="ObraAmortiza")
+    svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+    _item(base, empresa, a, "10000.00", "Custo")
+    a.taxa = Decimal("25.00")
+    base.flush()
+
+    assert svc.amort_anual(a) == Decimal("0.00"), "em curso não amortiza"
+
+    svc.fechar_e_transferir(
+        base, empresa_id=empresa.id, ativo=a,
+        conta_destino="11211", data=_Date(2026, 6, 30),
+    )
+
+    # 25% de 10 000 — o que a obra custou.
+    assert svc.amort_anual(a) == Decimal("2500.00")

@@ -703,6 +703,33 @@ export interface Ativo {
   percent_amortizado: number;
   fornecedor: string | null;
   estado: string;
+
+  /** `corporeo` | `incorporeo` | `financeiro` — decide as contas. */
+  tipo_imobilizado: string | null;
+  /** Um bem que não amortiza, como um terreno. */
+  nao_amortizavel: boolean;
+  /** A amortização incide só sobre `valor_sujeito_amortizacao`. */
+  condicoes_especiais: boolean;
+  condicoes_texto: string | null;
+  valor_sujeito_amortizacao: string | null;
+  /** O valor sobre o qual a amortização incide, já resolvido pelo servidor. */
+  base_amortizavel: string;
+
+  /** Ainda em construção: acumula itens e não amortiza. */
+  em_curso: boolean;
+  fechado_em: string | null;
+  /** A conta para onde foi transferido no fecho. */
+  conta_destino: string | null;
+}
+
+/** Um custo somado a um imobilizado em curso. */
+export interface ItemImobilizado {
+  id: string;
+  data: string;
+  descricao: string;
+  valor: string;
+  fornecedor: string | null;
+  documento: string | null;
 }
 
 export interface LinhaMapaImob {
