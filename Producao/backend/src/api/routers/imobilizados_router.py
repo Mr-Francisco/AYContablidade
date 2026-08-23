@@ -208,9 +208,33 @@ def criar_ativo(
         **dados.model_dump(exclude={"codigo"}),
     )
     db.add(a)
+    db.flush()
+
+    # CADA FICHA EM CURSO É UMA CONTA, criada já e não à primeira despesa.
+    #
+    # É o que foi pedido: `141001 Computador X`, `141002 Computador Y`. Sem
+    # conta própria, todas as obras somavam no mesmo saldo da conta-mãe e, ao
+    # fechar uma, era preciso adivinhar que parte lhe pertencia.
+    #
+    # A ficha grava-se na mesma se a conta falhar — uma conta em falta no plano
+    # não pode impedir alguém de registar o bem que comprou. O aviso vai no
+    # resultado, e a conta é criada quando a causa estiver resolvida.
+    aviso = None
+    if a.em_curso:
+        try:
+            svc.conta_em_curso_do_ativo(db, empresa.id, a, svc.cfg_imob(db, empresa.id))
+        except ErroContabilistico as e:
+            aviso = str(e)
+
     db.commit()
     db.refresh(a)
-    return {"id": a.id, "codigo": a.codigo, "designacao": a.designacao}
+    return {
+        "id": a.id,
+        "codigo": a.codigo,
+        "designacao": a.designacao,
+        "conta_imob": a.conta_imob,
+        "aviso": aviso,
+    }
 
 
 @router.patch("/ativos/{ativo_id}", dependencies=[GERIR])
@@ -220,8 +244,19 @@ def atualizar_ativo(
     a = _ativo(db, empresa.id, ativo_id)
     for campo, valor in dados.model_dump(exclude_unset=True, exclude={"codigo"}).items():
         setattr(a, campo, valor)
+    db.flush()
+
+    # A conta também aqui: uma ficha que passe a estar em curso, ou que só
+    # agora receba o tipo, precisa da sua conta tanto como uma ficha nova.
+    aviso = None
+    if a.em_curso and not a.conta_imob:
+        try:
+            svc.conta_em_curso_do_ativo(db, empresa.id, a, svc.cfg_imob(db, empresa.id))
+        except ErroContabilistico as e:
+            aviso = str(e)
+
     db.commit()
-    return {"id": a.id, "codigo": a.codigo}
+    return {"id": a.id, "codigo": a.codigo, "conta_imob": a.conta_imob, "aviso": aviso}
 
 
 @router.delete("/ativos/{ativo_id}", status_code=status.HTTP_204_NO_CONTENT,
