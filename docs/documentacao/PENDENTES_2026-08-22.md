@@ -59,7 +59,18 @@ o balancete conta duas vezes.
 **No fecho** — também esclarecido — o lançamento é gerado e vai para
 **movimentos diferidos**, onde o contabilista indica a conta de destino.
 
-### 🛑 Continua por resolver: a conta `143` não existe
+### ✅ Resolvido: a conta `143` foi criada
+
+O cliente autorizou. A `143 Investimentos financeiros em curso` foi acrescentada
+ao plano do Primavera (para as empresas novas) e criada por migração nas que já
+existem — **só nas que já tenham a classe `14`**, e nunca por cima de uma `143`
+que já lá estivesse.
+
+**O nome não é «Obra em curso».** As irmãs chamam-se ambas assim, o que não
+distingue uma da outra; esta nasce com o nome do que agrupa, para quem abrir o
+plano perceber ao que serve sem ir à parametrização.
+
+### 🛑 O que estava por resolver (histórico)
 
 O cliente indicou `143` para o investimento financeiro em curso. **Não existe
 no plano.** A classe `14 Imobilizações em curso` tem `141`, `142`, `147`, `148`

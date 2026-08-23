@@ -414,6 +414,12 @@
   "classe_iva": null
  },
  {
+  "codigo": "143",
+  "nome": "Investimentos financeiros em curso",
+  "tipo": "M",
+  "classe_iva": null
+ },
+ {
   "codigo": "147",
   "nome": "Adiantamentos p/conta imob.corporeo",
   "tipo": "I",

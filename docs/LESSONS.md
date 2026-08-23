@@ -263,3 +263,6 @@
 - Um 403 mostrado como tabela vazia lê-se como «não há registos». Distinguir sempre «sem dados» de «sem acesso» — `FalhaAoCarregar` já o fazia e as grelhas novas não o usavam.
 - «Sem permissão para esta operação (comercial.ver)» é linguagem interna: o nome da capacidade vai para o registo, o que se lê é a área e o passo seguinte.
 - Ao medir no ecrã, uma expressão regular sobre `innerText` apanha a primeira linha que casa e não a que interessa — duas vezes me disse que algo estava partido quando funcionava.
+- Criar a primeira subconta converte a mãe em integradora, e apagar a subconta NÃO a desconverte: a mãe fica integradora sem filhas — não recebe lançamentos e não agrega nada. Os testes que criam subcontas têm de repor a mãe.
+- Um teste que verifica a FALTA de uma conta deixa de valer quando a conta passa a existir. Substituir pela garantia nova — «existe e é lá que agrupa» — e não apagar.
+- As filhas directas de 11/12/13 são todas integradoras: a conta que recebe o lançamento está um nível abaixo (11211, não 112). Não há «uma conta 11» para onde transferir.

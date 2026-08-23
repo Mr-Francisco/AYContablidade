@@ -190,7 +190,7 @@ def test_sem_condicoes_especiais_o_valor_indicado_e_ignorado():
 # era preciso adivinhar que parte lhe pertencia.
 # ---------------------------------------------------------------------------
 import pytest
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, text
 
 from src.db.models.contabilidade import Conta
 from src.db.models.tenancy import Empresa
@@ -242,6 +242,25 @@ def _limpar_imob(db):
 
     db.execute(delete(Ativo).where(Ativo.designacao.like(f"{MARCA_IMOB}%")))
     db.execute(delete(Conta).where(Conta.nome.like(f"{MARCA_IMOB}%")))
+
+    # E REPOR AS MAES. Criar a primeira subconta converte a mae em integradora
+    # — é o que `criar_subconta` faz, e faz bem. Apagar a subconta não a
+    # desconverte, e a mae ficava integradora SEM FILHAS: uma conta que não
+    # recebe lançamentos e não agrega nada. Os testes deixavam o plano da base
+    # de demonstração nesse estado, e o teste seguinte herdava-o.
+    db.execute(
+        text(
+            """
+            UPDATE contas c SET tipo='M'
+            WHERE c.codigo IN ('141','142','143') AND c.tipo='I'
+            AND NOT EXISTS (
+                SELECT 1 FROM contas f
+                WHERE f.empresa_id = c.empresa_id
+                AND f.codigo LIKE c.codigo || '%' AND f.codigo <> c.codigo
+            )
+            """
+        )
+    )
     db.commit()
 
 
@@ -335,15 +354,34 @@ def test_sem_tipo_indicado_recusa_e_diz_porque(base, empresa):
     assert "tipo de imobilizado" in str(e.value).lower()
 
 
-def test_a_conta_principal_em_falta_diz_qual_e_o_que_fazer(base, empresa):
-    """O caso da `143`: não existe no plano, e a mensagem tem de dizer isso e
-    o que fazer — não rebentar com um erro que ninguém liga a uma conta."""
+def test_a_conta_143_existe_e_o_financeiro_agrupa_nela(base, empresa):
+    """A `143` não existia no plano do Primavera e foi acrescentada.
+
+    Este teste substitui o que verificava a sua FALTA: enquanto ela não
+    existiu, um investimento financeiro em curso não tinha onde acumular. O que
+    se fixa agora é o contrário — que existe, e que é lá que agrupa.
+    """
     cfg = svc.cfg_imob_default()
     a = _em_curso(base, empresa, tipo="financeiro", nome="Participacao")
+    conta = svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
+
+    assert conta.startswith("143"), conta
+    assert conta != "143", "a conta principal AGRUPA, não recebe movimentos"
+
+
+def test_uma_conta_principal_que_nao_exista_diz_qual_e_o_que_fazer(base, empresa):
+    """A mensagem tem de nomear a conta e dizer o que fazer.
+
+    Uma empresa pode ter um plano diferente, ou apontar a parametrização a uma
+    conta que não criou. Rebentar com um erro que ninguém liga a uma conta
+    deixava a pessoa a olhar para o ecrã sem saber o que corrigir.
+    """
+    cfg = {**svc.cfg_imob_default(), "conta_curso_financeiro": "1439999"}
+    a = _em_curso(base, empresa, tipo="financeiro", nome="SemConta")
     with pytest.raises(ErroContabilistico) as e:
         svc.conta_em_curso_do_ativo(base, empresa.id, a, cfg)
     texto = str(e.value)
-    assert "143" in texto
+    assert "1439999" in texto
     assert "Plano de Contas" in texto or "parametriza" in texto.lower()
 
 
