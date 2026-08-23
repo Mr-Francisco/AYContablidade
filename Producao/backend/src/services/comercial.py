@@ -5,7 +5,7 @@ Jurídico das Facturas (Decreto Presidencial n.º 71/25) lança de forma diferen
 na contabilidade — é o campo `contab` de TIPOS_DOC que decide.
 """
 
-from datetime import date as Date
+from datetime import date as Date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
@@ -37,6 +37,10 @@ from src.services.contabilidade import (
 )
 from src.services.notificacoes import notificar
 from src.services.logistica import armazem_venda, cfg_log, registar_movimento
+
+#: Um instante anterior a tudo, para ordenar recibos sem hora de emissão
+#: sem os pôr à frente dos que a têm.
+_NUNCA = datetime(1900, 1, 1, tzinfo=timezone.utc)
 
 ZERO = Decimal("0")
 CENT = Decimal("0.01")
@@ -867,3 +871,135 @@ def resumo(db: Session, *, empresa_id: UUID) -> dict:
         "n_faturadas": len(emit),
         "por_faturar": r2(sum((v.total or ZERO for v in vs if not _emitida(v)), ZERO)),
     }
+
+
+# ---------------------------------------------------------------------------
+# O extracto de um recibo — os três blocos
+# ---------------------------------------------------------------------------
+def extracto_do_recibo(db: Session, empresa_id: UUID, recibo: Venda) -> dict:
+    """O que um recibo regulariza, factura a factura.
+
+    OS TRÊS BLOCOS que o documento mostra, e porque são três:
+
+    - **A FACTURA** é fixa: o que foi facturado, o que a lei manda reter, e o
+      que sobra para o cliente transferir. Não muda com os pagamentos.
+    - **ESTE RECIBO** é o movimento de agora: o que entrou, a parte da retenção
+      que este pagamento amortiza, e a soma dos dois.
+    - **A SITUAÇÃO APÓS** é o saldo depois deste recibo, e separa o que falta
+      em DINHEIRO do que falta em RETENÇÃO. São dívidas de naturezas
+      diferentes: uma o cliente ainda vai transferir, a outra ainda vai
+      entregar ao Estado.
+
+    O ACUMULADO CONTA OS RECIBOS ANTERIORES. Um recibo que ignorasse os outros
+    diria que a factura está por regularizar quando já foi paga três vezes em
+    prestações — e mandava alguém cobrar o que já recebeu.
+    """
+    ref = (recibo.doc_origem_num or "").strip()
+    if not ref:
+        return {"linhas": [], "totais": _totais_vazios()}
+
+    # As facturas que este recibo refere. Preparado para mais do que uma
+    # desde já: os recibos reais do cliente liquidam várias de uma vez, e um
+    # cálculo feito para uma só teria de ser refeito.
+    numeros = [n.strip() for n in ref.replace(";", ",").split(",") if n.strip()]
+    facturas = db.scalars(
+        select(Venda).where(
+            Venda.empresa_id == empresa_id, Venda.numero.in_(numeros)
+        )
+    ).all()
+    if not facturas:
+        return {"linhas": [], "totais": _totais_vazios()}
+
+    # O valor pago reparte-se pelas facturas por ordem, e cada uma leva o que
+    # ainda lhe falta. É como se salda uma conta corrente: a mais antiga
+    # primeiro, e não um bocado a cada.
+    por_distribuir = r2(liquido_a_receber(recibo.total, recibo.retencao))
+    linhas = []
+
+    for f in sorted(facturas, key=lambda x: (x.data, x.numero or "")):
+        ret_f = r2(f.retencao or ZERO)
+        liquido_f = r2(liquido_a_receber(f.total, ret_f))
+        ja = _regularizado_antes(db, empresa_id, f, recibo)
+        # Quanto DINHEIRO falta nesta factura, descontando o que já entrou.
+        falta_dinheiro = max(ZERO, r2(liquido_f - ja["pago"]))
+        pago = min(por_distribuir, falta_dinheiro)
+        por_distribuir = r2(por_distribuir - pago)
+
+        r = regularizacao_do_recibo(
+            total_factura=f.total, retencao_factura=ret_f, valor_pago=pago
+        )
+        # A retenção também não pode ser amortizada duas vezes.
+        retido = min(r["retido"], max(ZERO, r2(ret_f - ja["retido"])))
+        regularizado = r2(pago + retido)
+        acumulado = r2(ja["regularizado"] + regularizado)
+
+        linhas.append({
+            "factura": f.numero,
+            "factura_id": f.id,
+            "iliquido": r2(f.total),
+            "retencao_total": ret_f,
+            "retencao_perc": f.retencao_perc,
+            "liquido": liquido_f,
+            "pago": pago,
+            "retido": retido,
+            "regularizado": regularizado,
+            "regularizado_acum": acumulado,
+            "por_regularizar": max(ZERO, r2(f.total - acumulado)),
+            "dinheiro_pendente": max(ZERO, r2(liquido_f - ja["pago"] - pago)),
+            "retencao_por_amortizar": max(ZERO, r2(ret_f - ja["retido"] - retido)),
+        })
+
+    return {"linhas": linhas, "totais": _somar_extracto(linhas)}
+
+
+def _totais_vazios() -> dict:
+    return {
+        "iliquido": ZERO, "retencao_total": ZERO, "liquido": ZERO,
+        "pago": ZERO, "retido": ZERO, "regularizado": ZERO,
+        "regularizado_acum": ZERO, "por_regularizar": ZERO,
+        "dinheiro_pendente": ZERO, "retencao_por_amortizar": ZERO,
+    }
+
+
+def _somar_extracto(linhas: list[dict]) -> dict:
+    total = _totais_vazios()
+    for l in linhas:
+        for chave in total:
+            total[chave] = r2(total[chave] + l[chave])
+    return total
+
+
+def _regularizado_antes(
+    db: Session, empresa_id: UUID, factura: Venda, recibo: Venda
+) -> dict:
+    """Quanto já tinha sido regularizado desta factura ANTES deste recibo.
+
+    Conta os recibos emitidos antes — por data, e pelo momento de emissão para
+    desempatar dois no mesmo dia. O próprio recibo fica de fora: ele é o que se
+    está a somar.
+    """
+    anteriores = db.scalars(
+        select(Venda).where(
+            Venda.empresa_id == empresa_id,
+            Venda.tipo_doc == "RC",
+            Venda.estado == "emitida",
+            Venda.id != recibo.id,
+            Venda.doc_origem_num.ilike(f"%{factura.numero}%"),
+        )
+    ).all()
+
+    quando = (recibo.data, recibo.emitido_em or _NUNCA)
+    pago = retido = ZERO
+    for r in anteriores:
+        if (r.data, r.emitido_em or _NUNCA) >= quando:
+            continue
+        liquido_r = liquido_a_receber(r.total, r.retencao)
+        parte = regularizacao_do_recibo(
+            total_factura=factura.total,
+            retencao_factura=factura.retencao or ZERO,
+            valor_pago=liquido_r,
+        )
+        pago = r2(pago + parte["pago"])
+        retido = r2(retido + parte["retido"])
+
+    return {"pago": pago, "retido": retido, "regularizado": r2(pago + retido)}

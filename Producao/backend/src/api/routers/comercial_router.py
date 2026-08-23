@@ -402,6 +402,24 @@ def criar_cliente_rapido(
     }
 
 
+@router.get("/vendas/{venda_id}/recibo")
+def extracto_do_recibo(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
+    """O que este recibo regulariza, factura a factura.
+
+    Os três blocos do documento: a factura (fixa), este recibo (o movimento de
+    agora) e a situação depois — com o que falta separado entre dinheiro por
+    receber e retenção por amortizar, que são dívidas de naturezas diferentes.
+    """
+    v = _venda(db, empresa.id, venda_id)
+    if v.tipo_doc != "RC":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este documento não é um recibo — o extracto de regularização só "
+            "existe para recibos.",
+        )
+    return svc.extracto_do_recibo(db, empresa.id, v)
+
+
 @router.get("/vendedores")
 def listar_vendedores(empresa: EmpresaAtual, db: DB) -> list[dict]:
     return [

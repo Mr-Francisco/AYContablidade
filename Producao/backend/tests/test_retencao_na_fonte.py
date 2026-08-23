@@ -168,3 +168,125 @@ def test_uma_factura_totalmente_retida_nao_rebenta():
     )
     assert r["liquido_factura"] == d("0.00")
     assert r["regularizado"] == d("0.00")
+
+
+# ---------------------------------------------------------------------------
+# O extracto do recibo — os três blocos, com a base de dados
+#
+# Reproduz o RC AYF2026/80 do ecrã: uma factura de 100 000 com 6,5% de
+# retenção, e um recibo que paga 50 000 do líquido.
+# ---------------------------------------------------------------------------
+from datetime import date as _D
+
+import pytest
+from sqlalchemy import delete, select
+
+from src.db.base import agora
+from src.db.models.comercial import Venda
+from src.db.models.tenancy import Empresa
+
+MARCA_RC = "ZZRC"
+
+
+@pytest.fixture
+def base():
+    from src.db.base import SessionLocal
+
+    db = SessionLocal()
+    _limpar(db)
+    yield db
+    _limpar(db)
+    db.close()
+
+
+def _limpar(db):
+    db.execute(delete(Venda).where(Venda.numero.like(f"{MARCA_RC}%")))
+    db.commit()
+
+
+@pytest.fixture
+def empresa(base):
+    e = base.scalar(select(Empresa).where(Empresa.codigo == "DC001"))
+    assert e is not None
+    return e
+
+
+def _factura(base, empresa, *, numero, total, retencao, perc="6.50"):
+    v = Venda(
+        empresa_id=empresa.id, numero=f"{MARCA_RC}{numero}", tipo_doc="FT",
+        data=_D(2026, 8, 1), subtotal=d(total), iva=d("0"), total=d(total),
+        retencao_perc=d(perc), retencao=d(retencao), estado="emitida",
+        emitido_em=agora(), cliente_nome="Cliente de ensaio",
+    )
+    base.add(v)
+    base.flush()
+    return v
+
+
+def _recibo(base, empresa, *, numero, total, retencao, ref, dia=19):
+    v = Venda(
+        empresa_id=empresa.id, numero=f"{MARCA_RC}{numero}", tipo_doc="RC",
+        data=_D(2026, 8, dia), subtotal=d(total), iva=d("0"), total=d(total),
+        retencao_perc=d("6.50"), retencao=d(retencao), estado="emitida",
+        emitido_em=agora(), doc_origem_num=f"{MARCA_RC}{ref}",
+        cliente_nome="Cliente de ensaio",
+    )
+    base.add(v)
+    base.flush()
+    return v
+
+
+def test_o_extracto_reproduz_o_recibo_do_ecra(base, empresa):
+    """RC AYF2026/80, linha a linha."""
+    _factura(base, empresa, numero="F197", total="100000.00", retencao="6500.00")
+    # O recibo move 53 475,94: 50 000 pagos + 3 475,94 retidos.
+    rc = _recibo(base, empresa, numero="R80", total="53475.94",
+                 retencao="3475.94", ref="F197")
+
+    r = svc.extracto_do_recibo(base, empresa.id, rc)
+    l = r["linhas"][0]
+
+    assert l["iliquido"] == d("100000.00")
+    assert l["retencao_total"] == d("6500.00")
+    assert l["liquido"] == d("93500.00")
+    assert l["pago"] == d("50000.00")
+    assert l["retido"] == d("3475.94")
+    assert l["regularizado"] == d("53475.94")
+    assert l["regularizado_acum"] == d("53475.94")
+    assert l["por_regularizar"] == d("46524.06")
+    assert l["dinheiro_pendente"] == d("43500.00")
+    assert l["retencao_por_amortizar"] == d("3024.06")
+
+
+def test_um_segundo_recibo_conta_o_que_o_primeiro_ja_regularizou(base, empresa):
+    """Um recibo que ignorasse os anteriores dizia que a factura está por
+    regularizar quando já foi paga em prestações — e mandava alguém cobrar o
+    que já recebeu."""
+    _factura(base, empresa, numero="F200", total="100000.00", retencao="6500.00")
+    _recibo(base, empresa, numero="R1", total="53475.94",
+            retencao="3475.94", ref="F200", dia=10)
+    segundo = _recibo(base, empresa, numero="R2", total="46524.06",
+                      retencao="3024.06", ref="F200", dia=20)
+
+    r = svc.extracto_do_recibo(base, empresa.id, segundo)
+    l = r["linhas"][0]
+
+    # O segundo paga o resto: a factura fica saldada.
+    assert l["regularizado_acum"] == d("100000.00")
+    assert l["por_regularizar"] == d("0.00")
+    assert l["dinheiro_pendente"] == d("0.00")
+    assert l["retencao_por_amortizar"] == d("0.00")
+
+
+def test_um_recibo_sem_factura_referida_nao_rebenta(base, empresa):
+    """Um recibo antigo, ou mal preenchido, dá um extracto vazio — não um
+    erro que impeça de o imprimir."""
+    rc = Venda(
+        empresa_id=empresa.id, numero=f"{MARCA_RC}RSEM", tipo_doc="RC",
+        data=_D(2026, 8, 19), subtotal=d("100.00"), iva=d("0"),
+        total=d("100.00"), estado="emitida", doc_origem_num=None,
+    )
+    base.add(rc)
+    base.flush()
+    r = svc.extracto_do_recibo(base, empresa.id, rc)
+    assert r["linhas"] == []

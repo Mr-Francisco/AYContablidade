@@ -3,7 +3,7 @@
 import { Printer, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import useSWR from "swr";
-
+import { ExtractoDoRecibo } from "@/components/comercial/ExtractoDoRecibo";
 import { Botao } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
@@ -105,6 +105,8 @@ export function DocumentoLegal({
   const td = tipos?.find((t) => t.cod === doc.tipo_doc);
   const nomeTipo = td?.nome ?? doc.tipo_doc;
   const fiscal = td?.fiscal !== false;
+  /** Um recibo mostra o que regulariza, não linhas de artigo. */
+  const ehRecibo = doc.tipo_doc === "RC";
   const moeda = empresa?.moeda ?? "Kz";
 
   const iniciais = (empresa?.nome ?? "SGD")
@@ -217,63 +219,73 @@ export function DocumentoLegal({
                 </div>
               </div>
 
-              {/* ---- Linhas ---- */}
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    {[
-                      "Cód.",
-                      "Descrição",
-                      "Preço s/IVA",
-                      "Qtd.",
-                      "Uni.",
-                      "Taxa(%)",
-                      "Total",
-                    ].map((h, i) => (
-                      <th
-                        key={h}
-                        className={`bg-[#1a1a2e] px-2 py-1.5 text-[11px] uppercase text-white ${
-                          i >= 2 && i !== 4 ? "text-right" : "text-left"
-                        }`}
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(doc.linhas ?? []).map((l, i) => (
-                    <tr key={`${l.ordem}-${l.descricao}`}>
-                      <td className="tabular border-b border-[#ddd] px-2 py-1.5">
-                        {String(i + 1).padStart(3, "0")}
-                      </td>
-                      <td className="border-b border-[#ddd] px-2 py-1.5">
-                        {l.descricao}
-                        {l.motivo_isencao && (
-                          <span className="block text-[10.5px] text-[#777]">
-                            {l.motivo_isencao}
-                          </span>
-                        )}
-                      </td>
-                      <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
-                        {formata(l.preco)}
-                      </td>
-                      <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
-                        {formata(l.qtd, 0)}
-                      </td>
-                      <td className="border-b border-[#ddd] px-2 py-1.5">
-                        {l.unidade || "UN"}
-                      </td>
-                      <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
-                        {percentagem(l.taxa_perc ?? doc.iva_perc)}
-                      </td>
-                      <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
-                        {formata(l.total)}
-                      </td>
+              {/* ---- Recibo: os três blocos, no lugar das linhas ----
+
+                  UM RECIBO NÃO TEM LINHAS DE ARTIGO. Tem facturas que
+                  regulariza, e cada uma lê-se em três tempos: o que foi
+                  facturado, o que este pagamento move, e o que fica. Desenhar
+                  aqui a tabela de artigos — vazia — era mostrar um documento
+                  que não diz o que faz. */}
+              {ehRecibo ? (
+                <ExtractoDoRecibo vendaId={doc.id} moeda={moeda} />
+              ) : (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      {[
+                        "Cód.",
+                        "Descrição",
+                        "Preço s/IVA",
+                        "Qtd.",
+                        "Uni.",
+                        "Taxa(%)",
+                        "Total",
+                      ].map((h, i) => (
+                        <th
+                          key={h}
+                          className={`bg-[#1a1a2e] px-2 py-1.5 text-[11px] uppercase text-white ${
+                            i >= 2 && i !== 4 ? "text-right" : "text-left"
+                          }`}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {(doc.linhas ?? []).map((l, i) => (
+                      <tr key={`${l.ordem}-${l.descricao}`}>
+                        <td className="tabular border-b border-[#ddd] px-2 py-1.5">
+                          {String(i + 1).padStart(3, "0")}
+                        </td>
+                        <td className="border-b border-[#ddd] px-2 py-1.5">
+                          {l.descricao}
+                          {l.motivo_isencao && (
+                            <span className="block text-[10.5px] text-[#777]">
+                              {l.motivo_isencao}
+                            </span>
+                          )}
+                        </td>
+                        <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
+                          {formata(l.preco)}
+                        </td>
+                        <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
+                          {formata(l.qtd, 0)}
+                        </td>
+                        <td className="border-b border-[#ddd] px-2 py-1.5">
+                          {l.unidade || "UN"}
+                        </td>
+                        <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
+                          {percentagem(l.taxa_perc ?? doc.iva_perc)}
+                        </td>
+                        <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
+                          {formata(l.total)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
 
               {/* ---- Resumo de impostos e totais ---- */}
               <div className="mt-3 flex flex-wrap items-start justify-between gap-5">
