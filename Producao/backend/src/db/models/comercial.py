@@ -94,6 +94,28 @@ class Venda(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     iva: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
     total: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
 
+    # ---- Retenção na fonte ----
+    #: A taxa, em percentagem. `6.50` na prestação de serviços.
+    retencao_perc: Mapped[Decimal] = mapped_column(
+        Numeric(6, 2), default=Decimal("0"), nullable=False, server_default="0"
+    )
+    #: SOBRE QUE VALOR A RETENÇÃO INCIDE, e é um campo por bom motivo.
+    #:
+    #: Não é sempre o subtotal. Num documento real do cliente, uma factura de
+    #: 230 000 tinha 9 750 de retenção — 6,5% de 150 000, não de 230 000. A
+    #: retenção incide sobre a parte que lhe está sujeita, e uma factura pode
+    #: misturar o que está e o que não está.
+    #:
+    #: A linha de venda não distingue mercadoria de serviço — só a factura o
+    #: faz —, por isso a base fica explícita em vez de deduzida. Em branco, é o
+    #: subtotal: o caso simples continua simples.
+    retencao_base: Mapped[Decimal | None] = mapped_column(Money)
+    #: O valor retido, guardado e não recalculado: a taxa pode mudar amanhã e
+    #: um documento já emitido não muda.
+    retencao: Mapped[Decimal] = mapped_column(
+        Money, default=Decimal("0"), nullable=False, server_default="0"
+    )
+
     estado: Mapped[str] = mapped_column(String(20), default="rascunho", nullable=False, index=True)
     emitido_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Código de validação do documento (codigoValidacao no Piloto).

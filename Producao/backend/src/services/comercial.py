@@ -82,6 +82,12 @@ def cfg_com_default() -> dict:
         "conta_caixa": "4511",
         "conta_banco": "43101",
         "conta_adiantamento": "319121",
+        # A RETENÇÃO NA FONTE NÃO É UMA PERDA: é um adiantamento do Imposto
+        # Industrial, que o cliente entrega ao Estado em nome do fornecedor e
+        # que este abate ao imposto do exercício. Por isso vai a débito de uma
+        # conta de imposto a recuperar — `3413 IL: retenção na fonte`, que o
+        # plano PGC-AR já traz — e não a um custo.
+        "conta_retencao": "3413",
     }
 
 
@@ -201,6 +207,88 @@ def calc_totais(linhas: list[dict], iva_perc: Decimal) -> dict:
     )
     iva = r2(subtotal * (iva_perc or ZERO) / 100)
     return {"subtotal": subtotal, "iva": iva, "total": r2(subtotal + iva)}
+
+
+# ---------------------------------------------------------------------------
+# Retenção na fonte
+#
+# O QUE ELA É: um imposto que o CLIENTE retém e entrega ao Estado por conta do
+# fornecedor. O fornecedor factura 100 000, recebe 93 500 e os 6 500 restantes
+# ficam retidos — mas a dívida do cliente fica saldada na mesma, porque os
+# 6 500 foram entregues ao Estado em nome dele.
+#
+# É POR ISSO QUE O RECIBO TEM TRÊS BLOCOS. O que se paga não é o que se
+# regulariza: regulariza-se o que se paga MAIS o que se reteve.
+# ---------------------------------------------------------------------------
+def calc_retencao(subtotal, perc, base=None) -> dict:
+    """O valor retido, e sobre que valor incidiu.
+
+    A BASE NÃO É SEMPRE O SUBTOTAL, e é por isso que é um parâmetro. Numa
+    factura real do cliente, 230 000 de ilíquido tinham 9 750 de retenção —
+    6,5% de 150 000. A retenção incide sobre a parte que lhe está sujeita, e
+    uma factura pode misturar o que está e o que não está.
+
+    Em branco, a base é o subtotal: o caso simples continua simples.
+    """
+    subtotal = r2(subtotal or 0)
+    perc = Decimal(str(perc or 0))
+    if perc <= 0:
+        return {"base": ZERO, "perc": ZERO, "retencao": ZERO}
+
+    incidencia = r2(base) if base is not None else subtotal
+    # Nunca mais do que o próprio subtotal: uma base maior do que o documento
+    # seria reter sobre valor que não foi facturado.
+    incidencia = min(max(incidencia, ZERO), subtotal)
+    return {
+        "base": incidencia,
+        "perc": perc,
+        "retencao": r2(incidencia * perc / 100),
+    }
+
+
+def liquido_a_receber(total, retencao) -> Decimal:
+    """O que o cliente vai mesmo transferir: o total menos o retido."""
+    return r2(Decimal(str(total or 0)) - Decimal(str(retencao or 0)))
+
+
+def regularizacao_do_recibo(
+    *, total_factura, retencao_factura, valor_pago
+) -> dict:
+    """Quanto é que um pagamento regulariza de uma factura com retenção.
+
+    A REGRA, verificada contra dois recibos reais do cliente:
+
+        retido       = retenção da factura × (pago ÷ líquido da factura)
+        regularizado = pago + retido
+
+    Pagar metade do líquido amortiza metade da retenção — a retenção não se
+    consome toda no primeiro pagamento nem fica toda para o fim. É proporcional,
+    e é o que faz as contas fecharem quando a factura acaba de ser paga.
+
+    SEM RETENÇÃO, regularizado é o que se pagou, e nada disto se nota.
+    """
+    total = r2(total_factura or 0)
+    retencao = r2(retencao_factura or 0)
+    pago = r2(valor_pago or 0)
+    liquido = r2(total - retencao)
+
+    if retencao <= 0 or liquido <= 0:
+        return {
+            "pago": pago,
+            "retido": ZERO,
+            "regularizado": pago,
+            "liquido_factura": liquido,
+        }
+
+    # Pagar tudo amortiza TODA a retenção, sem depender do arredondamento da
+    # proporção — senão sobravam cêntimos por regularizar numa factura paga.
+    retido = retencao if pago >= liquido else r2(retencao * pago / liquido)
+    return {
+        "pago": pago,
+        "retido": retido,
+        "regularizado": r2(pago + retido),
+        "liquido_factura": liquido,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -627,12 +715,29 @@ def emitir(
                        "entidade": nome_cli, "descricao": venda.numero})
     elif td["contab"] == "recibo":
         diario, documento_cod = _doc_recebimento(conta_pag)
+        # A RETENÇÃO É UMA TERCEIRA PONTA, e sem ela o recibo não fecha.
+        #
+        # O cliente entrega ao Estado, em nome do fornecedor, a parte retida.
+        # O dinheiro que entra no banco é o LÍQUIDO; o que se abate à conta
+        # corrente é o REGULARIZADO — pago mais retido. A diferença fica numa
+        # conta de imposto a recuperar, porque é isso que ela é: um crédito
+        # sobre o Estado, não uma perda.
+        retido = r2(venda.retencao or ZERO)
+        pago = liquido_a_receber(venda.total, retido)
         linhas = [
-            {"conta_codigo": conta_pag, "debito": venda.total, "entidade": nome_cli,
+            {"conta_codigo": conta_pag, "debito": pago, "entidade": nome_cli,
              "descricao": f"Recibo {venda.numero}"},
-            {"conta_codigo": conta_cli, "credito": venda.total, "entidade": nome_cli,
-             "descricao": f"Liquidação {venda.doc_origem_num or venda.numero}"},
         ]
+        if retido > 0:
+            linhas.append({
+                "conta_codigo": cfg["conta_retencao"], "debito": retido,
+                "entidade": nome_cli,
+                "descricao": f"Retenção na fonte {venda.retencao_perc}%",
+            })
+        linhas.append(
+            {"conta_codigo": conta_cli, "credito": venda.total, "entidade": nome_cli,
+             "descricao": f"Liquidação {venda.doc_origem_num or venda.numero}"}
+        )
     else:
         # Guia de Remessa e Pró-forma não geram lançamento.
         venda.estado = "emitida"

@@ -46,6 +46,13 @@ class VendaEntrada(BaseModel):
     cliente_nome: str | None = None
     vendedor_id: UUID | None = None
     iva_perc: Decimal = Decimal("0")
+    #: RETENÇÃO NA FONTE: a taxa, e sobre que valor incide.
+    #:
+    #: A base não é sempre o subtotal — numa factura real do cliente, 230 000
+    #: de ilíquido tinham 9 750 retidos, que são 6,5% de 150 000. Em branco,
+    #: incide sobre o subtotal.
+    retencao_perc: Decimal = Decimal("0")
+    retencao_base: Decimal | None = None
     conta_recebimento: str | None = None
     doc_origem_num: str | None = None
     linhas: list[LinhaEntrada] = Field(default_factory=list)
@@ -658,6 +665,7 @@ def criar_venda(
     iva_perc = dados.iva_perc if td.get("iva") else Decimal("0")
     linhas = [l.model_dump() for l in dados.linhas]
     t = svc.calc_totais(linhas, iva_perc)
+    ret = svc.calc_retencao(t["subtotal"], dados.retencao_perc, dados.retencao_base)
 
     cliente_nome = dados.cliente_nome
     if dados.cliente_id:
@@ -672,6 +680,8 @@ def criar_venda(
         vendedor_id=dados.vendedor_id, iva_perc=iva_perc,
         conta_recebimento=dados.conta_recebimento, doc_origem_num=dados.doc_origem_num,
         subtotal=t["subtotal"], iva=t["iva"], total=t["total"], estado="rascunho",
+        retencao_perc=ret["perc"], retencao_base=ret["base"] or None,
+        retencao=ret["retencao"],
         linhas=[
             VendaLinha(
                 ordem=i, artigo_id=l["artigo_id"], descricao=l["descricao"],
@@ -686,7 +696,8 @@ def criar_venda(
     db.commit()
     db.refresh(v)
     return {"id": v.id, "estado": v.estado, "subtotal": v.subtotal, "iva": v.iva,
-            "total": v.total}
+            "total": v.total, "retencao": v.retencao,
+            "liquido": svc.liquido_a_receber(v.total, v.retencao)}
 
 
 @router.post("/vendas/{venda_id}/emitir", dependencies=[GERIR])
