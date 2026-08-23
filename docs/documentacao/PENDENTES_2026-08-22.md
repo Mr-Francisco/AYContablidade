@@ -14,13 +14,51 @@ assinalado.
 
 | | Ponto | Estado |
 |---|---|---|
-| 1 | Notificações: estados e filtro por módulo | **FEITO** (falta responder sobre «atendida») |
+| 1 | Notificações: estados e filtro por módulo | **FEITO** |
 | 2 | Criar fornecedores nas Compras | **FEITO** |
 | 3 | Clientes: 3.ª categoria «Outros devedores» | **FEITO** |
-| 4 | Criar fornecedores nos Imobilizados | Analisado |
-| 5–8 | Imobilizado em Curso | **BLOQUEADO — contas não batem** |
-| 9–12 | Amortização especial, não amortizável, tipo | Analisado |
-| 14–19 | Classificação automática de fluxos | Analisado |
+| 4 | Criar fornecedores nos Imobilizados | Por fazer |
+| 5, 7, 8, 12 | Ficha de Imobilizado em Curso, fecho e transferência | Desbloqueado — por fazer |
+| 6 | Tipo de imobilizado | **FEITO** |
+| 9 | Condições especiais de amortização | **FEITO** no cálculo; falta a ficha |
+| 10 | Imobilizado não amortizável | **FEITO** no cálculo; falta a ficha |
+| 14–19 | Classificação automática de fluxos | Aguarda resposta ao âmbito |
+
+---
+
+## Decisões do cliente — 22 de Agosto
+
+Recebidas por mensagem, e registadas aqui porque mudam o que estava bloqueado.
+
+| Pergunta | Resposta |
+|---|---|
+| «Atendida» é o mesmo que «resolvida»? | **Sim.** Muda-se a palavra no ecrã, não o mecanismo. |
+| As contas `371…` | **Manda o plano.** «Foi um erro meu; o balancete já traz isso.» |
+| Onde acumula o em curso | `141` corpóreo · `142` incorpóreo · `143` financeiro |
+| Conta de destino no fecho | Uma de `11`/`12`/`13` — **«a que for indicada»** |
+| A transferência movimenta contas? | **Sim** — «as contas a movimentar serão…» |
+
+### 🛑 Continua por resolver: a conta `143` não existe
+
+O cliente indicou `143` para o investimento financeiro em curso. **Não existe
+no plano.** A classe `14 Imobilizações em curso` tem `141`, `142`, `147`, `148`
+e `149` — não tem `143`.
+
+As contas em curso ficaram **parametrizáveis** (`conta_curso_corporeo`,
+`conta_curso_incorporeo`, `conta_curso_financeiro`), com `141`/`142`/`143` por
+omissão. Assim, ou se cria a `143` no plano da empresa, ou se aponta a
+parametrização a outra conta — sem tocar no programa. **Mas alguém tem de
+decidir qual**, e enquanto não decidir, um imobilizado financeiro em curso não
+tem onde acumular.
+
+### Ainda por responder
+
+- **Quando começa a amortização** depois do fecho — data do fecho, mês
+  seguinte, ou indicada à mão?
+- **Condições especiais**: fica só a base a mudar, ou também a taxa? *(está
+  implementado como «só a base» — é o que a especificação diz, e é reversível)*
+- **Fluxos automáticos**: restringir a `311`/`321`/`361` em vez das classes
+  inteiras? E quais das nove contas de Estado são inequívocas?
 
 ---
 

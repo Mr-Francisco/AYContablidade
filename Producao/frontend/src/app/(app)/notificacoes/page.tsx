@@ -46,8 +46,15 @@ const ROTULO_ORIGEM: Record<string, string> = {
  * Gestão de notificações — o histórico completo.
  *
  * NADA SE APAGA AQUI, e não é esquecimento. Uma notificação fica para sempre:
- * «resolvida» diz que a situação que a originou acabou, «lida» diz que alguém
+ * «atendida» diz que a situação que a originou acabou, «lida» diz que alguém
  * a viu. São coisas diferentes e nenhuma das duas remove.
+ *
+ * ATENDIDA É O QUE POR DENTRO SE CHAMA «RESOLVIDA», e foi decisão do cliente
+ * que fossem a mesma coisa: quem trata da notificação vai ao sítio onde o
+ * problema está e trata-o, e o sistema dá-a por atendida quando volta a
+ * verificar e já não o encontra. Não há um botão de «marcar como atendida»
+ * porque não deve haver: marcá-la sem resolver o problema seria dizer que
+ * está feito o que não está.
  *
  * É por isso que há «Marcar não lida»: quem abre uma notificação a correr e
  * não a pode tratar agora precisa de a poder voltar a pôr por ler.
@@ -112,8 +119,8 @@ export default function GestaoNotificacoes() {
             { valor: "todas", rotulo: "Todas" },
             { valor: "por_ler", rotulo: "Por ler" },
             { valor: "lidas", rotulo: "Lidas" },
-            { valor: "por_resolver", rotulo: "Por resolver" },
-            { valor: "resolvidas", rotulo: "Resolvidas" },
+            { valor: "por_resolver", rotulo: "Por atender" },
+            { valor: "resolvidas", rotulo: "Atendidas" },
           ]}
           larguraMinima="13rem"
         />
@@ -185,9 +192,9 @@ export default function GestaoNotificacoes() {
                         {ROTULO_ORIGEM[n.origem] ?? n.origem}
                       </Selo>
                       {n.resolvida_em ? (
-                        <Selo cor="#1a9c5f">Resolvida</Selo>
+                        <Selo cor="#1a9c5f">Atendida</Selo>
                       ) : (
-                        <Selo cor="#c98a10">Por resolver</Selo>
+                        <Selo cor="#c98a10">Por atender</Selo>
                       )}
                     </div>
                     <p className="text-[13px] leading-relaxed text-texto-suave">
@@ -196,7 +203,7 @@ export default function GestaoNotificacoes() {
                     <p className="mt-1 text-[11.5px] text-texto-suave">
                       {dataHoraLonga(n.criado_em)}
                       {n.resolvida_em &&
-                        ` · resolvida em ${dataHoraLonga(n.resolvida_em)}`}
+                        ` · atendida em ${dataHoraLonga(n.resolvida_em)}`}
                     </p>
                   </div>
 
@@ -206,7 +213,7 @@ export default function GestaoNotificacoes() {
                         href={n.ligacao}
                         className="rounded-lg bg-acento px-3 py-[7px] text-center text-[12.5px] font-bold text-[#241500] transition-opacity hover:opacity-90"
                       >
-                        Resolver
+                        Atender
                       </Link>
                     )}
                     <Botao

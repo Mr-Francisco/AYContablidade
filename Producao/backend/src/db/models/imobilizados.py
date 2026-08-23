@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -53,6 +54,50 @@ class Ativo(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     fornecedor: Mapped[str | None] = mapped_column(String(200))
     # "activo" | "abatido" — um activo abatido deixa de amortizar.
     estado: Mapped[str] = mapped_column(String(20), default="activo", nullable=False)
+
+    #: `corporeo` | `incorporeo` | `financeiro`.
+    #:
+    #: Decide as contas por omissão em dois momentos: a conta de COMPRA
+    #: (`3711…` corpóreo, `3712…` incorpóreo, `3713…` financeiro, e dentro de
+    #: cada uma conforme o fornecedor seja nacional ou estrangeiro) e, no
+    #: imobilizado em curso, a conta onde os custos acumulam e a classe para
+    #: onde são transferidos no fecho.
+    tipo_imobilizado: Mapped[str | None] = mapped_column(String(20))
+
+    #: Um activo que NÃO amortiza — os terrenos são o exemplo.
+    #:
+    #: Não se resolve pondo a taxa a zero: a taxa a zero é uma taxa, e não
+    #: distingue «não amortiza» de «ainda não sabemos a taxa». Quem ler a ficha
+    #: daqui a um ano tem de perceber que foi uma decisão.
+    nao_amortizavel: Mapped[bool] = mapped_column(
+        default=False, nullable=False, server_default="false"
+    )
+
+    #: Condições especiais de amortização, e o que elas dizem.
+    condicoes_especiais: Mapped[bool] = mapped_column(
+        default=False, nullable=False, server_default="false"
+    )
+    condicoes_texto: Mapped[str | None] = mapped_column(Text)
+
+    #: A parte do activo sobre a qual a amortização incide.
+    #:
+    #: Só conta quando há condições especiais. Sem elas, a base é o valor de
+    #: aquisição — que é o que sempre foi e continua a ser.
+    valor_sujeito_amortizacao: Mapped[Decimal | None] = mapped_column(Money)
+
+    # ---- Imobilizado em curso ----
+    #: O activo ainda está a ser construído ou adquirido.
+    #:
+    #: Enquanto estiver, NÃO AMORTIZA e vai acumulando itens. Fecha-se quando
+    #: estiver concluído, e aí é transferido para o património.
+    em_curso: Mapped[bool] = mapped_column(
+        default=False, nullable=False, server_default="false"
+    )
+    #: Quando foi fechado e transferido. Nulo enquanto estiver em curso.
+    fechado_em: Mapped[date | None] = mapped_column(Date)
+    #: A conta de imobilizado para onde o valor acumulado foi transferido —
+    #: uma subconta de `11`, `12` ou `13`, indicada no fecho.
+    conta_destino: Mapped[str | None] = mapped_column(String(20))
 
     def __repr__(self) -> str:
         return f"<Ativo {self.codigo} {self.designacao!r}>"

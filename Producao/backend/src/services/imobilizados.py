@@ -29,8 +29,81 @@ def r2(v) -> Decimal:
     return Decimal(v).quantize(CENT, rounding=ROUND_HALF_UP)
 
 
+#: Os três tipos de imobilizado, e o que decidem.
+TIPOS_IMOBILIZADO = ("corporeo", "incorporeo", "financeiro")
+
+TIPO_LABEL = {
+    "corporeo": "Imobilizado Corpóreo",
+    "incorporeo": "Imobilizado Incorpóreo",
+    "financeiro": "Investimento Financeiro",
+}
+
+#: O dígito do tipo dentro de `371 Compras de Imobilizado`.
+#:
+#: O PLANO ESTÁ ORGANIZADO EM 3 × 2 e foi lido do próprio plano, não suposto:
+#:
+#:     371 Compras de Imobilizado
+#:     ├── 3711 Corpóreo    → 37112 Não grupo → 371121 Nacionais · 371122 Estrangeiros
+#:     ├── 3712 Incorpóreo  → 37122 Não grupo → 371221 Nacionais · 371222 Estrangeiros
+#:     └── 3713 Financeiro  → 37132 Não grupo → 371321 Nacionais · 371322 Estrangeiros
+#:
+#: A regra é `371` + tipo + `2` (não grupo) + nacionalidade. A lista que veio no
+#: pedido trocava os códigos entre si — `371122` estava dado como investimento
+#: financeiro e é Corpóreo/Estrangeiros — e omitia as duas do Incorpóreo. O
+#: cliente confirmou que o plano é que manda.
+_DIGITO_DO_TIPO = {"corporeo": "1", "incorporeo": "2", "financeiro": "3"}
+
+#: A classe de destino de cada tipo, para onde o imobilizado em curso vai.
+#: `11` Corpóreas, `12` Incorpóreas, `13` Investimentos Financeiros.
+CLASSE_DE_DESTINO = {"corporeo": "11", "incorporeo": "12", "financeiro": "13"}
+
+
+def conta_compra_imobilizado(tipo: str, categoria_fornecedor: str) -> str | None:
+    """A conta de compra, pelo tipo do bem e pela origem do fornecedor.
+
+    Devolve `None` quando não há como decidir — sem tipo, ou com uma categoria
+    que não seja nacional nem estrangeiro. Devolver uma conta por omissão nesse
+    caso seria escolher por quem não escolheu, e a conta errada de compra de
+    imobilizado não dá erro: dá um balancete que parece bom.
+    """
+    digito = _DIGITO_DO_TIPO.get((tipo or "").strip().lower())
+    if not digito:
+        return None
+    nacionalidade = {"nacional": "1", "estrangeiro": "2"}.get(
+        (categoria_fornecedor or "").strip().lower()
+    )
+    if not nacionalidade:
+        return None
+    return f"371{digito}2{nacionalidade}"
+
+
 def cfg_imob_default() -> dict:
-    return {"diario": "71", "documento": "713"}
+    return {
+        "diario": "71",
+        "documento": "713",
+        # AS CONTAS DE IMOBILIZADO EM CURSO, como o cliente as indicou.
+        #
+        # `141` e `142` existem no plano (ambas «Obra em curso»); `143` NÃO
+        # existe. Ficam aqui como parametrização e não fixas no código, para
+        # que uma empresa cujo plano difira as possa apontar a outro sítio sem
+        # tocar no programa — e para que a falta de uma se resolva na
+        # parametrização em vez de rebentar a meio de um fecho.
+        "conta_curso_corporeo": "141",
+        "conta_curso_incorporeo": "142",
+        "conta_curso_financeiro": "143",
+    }
+
+
+def conta_em_curso(tipo: str, cfg: dict) -> str | None:
+    """A conta onde o imobilizado em curso acumula, pelo tipo."""
+    chave = {
+        "corporeo": "conta_curso_corporeo",
+        "incorporeo": "conta_curso_incorporeo",
+        "financeiro": "conta_curso_financeiro",
+    }.get((tipo or "").strip().lower())
+    if not chave:
+        return None
+    return (cfg.get(chave) or "").strip() or None
 
 
 def cfg_imob(db: Session, empresa_id: UUID) -> dict:
@@ -53,21 +126,53 @@ def coef_degressivo(vida_util_anos: Decimal) -> Decimal:
     return Decimal("2.5")
 
 
+def base_amortizavel(a: Ativo) -> Decimal:
+    """O valor sobre o qual a amortização incide.
+
+    É o valor de aquisição — SALVO havendo condições especiais, e aí é o valor
+    indicado na ficha. Foi o que se pediu: com condições especiais, o sistema
+    não pode assumir que todo o activo é amortizável.
+
+    Sem condições especiais, ou com elas mas sem valor indicado, mantém-se o
+    valor de aquisição. Assumir zero calaria a amortização de um activo por um
+    campo que ficou por preencher, e isso não se nota até ao fecho do
+    exercício.
+    """
+    if a.condicoes_especiais and a.valor_sujeito_amortizacao is not None:
+        return r2(a.valor_sujeito_amortizacao)
+    return r2(a.valor_aquisicao or ZERO)
+
+
 def valor_liquido(a: Ativo) -> Decimal:
-    return r2((a.valor_aquisicao or ZERO) - (a.amort_acumulada or ZERO))
+    """O que falta amortizar.
+
+    Conta a partir da BASE AMORTIZÁVEL e não do valor de aquisição: com
+    condições especiais, a parte não sujeita fica no activo e nunca entra na
+    amortização — se entrasse aqui, o activo continuava a amortizar depois de a
+    parte sujeita estar esgotada.
+    """
+    return r2(base_amortizavel(a) - (a.amort_acumulada or ZERO))
 
 
 def amort_anual(a: Ativo) -> Decimal:
     """Quota anual.
 
-    Nas quotas constantes incide sobre o VALOR DE AQUISIÇÃO; nas decrescentes
-    sobre o valor líquido ainda por amortizar, multiplicado pelo coeficiente.
+    Nas quotas constantes incide sobre a BASE AMORTIZÁVEL; nas decrescentes
+    sobre o valor ainda por amortizar, multiplicado pelo coeficiente.
     """
+    # NÃO AMORTIZÁVEL é uma decisão, e vale mais do que a taxa: um terreno com
+    # taxa preenchida por engano não pode começar a amortizar por causa disso.
+    if a.nao_amortizavel:
+        return ZERO
+    # EM CURSO também não amortiza — o activo ainda não existe como património.
+    if a.em_curso:
+        return ZERO
+
     taxa = a.taxa or ZERO
     if a.metodo == "degressivas":
         vida_util = (Decimal("100") / taxa) if taxa > 0 else ZERO
         return r2(valor_liquido(a) * taxa / 100 * coef_degressivo(vida_util))
-    return r2((a.valor_aquisicao or ZERO) * taxa / 100)
+    return r2(base_amortizavel(a) * taxa / 100)
 
 
 def amort_mensal(a: Ativo) -> Decimal:
@@ -92,7 +197,14 @@ def amort_do_periodo(a: Ativo, mes: str) -> Decimal:
 
 
 def percent_amortizado(a: Ativo) -> int:
-    v = a.valor_aquisicao or ZERO
+    """Percentagem do que É AMORTIZÁVEL, não do valor de aquisição.
+
+    Com condições especiais são coisas diferentes: um activo de 10 000 com
+    4 000 sujeitos, já todos amortizados, está a 100% — não a 40%. Contar sobre
+    a aquisição dava um activo eternamente por amortizar, com o mapa a sugerir
+    que faltava fazer alguma coisa.
+    """
+    v = base_amortizavel(a)
     if not v:
         return 0
     return int(round((a.amort_acumulada or ZERO) / v * 100))

@@ -30,7 +30,7 @@ interface Resposta extends Pagina<Notificacao> {
  * O sino do cabeçalho, com o contador do que está por ler.
  *
  * O CONTADOR CONTA O QUE ESTÁ POR RESOLVER E POR LER. Uma notificação já
- * resolvida não deve puxar ninguém para um problema que já não existe — mas
+ * atendida não deve puxar ninguém para um problema que já não existe — mas
  * continua no histórico, porque foi essa a regra pedida: nada desaparece por
  * ter sido lido.
  *
@@ -173,7 +173,7 @@ function Linha({
             <span className="text-[11px] text-texto-suave">
               {dataHora(n.criado_em)}
             </span>
-            {n.resolvida_em && <Selo cor="#1a9c5f">Resolvida</Selo>}
+            {n.resolvida_em && <Selo cor="#1a9c5f">Atendida</Selo>}
           </div>
         </div>
       </div>
