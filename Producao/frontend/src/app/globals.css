@@ -286,6 +286,18 @@
     display: none !important;
   }
 
+  /* NEM A FRASE QUE EXPLICA O ECRÃ, NEM OS INDICADORES. O Piloto tira as
+     duas coisas de um mapa impresso, e por boas razões: a frase fala de
+     gestos que no papel não existem («duplo clique numa conta abre o
+     extracto»), e os indicadores empurram a primeira linha da tabela para a
+     segunda folha. Quem imprime um balancete quer o balancete. */
+  .cabecalho-descricao,
+  .kpi,
+  /* e o invólucro do indicador, senão fica a grelha vazia a ocupar altura */
+    *:has(> .kpi) {
+    display: none !important;
+  }
+
   /* Marcado à mão quando um controlo TEM de aparecer (uma opção escolhida que
      explica o mapa, por exemplo). */
   .imprimir,
@@ -309,13 +321,24 @@
   /* Uma linha de tabela não se parte a meio entre duas folhas, e o cabeçalho
      repete-se em todas — sem isso, a segunda página de um balancete são
      números sem colunas. */
+  /* A MEDIDA É A DO PILOTO: 8,6 pt e células apertadas. Não é gosto — é o
+     que faz caber um balancete de nove colunas numa folha. A 9,5 pt com
+     3×6 px de respiro, as duas últimas colunas passavam à folha seguinte, e
+     um mapa partido ao meio obriga a pousar duas folhas lado a lado para
+     ler uma linha. */
   table {
     width: 100% !important;
     border-collapse: collapse;
-    font-size: 9.5pt;
+    font-size: 8.6pt;
   }
   thead {
     display: table-header-group;
+  }
+  /* O total repete-se ao fim de cada folha, como o cabeçalho se repete no
+     topo. Numa demonstração de resultados com três páginas, quem lê a
+     segunda deixava de ter o total à vista. */
+  tfoot {
+    display: table-footer-group;
   }
   tr,
   img {
@@ -323,8 +346,57 @@
   }
   th,
   td {
-    border: 1px solid #999 !important;
-    padding: 3px 6px !important;
+    border: 0.4pt solid #9a9a9a !important;
+    padding: 2px 5px !important;
+    color: #000 !important;
+  }
+
+  /* O cabeçalho do mapa fecha com o traço da marca, como no Piloto. */
+  .cabecalho-mapa {
+    border-bottom: 2pt solid #0b3d91 !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 8px !important;
+    break-after: avoid;
+  }
+
+  /* O CABEÇALHO DA TABELA MANTÉM A COR DA MARCA. É a única cor que o Piloto
+     deixa num mapa impresso, e serve: separa o cabeçalho do corpo sem uma
+     linha extra, e é o que faz a folha parecer o mapa do sistema e não uma
+     tabela qualquer colada de uma folha de cálculo. */
+  thead th {
+    background: #0b3d91 !important;
+    color: #fff !important;
+    font-weight: 700;
+    border-color: #0b3d91 !important;
+  }
+
+  /* Subtotais e totais a cinzento, com o total marcado por um traço preto.
+     Sem isto saem iguais às outras linhas — e num balancete de duzentas
+     linhas, o que separa uma classe da seguinte é justamente esse cinzento. */
+  .linha-subtotal td,
+  .linha-subtotal th {
+    background: #f0f0f0 !important;
+    font-weight: 700;
+  }
+  .linha-total td,
+  .linha-total th {
+    background: #dcdcdc !important;
+    font-weight: 800;
+    border-top: 1pt solid #000 !important;
+  }
+
+  /* NÚMEROS SEMPRE A PRETO. No ecrã um saldo negativo é vermelho e uma
+     entrada é verde; impressos a preto e branco ficam cinzentos claros, que é
+     o que menos se lê numa coluna de números. A cor da conta lê-se pelo sinal
+     e pela coluna, não pelo tom. */
+  td b,
+  td small,
+  td span,
+  .tabular {
+    color: #000 !important;
+  }
+  td small {
+    color: #333 !important;
   }
 
   h1,
@@ -363,7 +435,10 @@
      própria `@page deitado`, mais abaixo, e continua a mandar nela. */
   @page {
     size: A4 portrait;
-    margin: 14mm 12mm;
+    /* 12/10 mm são as margens do Piloto. Dois milímetros a mais de cada lado
+       chegavam para uma coluna de um balancete largo passar à folha
+       seguinte. */
+    margin: 12mm 10mm;
   }
 }
 

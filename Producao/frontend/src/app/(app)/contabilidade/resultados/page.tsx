@@ -20,6 +20,7 @@ import {
   Alerta,
   BarraFiltros,
   Botao,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Cartao,
   Selector,
@@ -197,6 +198,12 @@ export default function Resultados() {
           larguraMinima="14rem"
         />
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Demonstração de Resultados"
+        exercicioId={exId}
+        periodoCodigo={mes}
+      />
 
       {isLoading ? (
         <ACarregar />

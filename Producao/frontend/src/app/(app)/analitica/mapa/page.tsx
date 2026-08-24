@@ -8,6 +8,7 @@ import {
   Alerta,
   BarraFiltros,
   Botao,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -105,7 +106,7 @@ export default function MapaCustos() {
       <CabecalhoPagina
         titulo="Mapa de Custos por Centro"
         descricao="Contabilidade Analítica — custos e proveitos (classes 6/7) imputados por centro de responsabilidade. Duplo clique num centro mostra o detalhe."
-        accoes={<AccoesDoMapa />}
+        accoes={<AccoesDoMapa deitado />}
       />
 
       {data && (
@@ -177,6 +178,14 @@ export default function MapaCustos() {
           />
         </Campo>
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Mapa de Custos por Centro"
+        exercicioId={exId}
+        periodo={
+          de || ate ? `Período ${de || "início"} a ${ate || "fim"}` : undefined
+        }
+      />
 
       {porClassificar > 0 && (
         <Alerta tipo="aviso" className="mb-4">
@@ -263,7 +272,7 @@ export default function MapaCustos() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-borda font-bold">
+                  <tr className="linha-total border-t-2 border-borda font-bold">
                     <Td colSpan={2}>TOTAL</Td>
                     <Td numerico>{formataMoeda(data.totais.debito, moeda)}</Td>
                     <Td numerico>{formataMoeda(data.totais.credito, moeda)}</Td>
@@ -353,7 +362,7 @@ export default function MapaCustos() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-borda font-bold">
+                  <tr className="linha-total border-t-2 border-borda font-bold">
                     <Td colSpan={4}>TOTAIS / SALDO</Td>
                     <Td numerico>
                       {formataMoeda(detalhe.total_debito, moeda)}

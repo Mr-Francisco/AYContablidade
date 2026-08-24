@@ -8,6 +8,7 @@ import { CampoData } from "@/components/contabilidade/CampoData";
 import {
   ACarregar,
   BarraFiltros,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Cartao,
   EnvolveTabela,
@@ -111,6 +112,14 @@ export default function FluxosCaixa() {
           exercicioId={exercicioId}
         />
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Demonstração de Fluxos de Caixa (método directo)"
+        exercicioId={exId}
+        periodo={
+          de || ate ? `Período ${de || "início"} a ${ate || "fim"}` : undefined
+        }
+      />
 
       {isLoading ? (
         <ACarregar />
@@ -222,7 +231,7 @@ export default function FluxosCaixa() {
                     )}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-superficie-2 font-extrabold">
+                    <tr className="linha-total bg-superficie-2 font-extrabold">
                       <Td>VARIAÇÃO DE TESOURARIA</Td>
                       <Td numerico>{formataMoeda(data.variacao, moeda)}</Td>
                     </tr>

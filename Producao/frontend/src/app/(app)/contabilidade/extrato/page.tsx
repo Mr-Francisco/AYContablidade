@@ -10,6 +10,7 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -117,6 +118,7 @@ function Conteudo() {
         accoes={
           <AccoesDoMapa
             nome={!fluxo && conta ? `Extrato ${conta}` : undefined}
+            deitado
           />
         }
       />
@@ -186,6 +188,17 @@ function Conteudo() {
           Incluir subcontas
         </label>
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo={fluxo ? `Extracto da rubrica ${fluxo}` : "Extracto de Conta"}
+        exercicioId={exId}
+        periodo={[
+          conta || null,
+          de || ate ? `${de || "início"} a ${ate || "fim"}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      />
 
       {/* CHEGA-SE AQUI DE DOIS SÍTIOS: escolhendo uma conta, ou por duplo
           clique numa rubrica do Fluxo de Caixa. Este aviso só olhava para a
@@ -314,7 +327,7 @@ function Conteudo() {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-superficie-2 font-extrabold">
+                      <tr className="linha-total bg-superficie-2 font-extrabold">
                         <Td colSpan={7}>TOTAIS</Td>
                         <Td numerico>
                           {formataMoeda(data.total_debito, moeda)}

@@ -10,6 +10,7 @@ import {
   Alerta,
   BarraFiltros,
   Botao,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Cartao,
   EnvolveTabela,
@@ -223,6 +224,12 @@ export default function Amortizacoes() {
           </Selo>
         </div>
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Mapa de Amortizações"
+        exercicioId={exId}
+        periodoCodigo={mes}
+      />
 
       {ehAbertura && (
         <Alerta tipo="info" className="mb-4">

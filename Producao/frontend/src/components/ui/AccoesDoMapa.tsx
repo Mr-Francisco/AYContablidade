@@ -26,6 +26,7 @@ export function AccoesDoMapa({
   nomeDoFicheiro,
   desactivado,
   nome,
+  deitado,
 }: {
   /** Devolve as linhas a exportar. Chamado só quando se carrega no botão —
    *  não vale a pena construir o CSV de um mapa que ninguém vai exportar. */
@@ -37,6 +38,9 @@ export function AccoesDoMapa({
    *  num mapa que se chama «Balancete Geral»). Passar só quando o título não
    *  chegar: um extracto de uma conta, um mapa de um mês em particular. */
   nome?: string;
+  /** Vira a folha. Os mapas largos — balancete, razão, extracto, custos por
+   *  centro — não cabem em pé, e é o que o Piloto faz nesses cinco. */
+  deitado?: boolean;
 }) {
   function exportar() {
     if (!aoExportar) return;
@@ -62,7 +66,7 @@ export function AccoesDoMapa({
       <Botao
         variante="neutro"
         tamanho="pequeno"
-        onClick={() => imprimirPagina(nome)}
+        onClick={() => imprimirPagina(nome, { deitado })}
         disabled={desactivado}
         motivoBloqueio="Não há nada para imprimir — o mapa está vazio."
         title="Abre a janela de impressão. Escolha «Guardar como PDF» para gravar o ficheiro."

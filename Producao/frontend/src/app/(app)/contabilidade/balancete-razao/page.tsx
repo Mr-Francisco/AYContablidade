@@ -9,6 +9,7 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -81,7 +82,7 @@ export default function BalanceteRazao() {
       <CabecalhoPagina
         titulo="Balancete do Razão"
         descricao="Contas do razão (2 dígitos) agrupadas por classe, com saldo anterior, do período e acumulado."
-        accoes={<AccoesDoMapa />}
+        accoes={<AccoesDoMapa deitado />}
       />
 
       <BarraFiltros className="mb-4">
@@ -109,6 +110,12 @@ export default function BalanceteRazao() {
           larguraMinima="14rem"
         />
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Balancete do Razão"
+        exercicioId={exId}
+        periodoCodigo={mes}
+      />
 
       {!de && (
         <Alerta tipo="info" className="mb-4">
@@ -158,7 +165,7 @@ export default function BalanceteRazao() {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-superficie-2 font-extrabold">
+                <tr className="linha-total bg-superficie-2 font-extrabold">
                   <Td colSpan={2}>TOTAL GERAL</Td>
                   <Td numerico>{valor(data.total.ant.d)}</Td>
                   <Td numerico>{valor(data.total.ant.c)}</Td>

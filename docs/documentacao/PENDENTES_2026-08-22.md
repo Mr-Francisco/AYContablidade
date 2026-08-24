@@ -669,3 +669,106 @@ mínima e a folga a ir toda para cima do rodapé (163 mm numa folha forçada a
 500 mm, com o rodapé a 4 mm do fundo); moldura da aplicação escondida; as três
 folhas nomeadas — `A4`, `talao` 80×297 mm, `deitado` A4 ao baixo — todas a
 serem aceites pelo browser.
+
+---
+
+# PARTE VI — O formato dos mapas, tirado do Piloto (24 de Agosto)
+
+Pedido: *«avance, e pelo menos copie o formato de outros ficheiros.»*
+
+O Piloto tem um bloco de impressão só para mapas — «IMPRESSÃO DE MAPAS
+(Balancete, Extrato, Razão, Fluxos) — AYGEST», em `assets/css/style.css` — com
+um conjunto de decisões que a Produção não tinha. Comparadas as duas, linha a
+linha.
+
+## 1. O cabeçalho do mapa — o que faltava a treze dos catorze
+
+Catorze páginas do Piloto abrem o relatório com o mesmo bloco (`.bal-cabecalho`):
+
+```
+A Minha Empresa, Lda.                        Valores em Kz · Período …
+Balancete Geral — Exercício 2026
+──────────────────────────────────────────────────────────────────────
+```
+
+Na Produção **só o Balancete o tinha**, escrito à mão nesse ficheiro. Os
+outros treze imprimiam o título e mais nada: de que empresa, de que exercício,
+de que período, em que moeda — nada disso ia ao papel, porque estava tudo nos
+campos de filtro, e os campos não se imprimem. Uma folha assim não se arquiva.
+
+O bloco do Balancete foi extraído para `components/ui/CabecalhoDoMapa.tsx` e
+posto nos quinze mapas. Resolve o exercício e o período por dentro — as
+páginas só passam o `id`, e a forma de os escrever («Exercício 2026 · 08 ·
+Agosto») fica num sítio só.
+
+| Mapa | O que sai |
+|---|---|
+| Balancete Geral | `Balancete Geral (Anterior, Período, Acumulado) — Exercício 2026` · `Valores em Kz` |
+| Balanço | `Balanço — Exercício 2026` |
+| Demonstração de Resultados | `Demonstração de Resultados — Exercício 2026` |
+| Fluxos de Caixa | `Demonstração de Fluxos de Caixa (método directo) — Exercício 2026` |
+| Retenções na Fonte | `Mapa de Retenções na Fonte — Exercício 2026` · `NIF: …` |
+| Apuramento do IVA | `Apuramento do IVA — Exercício 2026 · 08 · Agosto` · `NIF: …` |
+| Extracto | `Extracto de Conta — Exercício 2026 · 3211` |
+| Razão | `Razão — Exercício 2026 · 3211` |
+| Balancete do Razão | `Balancete do Razão — Exercício 2026` |
+| Notas às Contas | `Notas às Contas — Exercício 2026` |
+| Custos por Centro | `Mapa de Custos por Centro — Exercício 2026` |
+| Existências | `Mapa de Existências — Todos os armazéns` |
+| Amortizações | `Mapa de Amortizações — Exercício 2026 · 08 · Agosto` |
+| Folha de Salários | `Folha de Salários — Agosto de 2026` |
+| Contas Correntes | `Contas Correntes — Clientes — Exercício 2026` |
+| Obrigações Fiscais | `Obrigações Fiscais — Sociedade por Quotas (Lda.)` · `NIF: …` |
+
+Os mapas fiscais levam o **NIF** à direita e não a moeda, como no Piloto: é o
+que a AGT procura primeiro numa folha entregue.
+
+## 2. A folha vira nos mapas largos
+
+O Piloto imprime cinco mapas deitados (`body.print-landscape`): balancete,
+balancete do razão, extracto, mapa de custos e mapa de remunerações. Um
+balancete com «Anterior, Período e Acumulado» são nove colunas de números; em
+pé não cabem, e o que não cabe o browser corta.
+
+Na Produção só o mapa de remunerações virava a folha. Agora viram os mesmos
+cinco — mais o Razão, que na Produção é ecrã próprio e é tão largo como o
+extracto de que se separou.
+
+O mapa de remunerações passou a usar o mesmo caminho dos outros: a classe sai
+no sinal que repõe o título, e não num relógio de meio segundo que numa
+impressora lenta acabava antes da janela fechar.
+
+## 3. A tabela impressa
+
+| | Antes | Agora (a medida do Piloto) |
+|---|---|---|
+| Corpo | 9,5 pt | **8,6 pt** |
+| Células | `padding: 3px 6px`, borda `1px` | `2px 5px`, borda `0,4pt` |
+| Cabeçalho | preto sobre branco | **azul da marca, texto branco** |
+| Subtotais | iguais às outras linhas | fundo `#f0f0f0` |
+| Totais | iguais às outras linhas | fundo `#dcdcdc`, traço preto por cima |
+| Rodapé da tabela | não se repetia | `table-footer-group` — repete-se em cada folha |
+| Margens | 14/12 mm | **12/10 mm** |
+
+Não é gosto: a 9,5 pt com 3×6 px de respiro, as duas últimas colunas de um
+balancete passavam à folha seguinte, e um mapa partido ao meio obriga a pousar
+duas folhas lado a lado para ler uma linha.
+
+## 4. O que deixou de ir ao papel
+
+- **A frase que explica o ecrã.** «Duplo clique numa conta abre o extracto» é
+  uma instrução para quem está ao computador; no papel não há onde clicar.
+- **Os indicadores.** Empurravam a primeira linha da tabela para a segunda
+  folha. Quem imprime um balancete quer o balancete.
+- **A faixa de marca** dos painéis, que saía como um bloco azul a toda a
+  largura. Passa a título em texto simples.
+
+## Verificado
+
+Medido no browser com as regras de impressão aplicadas: os quinze cabeçalhos
+com o conteúdo certo; cabeçalho de tabela em `#0b3d91` com texto branco;
+células a 8,6 pt com `2px 5px`; subtotais em `#f0f0f0` e totais em `#dcdcdc`
+com traço preto; descrição da página e indicadores a `display: none`, com a
+grelha dos indicadores a colapsar para zero de altura; o botão do balancete a
+pôr `imprimir-deitado`. `npm run build` limpo (84 páginas), 760 testes do
+servidor a passar.

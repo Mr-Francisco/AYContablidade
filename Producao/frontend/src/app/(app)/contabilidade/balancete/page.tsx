@@ -11,6 +11,7 @@ import {
   Alerta,
   BarraFiltros,
   Botao,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -22,7 +23,7 @@ import { FalhaAoCarregar } from "@/components/ui/FalhaAoCarregar";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { big, ehZero, formata } from "@/lib/dinheiro";
-import { useExercicios, usePeriodos } from "@/lib/hooks";
+import { useExercicios } from "@/lib/hooks";
 import { CLASSES } from "@/lib/plano";
 
 /** Os nove valores de uma linha: três colunas para cada um dos três grupos. */
@@ -113,7 +114,6 @@ export default function PaginaBalancete() {
   const router = useRouter();
   const { empresa } = useAuth();
   const { exercicios, activo } = useExercicios();
-  const { periodos } = usePeriodos();
 
   const [exercicioId, setExercicioId] = useState<string | undefined>();
   const [modo, setModo] = useState("completo");
@@ -302,6 +302,7 @@ export default function PaginaBalancete() {
             aoExportar={exportar}
             nomeDoFicheiro="Balancete"
             desactivado={!data}
+            deitado
           />
         </BarraFiltros>
       </Cartao>
@@ -318,29 +319,22 @@ export default function PaginaBalancete() {
         <FalhaAoCarregar erro={error} oQue="o balancete" />
       ) : (
         <Cartao className="mb-4">
-          <div className="mb-3 flex flex-wrap items-start justify-between gap-3 border-b-2 border-borda pb-2.5">
-            <div>
-              <b>{empresa?.nome}</b>
-              <br />
-              <span className="text-[13px] text-texto-suave">
-                Balancete Geral (
-                {grupos.map((g) => GRUPOS[g].rotulo).join(", ")})
-                {activo && !exercicioId ? ` — ${activo.nome}` : ""}
-                {exercicioId
-                  ? ` — ${exercicios.find((e) => e.id === exercicioId)?.nome ?? ""}`
+          {/* Este cabeçalho existia aqui, escrito à mão — e era o único dos
+              catorze mapas a tê-lo. O `CabecalhoDoMapa` é exactamente esta
+              marcação, tirada daqui para os outros treze a poderem usar. */}
+          <CabecalhoDoMapa
+            titulo={`Balancete Geral (${grupos.map((g) => GRUPOS[g].rotulo).join(", ")})`}
+            exercicioId={exId}
+            periodoCodigo={mes}
+            detalhe={
+              <>
+                Valores em {moeda}
+                {de || ate
+                  ? ` · Período ${de ? dataCurta(de) : "início"} a ${ate ? dataCurta(ate) : "fim"}`
                   : ""}
-              </span>
-            </div>
-            <div className="text-[13px] text-texto-suave">
-              Valores em {moeda}
-              {de || ate
-                ? ` · Período ${de ? dataCurta(de) : "início"} a ${ate ? dataCurta(ate) : "fim"}`
-                : ""}
-              {mes
-                ? ` · Até ao mês ${mes} · ${periodos.find((x) => x.codigo === mes)?.nome ?? ""}`
-                : ""}
-            </div>
-          </div>
+              </>
+            }
+          />
 
           <div className="-mx-5 overflow-x-auto">
             <table className="w-full border-collapse text-[12px]">
@@ -409,7 +403,7 @@ export default function PaginaBalancete() {
                   isso não é uma avaria, é um período sem lançamentos. */}
               {total && (
                 <tfoot>
-                  <tr className="border-t-2 border-acento bg-[color-mix(in_srgb,var(--color-acento)_12%,var(--color-superficie-2))] font-extrabold">
+                  <tr className="linha-total border-t-2 border-acento bg-[color-mix(in_srgb,var(--color-acento)_12%,var(--color-superficie-2))] font-extrabold">
                     <td colSpan={2} className="px-2 py-1">
                       TOTAL{equilibrado ? "" : " — desequilíbrio"}
                     </td>
@@ -496,7 +490,7 @@ function FragmentoSubtotal({
 }) {
   return (
     <>
-      <tr className="border-t border-borda bg-superficie-2 font-bold">
+      <tr className="linha-subtotal border-t border-borda bg-superficie-2 font-bold">
         <td className="px-2 py-1" />
         <td className="px-2 py-1">{linha.nome}</td>
         {celulas}

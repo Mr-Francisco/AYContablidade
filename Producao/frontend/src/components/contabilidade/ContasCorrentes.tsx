@@ -9,6 +9,7 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -205,6 +206,14 @@ export function PaginaContasCorrentes({
         />
       </BarraFiltros>
 
+      <CabecalhoDoMapa
+        titulo={config.titulo}
+        exercicioId={exId}
+        periodo={
+          de || ate ? `Período ${de || "início"} a ${ate || "fim"}` : undefined
+        }
+      />
+
       <Cartao className="p-0">
         {isLoading ? (
           <ACarregar />
@@ -269,7 +278,7 @@ export function PaginaContasCorrentes({
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-borda font-bold">
+                <tr className="linha-total border-t-2 border-borda font-bold">
                   <Td colSpan={4}>Totais</Td>
                   <Td numerico>
                     {formataMoeda(data?.totais.debito ?? "0", moeda)}

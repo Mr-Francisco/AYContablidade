@@ -21,7 +21,7 @@ import { type Coluna, Grelha } from "@/components/ui/Grelha";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
-import { imprimirComoPdf } from "@/lib/impressao";
+import { imprimirPagina } from "@/lib/impressao";
 import { plural } from "@/lib/texto";
 import { descarregar, preencherXlsx } from "@/lib/xlsx";
 import type { LinhaMapaIrt, MapaIrt } from "@/types";
@@ -245,14 +245,11 @@ export default function MapaRemuneracoes() {
     }
   }
 
-  function imprimir() {
-    // Catorze colunas não cabem em retrato — o Piloto vira a folha.
-    document.body.classList.add("imprimir-deitado");
-    // O mês vai no nome porque este mapa entrega-se todos os meses: doze
-    // ficheiros com o mesmo nome numa pasta não se distinguem sem os abrir.
-    imprimirComoPdf(`Mapa de Remunerações IRT A2.1 ${mes}`);
-    setTimeout(() => document.body.classList.remove("imprimir-deitado"), 500);
-  }
+  // Catorze colunas não cabem em retrato — o Piloto vira a folha. O mês vai
+  // no nome porque este mapa entrega-se todos os meses: doze ficheiros com o
+  // mesmo nome numa pasta não se distinguem sem os abrir.
+  const imprimir = () =>
+    imprimirPagina(`Mapa de Remunerações IRT A2.1 ${mes}`, { deitado: true });
 
   const semLinhas = !linhas.length;
 

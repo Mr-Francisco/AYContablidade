@@ -9,6 +9,7 @@ import {
   Alerta,
   BarraFiltros,
   Botao,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -172,6 +173,13 @@ export default function ApuramentoIva() {
           </>
         )}
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Apuramento do IVA"
+        exercicioId={exId}
+        periodoCodigo={mes}
+        detalhe={`NIF: ${empresa?.nif ?? "—"}`}
+      />
 
       {resultadoAccao && <Alerta tipo="sucesso">{resultadoAccao}</Alerta>}
       {erro && <Alerta tipo="erro">{erro}</Alerta>}

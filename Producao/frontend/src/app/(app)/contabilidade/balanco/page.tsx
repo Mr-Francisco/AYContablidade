@@ -8,6 +8,7 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Cartao,
   Selector,
@@ -75,6 +76,12 @@ export default function PaginaBalanco() {
           larguraMinima="14rem"
         />
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Balanço"
+        exercicioId={exId}
+        periodoCodigo={mes}
+      />
 
       {isLoading ? (
         <ACarregar />

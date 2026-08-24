@@ -7,6 +7,7 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
+  CabecalhoDoMapa,
   Cartao,
   EnvolveTabela,
   Selector,
@@ -170,6 +171,12 @@ export default function Obrigacoes() {
             reunião e se arquiva no processo — não é um ecrã de consulta. */}
         <AccoesDoMapa desactivado={!resposta} />
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Obrigações Fiscais"
+        periodo={catalogo?.formas.find((f) => f.id === forma)?.nome}
+        detalhe={`NIF: ${empresa?.nif ?? "—"}`}
+      />
 
       {aCarregar && !resposta ? (
         <Cartao>

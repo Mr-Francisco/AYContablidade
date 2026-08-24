@@ -11,6 +11,7 @@ import type {
 import { cn } from "@/lib/utils";
 
 export { Botao } from "./Botao";
+export { CabecalhoDoMapa } from "./CabecalhoDoMapa";
 export { Carrossel, type PainelCarrossel } from "./Carrossel";
 export { Cartao, GrelhaRevelada, ItemRevelado, TituloCartao } from "./Cartao";
 export { BarraFiltros, Selector } from "./Filtros";
@@ -36,7 +37,11 @@ export function CabecalhoPagina({
           {titulo}
         </h1>
         {descricao && (
-          <p className="pl-3.5 mt-1 mb-0 text-sm text-texto-suave">
+          // `cabecalho-descricao`: a frase que explica o ecrã não vai ao
+          // papel. Num balancete impresso, «Modelo Primavera — duplo clique
+          // numa conta abre o extracto» é uma instrução para quem está ao
+          // computador, e no papel não há onde clicar. O Piloto esconde-a.
+          <p className="cabecalho-descricao pl-3.5 mt-1 mb-0 text-sm text-texto-suave">
             {descricao}
           </p>
         )}
@@ -82,7 +87,10 @@ export function Kpi({
   rodape?: CelulaKpi[];
 }) {
   return (
-    <div className="relative overflow-hidden bg-superficie border border-borda rounded-[14px] shadow-suave px-4 py-3 min-w-0">
+    // `kpi`: um mapa impresso começa pelo mapa. Os indicadores são a
+    // leitura rápida de quem está no ecrã; no papel empurram a primeira linha
+    // da tabela para a segunda folha. O Piloto esconde-os.
+    <div className="kpi relative overflow-hidden bg-superficie border border-borda rounded-[14px] shadow-suave px-4 py-3 min-w-0">
       <span
         aria-hidden
         className="absolute left-0 top-0 bottom-0 w-1"

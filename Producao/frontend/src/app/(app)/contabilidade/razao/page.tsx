@@ -8,6 +8,7 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Campo,
   Cartao,
@@ -130,7 +131,7 @@ function Conteudo() {
                 Conta {data.natureza === "D" ? "devedora" : "credora"}
               </Selo>
             )}
-            <AccoesDoMapa nome={conta ? `Razão ${conta}` : undefined} />
+            <AccoesDoMapa nome={conta ? `Razão ${conta}` : undefined} deitado />
           </div>
         }
       />
@@ -177,6 +178,17 @@ function Conteudo() {
           Incluir subcontas
         </label>
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Razão"
+        exercicioId={exId}
+        periodo={[
+          conta || null,
+          de || ate ? `${de || "início"} a ${ate || "fim"}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      />
 
       {!conta ? (
         <Alerta tipo="info">Escolha uma conta para ver o razão.</Alerta>
@@ -277,7 +289,7 @@ function Conteudo() {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-superficie-2 font-extrabold">
+                      <tr className="linha-total bg-superficie-2 font-extrabold">
                         <Td colSpan={8}>TOTAIS</Td>
                         <Td numerico>
                           {formataMoeda(data.total_debito, moeda)}

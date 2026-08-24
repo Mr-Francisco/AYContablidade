@@ -7,6 +7,7 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Cartao,
   EnvolveTabela,
@@ -110,6 +111,13 @@ export default function Retencoes() {
         />
       </BarraFiltros>
 
+      <CabecalhoDoMapa
+        titulo="Mapa de Retenções na Fonte"
+        exercicioId={exId}
+        periodoCodigo={mes}
+        detalhe={`NIF: ${empresa?.nif ?? "—"}`}
+      />
+
       {isLoading ? (
         <ACarregar />
       ) : !data ? (
@@ -185,7 +193,7 @@ export default function Retencoes() {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-superficie-2 font-extrabold">
+                      <tr className="linha-total bg-superficie-2 font-extrabold">
                         <Td colSpan={6}>TOTAL RETIDO</Td>
                         <Td numerico>{formataMoeda(data.total, moeda)}</Td>
                       </tr>

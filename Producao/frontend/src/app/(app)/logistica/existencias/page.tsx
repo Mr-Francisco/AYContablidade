@@ -7,6 +7,7 @@ import useSWR from "swr";
 import {
   ACarregar,
   BarraFiltros,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Cartao,
   Kpi,
@@ -202,6 +203,13 @@ export default function ExistenciasPagina() {
           ]}
         />
       </BarraFiltros>
+
+      <CabecalhoDoMapa
+        titulo="Mapa de Existências"
+        periodo={
+          armazens?.find((a) => a.id === armazemId)?.nome ?? "Todos os armazéns"
+        }
+      />
 
       <Cartao className="p-0">
         {isLoading ? (

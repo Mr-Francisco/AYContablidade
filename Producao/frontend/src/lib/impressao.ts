@@ -84,11 +84,24 @@ export function nomeDoDocumento(
  * e evita que os dois deixem de coincidir quando um deles mudar.
  *
  * Quem quiser um nome mais completo — com o mês, com a conta — passa-o.
+ *
+ * `deitado` VIRA A FOLHA. Um balancete com «Anterior, Período e Acumulado»
+ * são nove colunas de números: em pé não cabem, e o que não cabe o browser
+ * corta ou encolhe até não se ler. O Piloto vira a folha em cinco mapas
+ * (`body.print-landscape`), e são esses cinco que a passam aqui.
  */
-export function imprimirPagina(nome?: string | null): void {
+export function imprimirPagina(
+  nome?: string | null,
+  { deitado = false }: { deitado?: boolean } = {},
+): void {
   if (typeof window === "undefined") return;
+
   const h1 = document.querySelector("h1")?.textContent?.trim();
-  imprimirComoPdf(nome?.trim() || h1 || document.title);
+  if (deitado) document.body.classList.add("imprimir-deitado");
+
+  imprimirComoPdf(nome?.trim() || h1 || document.title, () => {
+    document.body.classList.remove("imprimir-deitado");
+  });
 }
 
 /* ---------------------------------------------------------------------------

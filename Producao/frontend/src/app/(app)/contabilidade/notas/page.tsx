@@ -9,6 +9,7 @@ import {
   Alerta,
   BarraFiltros,
   Botao,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Cartao,
   Selector,
@@ -166,6 +167,8 @@ export default function Notas() {
           </Botao>
           <AccoesDoMapa desactivado={!data} />
         </BarraFiltros>
+
+        <CabecalhoDoMapa titulo="Notas às Contas" exercicioId={exId} />
       </Cartao>
 
       {isLoading ? (
@@ -330,7 +333,7 @@ function CartaoNota({
               )}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-acento bg-[color-mix(in_srgb,var(--color-acento)_12%,var(--color-superficie-2))] font-extrabold">
+              <tr className="linha-total border-t-2 border-acento bg-[color-mix(in_srgb,var(--color-acento)_12%,var(--color-superficie-2))] font-extrabold">
                 <td colSpan={2} className="px-3 py-1.5">
                   Total
                 </td>

@@ -17,6 +17,7 @@ import {
   Alerta,
   BarraFiltros,
   Botao,
+  CabecalhoDoMapa,
   CabecalhoPagina,
   Cartao,
   EnvolveTabela,
@@ -173,6 +174,11 @@ export default function ProcessamentoPagina() {
               <Selo cor={info.cor}>{info.rotulo}</Selo>
             </div>
           </BarraFiltros>
+
+          <CabecalhoDoMapa
+            titulo="Folha de Salários"
+            periodo={mesPorExtenso(mes)}
+          />
 
           {jaProcessado && (
             <Alerta tipo="info" className="mb-4">
