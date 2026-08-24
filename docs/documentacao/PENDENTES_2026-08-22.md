@@ -586,3 +586,86 @@ a dizer `size: A4 portrait`, porque sem ele o tamanho vinha das preferências do
 sistema e quem o tenha em inglês recebia papel Letter — mais curto, com a
 última linha do balancete a saltar para uma página nova. A folha deitada do
 mapa de remunerações tem a sua própria `@page deitado` e continua a mandar.
+
+---
+
+# PARTE V — A impressão como o Piloto a fazia (24 de Agosto)
+
+Pedido: *«vê como o Piloto fazia para imprimir, porque o Piloto já faz isso —
+apenas a forma; documento que ainda não te foi passado o modelo, tirado do
+Piloto.»*
+
+O que se foi buscar a `Piloto/assets/js/fatura-doc.js` e ao bloco `@media print`
+de `Piloto/assets/css/style.css`.
+
+## 1. O talão de 80 mm — o formato que faltava por inteiro
+
+O Piloto imprime uma factura de **duas** maneiras, à escolha na altura de
+imprimir: **A4** e **talão térmico de 80 mm**. A Produção só tinha o A4, e quem
+vende ao balcão — a Venda a Dinheiro, a Factura Simplificada — não tinha como
+imprimir no papel que tem à frente.
+
+Não é o A4 mais pequeno. Numa fita de 72 mm úteis não cabem sete colunas: ficam
+**Descrição, Quantidade e Total**, e o resto empilha-se ao centro numa coluna
+só. São exactamente as três colunas que o Piloto deixa.
+
+A escolha do formato está onde o Piloto a tem — ao lado do botão de imprimir,
+dentro da janela do documento —, porque o mesmo documento tanto se arquiva em
+A4 como se entrega em papel de balcão.
+
+### Onde o Piloto estava errado, e não se copiou
+
+`@page pos { size: 80mm auto; }`. **Não é CSS válido**: a regra admite `auto`
+sozinho ou uma ou duas medidas, e nunca uma medida com um `auto` ao lado. O
+browser deita a linha fora sem dizer nada — confirmado no próprio browser, com
+o CSSOM a devolver `@page pos { margin: 3mm; }` e o `size` desaparecido. O
+talão do Piloto sai, na prática, na folha que estiver configurada.
+
+Aqui vai `size: 80mm 297mm`. É a justificação técnica para a diferença: copiar
+a linha era copiar uma regra que nunca funcionou.
+
+## 2. O documento deixou de se imprimir como um mapa
+
+As regras de impressão que existiam eram todas para mapas — preto sobre branco,
+uma grelha à volta de cada célula, sem sombras. Num balancete é o que se quer.
+Num documento fiscal desfigurava o que o cliente recebe: a faixa escura do
+cabeçalho das linhas ficava branca e cada célula ganhava uma caixa que o
+documento nunca teve.
+
+O Piloto separa os dois com uma marca no `body` (`printing-doc`). Fez-se o
+mesmo: `imprimir-documento` e `imprimir-talao`, postas por `imprimirDocumento`
+e tiradas quando a janela de impressão fecha.
+
+## 3. Três defeitos que só apareceram a comparar os dois
+
+| | O que acontecia | Agora |
+|---|---|---|
+| A página ia junto | Imprimir uma factura a partir da consulta levava a lista de facturas por baixo, e a faixa de aviso do topo | Só o documento vai à folha |
+| O rodapé ficava a meio | O código de controlo pairava onde o conteúdo acabasse | O A4 enche a folha e o rodapé assenta no fundo, como no Piloto |
+| A faixa de marca | Um bloco azul a toda a largura em cada mapa impresso | Imprime-se como título, texto simples |
+
+## 4. A página que o Piloto imprime e a Produção não imprimia
+
+**Obrigações Fiscais** (`fiscalidade/obrigacoes`). O ícone da impressora estava
+importado no ficheiro e o botão nunca chegou a ser escrito — ficou a
+importação por usar, que era o único sinal. A lista de obrigações de uma
+empresa é o papel que se leva à reunião e se arquiva no processo.
+
+Comparadas as dezoito páginas do Piloto com botão de imprimir contra as da
+Produção, era a única que faltava.
+
+## 5. Num recibo, o talão leva os cartões e não a tabela
+
+O extracto de um recibo com retenção tem nove colunas — a factura, este recibo
+e a situação depois. Nove colunas em 72 mm sairiam como uma parede de
+algarismos encavalitados. No talão fica a versão em cartões, que diz o mesmo
+por palavras e se empilha sozinha.
+
+## Verificado
+
+Medido no browser com as regras de impressão aplicadas: talão de **72 mm** com
+as três colunas certas e o cabeçalho empilhado; A4 com **262 mm** de altura
+mínima e a folga a ir toda para cima do rodapé (163 mm numa folha forçada a
+500 mm, com o rodapé a 4 mm do fundo); moldura da aplicação escondida; as três
+folhas nomeadas — `A4`, `talao` 80×297 mm, `deitado` A4 ao baixo — todas a
+serem aceites pelo browser.

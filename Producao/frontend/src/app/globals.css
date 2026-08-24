@@ -338,6 +338,24 @@
     content: "";
   }
 
+  /* A FAIXA DE MARCA IMPRIME-SE COMO TÍTULO, não como faixa. No ecrã é uma
+     tira azul com o nome do mapa em branco; no papel seria um bloco de cor
+     que gasta metade de um tinteiro e destoa de todos os outros mapas, que
+     saem a preto sobre branco. O Piloto imprime o cabeçalho em texto simples.
+     Isto NÃO apanha o logótipo de um documento fiscal — esse vive dentro do
+     `.documento-legal`, tem o seu próprio âmbito e mantém a cor. */
+  .gradiente-marca:not(.documento-legal *) {
+    background: none !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .gradiente-marca:not(.documento-legal *) * {
+    color: #000 !important;
+    opacity: 1 !important;
+  }
+
   /* A4 EXPLÍCITO, e não o que o browser achar. Sem `size`, o tamanho vem
      das preferências do sistema — quem o tenha em inglês recebe papel
      Letter, que é mais curto, e a última linha do balancete salta para
@@ -346,6 +364,181 @@
   @page {
     size: A4 portrait;
     margin: 14mm 12mm;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   IMPRIMIR UM DOCUMENTO LEGAL — factura, recibo, proforma, talão.
+   Do Piloto: `body.printing-doc` / `body.pos-print` em `assets/css/style.css`.
+
+   UM DOCUMENTO NÃO É UM MAPA, e as regras de cima são todas para mapas: preto
+   sobre branco, uma grelha à volta de cada célula, sem sombras. Num balancete
+   é o que se quer — é uma folha de números para conferir. Num documento fiscal
+   desfigura o que o cliente recebe: a faixa escura do cabeçalho das linhas
+   fica branca, o selo «Original» perde a cor, e cada célula ganha uma caixa
+   que o documento nunca teve.
+
+   Por isso o documento imprime-se com o `body` marcado, e daí para dentro
+   mandam estas regras.
+--------------------------------------------------------------------------- */
+@media print {
+  /* SÓ O DOCUMENTO VAI PARA A FOLHA. Sem isto, imprimir uma factura a partir
+     da consulta saía com a lista de facturas por baixo, e ainda com a faixa de
+     aviso do topo — a página inteira que ficou atrás da janela.
+
+     A moldura da aplicação é o ramo que contém o `main`; a janela do documento
+     vive noutro ramo, fora dele. Esconder o ramo inteiro de uma vez apanha o
+     cabeçalho, a faixa de aviso e o botão flutuante sem os ter de nomear um a
+     um — e continua a apanhá-los quando amanhã houver outro. */
+  body.imprimir-documento > *:has(main) {
+    display: none !important;
+  }
+  body.imprimir-documento .sem-imprimir {
+    display: none !important;
+  }
+
+  /* A janela deixa de ser janela: sem fundo, sem sombra, no fluxo da página. */
+  body.imprimir-documento [role="dialog"] {
+    position: static !important;
+    max-height: none !important;
+    width: 100% !important;
+    transform: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  /* AS CORES DO DOCUMENTO MANDAM. Sobrepõe-se ao preto e branco dos mapas. */
+  body.imprimir-documento .documento-legal {
+    background: #fff !important;
+    color: #1a1a2e !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* A grelha de célula dos mapas não entra no documento: aqui as linhas têm
+     um risco por baixo e mais nada, e o cabeçalho é uma faixa escura. */
+  body.imprimir-documento .documento-legal th,
+  body.imprimir-documento .documento-legal td {
+    border: 0 !important;
+    border-bottom: 1px solid #ddd !important;
+    padding: 6px 8px !important;
+    font-size: 10pt !important;
+  }
+  body.imprimir-documento .documento-linhas thead th {
+    background: #1a1a2e !important;
+    color: #fff !important;
+    border-bottom: 0 !important;
+  }
+
+  /* O A4 ENCHE A FOLHA e o rodapé legal vai ao fundo — como no Piloto. Uma
+     factura de duas linhas que acabasse a meio da página deixava o código de
+     controlo a pairar no meio do papel, e um documento fiscal com o rodapé no
+     ar parece um rascunho. */
+  body.imprimir-documento:not(.imprimir-talao) .documento-legal {
+    display: flex !important;
+    flex-direction: column;
+    min-height: 262mm;
+    box-sizing: border-box;
+    padding: 4mm 2mm !important;
+    max-width: none !important;
+  }
+  body.imprimir-documento:not(.imprimir-talao) .documento-rodape {
+    margin-top: auto !important;
+    padding-top: 16px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   O TALÃO DE 80 MM — o rolo de uma impressora térmica de balcão.
+
+   Não é o A4 mais pequeno: é outro papel. Numa fita de 72 mm úteis não cabem
+   sete colunas, e o Piloto deixava três — descrição, quantidade e total. O
+   resto empilha-se ao centro numa coluna só, porque não há largura para duas.
+
+   Serve a Venda a Dinheiro e a Factura Simplificada, que se emitem ao balcão
+   com o cliente à espera.
+--------------------------------------------------------------------------- */
+@media print {
+  /* 80 MM DE LARGURA, e a altura de uma folha comprida.
+
+     O PILOTO ESCREVIA `size: 80mm auto` E ISSO NÃO É CSS VÁLIDO: a regra
+     admite `auto` sozinho ou uma ou duas medidas, e nunca uma medida com um
+     `auto` ao lado. O browser deitava a linha inteira fora sem dizer nada, e o
+     talão do Piloto saía na folha que estivesse configurada — A4, na prática.
+     Só se via a comparar o papel com o que estava no ecrã.
+
+     Aqui vão duas medidas. A altura é generosa de propósito: um talão de meia
+     dúzia de linhas não chega perto dela, e num rolo contínuo a impressora
+     corta onde o papel acaba. Um talão comprido passa à folha seguinte, que
+     num rolo é a continuação do mesmo papel. */
+  @page talao {
+    size: 80mm 297mm;
+    /* biome-ignore lint/suspicious/noShorthandPropertyOverrides: dentro deste
+       `@page` so ha `size` e `margin`; o `margin-top` que o Biome ve esta
+       noutra regra e noutro ambito. */
+    margin: 3mm;
+  }
+  body.imprimir-talao {
+    page: talao;
+  }
+
+  body.imprimir-talao .documento-legal {
+    width: 72mm !important;
+    max-width: 72mm !important;
+    padding: 4px 3px !important;
+  }
+  body.imprimir-talao .documento-legal th,
+  body.imprimir-talao .documento-legal td {
+    padding: 3px !important;
+    font-size: 7.5pt !important;
+  }
+
+  /* Tudo ao centro, numa coluna: a empresa, o tipo de documento, o cliente. */
+  body.imprimir-talao .documento-topo,
+  body.imprimir-talao .documento-cliente,
+  body.imprimir-talao .documento-fecho,
+  body.imprimir-talao .documento-rodape {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 6px !important;
+  }
+  body.imprimir-talao .documento-cliente > * {
+    text-align: center !important;
+  }
+  body.imprimir-talao .documento-meta {
+    grid-template-columns: 1fr !important;
+  }
+  body.imprimir-talao .documento-totais {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* AS QUATRO COLUNAS QUE NÃO CABEM. Ficam a descrição, a quantidade e o
+     total — as três que alguém confere ao balcão com o talão na mão. */
+  body.imprimir-talao .documento-linhas th:nth-child(1),
+  body.imprimir-talao .documento-linhas td:nth-child(1),
+  body.imprimir-talao .documento-linhas th:nth-child(3),
+  body.imprimir-talao .documento-linhas td:nth-child(3),
+  body.imprimir-talao .documento-linhas th:nth-child(5),
+  body.imprimir-talao .documento-linhas td:nth-child(5),
+  body.imprimir-talao .documento-linhas th:nth-child(6),
+  body.imprimir-talao .documento-linhas td:nth-child(6) {
+    display: none !important;
+  }
+
+  /* NUM RECIBO, o talão fica com os três cartões e não com a tabela. O
+     extracto tem nove colunas — a factura, este recibo e a situação depois —,
+     e nove colunas em 72 mm não se lêem: sairia uma parede de algarismos
+     encavalitados que ninguém confere. Os cartões dizem o mesmo por palavras
+     e empilham-se sozinhos. */
+  body.imprimir-talao .extracto-tabela {
+    display: none !important;
+  }
+  body.imprimir-talao .extracto-cartoes {
+    grid-template-columns: 1fr !important;
   }
 }
 

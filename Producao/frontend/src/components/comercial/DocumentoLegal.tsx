@@ -2,14 +2,20 @@
 
 import { Printer, X } from "lucide-react";
 import { Dialog } from "radix-ui";
+import { useState } from "react";
 import useSWR from "swr";
 import { ExtractoDoRecibo } from "@/components/comercial/ExtractoDoRecibo";
-import { Botao } from "@/components/ui";
+import { Botao, Selector } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { buscador } from "@/lib/api";
 import { formata, formataMoeda } from "@/lib/dinheiro";
 import { valorPorExtenso } from "@/lib/extenso";
-import { imprimirComoPdf, nomeDoDocumento } from "@/lib/impressao";
+import {
+  FORMATOS,
+  type FormatoDeImpressao,
+  imprimirDocumento,
+  nomeDoDocumento,
+} from "@/lib/impressao";
 
 /**
  * O documento legal — factura, nota de crédito, recibo — como se imprime.
@@ -97,6 +103,10 @@ export function DocumentoLegal({
   aoFechar: () => void;
 }) {
   const { empresa } = useAuth();
+  /** A4 ou talão de 80 mm. Como no Piloto, escolhe-se na altura de imprimir e
+   *  não na ficha do documento: o mesmo documento tanto se arquiva em A4 como
+   *  se entrega em papel de balcão. */
+  const [formato, setFormato] = useState<FormatoDeImpressao>("a4");
   const { data: tipos } = useSWR<TipoDoc[]>(
     "/api/comercial/tipos-documento",
     buscador,
@@ -146,11 +156,21 @@ export function DocumentoLegal({
                   O que muda é o NOME: o PDF sai como `FT 2026-0001 — Cliente`
                   e não com o nome da aplicação. Vale para todos os tipos —
                   factura, recibo, proforma, nota. */}
+              <Selector
+                valor={formato}
+                aoMudar={(v) => setFormato(v as FormatoDeImpressao)}
+                opcoes={FORMATOS.map((f) => ({
+                  valor: f.valor,
+                  rotulo: f.rotulo,
+                }))}
+                larguraMinima="9.5rem"
+              />
               <Botao
                 tamanho="pequeno"
                 onClick={() =>
-                  imprimirComoPdf(
+                  imprimirDocumento(
                     nomeDoDocumento(nomeTipo, doc.numero, doc.cliente_nome),
+                    formato,
                   )
                 }
                 title="Abre a janela de impressão. Escolha «Guardar como PDF» para gravar o ficheiro."
@@ -173,9 +193,9 @@ export function DocumentoLegal({
           <div className="min-h-0 flex-1 overflow-auto bg-fundo p-4 print:overflow-visible print:bg-white print:p-0">
             {/* O documento. Fundo branco e texto escuro sempre — um documento
                 fiscal impresso a partir do tema escuro sai ilegível. */}
-            <div className="mx-auto max-w-[780px] rounded-[10px] bg-white px-6 py-6 text-[13px] text-[#1a1a2e] shadow-suave print:max-w-none print:rounded-none print:shadow-none">
+            <div className="documento-legal mx-auto max-w-[780px] rounded-[10px] bg-white px-6 py-6 text-[13px] text-[#1a1a2e] shadow-suave print:max-w-none print:rounded-none print:shadow-none">
               {/* ---- Cabeçalho ---- */}
-              <div className="flex items-start justify-between gap-4 border-b-2 border-[#1a1a2e] pb-3">
+              <div className="documento-topo flex items-start justify-between gap-4 border-b-2 border-[#1a1a2e] pb-3">
                 <div className="flex items-start gap-3">
                   <div className="flex size-[46px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#e6007e,#4a4ecb)] text-[17px] font-black text-white">
                     {iniciais}
@@ -219,12 +239,12 @@ export function DocumentoLegal({
               </div>
 
               {/* ---- Cliente e metadados ---- */}
-              <div className="my-3 flex justify-between gap-5">
+              <div className="documento-cliente my-3 flex justify-between gap-5">
                 <div className="min-w-0 text-[12.5px]">
                   <div className={KEY}>Exmo.(s) Sr.(s)</div>
                   <b>{doc.cliente_nome || "Consumidor final"}</b>
                 </div>
-                <div className="grid shrink-0 grid-cols-2 gap-x-5 gap-y-1 text-[12px]">
+                <div className="documento-meta grid shrink-0 grid-cols-2 gap-x-5 gap-y-1 text-[12px]">
                   <div>
                     <span className={`block ${KEY}`}>Data</span>
                     <b className="tabular">
@@ -261,7 +281,7 @@ export function DocumentoLegal({
               {ehRecibo ? (
                 <ExtractoDoRecibo vendaId={doc.id} moeda={moeda} />
               ) : (
-                <table className="w-full border-collapse">
+                <table className="documento-linhas w-full border-collapse">
                   <thead>
                     <tr>
                       {[
@@ -330,7 +350,7 @@ export function DocumentoLegal({
 
                   O recibo já diz o que regulariza nos três blocos. Aqui só lhe
                   falta o valor do próprio recibo. */}
-              <div className="mt-3 flex flex-wrap items-start justify-between gap-5">
+              <div className="documento-fecho mt-3 flex flex-wrap items-start justify-between gap-5">
                 <div className="text-[12px]">
                   {!ehRecibo && (
                     <>
@@ -366,7 +386,7 @@ export function DocumentoLegal({
                   )}
                 </div>
 
-                <div className="min-w-[260px] text-[12.5px]">
+                <div className="documento-totais min-w-[260px] text-[12.5px]">
                   {!ehRecibo &&
                     [
                       ["Total Ilíquido", doc.subtotal],
@@ -428,7 +448,7 @@ export function DocumentoLegal({
               </div>
 
               {/* ---- Rodapé legal ---- */}
-              <div className="mt-4 flex items-center justify-between gap-4 border-t border-dashed border-[#bbb] pt-3">
+              <div className="documento-rodape mt-4 flex items-center justify-between gap-4 border-t border-dashed border-[#bbb] pt-3">
                 <div className="text-[11px] leading-relaxed text-[#555]">
                   Processado por programa validado — SGD · {empresa?.nome}
                   <br />

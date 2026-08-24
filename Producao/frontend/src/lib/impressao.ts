@@ -36,7 +36,7 @@ function nomeSeguro(nome: string): string {
  * Em «Guardar como PDF» o browser propõe o título como nome do ficheiro. Fica
  * `FT 2026-0001 — AS Imagem, Lda.pdf` em vez do nome da aplicação.
  */
-export function imprimirComoPdf(nome: string): void {
+export function imprimirComoPdf(nome: string, aoTerminar?: () => void): void {
   if (typeof window === "undefined") return;
 
   const original = document.title;
@@ -51,6 +51,7 @@ export function imprimirComoPdf(nome: string): void {
     if (reposto) return;
     reposto = true;
     document.title = original;
+    aoTerminar?.();
     window.removeEventListener("afterprint", repor);
   };
 
@@ -88,4 +89,47 @@ export function imprimirPagina(nome?: string | null): void {
   if (typeof window === "undefined") return;
   const h1 = document.querySelector("h1")?.textContent?.trim();
   imprimirComoPdf(nome?.trim() || h1 || document.title);
+}
+
+/* ---------------------------------------------------------------------------
+   OS DOIS FORMATOS DE UM DOCUMENTO — do Piloto (`assets/js/fatura-doc.js`).
+
+   O Piloto imprimia uma factura de duas maneiras, à escolha na altura de
+   imprimir: **A4**, o documento inteiro para arquivo e para o cliente, e
+   **talão de 80 mm**, o rolo de uma impressora térmica de balcão. Não é a
+   mesma folha mais pequena: no talão só cabem a descrição, a quantidade e o
+   total, e tudo se empilha ao centro numa coluna.
+
+   A Produção só tinha o A4, e quem vende ao balcão — a Venda a Dinheiro, a
+   Factura Simplificada — não tinha como imprimir no papel que tem à frente.
+--------------------------------------------------------------------------- */
+
+export type FormatoDeImpressao = "a4" | "talao";
+
+export const FORMATOS: { valor: FormatoDeImpressao; rotulo: string }[] = [
+  { valor: "a4", rotulo: "A4 — documento" },
+  { valor: "talao", rotulo: "Talão — 80 mm" },
+];
+
+/**
+ * Imprime um documento legal — factura, recibo, proforma, talão.
+ *
+ * MARCA O `body` ENQUANTO IMPRIME, e é isso que separa um documento de um
+ * mapa. As regras de impressão dos mapas põem tudo a preto e branco e desenham
+ * uma grelha à volta de cada célula, o que num balancete é o que se quer e num
+ * documento fiscal o desfigura. Com a marca no `body`, o documento imprime-se
+ * com as suas cores e o resto do ecrã sai da folha.
+ */
+export function imprimirDocumento(
+  nome: string,
+  formato: FormatoDeImpressao = "a4",
+): void {
+  if (typeof window === "undefined") return;
+
+  document.body.classList.add("imprimir-documento");
+  if (formato === "talao") document.body.classList.add("imprimir-talao");
+
+  imprimirComoPdf(nome, () => {
+    document.body.classList.remove("imprimir-documento", "imprimir-talao");
+  });
 }

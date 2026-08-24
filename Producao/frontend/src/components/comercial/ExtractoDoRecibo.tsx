@@ -78,7 +78,7 @@ export function ExtractoDoRecibo({
   return (
     <div className="mt-4">
       {/* ---- A tabela, agrupada pelas três cores ---- */}
-      <div className="overflow-x-auto">
+      <div className="extracto-tabela overflow-x-auto">
         <table className="w-full border-collapse text-[11.5px]">
           <thead>
             <tr>
@@ -161,7 +161,7 @@ export function ExtractoDoRecibo({
       </div>
 
       {/* ---- Os três cartões ---- */}
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="extracto-cartoes mt-4 grid gap-3 sm:grid-cols-3">
         <Cartao cor={AZUL} titulo="A factura">
           <Item rotulo="Total Ilíquido" valor={t.iliquido} moeda={moeda} />
           <Item

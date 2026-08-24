@@ -1,6 +1,5 @@
 "use client";
 
-import { Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { FaixaPainel } from "@/components/painel";
@@ -8,7 +7,6 @@ import {
   ACarregar,
   Alerta,
   BarraFiltros,
-  Botao,
   Cartao,
   EnvolveTabela,
   Selector,
@@ -20,6 +18,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import type { CatalogoFiscal, RespostaObrigacoes } from "@/types";
@@ -165,6 +164,11 @@ export default function Obrigacoes() {
             { valor: "sim", rotulo: "Sim" },
           ]}
         />
+        {/* O PILOTO IMPRIME ESTA PÁGINA e a Produção não imprimia: o ícone da
+            impressora estava importado e o botão nunca chegou a ser escrito.
+            A lista de obrigações de uma empresa é o papel que se leva à
+            reunião e se arquiva no processo — não é um ecrã de consulta. */}
+        <AccoesDoMapa desactivado={!resposta} />
       </BarraFiltros>
 
       {aCarregar && !resposta ? (
