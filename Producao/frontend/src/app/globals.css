@@ -294,7 +294,11 @@
   .cabecalho-descricao,
   .kpi,
   /* e o invólucro do indicador, senão fica a grelha vazia a ocupar altura */
-    *:has(> .kpi) {
+    *:has(> .kpi),
+  /* e o cartão que só tem a barra de filtros lá dentro: escondida a barra,
+     sobrava um rectângulo vazio entre o título e o mapa — uma moldura à volta
+     de nada, que numa folha entregue parece que algo faltou imprimir. */
+    *:has(> .sem-imprimir:only-child) {
     display: none !important;
   }
 

@@ -20,7 +20,11 @@ export function BarraFiltros({
     // afastava a Produção do Piloto em todas as páginas de uma vez.
     <div
       className={cn(
-        "flex flex-wrap items-center gap-2.5",
+        // `sem-imprimir`: os campos já não se imprimiam, mas os RÓTULOS
+        // ficavam — saía uma fila de «Exercício · Análise · De · Até» sem um
+        // único valor por baixo, que num mapa entregue parece um erro. O que
+        // restringe o mapa está no `CabecalhoDoMapa`, que é onde se lê.
+        "sem-imprimir flex flex-wrap items-center gap-2.5",
         ROTULO_AO_LADO,
         className,
       )}

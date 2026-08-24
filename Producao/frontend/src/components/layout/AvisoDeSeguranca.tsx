@@ -72,7 +72,10 @@ export function AvisoDeSeguranca() {
   return (
     <div
       ref={medir}
-      className="border-b border-[var(--color-aviso)]/30 bg-[var(--color-aviso)]/10"
+      // `sem-imprimir`: um conselho de segurança no topo de um balancete
+      // entregue a um cliente é ruído — e ninguém activa o segundo factor
+      // a partir de uma folha de papel.
+      className="sem-imprimir border-b border-[var(--color-aviso)]/30 bg-[var(--color-aviso)]/10"
     >
       <div className="mx-auto flex max-w-[1360px] items-start gap-3 px-5 py-3">
         <span className="mt-0.5 shrink-0 text-[var(--color-aviso)]">
