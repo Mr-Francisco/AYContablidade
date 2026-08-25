@@ -13,6 +13,10 @@ import useSWR from "swr";
 
 import { Alerta, Botao, Campo, Entrada, Selector } from "@/components/ui";
 import { CampoNif, type RespostaNif } from "@/components/ui/CampoNif";
+import {
+  PerguntaDeSaida,
+  useGuardaDeSaida,
+} from "@/components/ui/GuardaDeSaida";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
 import { cn } from "@/lib/utils";
@@ -459,30 +463,38 @@ export function FichaColaborador({
     }
   }
 
+  // A JANELA NÃO SE FECHA POR ACIDENTE: carregar fora deixou de a fechar,
+  // e o `Esc`, o X e o «Cancelar» perguntam quando já lá há dados por
+  // gravar. Ver `components/ui/GuardaDeSaida.tsx`.
+  const guarda = useGuardaDeSaida({ aoFechar });
+
   return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
+    <Dialog.Root open onOpenChange={(a) => !a && guarda.tentarFechar()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
         {/* 880 e não 780: com 780 os oito separadores não cabiam numa linha e
             partiam-se em duas, que é o mesmo que dizer ao utilizador que a
             ficha tem duas famílias de separadores quando tem uma. */}
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[92vh] w-[min(880px,95vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
+        <Dialog.Content
+          {...guarda.propsDoConteudo}
+          className="fixed left-1/2 top-1/2 z-50 flex max-h-[92vh] w-[min(880px,95vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte"
+        >
           <div className="flex items-center justify-between border-b border-borda bg-superficie-2 px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
               {novo ? "Novo colaborador" : `Ficha de ${registo.nome}`}
             </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
-              >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
+            <button
+              onClick={guarda.tentarFechar}
+              type="button"
+              aria-label="Fechar"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+            >
+              <X size={15} />
+            </button>
           </div>
 
           <form
+            {...guarda.propsDoFormulario}
             onSubmit={submeter}
             id="form-colaborador"
             className="min-w-0 flex-1 overflow-auto p-5"
@@ -538,7 +550,7 @@ export function FichaColaborador({
           </form>
 
           <div className="flex justify-end gap-2 border-t border-borda bg-superficie-2 px-5 py-3.5">
-            <Botao onClick={aoFechar}>Cancelar</Botao>
+            <Botao onClick={guarda.tentarFechar}>Cancelar</Botao>
             <Botao
               type="submit"
               form="form-colaborador"
@@ -551,6 +563,8 @@ export function FichaColaborador({
               {aGravar ? "A gravar…" : "Guardar"}
             </Botao>
           </div>
+
+          <PerguntaDeSaida guarda={guarda} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

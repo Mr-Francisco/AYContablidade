@@ -16,6 +16,10 @@ import {
   Vazio,
 } from "@/components/ui";
 import { type Coluna, Grelha } from "@/components/ui/Grelha";
+import {
+  PerguntaDeSaida,
+  useGuardaDeSaida,
+} from "@/components/ui/GuardaDeSaida";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
 import type { Ativo, ItemImobilizado } from "@/types";
@@ -157,11 +161,19 @@ export function ObraEmCurso({
     });
   }
 
+  // A JANELA NÃO SE FECHA POR ACIDENTE: carregar fora deixou de a fechar,
+  // e o `Esc`, o X e o «Cancelar» perguntam quando já lá há dados por
+  // gravar. Ver `components/ui/GuardaDeSaida.tsx`.
+  const guarda = useGuardaDeSaida({ aoFechar });
+
   return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
+    <Dialog.Root open onOpenChange={(a) => !a && guarda.tentarFechar()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[92vh] w-[min(920px,96vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
+        <Dialog.Content
+          {...guarda.propsDoConteudo}
+          className="fixed left-1/2 top-1/2 z-50 flex max-h-[92vh] w-[min(920px,96vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte"
+        >
           <div className="flex items-start justify-between gap-4 border-b border-borda px-5 py-3.5">
             <div className="min-w-0">
               <Dialog.Title className="flex flex-wrap items-center gap-2 text-[15px] font-bold">
@@ -184,15 +196,14 @@ export function ObraEmCurso({
                 )}
               </p>
             </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
-              >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
+            <button
+              onClick={guarda.tentarFechar}
+              type="button"
+              aria-label="Fechar"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+            >
+              <X size={15} />
+            </button>
           </div>
 
           <div className="min-w-0 flex-1 overflow-auto p-5">
@@ -288,6 +299,8 @@ export function ObraEmCurso({
               }}
             />
           )}
+
+          <PerguntaDeSaida guarda={guarda} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -450,11 +463,19 @@ function DialogoFecho({
     }
   }
 
+  // A JANELA NÃO SE FECHA POR ACIDENTE: carregar fora deixou de a fechar,
+  // e o `Esc`, o X e o «Cancelar» perguntam quando já lá há dados por
+  // gravar. Ver `components/ui/GuardaDeSaida.tsx`.
+  const guarda = useGuardaDeSaida({ aoFechar: aoCancelar });
+
   return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoCancelar()}>
+    <Dialog.Root open onOpenChange={(a) => !a && guarda.tentarFechar()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[60] w-[min(560px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
+        <Dialog.Content
+          {...guarda.propsDoConteudo}
+          className="fixed left-1/2 top-1/2 z-[60] w-[min(560px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte"
+        >
           <div className="border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
               Fechar e transferir para o património
@@ -506,6 +527,8 @@ function DialogoFecho({
               {ocupado ? "A transferir…" : "Confirmar transferência"}
             </Botao>
           </div>
+
+          <PerguntaDeSaida guarda={guarda} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

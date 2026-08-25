@@ -5,6 +5,10 @@ import { AlertDialog, Dialog } from "radix-ui";
 import type { FormEvent, ReactNode } from "react";
 
 import { Alerta, Botao } from "@/components/ui";
+import {
+  PerguntaDeSaida,
+  useGuardaDeSaida,
+} from "@/components/ui/GuardaDeSaida";
 
 /**
  * Peças partilhadas pelas tabelas mestras (diários, documentos, centros,
@@ -162,6 +166,7 @@ export function DialogoMestre({
   aviso,
   children,
   rotuloGravar = "Gravar",
+  sujo,
 }: {
   titulo: string;
   /** Uma linha a dizer o que a janela faz. O título sozinho («Transferência»)
@@ -176,12 +181,23 @@ export function DialogoMestre({
   aviso?: ReactNode;
   children: ReactNode;
   rotuloGravar?: string;
+  /** Diz à janela que já há dados por gravar, para os campos que não disparam
+   *  acontecimentos no formulário — uma lista do Radix, por exemplo. Sem isto,
+   *  deduz-se de quem escreve. Ver `GuardaDeSaida`. */
+  sujo?: boolean;
 }) {
+  // A JANELA NÃO SE FECHA POR ACIDENTE. Carregar fora deixou de a fechar, e o
+  // `Esc`, o X e o «Cancelar» perguntam se já lá houver alguma coisa escrita.
+  const guarda = useGuardaDeSaida({ aoFechar, sujo });
+
   return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
+    <Dialog.Root open onOpenChange={(a) => !a && guarda.tentarFechar()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(560px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
+        <Dialog.Content
+          {...guarda.propsDoConteudo}
+          className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(560px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte"
+        >
           {/* Cabeçalho com o símbolo da operação e uma linha a dizer o que ela
               faz. Antes era um título solto sobre uma grelha de campos, e
               todas as janelas se pareciam umas com as outras. */}
@@ -206,20 +222,23 @@ export function DialogoMestre({
                 )}
               </div>
             </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex size-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
-              >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
+            {/* NÃO É UM `Dialog.Close`: esse fecha sem passar por ninguém.
+                Aqui o gesto é deliberado, mas continua a merecer a pergunta
+                quando há trabalho por gravar. */}
+            <button
+              type="button"
+              aria-label="Fechar"
+              onClick={guarda.tentarFechar}
+              className="flex size-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+            >
+              <X size={15} />
+            </button>
           </div>
 
           <form
             id="form-mestre"
             onSubmit={aoSubmeter}
+            {...guarda.propsDoFormulario}
             className="min-w-0 flex-1 overflow-auto p-5"
           >
             <div className="grid gap-3.5 sm:grid-cols-2">{children}</div>
@@ -232,9 +251,9 @@ export function DialogoMestre({
           </form>
 
           <div className="flex justify-end gap-2 border-t border-borda bg-superficie-2 px-5 py-3.5">
-            <Dialog.Close asChild>
-              <Botao variante="neutro">Cancelar</Botao>
-            </Dialog.Close>
+            <Botao variante="neutro" onClick={guarda.tentarFechar}>
+              Cancelar
+            </Botao>
             <Botao
               type="submit"
               form="form-mestre"
@@ -251,6 +270,8 @@ export function DialogoMestre({
               )}
             </Botao>
           </div>
+
+          <PerguntaDeSaida guarda={guarda} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

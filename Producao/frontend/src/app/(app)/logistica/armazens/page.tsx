@@ -22,6 +22,10 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import {
+  PerguntaDeSaida,
+  useGuardaDeSaida,
+} from "@/components/ui/GuardaDeSaida";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
 import { formataMoeda } from "@/lib/dinheiro";
@@ -251,27 +255,38 @@ function FormularioArmazem({
     }
   }
 
+  // A JANELA NÃO SE FECHA POR ACIDENTE: carregar fora deixou de a fechar,
+  // e o `Esc`, o X e o «Cancelar» perguntam quando já lá há dados por
+  // gravar. Ver `components/ui/GuardaDeSaida.tsx`.
+  const guarda = useGuardaDeSaida({ aoFechar });
+
   return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
+    <Dialog.Root open onOpenChange={(a) => !a && guarda.tentarFechar()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(480px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
+        <Dialog.Content
+          {...guarda.propsDoConteudo}
+          className="fixed left-1/2 top-1/2 z-50 w-[min(480px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte"
+        >
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
               {novo ? "Novo armazém" : `Alterar armazém ${armazem.codigo}`}
             </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
-              >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
+            <button
+              onClick={guarda.tentarFechar}
+              type="button"
+              aria-label="Fechar"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+            >
+              <X size={15} />
+            </button>
           </div>
 
-          <form onSubmit={submeter} className="flex flex-col gap-3 p-5">
+          <form
+            {...guarda.propsDoFormulario}
+            onSubmit={submeter}
+            className="flex flex-col gap-3 p-5"
+          >
             <Campo
               rotulo="Código"
               dica={
@@ -304,12 +319,14 @@ function FormularioArmazem({
             {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
             <div className="mt-1 flex justify-end gap-2">
-              <Botao onClick={aoFechar}>Cancelar</Botao>
+              <Botao onClick={guarda.tentarFechar}>Cancelar</Botao>
               <Botao type="submit" variante="primario" disabled={aGravar}>
                 {aGravar ? "A gravar…" : "Gravar"}
               </Botao>
             </div>
           </form>
+
+          <PerguntaDeSaida guarda={guarda} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

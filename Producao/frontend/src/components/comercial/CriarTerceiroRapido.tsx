@@ -5,6 +5,10 @@ import { Dialog } from "radix-ui";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { Alerta, Botao, Campo, Entrada } from "@/components/ui";
 import { CampoNif } from "@/components/ui/CampoNif";
+import {
+  PerguntaDeSaida,
+  useGuardaDeSaida,
+} from "@/components/ui/GuardaDeSaida";
 import { api, ErroApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -135,27 +139,38 @@ export function CriarTerceiroRapido({
     }
   }
 
+  // A JANELA NÃO SE FECHA POR ACIDENTE: carregar fora deixou de a fechar,
+  // e o `Esc`, o X e o «Cancelar» perguntam quando já lá há dados por
+  // gravar. Ver `components/ui/GuardaDeSaida.tsx`.
+  const guarda = useGuardaDeSaida({ aoFechar });
+
   return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
+    <Dialog.Root open onOpenChange={(a) => !a && guarda.tentarFechar()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[70] w-[min(520px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
+        <Dialog.Content
+          {...guarda.propsDoConteudo}
+          className="fixed left-1/2 top-1/2 z-[70] w-[min(520px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte"
+        >
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
               {lado.titulo}
             </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
-              >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
+            <button
+              onClick={guarda.tentarFechar}
+              type="button"
+              aria-label="Fechar"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+            >
+              <X size={15} />
+            </button>
           </div>
 
-          <form onSubmit={submeter} className="flex flex-col gap-4 px-5 py-4">
+          <form
+            {...guarda.propsDoFormulario}
+            onSubmit={submeter}
+            className="flex flex-col gap-4 px-5 py-4"
+          >
             <p className="text-[13px] leading-relaxed text-texto-suave">
               O {lado.singular} fica criado com <b>número próprio</b> e{" "}
               <b>conta corrente</b> na contabilidade. O resto da ficha —
@@ -243,7 +258,11 @@ export function CriarTerceiroRapido({
             {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
             <div className="flex justify-end gap-2 pt-1">
-              <Botao type="button" variante="contorno" onClick={aoFechar}>
+              <Botao
+                type="button"
+                variante="contorno"
+                onClick={guarda.tentarFechar}
+              >
                 Cancelar
               </Botao>
               <Botao
@@ -262,6 +281,8 @@ export function CriarTerceiroRapido({
               </Botao>
             </div>
           </form>
+
+          <PerguntaDeSaida guarda={guarda} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

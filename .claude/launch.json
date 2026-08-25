@@ -38,6 +38,36 @@
       ],
       "cwd": "Piloto",
       "port": 4173
+    },
+    {
+      "name": "backend-teste",
+      "runtimeExecutable": "C:/GitHub/AYContablidade/Producao/backend/.venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--port",
+        "8011",
+        "--reload",
+        "--no-proxy-headers"
+      ],
+      "cwd": "Producao/backend",
+      "port": 8011,
+      "autoPort": false
+    },
+    {
+      "name": "frontend-teste",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3010"
+      ],
+      "cwd": "Producao/frontend",
+      "port": 3010,
+      "autoPort": false
     }
   ]
 }

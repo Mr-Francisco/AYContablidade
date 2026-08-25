@@ -29,6 +29,10 @@ import {
 } from "@/components/ui";
 import { CampoNif } from "@/components/ui/CampoNif";
 import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
+import {
+  PerguntaDeSaida,
+  useGuardaDeSaida,
+} from "@/components/ui/GuardaDeSaida";
 import { BarraPaginacao, usePaginacao } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, buscador, ErroApi } from "@/lib/api";
@@ -659,26 +663,35 @@ function Modal({
   aoFechar: () => void;
   children: React.ReactNode;
 }) {
+  // A JANELA NÃO SE FECHA POR ACIDENTE: carregar fora deixou de a fechar,
+  // e o `Esc`, o X e o «Cancelar» perguntam quando já lá há dados por
+  // gravar. Ver `components/ui/GuardaDeSaida.tsx`.
+  const guarda = useGuardaDeSaida({ aoFechar });
+
   return (
-    <Dialog.Root open onOpenChange={(a) => !a && aoFechar()}>
+    <Dialog.Root open onOpenChange={(a) => !a && guarda.tentarFechar()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(560px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte">
+        <Dialog.Content
+          {...guarda.propsDoConteudo}
+          className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(560px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borda bg-superficie shadow-forte"
+        >
           <div className="flex items-center justify-between border-b border-borda px-5 py-3.5">
             <Dialog.Title className="text-[15px] font-bold">
               {titulo}
             </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Fechar"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
-              >
-                <X size={15} />
-              </button>
-            </Dialog.Close>
+            <button
+              onClick={guarda.tentarFechar}
+              type="button"
+              aria-label="Fechar"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-borda hover:border-perigo hover:text-perigo"
+            >
+              <X size={15} />
+            </button>
           </div>
           <div className="min-w-0 flex-1 overflow-auto">{children}</div>
+
+          <PerguntaDeSaida guarda={guarda} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
