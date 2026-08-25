@@ -720,6 +720,11 @@ export interface Ativo {
   fechado_em: string | null;
   /** A conta para onde foi transferido no fecho. */
   conta_destino: string | null;
+  /** O que a obra já custou — a soma dos itens. Só vem preenchido enquanto
+   *  está em curso; depois de fechada, o valor está no `valor_aquisicao`. */
+  valor_acumulado: string | null;
+  /** Quantas despesas formam esse acumulado. */
+  itens: number | null;
 }
 
 /** Um custo somado a um imobilizado em curso. */

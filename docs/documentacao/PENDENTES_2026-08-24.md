@@ -9,7 +9,7 @@ decidir.
 | | Pedido | Estado |
 |---|---|---|
 | 1 | Janelas que não se fecham sozinhas e levam os dados | **FEITO** |
-| 2 | Imobilizados em Curso com separador próprio | Por fazer |
+| 2 | Imobilizados em Curso com separador próprio | **FEITO** |
 | 3 | F4 em todos os campos de escolha com tabela por trás | Por fazer |
 | 4 | Documentos: subclasses, conta de reflexão e sistema de inventariação | Por fazer |
 
@@ -84,12 +84,45 @@ como estavam: não há lá nada para perder.
 janela que se abre a partir de um activo. Não tem entrada própria no menu nem
 lista própria.
 
-## O que se faz
+## O que se fez
 
-Um separador `imobilizados/em-curso` ao lado de «Activos» e «Amortizações»,
-com a mesma forma da ficha de imobilizados: lista com grelha, filtros, ficha
-por obra, e as acções de fechar e transferir que já existem no serviço
-(`fechar_e_transferir`, `conta_em_curso_do_ativo`).
+`app/(app)/imobilizados/em-curso/page.tsx`, entre «Ficha de Ativos» e
+«Amortizações» no menu. Traz o que faltava a quem trata de obras:
+
+- **Quatro indicadores**: investido em curso, obras a decorrer, despesas
+  lançadas, obras já transferidas.
+- **A lista das obras** com a conta própria de cada uma (`141001`), quantas
+  despesas a formam e quanto já custou.
+- **As já transferidas**, em baixo e discretas — para conferir que a
+  transferência aconteceu e para onde foi, sem ir procurar à Ficha de Ativos
+  entre bens que nunca foram obras.
+- **«Nova obra»** abre a ficha já com o interruptor de obra em curso ligado e
+  o título a dizer «Nova obra em curso», e não «Novo activo».
+
+### Duas coisas que foi preciso fazer por baixo
+
+**A ficha do activo saiu da página.** `FormularioAtivo` e `BarraProgresso`
+viviam dentro de `ativos/page.tsx` e passaram a ser precisos nos dois ecrãs.
+Estão agora em `components/imobilizados/FichaAtivo.tsx`. Copiá-los garantia que
+os dois divergiam à primeira correcção.
+
+**A listagem passou a trazer o acumulado.** O total de uma obra é a soma dos
+seus itens, e ir buscá-lo ficha a ficha eram duas consultas por linha. É uma
+soma agrupada só, e só para as que estão em curso — uma ficha fechada já tem o
+valor no `valor_aquisicao`.
+
+### A Ficha de Ativos continua a mostrá-las
+
+É de propósito. É o registo completo do imobilizado, e uma obra em curso é uma
+ficha como as outras. O que muda é que agora há também a porta certa para quem
+vem tratar de obras.
+
+### Verificado no browser, de ponta a ponta
+
+Criada a obra «Armazém de Viana — construção» pelo botão do separador: nasceu
+com a conta `141001` própria, recebeu três despesas (terreno 4 500 000,
+empreitada 12 000 000, instalação eléctrica 1 850 000) e a lista passou a
+mostrar **3 despesas · 18 350 000,00 Kz**, com os indicadores a acompanhar.
 
 ---
 

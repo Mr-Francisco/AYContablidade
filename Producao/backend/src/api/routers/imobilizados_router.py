@@ -9,7 +9,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
 from src.db.models.imobilizados import (
@@ -176,6 +176,33 @@ def listar_ativos(empresa: EmpresaAtual, db: DB, so_ativos: bool = False) -> lis
     q = select(Ativo).where(Ativo.empresa_id == empresa.id)
     if so_ativos:
         q = q.where(Ativo.estado == "activo")
+    ativos = db.scalars(q.order_by(Ativo.codigo)).all()
+
+    # O QUE CADA OBRA JA CUSTOU, NUMA CONSULTA SO.
+    #
+    # O separador dos Imobilizados em Curso corre a lista das obras e precisa,
+    # em cada linha, do acumulado e de quantas despesas o formam. Ir busca-los
+    # ficha a ficha eram duas consultas por linha - com trinta obras, sessenta
+    # idas a base de dados para desenhar uma tabela. Aqui e uma soma agrupada.
+    #
+    # So para as que estao em curso: uma ficha ja fechada tem o valor no
+    # `valor_aquisicao`, que e o que a transferencia la pos.
+    ids_em_curso = [a.id for a in ativos if a.em_curso]
+    somas: dict = {}
+    if ids_em_curso:
+        somas = {
+            linha.ativo_id: (linha.total, linha.quantos)
+            for linha in db.execute(
+                select(
+                    ItemImobilizado.ativo_id,
+                    func.coalesce(func.sum(ItemImobilizado.valor), 0).label("total"),
+                    func.count(ItemImobilizado.id).label("quantos"),
+                )
+                .where(ItemImobilizado.ativo_id.in_(ids_em_curso))
+                .group_by(ItemImobilizado.ativo_id)
+            ).all()
+        }
+
     return [
         {"id": a.id, "codigo": a.codigo, "designacao": a.designacao,
          "conta_imob": a.conta_imob, "conta_amort_acum": a.conta_amort_acum,
@@ -193,8 +220,10 @@ def listar_ativos(empresa: EmpresaAtual, db: DB, so_ativos: bool = False) -> lis
          "valor_sujeito_amortizacao": a.valor_sujeito_amortizacao,
          "base_amortizavel": svc.base_amortizavel(a),
          "em_curso": a.em_curso, "fechado_em": a.fechado_em,
-         "conta_destino": a.conta_destino}
-        for a in db.scalars(q.order_by(Ativo.codigo)).all()
+         "conta_destino": a.conta_destino,
+         "valor_acumulado": somas.get(a.id, (0, 0))[0] if a.em_curso else None,
+         "itens": somas.get(a.id, (0, 0))[1] if a.em_curso else None}
+        for a in ativos
     ]
 
 

@@ -371,6 +371,13 @@ const NAV_COMPLETO: GrupoNav[] = [
         icone: "imob",
       },
       {
+        href: "/imobilizados/em-curso",
+        rotulo: "Imobilizados em Curso",
+        seccao: "Imobilizado",
+        cap: "imob.ver",
+        icone: "imob",
+      },
+      {
         href: "/imobilizados/amortizacoes",
         rotulo: "Amortizações",
         seccao: "Imobilizado",
