@@ -21,6 +21,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { CampoEntidade } from "@/components/ui/CampoEntidade";
 import {
   AccoesDaLinha,
   ConfirmarEliminar,
@@ -333,14 +334,28 @@ function FormularioDocumento({
         />
       </Campo>
 
-      <Campo rotulo="Diário" className="sm:col-span-2">
-        <Selector
-          valor={campos.diario_codigo}
-          aoMudar={(v) => alterar("diario_codigo", v)}
-          opcoes={diarios.map((d) => ({
-            valor: d.codigo,
-            rotulo: `${d.codigo} — ${d.nome}`,
-          }))}
+      <Campo
+        rotulo="Diário"
+        className="sm:col-span-2"
+        dica="F4 para procurar por código ou nome."
+      >
+        <CampoEntidade
+          valor={
+            campos.diario_codigo
+              ? {
+                  id: campos.diario_codigo,
+                  codigo: campos.diario_codigo,
+                  nome:
+                    diarios.find((d) => d.codigo === campos.diario_codigo)
+                      ?.nome ?? "",
+                }
+              : null
+          }
+          aoEscolher={(r) => alterar("diario_codigo", r?.codigo ?? "")}
+          fonte="/api/contabilidade/diarios/tabela"
+          titulo="Diários"
+          placeholder="Diário (F4)"
+          colunas={["Código", "Nome", "Categoria"]}
         />
       </Campo>
 

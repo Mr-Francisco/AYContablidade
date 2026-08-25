@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
+import { CampoConta } from "@/components/contabilidade/CampoConta";
 import { CampoData } from "@/components/contabilidade/CampoData";
 import {
   ACarregar,
@@ -12,7 +13,6 @@ import {
   CabecalhoPagina,
   Campo,
   Cartao,
-  Entrada,
   EnvolveTabela,
   Kpi,
   Selector,
@@ -137,15 +137,14 @@ function Conteudo() {
       />
 
       <BarraFiltros className="mb-4">
-        <Selector
-          rotulo="Conta"
-          valor={conta}
-          aoMudar={setConta}
-          opcoes={opcoesConta}
-          placeholder="Escolher conta…"
-          larguraMinima="20rem"
-          className="flex-1"
-        />
+        {/* A CONTA POR F4, e não numa caixa de opções. São mil e
+            seiscentas contas: rolar até à que se procura é o que o cliente
+            descreveu como «scroll no select infinito». Quem lança todos os
+            dias escreve `4311` e segue; quem não sabe carrega em F4 e percorre
+            a árvore, com procura. */}
+        <Campo rotulo="Conta" className="min-w-[20rem] flex-1">
+          <CampoConta valor={conta} aoMudar={setConta} />
+        </Campo>
         <Selector
           rotulo="Exercício"
           valor={exId ?? ""}

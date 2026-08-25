@@ -10,7 +10,7 @@ decidir.
 |---|---|---|
 | 1 | Janelas que não se fecham sozinhas e levam os dados | **FEITO** |
 | 2 | Imobilizados em Curso com separador próprio | **FEITO** |
-| 3 | F4 em todos os campos de escolha com tabela por trás | Por fazer |
+| 3 | F4 em todos os campos de escolha com tabela por trás | **FEITO** |
 | 4 | Documentos: subclasses, conta de reflexão e sistema de inventariação | Por fazer |
 
 **A ordem é esta e não a do pedido.** A 1 vem primeiro porque é uma peça que
@@ -144,15 +144,43 @@ mostrar **3 despesas · 18 350 000,00 Kz**, com os indicadores a acompanhar.
 sítios (vendas, documentos, extracto, movimentos, activos, recibos, compras,
 stock, ficha de terceiro, parametrizações).
 
-## O que falta
+## O que se fez
 
-Passar a pente fino **todos** os `Selector` e `<select>` do projecto e
-converter os que têm tabela por trás. O critério: se o que está na lista vem
-de uma tabela da base de dados e pode crescer, leva F4. Se é uma lista fechada
-e curta — «Sim/Não», «Débito/Crédito», os doze meses —, fica select.
+Passados a pente fino os 120 campos de escolha do projecto, com este critério:
+**se o que está na lista vem de uma tabela da base de dados e pode crescer,
+leva F4.** Se é uma lista fechada e curta — «Sim/Não», «Devedora/Credora», os
+doze meses, os três tipos de imobilizado —, fica como está: abrir uma tabela
+para escolher entre duas opções seria pior do que a caixa.
 
-Candidatos identificados: clientes, fornecedores, artigos, contas, documentos,
-diários, colaboradores, vendedores, armazéns, centros de custo, terceiros.
+Convertidos oito campos, os que tinham mesmo tabela por trás:
+
+| Onde | Campo | O que era |
+|---|---|---|
+| Razão | Conta | **1600 contas** numa caixa de opções — o «select infinito» |
+| Artigos | Existências, custo, proveito | A mesma lista de 1600, três vezes |
+| Documentos | Diário | Todos os diários da empresa |
+| Amortizações | Diário e Documento | Duas listas, a segunda a mudar com a primeira |
+| Configurações | Armazém de saída | Todos os armazéns |
+| RH · Honorários | Independente | Todos os prestadores |
+
+As contas usam o `CampoConta`, que já existia e mostra a **árvore** do plano
+com procura — melhor do que uma lista plana. As restantes usam o
+`CampoEntidade`.
+
+### Três tabelas novas no servidor
+
+`/api/contabilidade/diarios/tabela`, `/api/contabilidade/documentos/tabela` e
+`/api/rh/independentes/tabela`. A dos documentos aceita `?diario=`: quem está a
+lançar num diário não quer ver os documentos dos outros, e mostrá-los era
+convidar ao engano. O detalhe de cada linha diz para onde o documento manda o
+lançamento — `diario 21 · D 21121 · C 32121` —, que é o que se precisa de ver
+para escolher.
+
+### Verificado no browser
+
+Na Razão, F4 abre a árvore do plano com procura; escrever `31121001`
+directamente valida para «AS Imagem, Lda.» e carrega a conta. Os três
+endpoints novos respondem: 20 diários, 50 documentos.
 
 ---
 

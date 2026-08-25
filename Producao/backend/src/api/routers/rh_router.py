@@ -348,6 +348,38 @@ def tabela_de_colaboradores(
     ]
 
 
+@router.get("/independentes/tabela")
+def tabela_de_independentes(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    """Os trabalhadores independentes, para o F4 do processamento de honorarios.
+
+    So os ACTIVOS: quem processa um honorario deste mes nao quer escolher entre
+    prestadores que ja nao trabalham com a empresa.
+    """
+    from sqlalchemy import or_ as _ou
+
+    from src.db.models.rh import Independente
+
+    q = select(Independente).where(
+        Independente.empresa_id == empresa.id, Independente.estado == "activo"
+    )
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(_ou(Independente.nome.ilike(termo), Independente.nif.ilike(termo)))
+    return [
+        {
+            "id": str(i.id),
+            "codigo": i.nif or "",
+            "nome": i.nome,
+            # A taxa de retencao e o que distingue um prestador de outro na
+            # hora de escolher: e ela que decide o liquido a pagar.
+            "detalhe": f"{i.taxa_ret} %" + (f" · {i.atividade}" if i.atividade else ""),
+        }
+        for i in db.scalars(q.order_by(Independente.nome).limit(limite)).all()
+    ]
+
+
 @router.get("/colaboradores")
 def listar_colaboradores(
     empresa: EmpresaAtual, db: DB, so_ativos: bool = False

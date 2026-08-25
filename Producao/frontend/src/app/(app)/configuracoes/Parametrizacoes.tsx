@@ -10,9 +10,9 @@ import {
   Campo,
   Cartao,
   Entrada,
-  Selector,
   TituloCartao,
 } from "@/components/ui";
+import { CampoEntidade } from "@/components/ui/CampoEntidade";
 import { api, buscador, ErroApi } from "@/lib/api";
 
 /**
@@ -171,17 +171,35 @@ export function Parametrizacoes({
               placeholder="7111"
             />
           </Campo>
-          <Selector
+          {/* O ARMAZÉM POR F4. Uma empresa com um armazém não nota
+              diferença; uma com quarenta deixa de rolar uma lista. */}
+          <Campo
             rotulo="Armazém de saída"
-            valor={campos.armazem_venda_id ?? ""}
-            aoMudar={(v) => alterar("armazem_venda_id", v)}
-            opcoes={(armazens ?? []).map((a) => ({
-              valor: a.id,
-              rotulo: `${a.codigo} · ${a.nome}`,
-            }))}
-            placeholder="(sem armazéns)"
-            larguraMinima="100%"
-          />
+            dica="F4 para procurar por código ou nome."
+          >
+            <CampoEntidade
+              valor={
+                campos.armazem_venda_id
+                  ? {
+                      id: campos.armazem_venda_id,
+                      codigo:
+                        (armazens ?? []).find(
+                          (a) => a.id === campos.armazem_venda_id,
+                        )?.codigo ?? "",
+                      nome:
+                        (armazens ?? []).find(
+                          (a) => a.id === campos.armazem_venda_id,
+                        )?.nome ?? "",
+                    }
+                  : null
+              }
+              aoEscolher={(r) => alterar("armazem_venda_id", r?.id ?? "")}
+              fonte="/api/logistica/armazens/tabela"
+              titulo="Armazéns"
+              placeholder="Armazém (F4)"
+              colunas={["Código", "Nome", "Localização"]}
+            />
+          </Campo>
           <Campo rotulo="Conta de regularização (ajustes — omissão)">
             <CampoConta
               valor={campos.conta_regulariza ?? ""}

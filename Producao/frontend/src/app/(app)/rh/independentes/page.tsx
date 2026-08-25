@@ -27,6 +27,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { CampoEntidade } from "@/components/ui/CampoEntidade";
 import { CampoNif } from "@/components/ui/CampoNif";
 import { AccoesDaLinha, ConfirmarEliminar } from "@/components/ui/CrudMestre";
 import {
@@ -580,17 +581,31 @@ function FormularioHonorario({
   return (
     <Modal titulo="Processar honorário" aoFechar={aoFechar}>
       <form onSubmit={submeter} className="flex flex-col gap-3 p-5">
-        <Selector
-          rotulo="Independente"
-          valor={independenteId}
-          aoMudar={setIndependenteId}
-          opcoes={independentes.map((i) => ({
-            valor: i.id,
-            rotulo: `${i.nome} (${numeroLimpo(i.taxa_ret)} %)`,
-          }))}
-          placeholder="Escolher independente…"
-          larguraMinima="100%"
-        />
+        {/* O INDEPENDENTE POR F4. Uma empresa que recorra a prestadores tem
+            dezenas deles, e escolher um numa caixa de opções obrigava a rolar
+            até ao nome — sem poder procurar. */}
+        <Campo rotulo="Independente" dica="F4 para procurar por nome ou NIF.">
+          <CampoEntidade
+            valor={
+              independenteId
+                ? {
+                    id: independenteId,
+                    codigo:
+                      independentes.find((i) => i.id === independenteId)?.nif ??
+                      "",
+                    nome:
+                      independentes.find((i) => i.id === independenteId)
+                        ?.nome ?? "",
+                  }
+                : null
+            }
+            aoEscolher={(r) => setIndependenteId(r?.id ?? "")}
+            fonte="/api/rh/independentes/tabela"
+            titulo="Independentes"
+            placeholder="Independente (F4)"
+            colunas={["NIF", "Nome", "Retenção"]}
+          />
+        </Campo>
         <div className="grid gap-3 sm:grid-cols-2">
           <Campo rotulo="Valor bruto">
             <Entrada

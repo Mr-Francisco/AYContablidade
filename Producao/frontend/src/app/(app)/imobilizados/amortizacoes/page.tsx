@@ -12,6 +12,7 @@ import {
   Botao,
   CabecalhoDoMapa,
   CabecalhoPagina,
+  Campo,
   Cartao,
   EnvolveTabela,
   Kpi,
@@ -25,6 +26,7 @@ import {
   Vazio,
 } from "@/components/ui";
 import { AccoesDoMapa } from "@/components/ui/AccoesDoMapa";
+import { CampoEntidade } from "@/components/ui/CampoEntidade";
 import { DialogoMestre } from "@/components/ui/CrudMestre";
 import { CaixaHistorico } from "@/components/ui/Paginacao";
 import { useAuth } from "@/contexts/AuthContext";
@@ -642,14 +644,6 @@ function ConfiguracoesAmortizacoes({ aoFechar }: { aoFechar: () => void }) {
   // chegava da configuração antes de os documentos do diário serem
   // carregados, e o selector não casa um valor que não tem opção. Quem
   // abrisse e gravasse sem reparar apagava a configuração.
-  const opcoesDocumento = documentos.map((d) => ({
-    valor: d.codigo,
-    rotulo: `${d.codigo} · ${d.descricao}`,
-  }));
-  if (documento && !opcoesDocumento.some((o) => o.valor === documento)) {
-    opcoesDocumento.unshift({ valor: documento, rotulo: documento });
-  }
-
   async function gravar(e: FormEvent) {
     e.preventDefault();
     setErro(null);
@@ -680,32 +674,67 @@ function ConfiguracoesAmortizacoes({ aoFechar }: { aoFechar: () => void }) {
       erro={erro}
       rotuloGravar="Guardar configurações"
     >
-      <Selector
+      {/* DIÁRIO E DOCUMENTO POR F4, e não em caixas de opções. Numa empresa
+          com muitos diários — e com um punhado de documentos por cada um —
+          eram duas listas para rolar, e a segunda mudava de conteúdo consoante
+          a primeira sem que se percebesse porquê. Aqui procura-se, e a tabela
+          dos documentos já vem restringida ao diário escolhido. */}
+      <Campo
         rotulo="Diário de Imobilizado"
-        valor={diario}
-        aoMudar={(v) => {
-          // O documento só se limpa quando o diário TROCA MESMO. A caixa
-          // também chama isto quando o valor lhe chega da configuração, com o
-          // diário ainda vazio — e nessa altura limpar o documento apagava o
-          // que se acabara de carregar, deixando o campo vazio com a
-          // configuração gravada por baixo.
-          const trocaDoUtilizador = diario !== "" && v !== diario;
-          setDiario(v);
-          if (trocaDoUtilizador) setDocumento("");
-        }}
-        opcoes={diarios.map((d) => ({
-          valor: d.codigo,
-          rotulo: `${d.codigo} · ${d.nome}`,
-        }))}
-        larguraMinima="100%"
-      />
-      <Selector
+        className="sm:col-span-2"
+        dica="F4 para procurar por código ou nome."
+      >
+        <CampoEntidade
+          valor={
+            diario
+              ? {
+                  id: diario,
+                  codigo: diario,
+                  nome: diarios.find((x) => x.codigo === diario)?.nome ?? "",
+                }
+              : null
+          }
+          aoEscolher={(r) => {
+            // O documento só se limpa quando o diário TROCA MESMO. O campo
+            // também chama isto quando o valor lhe chega da configuração, com
+            // o diário ainda vazio — e nessa altura limpar o documento apagava
+            // o que se acabara de carregar, deixando o campo vazio com a
+            // configuração gravada por baixo.
+            const novo = r?.codigo ?? "";
+            const trocaDoUtilizador = diario !== "" && novo !== diario;
+            setDiario(novo);
+            if (trocaDoUtilizador) setDocumento("");
+          }}
+          fonte="/api/contabilidade/diarios/tabela"
+          titulo="Diários"
+          placeholder="Diário (F4)"
+          colunas={["Código", "Nome", "Categoria"]}
+        />
+      </Campo>
+      <Campo
         rotulo="Documento"
-        valor={documento}
-        aoMudar={setDocumento}
-        opcoes={opcoesDocumento}
-        larguraMinima="100%"
-      />
+        className="sm:col-span-2"
+        dica="F4 mostra só os documentos deste diário."
+      >
+        <CampoEntidade
+          valor={
+            documento
+              ? {
+                  id: documento,
+                  codigo: documento,
+                  nome:
+                    documentos.find((x) => x.codigo === documento)?.descricao ??
+                    "",
+                }
+              : null
+          }
+          aoEscolher={(r) => setDocumento(r?.codigo ?? "")}
+          fonte={`/api/contabilidade/documentos/tabela?diario=${encodeURIComponent(diario)}`}
+          titulo="Documentos"
+          placeholder="Documento (F4)"
+          colunas={["Código", "Descrição", "Contas"]}
+        />
+      </Campo>
     </DialogoMestre>
   );
 }

@@ -1241,6 +1241,94 @@ def tabela_de_centros(
     ]
 
 
+# ---------------------------------------------------------------------------
+# O F4 DOS DIARIOS E DOS DOCUMENTOS.
+#
+# Pedido do cliente: «todo o campo que esta em um combobox ou select e que traz
+# grandes informacoes» tem de abrir a tabela com F4, em vez de obrigar a rolar
+# uma lista. Os diarios sao poucos numa empresa pequena e dezenas numa grande;
+# os documentos multiplicam-se por diario. Ambos crescem, e por isso ambos
+# levam tabela.
+#
+# A forma e a mesma dos outros: `id`, `codigo`, `nome`, `detalhe`. O `id` e o
+# CODIGO e nao a chave interna, porque e o codigo que os campos guardam.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/diarios/tabela", dependencies=[VER])
+def tabela_de_diarios(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    """Os diarios da empresa, para o F4."""
+    from sqlalchemy import or_ as _ou
+
+    q = select(Diario).where(Diario.empresa_id == empresa.id, Diario.ativo.is_(True))
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(_ou(Diario.codigo.ilike(termo), Diario.nome.ilike(termo)))
+    return [
+        {
+            "id": x.codigo,
+            "codigo": x.codigo,
+            "nome": x.nome,
+            "detalhe": x.categoria or "",
+        }
+        for x in db.scalars(q.order_by(Diario.codigo).limit(limite)).all()
+    ]
+
+
+@router.get("/documentos/tabela", dependencies=[VER])
+def tabela_de_documentos(
+    empresa: EmpresaAtual,
+    db: DB,
+    procura: str = "",
+    limite: int = 50,
+    diario: str = "",
+) -> list[dict]:
+    """Os documentos, para o F4.
+
+    `diario` restringe ao diario escolhido: quem esta a lancar num diario nao
+    quer ver os documentos dos outros, e mostra-los era convidar ao engano.
+    """
+    from sqlalchemy import or_ as _ou
+
+    q = select(DocumentoContabilistico).where(
+        DocumentoContabilistico.empresa_id == empresa.id,
+        DocumentoContabilistico.ativo.is_(True),
+    )
+    if diario.strip():
+        q = q.where(DocumentoContabilistico.diario_codigo == diario.strip())
+    if procura.strip():
+        termo = f"%{procura.strip()}%"
+        q = q.where(
+            _ou(
+                DocumentoContabilistico.codigo.ilike(termo),
+                DocumentoContabilistico.descricao.ilike(termo),
+            )
+        )
+    return [
+        {
+            "id": x.codigo,
+            "codigo": x.codigo,
+            "nome": x.descricao,
+            # O que a pessoa precisa de ver ao escolher: para onde este
+            # documento manda o lancamento.
+            "detalhe": " · ".join(
+                p
+                for p in (
+                    f"diario {x.diario_codigo}",
+                    f"D {x.conta_debito}" if x.conta_debito else "",
+                    f"C {x.conta_credito}" if x.conta_credito else "",
+                )
+                if p
+            ),
+        }
+        for x in db.scalars(
+            q.order_by(DocumentoContabilistico.codigo).limit(limite)
+        ).all()
+    ]
+
+
 @router.get("/diferidos", dependencies=[VER])
 def listar_diferidos(
     empresa: EmpresaAtual, db: DB, offset: int = 0, limite: int = LIMITE_OMISSAO

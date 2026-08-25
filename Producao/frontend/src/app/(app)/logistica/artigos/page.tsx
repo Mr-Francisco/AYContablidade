@@ -4,6 +4,7 @@ import { Plus, Search, X } from "lucide-react";
 import { Dialog, Tabs } from "radix-ui";
 import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
+import { CampoConta } from "@/components/contabilidade/CampoConta";
 import { GrelhaKpis } from "@/components/painel";
 import {
   ACarregar,
@@ -473,7 +474,7 @@ function FormularioArtigo({
     }
   }
 
-  const opcoesContas = contas.map((c) => ({
+  const _opcoesContas = contas.map((c) => ({
     valor: c.codigo,
     rotulo: `${c.codigo} — ${c.nome}`,
   }));
@@ -647,30 +648,36 @@ function FormularioArtigo({
 
               <Tabs.Content value="contas">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Selector
+                  {/* AS TRÊS CONTAS POR F4. Eram três caixas com o plano
+                      de contas inteiro lá dentro — a mesma lista, três vezes,
+                      para rolar. Aqui escreve-se o código ou procura-se. */}
+                  <Campo
                     rotulo="Conta de existências"
-                    valor={campos.conta_existencia}
-                    aoMudar={(v) => alterar("conta_existencia", v)}
-                    opcoes={opcoesContas}
-                    placeholder="Usar a da configuração"
-                    larguraMinima="100%"
-                  />
-                  <Selector
+                    dica="Em branco, segue a da configuração."
+                  >
+                    <CampoConta
+                      valor={campos.conta_existencia}
+                      aoMudar={(v) => alterar("conta_existencia", v)}
+                    />
+                  </Campo>
+                  <Campo
                     rotulo="Conta de custo"
-                    valor={campos.conta_custo}
-                    aoMudar={(v) => alterar("conta_custo", v)}
-                    opcoes={opcoesContas}
-                    placeholder="Usar a da configuração"
-                    larguraMinima="100%"
-                  />
-                  <Selector
+                    dica="Em branco, segue a da configuração."
+                  >
+                    <CampoConta
+                      valor={campos.conta_custo}
+                      aoMudar={(v) => alterar("conta_custo", v)}
+                    />
+                  </Campo>
+                  <Campo
                     rotulo="Conta de proveito"
-                    valor={campos.conta_proveito}
-                    aoMudar={(v) => alterar("conta_proveito", v)}
-                    opcoes={opcoesContas}
-                    placeholder="Usar a do tipo de documento"
-                    larguraMinima="100%"
-                  />
+                    dica="Em branco, segue a do tipo de documento."
+                  >
+                    <CampoConta
+                      valor={campos.conta_proveito}
+                      aoMudar={(v) => alterar("conta_proveito", v)}
+                    />
+                  </Campo>
                 </div>
                 <Alerta tipo="info" className="mt-3">
                   Deixe em branco para o artigo seguir as contas definidas na
