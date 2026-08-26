@@ -440,6 +440,12 @@ export default function Movimentos() {
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          {automatico && (
+            <span className="text-[13px] text-texto-suave">
+              Gerado por um documento — o valor altera-se no documento que o
+              originou.
+            </span>
+          )}
           {aviso && (
             <span className="text-[13px] font-semibold text-sucesso">
               {aviso}

@@ -246,7 +246,6 @@ export function ListaPainel({
     <div className="flex flex-col">
       {linhas.map((l, i) => (
         <div
-          // biome-ignore lint/suspicious/noArrayIndexKey: sem `id`, a posição é a única identidade estável — a lista não reordena.
           key={l.id ?? `${i}-${l.titulo}`}
           className="flex items-center gap-2.5 border-b border-borda px-0.5 py-[9px] last:border-b-0"
         >

@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import useSWR from "swr";
+import { CampoData } from "@/components/contabilidade/CampoData";
 import { SelectorPeriodo } from "@/components/contabilidade/SelectorPeriodo";
 import { TabelaDemonstracao } from "@/components/contabilidade/TabelaDemonstracao";
 import {
@@ -64,13 +65,17 @@ export default function Resultados() {
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-  const [dataApuramento, setDataApuramento] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  const [dataApuramento, setDataApuramento] = useState("");
 
   const exercicio = exercicios.find((e) => e.id === exId);
   const jaApurado = Boolean(exercicio?.apuramento);
   const podeApurar = pode("contab.fechar");
+
+  // A DATA DO APURAMENTO ESCOLHE-SE, e por omissão é o último dia do
+  // exercício — é aí que os lançamentos de fecho vivem. Estava presa ao dia
+  // de hoje e sem campo nenhum, o que punha o fecho de um exercício já
+  // terminado num período que não é o dele.
+  const dataEfectiva = dataApuramento || exercicio?.fim || "";
 
   /** Apurar transfere os saldos das classes 6 e 7 para o resultado, gerando
    *  lançamentos. Reabrir remove exactamente esses — é por isso que o
@@ -78,11 +83,16 @@ export default function Resultados() {
   async function apurar() {
     setErro(null);
     setAviso(null);
+    if (!dataEfectiva) {
+      setErro("Indique a data do apuramento antes de continuar.");
+      setAApurar(false);
+      return;
+    }
     setOcupado(true);
     try {
       const r = await api.post<{ resultado: string; lancamentos: number }>(
         "/api/apuramentos/resultados",
-        { exercicio_id: exId, data: dataApuramento },
+        { exercicio_id: exId, data: dataEfectiva },
       );
       await mutate();
       setAviso(
@@ -199,6 +209,21 @@ export default function Resultados() {
         />
       </BarraFiltros>
 
+      {podeApurar && !jaApurado && (
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <CampoData
+            rotulo="Data do apuramento"
+            valor={dataEfectiva}
+            aoMudar={setDataApuramento}
+            exercicioId={exId ?? undefined}
+          />
+          <p className="max-w-prose text-[13px] text-texto-suave">
+            Os lançamentos de fecho são gerados nesta data. Por omissão é o
+            último dia do exercício, que é onde estes movimentos pertencem.
+          </p>
+        </div>
+      )}
+
       <CabecalhoDoMapa
         titulo="Demonstração de Resultados"
         exercicioId={exId}
@@ -287,7 +312,7 @@ export default function Resultados() {
         aoConfirmar={apurar}
       >
         Transfere os saldos das classes 6 e 7 para o resultado do exercício,
-        gerando os lançamentos de apuramento com data de <b>{dataApuramento}</b>
+        gerando os lançamentos de apuramento com data de <b>{dataEfectiva}</b>
         .
         <br />
         <br />

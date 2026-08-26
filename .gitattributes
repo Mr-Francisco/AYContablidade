@@ -1,2 +1,18 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Fins-de-linha
+#
+# O repositório guarda sempre LF. Só com `text=auto`, o checkout em Windows
+# com `core.autocrlf=true` reescreve os ficheiros com CRLF, e o Biome passa a
+# acusar como mal formatado tudo o que foi tocado — falhas que não existem no
+# que está gravado. O `eol=lf` fixa também a árvore de trabalho.
+* text=auto eol=lf
+
+# Binários — nunca converter.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.woff binary
+*.woff2 binary
