@@ -47,7 +47,7 @@ export function ListaLancamentos({
   controlos: { aoAnterior: () => void; aoSeguinte: () => void };
 }) {
   return (
-    <aside className="flex min-h-0 flex-col rounded-[14px] border border-borda bg-superficie p-3 shadow-suave">
+    <aside className="flex min-h-0 min-w-0 flex-col rounded-[14px] border border-borda bg-superficie p-3 shadow-suave">
       <div className="mb-2 flex items-center gap-2">
         <b className="text-sm">Diário</b>
         <select

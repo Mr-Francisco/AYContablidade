@@ -62,7 +62,9 @@ function AccoesNaBarra({ children }: { children?: ReactNode }) {
   }, []);
   if (!children || !destino) return null;
   return createPortal(
-    <div className="flex items-center gap-2">{children}</div>,
+    <div className="flex flex-wrap items-center gap-2 xl:flex-nowrap">
+      {children}
+    </div>,
     destino,
   );
 }

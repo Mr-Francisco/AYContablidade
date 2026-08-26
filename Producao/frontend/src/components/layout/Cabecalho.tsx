@@ -113,7 +113,8 @@ export function Cabecalho() {
           exercício, o sino, o tema, o perfil e a seta ficam sempre à mão. */}
       <div
         className={cn(
-          "mx-auto flex max-w-[1360px] items-center gap-4 px-5",
+          "mx-auto flex max-w-[1360px] flex-wrap items-center gap-x-4 gap-y-2 px-5",
+          "xl:flex-nowrap",
           "pb-2 pt-2.5",
         )}
       >
@@ -155,27 +156,42 @@ export function Cabecalho() {
           </div>
         )}
 
-        <div
-          className={cn(
-            "flex min-w-0 items-center gap-2.5",
-            // Sem título anunciado não há nada a empurrar as acções para a
-            // direita — e sem isto encostavam-se ao logótipo.
-            !pagina && "ml-auto",
-          )}
-        >
-          {/* OS BOTÕES DA PÁGINA, à esquerda do que é da aplicação: «Novo
-              documento» pertence ao ecrã, o sino e o perfil pertencem a quem
-              está sentado. Misturá-los punha o utilizador a procurar o botão
-              de gravar entre as notificações. */}
-          <div id={ID_DAS_ACCOES} className="flex items-center gap-2" />
+        {/* OS BOTÕES DA PÁGINA, à esquerda do que é da aplicação: «Novo
+            documento» pertence ao ecrã, o sino e o perfil pertencem a quem
+            está sentado. Misturá-los punha o utilizador a procurar o botão
+            de gravar entre as notificações.
 
-          {/* Um risco a separar o que é da página do que é da aplicação. */}
-          <span aria-hidden className="mx-0.5 h-6 w-px shrink-0 bg-borda" />
+            ABAIXO DE `xl` DESCEM PARA UMA LINHA SÓ DELES. Não são um número
+            fixo de botões: são conteúdo da página, variam de ecrã para ecrã, e
+            há ecrãs com três. Na mesma fila que a empresa, o exercício, o sino
+            e o perfil, empurravam a barra para fora do ecrã em tablet e em
+            telemóvel — a página ganhava deslocação horizontal.
+
+            `empty:hidden` porque a maioria das páginas não tem botões
+            nenhuns, e sem isso ganhavam todas uma linha vazia. */}
+        <div
+          id={ID_DAS_ACCOES}
+          className={cn(
+            "order-last flex w-full min-w-0 items-center gap-2",
+            "empty:hidden xl:order-none xl:w-auto xl:shrink-0",
+          )}
+        />
+
+        {/* O que é da aplicação NÃO ENCOLHE: com `min-w-0` a fila cedia
+            largura que os filhos não sabiam ceder, e o conteúdo saía por
+            fora em vez de a fila se reorganizar. */}
+        <div className="ml-auto flex shrink-0 items-center gap-2.5 xl:min-w-0 xl:shrink">
+          {/* Um risco a separar o que é da página do que é da aplicação —
+              só quando estão mesmo lado a lado. */}
+          <span
+            aria-hidden
+            className="mx-0.5 hidden h-6 w-px shrink-0 bg-borda xl:block"
+          />
 
           {empresa && (
             // Nome de empresa vem de dados: precisa de largura máxima e
             // truncate, senão empurra o resto do cabeçalho (docs/LESSONS.md).
-            <span className="hidden max-w-[220px] truncate rounded-full border border-borda bg-superficie-2 px-3 py-1.5 text-[12.5px] font-semibold text-texto-suave md:block">
+            <span className="hidden max-w-[220px] truncate rounded-full border border-borda bg-superficie-2 px-3 py-1.5 text-[12.5px] font-semibold text-texto-suave lg:block">
               {empresa.nome}
             </span>
           )}
@@ -225,7 +241,7 @@ export function Cabecalho() {
                   >
                     {iniciais}
                   </span>
-                  <span className="hidden min-w-0 flex-col leading-[1.1] md:flex">
+                  <span className="hidden min-w-0 flex-col leading-[1.1] lg:flex">
                     <b className="truncate text-[13px]">{utilizador.nome}</b>
                     <small className="truncate text-[11px] text-texto-suave">
                       {ROTULO_PERFIL[utilizador.perfil] ?? utilizador.perfil}
