@@ -129,6 +129,38 @@ class DocumentoContabilistico(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Bas
     retencao: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    #: SUBCLASSE DE OUTRO DOCUMENTO. O `211` e a classe; o `211.1` e uma
+    #: subclasse dela, e guarda aqui o `211`.
+    #:
+    #: Serve para organizar: uma empresa com quinze variantes de compra tem
+    #: quinze documentos soltos numa lista, e nao ha por onde ver que sao
+    #: todos da mesma familia. Uma subclasse pede o mesmo que uma classe e
+    #: pode fixar a sua propria conta de debito — e e essa que manda quando se
+    #: lanca com ela.
+    #:
+    #: UM SO NIVEL: uma subclasse nao tem subclasses. Foi o que foi pedido, e
+    #: e o que mantem a lista legivel.
+    pai_codigo: Mapped[str | None] = mapped_column(String(10))
+
+    #: SISTEMA DE INVENTARIACAO: `permanente`, `periodico`, ou vazio.
+    #:
+    #: No PERMANENTE o custo reconhece-se no momento em que ocorre: a compra
+    #: entra na conta de compras e, no mesmo lancamento, reflecte-se para a
+    #: conta de existencias. No PERIODICO nao ha reflexao — o custo so se apura
+    #: no fim do periodo, pelo inventario.
+    #:
+    #: Vazio e o comportamento de sempre, e e onde ficam todos os documentos
+    #: que ja existem: nenhum lancamento ja feito muda por causa disto.
+    sistema_inventario: Mapped[str | None] = mapped_column(String(20))
+
+    #: A CONTA PARA ONDE A COMPRA SE REFLECTE — a de destino, tipicamente uma
+    #: 26 ou uma 22, conforme o inventario que a empresa usa.
+    #:
+    #: So tem efeito com o sistema permanente. O outro lado da reflexao nao se
+    #: guarda porque nao e uma escolha: e a propria `conta_debito` deste
+    #: documento, creditada. Guardar as duas deixava-as divergir.
+    conta_reflexao: Mapped[str | None] = mapped_column(String(20))
+
     def __repr__(self) -> str:
         return f"<Documento {self.codigo} {self.descricao!r}>"
 

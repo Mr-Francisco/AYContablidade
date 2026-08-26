@@ -199,6 +199,35 @@ export default function Movimentos() {
                 conta_codigo: doc.conta_credito,
                 descricao: doc.descricao,
               });
+
+            /* A REFLEXÃO DO INVENTÁRIO PERMANENTE, já preparada.
+
+               No sistema permanente o custo reconhece-se no momento em que
+               ocorre: a compra entra na conta de compras e, no mesmo
+               lançamento, sai dela para as existências. São duas linhas mais —
+               debita-se a conta de destino, credita-se a de compras.
+
+               Vêm PREPARADAS E NÃO IMPOSTAS, como todas as outras: é o mesmo
+               que o documento já fazia com as suas duas contas. Quem lança
+               confere e ajusta os valores; o que se evita é ter de saber de cor
+               que aquele documento reflecte, e para onde. */
+            if (
+              doc.sistema_inventario === "permanente" &&
+              doc.conta_reflexao &&
+              doc.conta_debito
+            ) {
+              linhas.push({
+                ...linhaVazia(),
+                conta_codigo: doc.conta_reflexao,
+                descricao: `Reflexão — ${doc.descricao}`,
+              });
+              linhas.push({
+                ...linhaVazia(),
+                conta_codigo: doc.conta_debito,
+                descricao: `Reflexão — ${doc.descricao}`,
+              });
+            }
+
             while (linhas.length < 2) linhas.push(linhaVazia());
             novo.linhas = linhas;
           }

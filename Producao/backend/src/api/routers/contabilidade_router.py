@@ -125,6 +125,9 @@ class DiarioAtualizar(BaseModel):
     ativo: bool | None = None
 
 
+SISTEMAS_INVENTARIO = ("", "permanente", "periodico")
+
+
 class DocumentoPedido(BaseModel):
     codigo: str = Field(min_length=1, max_length=10)
     descricao: str = Field(min_length=1, max_length=120)
@@ -133,6 +136,9 @@ class DocumentoPedido(BaseModel):
     conta_credito: str | None = Field(default=None, max_length=20)
     retencao: bool = False
     ativo: bool = True
+    pai_codigo: str | None = Field(default=None, max_length=10)
+    sistema_inventario: str | None = Field(default=None, max_length=20)
+    conta_reflexao: str | None = Field(default=None, max_length=20)
 
 
 class DocumentoAtualizar(BaseModel):
@@ -142,6 +148,9 @@ class DocumentoAtualizar(BaseModel):
     conta_credito: str | None = Field(default=None, max_length=20)
     retencao: bool | None = None
     ativo: bool | None = None
+    pai_codigo: str | None = Field(default=None, max_length=10)
+    sistema_inventario: str | None = Field(default=None, max_length=20)
+    conta_reflexao: str | None = Field(default=None, max_length=20)
 
 
 class CentroPedido(BaseModel):
@@ -566,19 +575,88 @@ def listar_documentos(
             DocumentoContabilistico.diario_codigo == diario,
             DocumentoContabilistico.ativo.is_(True),
         )
-    return [
-        {"id": d.id, "codigo": d.codigo, "descricao": d.descricao,
-         "diario_codigo": d.diario_codigo, "conta_debito": d.conta_debito,
-         "conta_credito": d.conta_credito, "retencao": d.retencao, "ativo": d.ativo}
-        for d in db.scalars(q).all()
-    ]
+    # A MESMA FORMA DA CRIACAO E DA EDICAO, e nao um dicionario escrito a parte.
+    # Escrito duas vezes, foi o que aconteceu: as colunas novas entraram numa
+    # das duas e a listagem continuou a devolver documentos sem sistema de
+    # inventariacao — gravado na base de dados e invisivel no ecra.
+    return [_documento_publico(d) for d in db.scalars(q).all()]
 
 
 def _documento_publico(d: DocumentoContabilistico) -> dict:
     return {"id": d.id, "codigo": d.codigo, "descricao": d.descricao,
             "diario_codigo": d.diario_codigo, "conta_debito": d.conta_debito,
             "conta_credito": d.conta_credito, "retencao": d.retencao,
-            "ativo": d.ativo}
+            "ativo": d.ativo, "pai_codigo": d.pai_codigo,
+            "sistema_inventario": d.sistema_inventario or "",
+            "conta_reflexao": d.conta_reflexao}
+
+
+def _validar_familia(
+    db: DB, empresa_id: UUID, *, codigo: str, pai: str | None, proprio_id=None
+) -> None:
+    """As regras de uma subclasse, ditas a quem esta a escrever.
+
+    UM SO NIVEL. Uma subclasse nao tem subclasses: foi o que foi pedido, e e o
+    que mantem a lista legivel. Sem esta verificacao, o `211.1.1` era aceite e
+    a listagem passava a ter de desenhar uma arvore de profundidade
+    desconhecida para mostrar tres documentos.
+    """
+    if not pai:
+        return
+    if pai == codigo:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Um documento nao pode ser subclasse de si proprio.",
+        )
+    mae = db.scalar(
+        select(DocumentoContabilistico).where(
+            DocumentoContabilistico.empresa_id == empresa_id,
+            DocumentoContabilistico.codigo == pai,
+        )
+    )
+    if mae is None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"Nao existe o documento {pai} para servir de classe principal.",
+        )
+    if mae.pai_codigo:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"O documento {pai} ja e uma subclasse de {mae.pai_codigo}. "
+            "Uma subclasse fica dentro de uma classe, e nao dentro de outra "
+            "subclasse.",
+        )
+    # UMA CLASSE COM FILHAS NAO PODE VIRAR SUBCLASSE. Se pudesse, as filhas
+    # ficavam a um nivel que nao existe e desapareciam da listagem.
+    tem_filhas = db.scalar(
+        select(DocumentoContabilistico.id).where(
+            DocumentoContabilistico.empresa_id == empresa_id,
+            DocumentoContabilistico.pai_codigo == codigo,
+        )
+    )
+    if tem_filhas is not None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"O documento {codigo} ja tem subclasses proprias. "
+            "Retire-as primeiro, ou escolha outro documento para subclasse.",
+        )
+
+
+def _validar_inventario(sistema: str | None, reflexao: str | None) -> None:
+    """O sistema de inventariacao, e o que ele exige."""
+    if sistema and sistema not in SISTEMAS_INVENTARIO:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "O sistema de inventariacao so pode ser permanente ou periodico.",
+        )
+    # NO PERMANENTE A CONTA DE DESTINO E OBRIGATORIA: sem ela nao ha para onde
+    # reflectir, e o documento ficava com um sistema ligado que nao fazia nada.
+    if sistema == "permanente" and not (reflexao or "").strip():
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "No sistema permanente indique a conta para onde a compra se "
+            "reflecte — normalmente uma conta de existencias.",
+        )
 
 
 def _exigir_diario(db: DB, empresa_id: UUID, codigo: str) -> None:
@@ -611,6 +689,8 @@ def criar_documento(
             status.HTTP_409_CONFLICT, f"Já existe o documento {dados.codigo}."
         )
     _exigir_diario(db, empresa.id, dados.diario_codigo)
+    _validar_familia(db, empresa.id, codigo=dados.codigo, pai=dados.pai_codigo)
+    _validar_inventario(dados.sistema_inventario, dados.conta_reflexao)
     d = DocumentoContabilistico(empresa_id=empresa.id, **dados.model_dump())
     db.add(d)
     db.commit()
@@ -636,6 +716,16 @@ def actualizar_documento(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Nada para alterar.")
     if pedido.get("diario_codigo"):
         _exigir_diario(db, empresa.id, pedido["diario_codigo"])
+    if "pai_codigo" in pedido:
+        _validar_familia(
+            db, empresa.id, codigo=d.codigo, pai=pedido["pai_codigo"],
+            proprio_id=d.id,
+        )
+    if "sistema_inventario" in pedido or "conta_reflexao" in pedido:
+        _validar_inventario(
+            pedido.get("sistema_inventario", d.sistema_inventario),
+            pedido.get("conta_reflexao", d.conta_reflexao),
+        )
     for campo, valor in pedido.items():
         setattr(d, campo, valor)
     db.commit()

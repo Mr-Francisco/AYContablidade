@@ -88,6 +88,38 @@ export default function Documentos() {
     });
   }, [documentos, diario, procuraAdiada]);
 
+  /* AS SUBCLASSES FICAM DEBAIXO DA SUA CLASSE, e não espalhadas pela lista.
+     Era o ponto do pedido: «essas subclasses devem estar dentro de uma
+     classe». Ordenadas à parte, o `211.1` aparecia entre o `211` e o `212` por
+     acaso do alfabeto — e uma família com dez variantes lia-se como dez
+     documentos sem relação entre si.
+
+     Uma subclasse cuja classe não passou o filtro é mostrada na mesma, como
+     raiz: escondê-la fazia desaparecer um documento que corresponde ao que se
+     procurou. */
+  const ordenados = useMemo(() => {
+    const visiveis = new Set(filtrados.map((d) => d.codigo));
+    const filhas = new Map<string, DocumentoContabilistico[]>();
+    for (const d of filtrados) {
+      if (d.pai_codigo && visiveis.has(d.pai_codigo)) {
+        const lista = filhas.get(d.pai_codigo);
+        if (lista) lista.push(d);
+        else filhas.set(d.pai_codigo, [d]);
+      }
+    }
+    const saida: { doc: DocumentoContabilistico; subclasse: boolean }[] = [];
+    for (const d of filtrados) {
+      if (d.pai_codigo && visiveis.has(d.pai_codigo)) continue;
+      saida.push({ doc: d, subclasse: false });
+      for (const f of (filhas.get(d.codigo) ?? []).sort((a, b) =>
+        a.codigo.localeCompare(b.codigo),
+      )) {
+        saida.push({ doc: f, subclasse: true });
+      }
+    }
+    return saida;
+  }, [filtrados]);
+
   return (
     <>
       <CabecalhoPagina
@@ -159,15 +191,31 @@ export default function Documentos() {
                   <Th>Diário</Th>
                   <Th>Conta débito</Th>
                   <Th>Conta crédito</Th>
+                  <Th>Inventário</Th>
                   <Th>Retenção</Th>
                   <Th>Estado</Th>
                   {podeGerir && <Th> </Th>}
                 </tr>
               </thead>
               <tbody>
-                {filtrados.map((d) => (
+                {ordenados.map(({ doc: d, subclasse }) => (
                   <Tr key={d.id}>
-                    <Td className="font-bold tabular">{d.codigo}</Td>
+                    <Td className="font-bold tabular">
+                      {subclasse ? (
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            aria-hidden
+                            className="text-texto-suave/60"
+                            title={`Subclasse de ${d.pai_codigo}`}
+                          >
+                            └
+                          </span>
+                          {d.codigo}
+                        </span>
+                      ) : (
+                        d.codigo
+                      )}
+                    </Td>
                     <Td className="max-w-[340px] truncate">
                       <span title={d.descricao}>{d.descricao}</span>
                     </Td>
@@ -179,6 +227,26 @@ export default function Documentos() {
                     </Td>
                     <Td className="tabular">{d.conta_debito || "—"}</Td>
                     <Td className="tabular">{d.conta_credito || "—"}</Td>
+                    {/* O INVENTÁRIO À VISTA NA LISTA. Um documento que
+                        reflecte tem de se distinguir de um que não reflecte
+                        sem ter de o abrir — é a diferença entre a compra ficar
+                        na conta de compras ou passar às existências. */}
+                    <Td>
+                      {d.sistema_inventario === "permanente" ? (
+                        <span className="flex flex-col items-start gap-0.5">
+                          <Selo cor="#1e5fcc">Permanente</Selo>
+                          {d.conta_reflexao && (
+                            <span className="tabular text-[11px] text-texto-suave">
+                              reflecte na {d.conta_reflexao}
+                            </span>
+                          )}
+                        </span>
+                      ) : d.sistema_inventario === "periodico" ? (
+                        <Selo cor="#7a3aab">Periódico</Selo>
+                      ) : (
+                        <span className="text-texto-suave">—</span>
+                      )}
+                    </Td>
                     <Td>
                       {d.retencao ? (
                         <Selo cor="#c98a10">Sujeito</Selo>
@@ -261,6 +329,9 @@ function FormularioDocumento({
     conta_credito: documento?.conta_credito ?? "",
     retencao: documento?.retencao ?? false,
     ativo: documento?.ativo ?? true,
+    pai_codigo: documento?.pai_codigo ?? "",
+    sistema_inventario: documento?.sistema_inventario ?? "",
+    conta_reflexao: documento?.conta_reflexao ?? "",
   });
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
@@ -280,6 +351,16 @@ function FormularioDocumento({
       conta_credito: campos.conta_credito || null,
       retencao: campos.retencao,
       ativo: campos.ativo,
+      pai_codigo: campos.pai_codigo || null,
+      sistema_inventario: campos.sistema_inventario || null,
+      // A CONTA DE REFLEXÃO SÓ VAI COM O SISTEMA PERMANENTE. No periódico não
+      // há reflexão nenhuma, e deixar lá uma conta gravada era guardar uma
+      // instrução que nunca se cumpre — para reaparecer no dia em que alguém
+      // trocasse o sistema, sem esperar por ela.
+      conta_reflexao:
+        campos.sistema_inventario === "permanente"
+          ? campos.conta_reflexao || null
+          : null,
     };
     try {
       if (novo) {
@@ -334,6 +415,36 @@ function FormularioDocumento({
         />
       </Campo>
 
+      {/* ---- Subclasse ----
+
+          O `211` é a classe; o `211.1` é uma subclasse dela. Serve para
+          organizar: uma empresa com quinze variantes de compra tinha quinze
+          documentos soltos na lista, sem forma de ver que eram da mesma
+          família. Uma subclasse pede o mesmo que uma classe — e pode fixar a
+          sua própria conta de débito, que é o que a torna útil. */}
+      <Campo
+        rotulo="Subclasse de"
+        className="sm:col-span-2"
+        dica="Deixe vazio para ser uma classe principal. F4 procura."
+      >
+        <CampoEntidade
+          valor={
+            campos.pai_codigo
+              ? {
+                  id: campos.pai_codigo,
+                  codigo: campos.pai_codigo,
+                  nome: "",
+                }
+              : null
+          }
+          aoEscolher={(r) => alterar("pai_codigo", r?.codigo ?? "")}
+          fonte="/api/contabilidade/documentos/tabela"
+          titulo="Classe principal"
+          placeholder="(nenhuma — é uma classe) · F4"
+          colunas={["Código", "Descrição", "Contas"]}
+        />
+      </Campo>
+
       <Campo
         rotulo="Diário"
         className="sm:col-span-2"
@@ -378,6 +489,78 @@ function FormularioDocumento({
           placeholder="(opcional) · F4"
         />
       </Campo>
+
+      {/* ---- Sistema de inventariação ----
+
+          NO SÍTIO QUE FOI PEDIDO: a seguir às duas contas e antes da retenção.
+
+          O QUE ISTO DECIDE. No sistema PERMANENTE o custo reconhece-se no
+          momento em que ocorre: a compra entra na conta de compras e, no mesmo
+          lançamento, reflecte-se para a conta de existências. No PERIÓDICO não
+          há reflexão — o custo só se apura no fim do período, pelo inventário.
+
+          A segunda caixa só aparece com o permanente, porque só aí há para
+          onde reflectir. */}
+      <fieldset className="rounded-xl border border-borda bg-superficie-2 p-4 sm:col-span-2">
+        <legend className="px-1.5 text-[12.5px] font-bold uppercase tracking-[0.4px] text-texto-suave">
+          Sistema de inventariação
+        </legend>
+
+        <Selector
+          rotulo="Sistema"
+          valor={campos.sistema_inventario}
+          aoMudar={(v) => alterar("sistema_inventario", v)}
+          opcoes={[
+            {
+              valor: "",
+              rotulo: "Nenhum — o documento não mexe em existências",
+            },
+            { valor: "permanente", rotulo: "Permanente — reflecte no momento" },
+            {
+              valor: "periodico",
+              rotulo: "Periódico — apura no fim do período",
+            },
+          ]}
+          larguraMinima="100%"
+        />
+
+        {campos.sistema_inventario === "permanente" && (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {/* O LADO CREDITADO NÃO SE ESCOLHE: é a própria conta de débito
+                deste documento. Mostra-se bloqueado em vez de se esconder,
+                porque quem confere a reflexão precisa de ver os dois lados —
+                e um campo que se pudesse escrever deixava as duas divergir. */}
+            <Campo
+              rotulo="Credita"
+              dica="É a conta de débito deste documento. Não se escolhe."
+            >
+              <Entrada
+                value={campos.conta_debito || "(indique a conta de débito)"}
+                readOnly
+                className="bg-superficie text-texto-suave"
+              />
+            </Campo>
+            <Campo
+              rotulo="Debita — conta de destino"
+              dica="Para onde a compra se reflecte. Normalmente existências. F4 procura."
+            >
+              <CampoConta
+                valor={campos.conta_reflexao}
+                aoMudar={(v) => alterar("conta_reflexao", v)}
+                placeholder="Existências · F4"
+              />
+            </Campo>
+          </div>
+        )}
+
+        {campos.sistema_inventario === "periodico" && (
+          <p className="mt-3 text-[12.5px] leading-relaxed text-texto-suave">
+            Com o sistema periódico a compra fica na conta de compras. O custo
+            das existências vendidas só se apura no fim do período, a partir do
+            inventário — não há nada a reflectir agora.
+          </p>
+        )}
+      </fieldset>
 
       <label className="flex cursor-pointer items-center gap-2 text-sm sm:col-span-2">
         <input

@@ -11,7 +11,7 @@ decidir.
 | 1 | Janelas que não se fecham sozinhas e levam os dados | **FEITO** |
 | 2 | Imobilizados em Curso com separador próprio | **FEITO** |
 | 3 | F4 em todos os campos de escolha com tabela por trás | **FEITO** |
-| 4 | Documentos: subclasses, conta de reflexão e sistema de inventariação | Por fazer |
+| 4 | Documentos: subclasses, conta de reflexão e sistema de inventariação | **FEITO** |
 
 **A ordem é esta e não a do pedido.** A 1 vem primeiro porque é uma peça que
 as outras duas usam: o separador dos imobilizados em curso e o formulário dos
@@ -271,3 +271,87 @@ que a Produção já replicou. O cliente confirmou-o: «essa é uma novidade ape
 do nosso software».
 
 Não há por isso nada a copiar; há a acrescentar, sem mexer no que existe.
+
+---
+
+# O que se fez no ponto 4
+
+## No servidor
+
+Três colunas em `documentos_contabilisticos`, todas opcionais e todas a nascer
+vazias — migração `a4c92e17b053`. **Nenhum documento que já existe muda de
+comportamento, e nenhum lançamento já feito é tocado.**
+
+| Coluna | O que guarda |
+|---|---|
+| `pai_codigo` | A classe principal. O `211.1` guarda aqui `211` |
+| `sistema_inventario` | `permanente`, `periodico`, ou vazio |
+| `conta_reflexao` | A conta de destino da reflexão |
+
+**O outro lado da reflexão não se guarda.** É a própria `conta_debito` do
+documento, creditada — não é uma escolha, e guardar as duas deixava-as
+divergir. É também o que o cliente disse: «vamos passar a creditar o mesmo
+número de conta que tiver aqui».
+
+### As regras que se verificam ao gravar
+
+- **Um só nível de subclasse.** Sem isto o `211.1.1` era aceite e a listagem
+  passava a ter de desenhar uma árvore de profundidade desconhecida.
+- **Uma classe com filhas não pode virar subclasse** — as filhas ficavam a um
+  nível que não existe e desapareciam da listagem sem ninguém as apagar.
+- **A classe principal tem de existir**, e um documento não é subclasse de si
+  próprio.
+- **No permanente a conta de destino é obrigatória**: sem ela não há para onde
+  reflectir, e ficava um sistema ligado que não fazia nada — o pior dos dois
+  mundos, porque quem o configurou fica a pensar que reflecte.
+
+Onze ensaios guardam estas regras
+(`tests/test_documento_subclasse_e_inventario.py`).
+
+## No ecrã
+
+**No formulário**, pela ordem que o cliente pediu: «Subclasse de» junto ao
+código, e o bloco **Sistema de inventariação** depois das duas contas e antes
+do «sujeito a retenção». Escolhido o permanente, aparecem duas caixas: a que
+**credita**, preenchida sozinha com a conta de débito do documento e bloqueada,
+e a que **debita**, onde se indica o destino. Com o periódico não aparece caixa
+nenhuma — explica-se que o custo só se apura no fim do período.
+
+**Na listagem**, as subclasses ficam debaixo da sua classe, com um traço a
+marcá-lo, e há uma coluna nova que diz `Permanente · reflecte na 2611` sem ser
+preciso abrir o documento.
+
+**Ao lançar**, escolher um documento que reflecte prepara **quatro linhas** em
+vez de duas: a compra e o fornecedor, e a seguir a reflexão — debita as
+existências, credita as compras. Vêm preparadas e não impostas, como as duas
+que o documento já preparava.
+
+## Verificado no browser
+
+Criado o `211.1` «Compras VFA — Mercadoria para revenda» como subclasse do
+`211`, com sistema permanente e destino `2611`:
+
+- a caixa «Credita» preencheu-se sozinha com `21121`;
+- a listagem mostra-o dentro do `211`, com `Permanente · reflecte na 2611`;
+- tentar criar um `211.1.1` é recusado com «uma subclasse fica dentro de uma
+  classe, e não dentro de outra subclasse»;
+- escolher `211.1` num lançamento prepara `21121 / 32121` e a reflexão
+  `2611 / 21121`.
+
+## Uma falha do ponto 3 que só apareceu aqui
+
+A varredura dos campos de escolha procurou os `Selector` do projecto e **não
+apanhou os `<select>` nativos**. O do **Documento no editor de lançamentos** era
+um deles — a caixa mais longa do ecrã que mais se usa. Passou a F4, com a
+tabela restringida ao diário escolhido.
+
+## O que fica anotado para confirmar com o cliente
+
+As quatro perguntas de cima (A a D) continuam válidas. Implementou-se pela
+leitura que a contabilidade suporta, e altera-se se ele disser outra coisa.
+
+## Dados de demonstração criados
+
+Ficaram na base de dados de desenvolvimento, e servem de exemplo do que foi
+pedido: o documento `211.1` e a obra `IM-0002 Armazém de Viana — construção`,
+com três despesas. Digo-me se os quer apagar.

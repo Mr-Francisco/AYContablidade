@@ -168,22 +168,38 @@ export function EditorLancamento({
           </div>
         </div>
 
+        {/* O DOCUMENTO POR F4, e não numa caixa de opções.
+
+            É a caixa mais longa deste ecrã — uma empresa com vinte diários tem
+            dezenas de documentos —, e é a que se usa a cada lançamento. A
+            tabela vem já restringida ao diário escolhido, e cada linha diz para
+            onde o documento manda o lançamento: `diário 21 · D 21121 · C 32121`.
+            Escolher um documento deixa de ser reconhecer um código no meio de
+            uma lista. */}
         <div className="min-w-[16rem] flex-1">
           <span className={ROTULO}>Documento</span>
-          <select
-            value={estado.documento}
-            onChange={(e) => aoMudar({ documento: e.target.value })}
-            disabled={soLeitura || !estado.diario}
-            aria-label="Documento"
-            className={cn(CAMPO_CABECA, "mt-1")}
-          >
-            <option value="">— Documento —</option>
-            {documentos.map((d) => (
-              <option key={d.id} value={d.codigo}>
-                {d.codigo} · {d.descricao}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <CampoEntidade
+              valor={
+                estado.documento
+                  ? {
+                      id: estado.documento,
+                      codigo: estado.documento,
+                      nome:
+                        documentos.find((d) => d.codigo === estado.documento)
+                          ?.descricao ?? "",
+                    }
+                  : null
+              }
+              aoEscolher={(r) => aoMudar({ documento: r?.codigo ?? "" })}
+              fonte={`/api/contabilidade/documentos/tabela?diario=${encodeURIComponent(estado.diario)}`}
+              titulo="Documentos"
+              placeholder="Documento (F4)"
+              colunas={["Código", "Descrição", "Contas"]}
+              disabled={soLeitura || !estado.diario}
+              emGrelha
+            />
+          </div>
         </div>
       </div>
 

@@ -167,6 +167,16 @@ export interface DocumentoContabilistico {
   conta_credito: string | null;
   retencao: boolean;
   ativo: boolean;
+
+  /** A classe principal, quando este documento é uma subclasse dela.
+   *  `211.1` guarda aqui `211`. Um só nível: uma subclasse não tem subclasses. */
+  pai_codigo: string | null;
+  /** `permanente`, `periodico`, ou vazio — o comportamento de sempre. */
+  sistema_inventario: string;
+  /** A conta para onde a compra se reflecte no sistema permanente, tipicamente
+   *  uma de existências. O outro lado da reflexão é a `conta_debito` deste
+   *  documento, creditada — não se guarda porque não é uma escolha. */
+  conta_reflexao: string | null;
 }
 
 export interface CentroCusto {
