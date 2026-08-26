@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Plus, Search, Trash2 } from "lucide-react";
-import { AlertDialog } from "radix-ui";
+import { AlertDialog, Tabs } from "radix-ui";
 import { useState } from "react";
 import useSWR from "swr";
 import { GrelhaKpis } from "@/components/painel";
@@ -24,6 +24,7 @@ import {
   Tr,
   Vazio,
 } from "@/components/ui";
+import { CampoEntidade, type Registo } from "@/components/ui/CampoEntidade";
 import {
   BarraPaginacao,
   type Pagina,
@@ -48,10 +49,20 @@ export default function Vendas() {
   const { activo } = useExercicios();
   const moeda = empresa?.moeda ?? "Kz";
 
+  /* DOIS SEPARADORES, e não uma lista com um botão que abre uma janela.
+     Emitir uma factura e consultar as que já se emitiram são dois trabalhos
+     diferentes, com ecrãs diferentes: um preenche-se, o outro percorre-se.
+     Estavam ambos na mesma página, e o segundo abria-se por um postigo a meio
+     do ecrã com a lista a competir por trás. */
+  const [aba, setAba] = useState("consulta");
+
   const [estado, setEstado] = useState("todos");
   const [procura, setProcura] = useState("");
   const [tipoDoc, setTipoDoc] = useState("todos");
-  const [novoAberto, setNovoAberto] = useState(false);
+  /** O cliente escolhido por F4 — filtra pelo `id` e não pelo nome escrito. */
+  const [cliente, setCliente] = useState<Registo | null>(null);
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
   const [aEmitir, setAEmitir] = useState<Venda | null>(null);
   const [aEliminar, setAEliminar] = useState<Venda | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -66,6 +77,8 @@ export default function Vendas() {
     estado !== "todos" ? `&estado=${estado}` : ""
   }${tipoDoc !== "todos" ? `&tipo_doc=${encodeURIComponent(tipoDoc)}` : ""}${
     procura.trim() ? `&procura=${encodeURIComponent(procura.trim())}` : ""
+  }${cliente ? `&cliente_id=${cliente.id}` : ""}${de ? `&de=${de}` : ""}${
+    ate ? `&ate=${ate}` : ""
   }`;
   const {
     data: pagina,
@@ -150,8 +163,10 @@ export default function Vendas() {
         descricao="Documentos do Regime Jurídico das Facturas (Decreto Presidencial n.º 71/25)."
       />
 
-      {/* Os quatro do Piloto, pela mesma ordem e com as mesmas legendas.
-          Sem `formataCompacto`: o Piloto escreve o valor por extenso. */}
+      {/* OS INDICADORES FICAM NOS DOIS SEPARADORES. São o retrato do mês, e
+          quem está a emitir uma factura também quer saber quanto já facturou —
+          foi o que o cliente disse: «aquele dashboard pode deixar da maneira
+          que está». */}
       <GrelhaKpis>
         <Kpi
           rotulo="Faturado (emitido)"
@@ -184,169 +199,244 @@ export default function Vendas() {
       {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
 
-      <BarraFiltros className="mb-4">
-        <Campo rotulo="Pesquisar" className="min-w-[15rem] flex-1">
-          <div className="relative">
-            <Search
-              size={15}
-              aria-hidden
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
-            />
-            <Entrada
-              type="search"
-              value={procura}
-              onChange={(e) => {
-                setProcura(e.target.value);
+      <Tabs.Root value={aba} onValueChange={setAba}>
+        <Tabs.List className="mb-4 flex gap-1 border-b border-borda">
+          {[
+            { valor: "consulta", rotulo: "Consulta" },
+            { valor: "emitir", rotulo: "Emitir documento" },
+          ].map((t) => (
+            <Tabs.Trigger
+              key={t.valor}
+              value={t.valor}
+              className="relative -mb-px whitespace-nowrap px-4 py-2.5 text-sm font-semibold text-texto-suave transition-colors hover:text-marca data-[state=active]:text-marca data-[state=active]:after:absolute data-[state=active]:after:inset-x-2 data-[state=active]:after:bottom-0 data-[state=active]:after:h-[3px] data-[state=active]:after:rounded-full data-[state=active]:after:bg-marca data-[state=active]:after:content-['']"
+            >
+              {t.rotulo}
+            </Tabs.Trigger>
+          ))}
+        </Tabs.List>
+
+        <Tabs.Content value="consulta">
+          <BarraFiltros className="mb-4">
+            <Campo rotulo="Pesquisar" className="min-w-[15rem] flex-1">
+              <div className="relative">
+                <Search
+                  size={15}
+                  aria-hidden
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-texto-suave"
+                />
+                <Entrada
+                  type="search"
+                  value={procura}
+                  onChange={(e) => {
+                    setProcura(e.target.value);
+                    p.reiniciar();
+                  }}
+                  placeholder="Nº, cliente ou código…"
+                  className="pl-9"
+                />
+              </div>
+            </Campo>
+            <Selector
+              rotulo="Tipo"
+              valor={tipoDoc}
+              aoMudar={(v) => {
+                setTipoDoc(v);
                 p.reiniciar();
               }}
-              placeholder="Nº, cliente ou código…"
-              className="pl-9"
+              opcoes={[
+                { valor: "todos", rotulo: "Todos os tipos" },
+                ...(tipos ?? []).map((td) => ({
+                  valor: td.cod,
+                  rotulo: `${td.cod} — ${td.nome}`,
+                })),
+              ]}
+              larguraMinima="14rem"
             />
-          </div>
-        </Campo>
-        <Selector
-          rotulo="Tipo"
-          valor={tipoDoc}
-          aoMudar={(v) => {
-            setTipoDoc(v);
-            p.reiniciar();
-          }}
-          opcoes={[
-            { valor: "todos", rotulo: "Todos os tipos" },
-            ...(tipos ?? []).map((td) => ({
-              valor: td.cod,
-              rotulo: `${td.cod} — ${td.nome}`,
-            })),
-          ]}
-          larguraMinima="14rem"
-        />
-        <Selector
-          rotulo="Estado"
-          valor={estado}
-          aoMudar={(v) => {
-            setEstado(v);
-            p.reiniciar();
-          }}
-          opcoes={[
-            { valor: "todos", rotulo: "Todos" },
-            { valor: "rascunho", rotulo: "Rascunhos" },
-            { valor: "emitida", rotulo: "Emitidos" },
-          ]}
-          larguraMinima="12rem"
-        />
-        {pode("comercial.gerir") && (
-          <Botao variante="acento" onClick={() => setNovoAberto(true)}>
-            <Plus size={16} />
-            Novo documento
-          </Botao>
-        )}
-      </BarraFiltros>
-
-      <Cartao className="p-0">
-        {isLoading ? (
-          <ACarregar />
-        ) : !vendas?.length ? (
-          <Vazio>Sem documentos de venda.</Vazio>
-        ) : (
-          <>
-            <EnvolveTabela className="rounded-none border-0">
-              <Tabela>
-                <thead>
-                  <tr>
-                    <Th>Número</Th>
-                    <Th>Tipo</Th>
-                    <Th>Data</Th>
-                    <Th>Cliente</Th>
-                    <Th numerico>Incidência</Th>
-                    <Th numerico>IVA</Th>
-                    <Th numerico>Total</Th>
-                    <Th>Estado</Th>
-                    <Th>Nº Operação</Th>
-                    <Th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {(vendas ?? []).map((v) => (
-                    <Tr key={v.id}>
-                      <Td className="tabular font-bold">
-                        {v.numero ?? (
-                          <span className="font-normal italic text-texto-suave">
-                            por emitir
-                          </span>
-                        )}
-                      </Td>
-                      <Td>
-                        <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>
-                      </Td>
-                      <Td className="tabular">
-                        {new Date(v.data).toLocaleDateString("pt-PT")}
-                      </Td>
-                      <Td className="max-w-[220px] truncate">
-                        {v.cliente_nome || (
-                          <span className="text-texto-suave">
-                            Consumidor final
-                          </span>
-                        )}
-                      </Td>
-                      <Td numerico>{formataMoeda(v.subtotal, moeda)}</Td>
-                      <Td numerico>{formataMoeda(v.iva, moeda)}</Td>
-                      <Td numerico className="font-semibold">
-                        {formataMoeda(v.total, moeda)}
-                      </Td>
-                      <Td>
-                        <Selo cor={CORES_ESTADO[v.estado] ?? "#62657a"}>
-                          {v.estado === "emitida" ? "Emitido" : "Rascunho"}
-                        </Selo>
-                      </Td>
-                      <Td className="tabular text-texto-suave">
-                        {v.numero_op ?? "—"}
-                      </Td>
-                      <Td numerico>
-                        {v.estado === "rascunho" && pode("comercial.gerir") && (
-                          <div className="flex justify-end gap-1.5">
-                            <Botao
-                              tamanho="pequeno"
-                              variante="primario"
-                              onClick={() => setAEmitir(v)}
-                            >
-                              <CheckCircle2 size={13} />
-                              Emitir
-                            </Botao>
-                            <Botao
-                              tamanho="pequeno"
-                              variante="perigo"
-                              onClick={() => setAEliminar(v)}
-                              aria-label="Eliminar rascunho"
-                            >
-                              <Trash2 size={13} />
-                            </Botao>
-                          </div>
-                        )}
-                      </Td>
-                    </Tr>
-                  ))}
-                </tbody>
-              </Tabela>
-            </EnvolveTabela>
-            <BarraPaginacao
-              pagina={pagina}
-              {...p.controlos}
-              nome="documentos"
+            <Selector
+              rotulo="Estado"
+              valor={estado}
+              aoMudar={(v) => {
+                setEstado(v);
+                p.reiniciar();
+              }}
+              opcoes={[
+                { valor: "todos", rotulo: "Todos" },
+                { valor: "rascunho", rotulo: "Rascunhos" },
+                { valor: "emitida", rotulo: "Emitidos" },
+              ]}
+              larguraMinima="12rem"
             />
-          </>
-        )}
-      </Cartao>
+            {/* POR CLIENTE, com F4 e não escrevendo o nome. Filtra pelo registo e
+            não pelo texto: dois clientes com nomes parecidos deixam de se
+            misturar, e quem não sabe o nome de cor procura na tabela. */}
+            <Campo rotulo="Cliente" className="min-w-[16rem]">
+              <CampoEntidade
+                valor={cliente}
+                aoEscolher={(r) => {
+                  setCliente(r);
+                  p.reiniciar();
+                }}
+                fonte="/api/comercial/clientes/tabela"
+                titulo="Clientes"
+                placeholder="Todos os clientes (F4)"
+                colunas={["Nº", "Nome", "NIF"]}
+              />
+            </Campo>
+            {/* POR DATA DO DOCUMENTO. Quem procura «as facturas de Março» quer as
+            que TÊM data de Março, mesmo que tenham sido lançadas em Abril. Os
+            dois limites contam. */}
+            <Campo rotulo="De">
+              <Entrada
+                type="date"
+                value={de}
+                onChange={(e) => {
+                  setDe(e.target.value);
+                  p.reiniciar();
+                }}
+              />
+            </Campo>
+            <Campo rotulo="Até">
+              <Entrada
+                type="date"
+                value={ate}
+                onChange={(e) => {
+                  setAte(e.target.value);
+                  p.reiniciar();
+                }}
+              />
+            </Campo>
+            {pode("comercial.gerir") && (
+              <Botao variante="acento" onClick={() => setAba("emitir")}>
+                <Plus size={16} />
+                Emitir documento
+              </Botao>
+            )}
+          </BarraFiltros>
 
-      {novoAberto && (
-        <FormularioVenda
-          aoFechar={() => setNovoAberto(false)}
-          aoGravar={() => {
-            setNovoAberto(false);
-            mutate();
-            mutateResumo();
-          }}
-        />
-      )}
+          <Cartao className="p-0">
+            {isLoading ? (
+              <ACarregar />
+            ) : !vendas?.length ? (
+              <Vazio>Sem documentos de venda.</Vazio>
+            ) : (
+              <>
+                <EnvolveTabela className="rounded-none border-0">
+                  <Tabela>
+                    <thead>
+                      <tr>
+                        <Th>Número</Th>
+                        <Th>Tipo</Th>
+                        <Th>Data</Th>
+                        <Th>Cliente</Th>
+                        <Th numerico>Incidência</Th>
+                        <Th numerico>IVA</Th>
+                        <Th numerico>Total</Th>
+                        <Th>Estado</Th>
+                        <Th>Nº Operação</Th>
+                        <Th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(vendas ?? []).map((v) => (
+                        <Tr key={v.id}>
+                          <Td className="tabular font-bold">
+                            {v.numero ?? (
+                              <span className="font-normal italic text-texto-suave">
+                                por emitir
+                              </span>
+                            )}
+                          </Td>
+                          <Td>
+                            <Selo cor="#3d7fe0">{v.tipo_doc}</Selo>
+                          </Td>
+                          <Td className="tabular">
+                            {new Date(v.data).toLocaleDateString("pt-PT")}
+                          </Td>
+                          <Td className="max-w-[220px] truncate">
+                            {v.cliente_nome || (
+                              <span className="text-texto-suave">
+                                Consumidor final
+                              </span>
+                            )}
+                          </Td>
+                          <Td numerico>{formataMoeda(v.subtotal, moeda)}</Td>
+                          <Td numerico>{formataMoeda(v.iva, moeda)}</Td>
+                          <Td numerico className="font-semibold">
+                            {formataMoeda(v.total, moeda)}
+                          </Td>
+                          <Td>
+                            <Selo cor={CORES_ESTADO[v.estado] ?? "#62657a"}>
+                              {v.estado === "emitida" ? "Emitido" : "Rascunho"}
+                            </Selo>
+                          </Td>
+                          <Td className="tabular text-texto-suave">
+                            {v.numero_op ?? "—"}
+                          </Td>
+                          <Td numerico>
+                            {v.estado === "rascunho" &&
+                              pode("comercial.gerir") && (
+                                <div className="flex justify-end gap-1.5">
+                                  <Botao
+                                    tamanho="pequeno"
+                                    variante="primario"
+                                    onClick={() => setAEmitir(v)}
+                                  >
+                                    <CheckCircle2 size={13} />
+                                    Emitir
+                                  </Botao>
+                                  <Botao
+                                    tamanho="pequeno"
+                                    variante="perigo"
+                                    onClick={() => setAEliminar(v)}
+                                    aria-label="Eliminar rascunho"
+                                  >
+                                    <Trash2 size={13} />
+                                  </Botao>
+                                </div>
+                              )}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                  </Tabela>
+                </EnvolveTabela>
+                <BarraPaginacao
+                  pagina={pagina}
+                  {...p.controlos}
+                  nome="documentos"
+                />
+              </>
+            )}
+          </Cartao>
+        </Tabs.Content>
+
+        {/* EMITIR — o formulário inteiro, dentro da página.
+            Gravado, salta-se para a consulta com o documento novo já na lista:
+            é o que se quer ver a seguir, e ficar no formulário vazio parecia
+            que nada tinha acontecido. */}
+        <Tabs.Content value="emitir">
+          {pode("comercial.gerir") ? (
+            <FormularioVenda
+              emPagina
+              aoFechar={() => setAba("consulta")}
+              aoGravar={() => {
+                setAba("consulta");
+                p.reiniciar();
+                mutate();
+                mutateResumo();
+                setAviso("Rascunho gravado. Emita-o quando estiver conferido.");
+              }}
+            />
+          ) : (
+            <Cartao>
+              <Vazio>
+                Não tem permissão para emitir documentos de venda. Fale com quem
+                administra a empresa.
+              </Vazio>
+            </Cartao>
+          )}
+        </Tabs.Content>
+      </Tabs.Root>
 
       <AlertDialog.Root
         open={!!aEmitir}

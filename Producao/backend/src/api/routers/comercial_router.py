@@ -598,6 +598,8 @@ def listar_vendas(
     tipo_doc: str | None = None,
     cliente_id: UUID | None = None,
     procura: str | None = None,
+    de: Date | None = None,
+    ate: Date | None = None,
     offset: int = 0,
     limite: int = LIMITE_OMISSAO,
 ) -> dict:
@@ -622,6 +624,14 @@ def listar_vendas(
         q = q.where(Venda.tipo_doc == tipo_doc)
     if cliente_id is not None:
         q = q.where(Venda.cliente_id == cliente_id)
+    # POR DATA DO DOCUMENTO, e nao pela de criacao: quem procura «as facturas
+    # de Marco» quer as que tem data de Marco, mesmo que tenham sido lancadas
+    # em Abril. Os limites sao INCLUSIVOS — quem escreve 01/03 a 31/03 conta
+    # com o dia 31.
+    if de is not None:
+        q = q.where(Venda.data >= de)
+    if ate is not None:
+        q = q.where(Venda.data <= ate)
     if procura and procura.strip():
         termo = f"%{procura.strip()}%"
         q = q.where(
