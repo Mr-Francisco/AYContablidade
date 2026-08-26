@@ -1,22 +1,20 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Menu, Moon, Sun, X } from "lucide-react";
+import { Menu, Moon, Sun, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dialog, DropdownMenu, Tooltip } from "radix-ui";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Dialog, DropdownMenu } from "radix-ui";
+import { useEffect, useRef, useState } from "react";
 
 import { EtiquetaExercicio } from "@/components/layout/EtiquetaExercicio";
-import { iconeNav } from "@/components/layout/iconesNav";
 import { Notificacoes } from "@/components/layout/Notificacoes";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTema } from "@/contexts/TemaContext";
 import {
-  type GrupoNav,
-  grupoDaRota,
-  type ItemNav,
-  itemActivo,
-} from "@/lib/navegacao";
+  ID_DAS_ACCOES,
+  useCabecalhoDaPagina,
+} from "@/contexts/CabecalhoDaPagina";
+import { useTema } from "@/contexts/TemaContext";
+import { type GrupoNav, grupoDaRota, itemActivo } from "@/lib/navegacao";
 import { useNavegacaoVisivel } from "@/lib/navegacaoVisivel";
 import { cn } from "@/lib/utils";
 
@@ -42,46 +40,11 @@ const ROTULO_PERFIL: Record<string, string> = {
   consulta: "Consulta",
 };
 
-/** Onde o assistente vive — a única rota que abre com o cabeçalho recolhido. */
-const CONVERSA = "/assistente";
-
 export function Cabecalho() {
   const caminho = usePathname();
   const { utilizador, empresa, sair } = useAuth();
   const { tema, alternar } = useTema();
   const [menuAberto, setMenuAberto] = useState(false);
-
-  /*
-   * RECOLHER O CABEÇALHO — duas filas e a faixa do módulo somam perto de 150 px
-   * que nem sempre fazem falta. Quem está a ler um mapa ou a conversar com o
-   * assistente quer o ecrã para o conteúdo.
-   *
-   * Duas escolhas e não uma: o assistente abre recolhido (é uma conversa, e a
-   * navegação só estorva quem está a escrever), o resto da aplicação abre
-   * aberto. Guardar uma escolha só faria com que recolher no assistente
-   * deixasse a contabilidade sem barra — ou o contrário.
-   *
-   * `null` = ainda não escolheu nesta parte da aplicação; vale o que está por
-   * omissão. A escolha dura a sessão, e não sobrevive a um recarregamento:
-   * quem recarrega à procura da barra tem de a encontrar.
-   */
-  const noAssistente = caminho.startsWith(CONVERSA);
-  const [escolha, setEscolha] = useState<{
-    assistente: boolean | null;
-    geral: boolean | null;
-  }>({ assistente: null, geral: null });
-
-  const recolhido = noAssistente
-    ? (escolha.assistente ?? true)
-    : (escolha.geral ?? false);
-
-  function alternarRecolhido() {
-    setEscolha((e) =>
-      noAssistente
-        ? { ...e, assistente: !recolhido }
-        : { ...e, geral: !recolhido },
-    );
-  }
 
   /*
    * A altura real do cabeçalho, publicada em `--altura-cabecalho`.
@@ -110,7 +73,8 @@ export function Cabecalho() {
   // As mesmas regras que o acesso rápido do assistente usa — uma cópia só
   // (`lib/navegacaoVisivel.ts`), para a barra e o atalho nunca discordarem.
   const { grupos, itemVisivel } = useNavegacaoVisivel();
-  const grupoActivo = grupoDaRota(caminho);
+  const pagina = useCabecalhoDaPagina();
+  const _grupoActivo = grupoDaRota(caminho);
 
   const iniciais =
     utilizador?.nome
@@ -142,7 +106,6 @@ export function Cabecalho() {
      */
     <header
       ref={barra}
-      data-recolhido={recolhido ? "sim" : "nao"}
       className="sticky top-0 z-40 border-b border-borda bg-superficie shadow-suave"
     >
       {/* --- Fila de cima: marca, empresa, pessoa ------------------------
@@ -151,7 +114,7 @@ export function Cabecalho() {
       <div
         className={cn(
           "mx-auto flex max-w-[1360px] items-center gap-4 px-5",
-          recolhido ? "py-1.5" : "pb-2 pt-2.5",
+          "pb-2 pt-2.5",
         )}
       >
         {/* O texto por baixo do símbolo: dizer «SGD» duas vezes lado a lado
@@ -160,26 +123,55 @@ export function Cabecalho() {
           href="/painel"
           className="flex shrink-0 flex-col items-start leading-none"
         >
-          <span
-            className={cn(
-              "gradiente-marca rounded-lg font-black leading-none tracking-[-1px] text-white",
-              recolhido
-                ? "px-2 py-[3px] text-[18px]"
-                : "px-2.5 py-1 text-[22px]",
-            )}
-          >
+          <span className="gradiente-marca rounded-lg px-2.5 py-1 text-[22px] font-black leading-none tracking-[-1px] text-white">
             SGD
           </span>
-          {/* A assinatura por baixo é a primeira a sair: são 12 px de altura
-              que, recolhido, é exactamente o que se está a tentar poupar. */}
-          {!recolhido && (
-            <span className="mt-1 hidden text-[8px] tracking-[1.6px] text-texto-suave sm:block">
-              SOFTWARE DE GESTÃO DIRIGIDA
-            </span>
-          )}
+          <span className="mt-1 hidden text-[8px] tracking-[1.6px] text-texto-suave sm:block">
+            SOFTWARE DE GESTÃO DIRIGIDA
+          </span>
         </Link>
 
-        <div className="ml-auto flex min-w-0 items-center gap-2.5">
+        {/* --- ONDE ESTAMOS -------------------------------------------------
+            O título da página e a frase que a explica, ao lado do logótipo.
+
+            VIVIAM NO CORPO DA PÁGINA, numa faixa de 79 px com o nome em 26 px
+            e um risco a fechar — repetida em cinquenta e sete ecrãs. Num
+            portátil de 1366×768 era um décimo do ecrã gasto a dizer onde já se
+            está, enquanto esta faixa da barra estava vazia.
+
+            A DESCRIÇÃO SÓ APARECE COM LARGURA PARA ELA. Abaixo de 1280 px o
+            título fica sozinho: entre saber onde se está e ler a explicação do
+            ecrã, é o nome que não pode faltar. */}
+        {pagina && (
+          <div className="ml-4 min-w-0 flex-1 border-l border-borda pl-4">
+            <h1 className="truncate text-[17px] font-bold leading-tight tracking-[-0.2px]">
+              {pagina.titulo}
+            </h1>
+            {pagina.descricao && (
+              <p className="hidden truncate text-[12px] leading-tight text-texto-suave xl:block">
+                {pagina.descricao}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-2.5",
+            // Sem título anunciado não há nada a empurrar as acções para a
+            // direita — e sem isto encostavam-se ao logótipo.
+            !pagina && "ml-auto",
+          )}
+        >
+          {/* OS BOTÕES DA PÁGINA, à esquerda do que é da aplicação: «Novo
+              documento» pertence ao ecrã, o sino e o perfil pertencem a quem
+              está sentado. Misturá-los punha o utilizador a procurar o botão
+              de gravar entre as notificações. */}
+          <div id={ID_DAS_ACCOES} className="flex items-center gap-2" />
+
+          {/* Um risco a separar o que é da página do que é da aplicação. */}
+          <span aria-hidden className="mx-0.5 h-6 w-px shrink-0 bg-borda" />
+
           {empresa && (
             // Nome de empresa vem de dados: precisa de largura máxima e
             // truncate, senão empurra o resto do cabeçalho (docs/LESSONS.md).
@@ -207,7 +199,7 @@ export function Cabecalho() {
             }
             className={cn(
               "flex items-center justify-center rounded-[10px] border border-borda bg-superficie-2 text-texto transition-colors hover:border-acento",
-              recolhido ? "size-[32px]" : "size-[38px]",
+              "size-[38px]",
             )}
           >
             {tema === "dark" ? <Sun size={17} /> : <Moon size={17} />}
@@ -219,16 +211,13 @@ export function Cabecalho() {
                 <button
                   type="button"
                   className={cn(
-                    "flex max-w-[220px] items-center gap-2 rounded-full border border-borda bg-superficie-2 text-left transition-colors hover:border-acento",
-                    recolhido
-                      ? "py-[3px] pl-[3px] pr-2.5"
-                      : "py-[5px] pl-[5px] pr-3",
+                    "flex max-w-[220px] items-center gap-2 rounded-full border border-borda bg-superficie-2 py-[5px] pl-[5px] pr-3 text-left transition-colors hover:border-acento",
                   )}
                 >
                   <span
                     className={cn(
                       "flex shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white",
-                      recolhido ? "size-[26px]" : "size-[30px]",
+                      "size-[30px]",
                     )}
                     style={{
                       background: COR_PERFIL[utilizador.perfil] ?? "#555",
@@ -277,53 +266,8 @@ export function Cabecalho() {
             </DropdownMenu.Root>
           )}
 
-          {/* A SETA. Aponta para onde a barra vai: para cima quando ainda se
-              pode recolher, para baixo quando está recolhida e volta a descer.
-              Fica ao pé do perfil, na fila que nunca desaparece — se vivesse na
-              faixa de baixo, recolher levaria consigo a forma de voltar. */}
-          <Tooltip.Provider delayDuration={200}>
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <button
-                  type="button"
-                  onClick={alternarRecolhido}
-                  aria-expanded={!recolhido}
-                  aria-controls="navegacao-do-cabecalho"
-                  aria-label={
-                    recolhido
-                      ? "Mostrar a navegação do cabeçalho"
-                      : "Recolher o cabeçalho e libertar espaço"
-                  }
-                  className={cn(
-                    "flex items-center justify-center rounded-[10px] border border-borda bg-superficie-2 text-texto-suave transition-colors hover:border-acento hover:text-marca",
-                    recolhido ? "size-[32px]" : "size-[38px]",
-                  )}
-                >
-                  {recolhido ? (
-                    <ChevronDown size={18} />
-                  ) : (
-                    <ChevronUp size={18} />
-                  )}
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content
-                  sideOffset={6}
-                  className="z-50 max-w-[240px] rounded-lg border border-borda bg-superficie px-3 py-2 text-[12.5px] leading-relaxed text-texto shadow-forte"
-                >
-                  {recolhido
-                    ? "Mostrar a navegação. Está recolhida para dar mais espaço ao conteúdo."
-                    : "Recolher o cabeçalho. O logótipo, o exercício, as notificações, o tema e o perfil ficam."}
-                  <Tooltip.Arrow className="fill-[var(--color-borda)]" />
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
-          </Tooltip.Provider>
-
-          {/* Menu lateral: abaixo de lg sempre, e também com o cabeçalho
-              recolhido — aí a fila dos módulos não está no ecrã, e ficar sem
-              nenhuma forma de navegar a partir da barra não é recolher, é
-              esconder. */}
+          {/* Menu lateral: abaixo de `lg`, onde a coluna da esquerda não
+              existe. É a única forma de navegar num ecrã estreito. */}
           <Dialog.Root open={menuAberto} onOpenChange={setMenuAberto}>
             <Dialog.Trigger asChild>
               <button
@@ -331,7 +275,7 @@ export function Cabecalho() {
                 aria-label="Abrir menu"
                 className={cn(
                   "flex items-center justify-center rounded-[10px] border border-borda bg-superficie-2",
-                  recolhido ? "size-[32px]" : "size-[38px] lg:hidden",
+                  "size-[38px] lg:hidden",
                 )}
               >
                 <Menu size={18} />
@@ -391,145 +335,6 @@ export function Cabecalho() {
           </Dialog.Root>
         </div>
       </div>
-
-      {/* --- Fila de baixo: para onde se vai ---------------------------
-          Esta e a faixa do módulo são as duas que recolhem: juntas valem mais
-          de cem pixels de altura, e é isso que a seta liberta. */}
-      <nav
-        id="navegacao-do-cabecalho"
-        // Classe e não o atributo `hidden`: o `lg:flex` é uma classe e venceria
-        // o `display:none` que o atributo traz do browser — a barra continuaria
-        // à vista em ecrã grande, que é justamente onde ela existe.
-        className={cn(
-          "mx-auto max-w-[1360px] items-center gap-1 overflow-x-auto px-5 pb-1.5",
-          recolhido ? "hidden" : "hidden lg:flex",
-        )}
-      >
-        {grupos.map((g) => {
-          const activo =
-            g === grupoActivo || (g.href && itemActivo(caminho, g.href));
-          return (
-            <Link
-              key={g.rotulo}
-              href={hrefDoGrupo(g)}
-              className={cn(
-                // A marca do separador activo é uma barra em baixo e não um
-                // fundo: numa fila própria, o sublinhado diz onde se está sem
-                // partir a linha em caixas.
-                "relative whitespace-nowrap rounded-t-lg px-3 py-2 text-sm font-semibold transition-colors",
-                activo
-                  ? "text-marca after:absolute after:inset-x-2 after:-bottom-[1.5px] after:h-[3px] after:rounded-full after:bg-marca after:content-['']"
-                  : "text-texto-suave hover:bg-superficie-2 hover:text-marca",
-              )}
-            >
-              {g.rotulo}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {!recolhido && grupoActivo?.filhos && (
-        <Ribbon grupo={grupoActivo} visivel={itemVisivel} />
-      )}
     </header>
-  );
-}
-
-/**
- * Sub-barra do módulo activo, agrupada por secção — o "ribbon" do Piloto.
- * Rola na horizontal em ecrãs estreitos, dentro do seu próprio contentor.
- */
-function Ribbon({
-  grupo,
-  visivel,
-}: {
-  grupo: GrupoNav;
-  visivel: (i: ItemNav) => boolean;
-}) {
-  const caminho = usePathname();
-  const itens = (grupo.filhos ?? []).filter(visivel);
-  if (!itens.length) return null;
-
-  const seccoes: { nome: string; itens: ItemNav[] }[] = [];
-  for (const item of itens) {
-    let s = seccoes.find((x) => x.nome === item.seccao);
-    if (!s) {
-      s = { nome: item.seccao, itens: [] };
-      seccoes.push(s);
-    }
-    s.itens.push(item);
-  }
-
-  // `justify-center` com `min-w-max` por dentro: quando a faixa cabe, fica
-  // centrada; quando não cabe, o `min-w-max` manda e a barra de scroll aparece
-  // em vez de espremer os botões. Sem o `justify-center`, um módulo com poucos
-  // separadores ficava encostado à esquerda com meio ecrã vazio à direita.
-  return (
-    <div className="sem-imprimir flex justify-center overflow-x-auto border-t border-borda bg-superficie-2">
-      <div className="flex w-full max-w-[1360px] items-stretch whitespace-nowrap px-2 pb-0.5 pt-1.5">
-        {seccoes.map((s, i) => (
-          <Fragment key={s.nome}>
-            {i > 0 && (
-              <span aria-hidden className="mx-px mb-5 mt-1 w-px bg-borda" />
-            )}
-            {/* Coluna por secção: os botões em cima, o rótulo da secção por
-                baixo com um traço a separar — a forma do ribbon do Piloto. */}
-            <div className="flex grow flex-col items-center px-1">
-              <div className="flex w-full flex-1 items-start justify-center gap-0.5">
-                {s.itens.map((item) => {
-                  const activo = itemActivo(caminho, item.href);
-                  const traco = iconeNav(item.icone);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      title={item.rotulo}
-                      className={cn(
-                        "flex min-w-[60px] max-w-[92px] flex-1 flex-col items-center justify-start gap-[2px] rounded-lg px-0.5 py-1 text-center transition-colors",
-                        activo
-                          ? "gradiente-marca text-white"
-                          : "hover:bg-superficie",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "flex h-[clamp(21px,1.7vw,26px)] items-center justify-center",
-                          activo
-                            ? "text-white"
-                            : "text-texto-suave group-hover:text-acento",
-                        )}
-                      >
-                        {traco ? (
-                          <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                            className="size-[clamp(19px,1.5vw,23px)] fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-                            // biome-ignore lint/security/noDangerouslySetInnerHtml: traçado SVG constante do nosso próprio iconesNav.ts — não há entrada de utilizador neste caminho.
-                            dangerouslySetInnerHTML={{ __html: traco }}
-                          />
-                        ) : (
-                          <span className="size-[clamp(19px,1.5vw,23px)]" />
-                        )}
-                      </span>
-                      <span
-                        className={cn(
-                          "w-full whitespace-normal text-[clamp(10.5px,0.82vw,12px)] font-semibold leading-[1.12]",
-                          activo ? "text-white" : "text-texto-suave",
-                        )}
-                      >
-                        {item.rotulo}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-              <div className="mt-0.5 w-full border-t border-borda pb-0.5 pt-[3px] text-center text-[clamp(9.5px,0.72vw,11px)] font-bold uppercase tracking-[0.6px] text-texto-suave">
-                {s.nome}
-              </div>
-            </div>
-          </Fragment>
-        ))}
-      </div>
-    </div>
   );
 }

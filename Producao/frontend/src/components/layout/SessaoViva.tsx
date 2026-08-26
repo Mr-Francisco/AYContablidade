@@ -62,7 +62,8 @@ export function SessaoViva() {
   return (
     <div
       role="status"
-      className="sem-imprimir fixed bottom-6 left-1/2 z-50 flex w-[min(30rem,92vw)] -translate-x-1/2 items-start gap-3 rounded-2xl border border-[var(--color-aviso)]/40 bg-superficie px-4 py-3 shadow-forte"
+      // Acima da barra dos módulos, como o botão de acesso rápido.
+      className="sem-imprimir fixed bottom-[calc(var(--altura-modulos,0px)+1.5rem)] left-1/2 z-50 flex w-[min(30rem,92vw)] -translate-x-1/2 items-start gap-3 rounded-2xl border border-[var(--color-aviso)]/40 bg-superficie px-4 py-3 shadow-forte"
     >
       <span className="mt-0.5 shrink-0 text-[var(--color-aviso)]">
         <Clock size={18} />

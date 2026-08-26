@@ -1,19 +1,46 @@
 "use client";
 
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { Select } from "radix-ui";
-import type { ReactNode } from "react";
+import { Children, type ReactNode, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Barra de filtros — o mesmo bloco em todas as páginas de listagem. */
+/**
+ * Barra de filtros — o mesmo bloco em todas as páginas de listagem.
+ *
+ * RECOLHE-SE, E É AÍ QUE ESTÁ O GANHO. Num portátil de 1366×768 esta barra
+ * chega a ocupar 220 px: oito controlos que, sem largura para caberem numa
+ * fila, quebram para três ou quatro. São 220 px que fazem falta durante cinco
+ * segundos — escolhe-se o exercício e o período — e depois estorvam durante a
+ * meia hora em que se está a ler o mapa.
+ *
+ * O PRIMEIRO CONTROLO FICA SEMPRE À VISTA. Nas listagens é quase sempre a
+ * caixa de pesquisa, que é a que se usa a toda a hora; escondê-la obrigava a
+ * abrir a barra a cada procura. Nos mapas é o exercício, que é o contexto de
+ * tudo o que está por baixo e convém não desaparecer.
+ *
+ * A escolha dura a sessão e não sobrevive a um recarregamento: quem recarrega
+ * à procura dos filtros tem de os encontrar.
+ */
 export function BarraFiltros({
   children,
   className,
+  /** Começa recolhida. Para páginas onde o filtro é raro e o mapa é longo. */
+  recolhidaPorOmissao = false,
 }: {
   children: ReactNode;
   className?: string;
+  recolhidaPorOmissao?: boolean;
 }) {
+  const [recolhida, setRecolhida] = useState(recolhidaPorOmissao);
+  const todos = Children.toArray(children);
+
+  // Com um ou dois controlos não há nada a poupar, e um botão a dizer
+  // «Filtros» ao lado de uma caixa de pesquisa era mais ruído do que ajuda.
+  const vaiRecolher = todos.length > 2;
+  const visiveis = recolhida && vaiRecolher ? todos.slice(0, 1) : todos;
+
   return (
     // A `.toolbar` do Piloto: só uma fila de controlos, sem moldura nem fundo
     // próprios. O cartão que aqui estava criava uma caixa dentro da caixa e
@@ -29,7 +56,32 @@ export function BarraFiltros({
         className,
       )}
     >
-      {children}
+      {visiveis}
+
+      {vaiRecolher && (
+        <button
+          type="button"
+          onClick={() => setRecolhida(!recolhida)}
+          aria-expanded={!recolhida}
+          title={
+            recolhida
+              ? "Mostrar os filtros"
+              : "Esconder os filtros e dar a altura ao conteúdo"
+          }
+          className={cn(
+            "ml-auto flex shrink-0 items-center gap-1.5 self-center whitespace-nowrap rounded-[10px] border border-borda px-2.5 py-2 text-[12.5px] font-semibold transition-colors hover:border-acento hover:text-marca",
+            recolhida ? "bg-superficie-2 text-marca" : "text-texto-suave",
+          )}
+        >
+          <SlidersHorizontal size={14} />
+          {/* SÓ O SÍMBOLO COM A BARRA ABERTA. Com texto, o botão era mais um
+              controlo a disputar a fila — e numa barra que já não cabia numa
+              linha, era ele a empurrá-la para mais uma, que é exactamente o
+              que ele existe para evitar. Recolhida há espaço de sobra, e aí o
+              número diz quantos filtros ficaram escondidos. */}
+          {recolhida && `Filtros (${todos.length - 1})`}
+        </button>
+      )}
     </div>
   );
 }

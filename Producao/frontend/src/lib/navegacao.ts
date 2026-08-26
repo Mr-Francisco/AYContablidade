@@ -28,6 +28,10 @@ export interface ItemNav {
 export interface GrupoNav {
   rotulo: string;
   href?: string;
+  /** Símbolo do módulo, para a barra de baixo. É DO GRUPO e não emprestado do
+   *  primeiro filho: o primeiro filho é quase sempre o «Painel» do módulo, e
+   *  a barra ficava com doze símbolos iguais. */
+  icone?: string;
   modulo?: Modulo;
   perfis?: string[];
   filhos?: ItemNav[];
@@ -40,10 +44,11 @@ export interface GrupoNav {
 }
 
 const NAV_COMPLETO: GrupoNav[] = [
-  { rotulo: "Painel", href: "/painel" },
+  { rotulo: "Painel", href: "/painel", icone: "dashboard" },
 
   {
     rotulo: "Contabilidade",
+    icone: "livro",
     modulo: "contabilidade",
     filhos: [
       {
@@ -179,6 +184,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "Analítica",
+    icone: "calculator",
     modulo: "analitica",
     filhos: [
       {
@@ -207,6 +213,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "Contas Correntes",
+    icone: "wallet",
     modulo: "contasCorrentes",
     filhos: [
       {
@@ -235,6 +242,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "Comercial",
+    icone: "cart",
     modulo: "comercial",
     filhos: [
       {
@@ -277,6 +285,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "Logística",
+    icone: "truck",
     modulo: "logistica",
     filhos: [
       {
@@ -354,6 +363,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "Imobilizados",
+    icone: "imob",
     modulo: "imobilizados",
     filhos: [
       {
@@ -389,6 +399,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "RH",
+    icone: "users",
     modulo: "rh",
     filhos: [
       {
@@ -459,6 +470,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "Fiscalidade",
+    icone: "fiscalidade",
     modulo: "fiscalidade",
     filhos: [
       {
@@ -511,6 +523,7 @@ const NAV_COMPLETO: GrupoNav[] = [
   // Módulo novo na Produção — não existe no Piloto.
   {
     rotulo: "Assistente",
+    icone: "sparkles",
     filhos: [
       {
         href: "/assistente",
@@ -531,6 +544,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "Gestão",
+    icone: "shield",
     filhos: [
       {
         href: "/gestao/progresso",
@@ -562,6 +576,7 @@ const NAV_COMPLETO: GrupoNav[] = [
   // administrador de empresa nunca vê isto.
   {
     rotulo: "Plataforma",
+    icone: "cog",
     daPlataforma: true,
     filhos: [
       {
@@ -611,6 +626,7 @@ const NAV_COMPLETO: GrupoNav[] = [
 
   {
     rotulo: "Configurações",
+    icone: "settings",
     href: "/configuracoes",
     perfis: ["admin"],
   },

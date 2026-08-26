@@ -7,7 +7,10 @@ import type {
   TdHTMLAttributes,
   ThHTMLAttributes,
 } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
+import { ID_DAS_ACCOES, useAnunciarPagina } from "@/contexts/CabecalhoDaPagina";
 import { cn } from "@/lib/utils";
 
 export { Botao } from "./Botao";
@@ -19,6 +22,23 @@ export { BarraFiltros, Selector } from "./Filtros";
 // ---------------------------------------------------------------------------
 // Cabeçalho de página
 // ---------------------------------------------------------------------------
+/**
+ * O cabeçalho da página — que já não se desenha aqui.
+ *
+ * ERA UMA FAIXA NO CORPO DA PÁGINA: o nome em 26 px, a frase que explica o
+ * ecrã, e um risco a fechar. Setenta e nove pixéis, sempre, em todas as
+ * páginas — um décimo de um portátil gasto a repetir o nome do sítio onde já
+ * se está, enquanto a barra de cima tinha uma faixa larga vazia entre o
+ * logótipo e a empresa.
+ *
+ * As páginas continuam a escrevê-lo como sempre. O que mudou é o destino: o
+ * título e a descrição sobem para a barra, e os botões vão por um portal para
+ * o lugar que lá os espera. Ver `contexts/CabecalhoDaPagina.tsx`.
+ *
+ * NA IMPRESSÃO CONTINUA A HAVER TÍTULO: é o `CabecalhoDoMapa`, dentro do
+ * próprio mapa, que já era quem escrevia o nome da empresa, o do mapa e o
+ * período na folha. A barra de cima não vai ao papel — nem devia.
+ */
 export function CabecalhoPagina({
   titulo,
   descricao,
@@ -28,28 +48,22 @@ export function CabecalhoPagina({
   descricao?: string;
   accoes?: ReactNode;
 }) {
-  return (
-    <div className="flex items-center justify-between gap-3 flex-wrap mt-6 mb-5 pb-3.5 border-b-2 border-borda">
-      <div className="min-w-0">
-        {/* A barra vertical com o gradiente da marca é a assinatura visual do
-            cabeçalho de página no Piloto. */}
-        <h1 className="relative pl-3.5 text-[26px] font-bold tracking-[-0.3px] m-0 before:absolute before:left-0 before:top-[3px] before:bottom-[3px] before:w-1 before:rounded-[3px] before:gradiente-marca before:content-['']">
-          {titulo}
-        </h1>
-        {descricao && (
-          // `cabecalho-descricao`: a frase que explica o ecrã não vai ao
-          // papel. Num balancete impresso, «Modelo Primavera — duplo clique
-          // numa conta abre o extracto» é uma instrução para quem está ao
-          // computador, e no papel não há onde clicar. O Piloto esconde-a.
-          <p className="cabecalho-descricao pl-3.5 mt-1 mb-0 text-sm text-texto-suave">
-            {descricao}
-          </p>
-        )}
-      </div>
-      {accoes && (
-        <div className="flex items-center gap-2 flex-wrap">{accoes}</div>
-      )}
-    </div>
+  useAnunciarPagina(titulo, descricao);
+  return <AccoesNaBarra>{accoes}</AccoesNaBarra>;
+}
+
+/** Leva os botões da página para dentro da barra de cima. */
+function AccoesNaBarra({ children }: { children?: ReactNode }) {
+  // O destino só existe depois de a barra desenhar. Um estado, e não uma
+  // `ref`: é preciso desenhar outra vez quando ele aparecer.
+  const [destino, setDestino] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setDestino(document.getElementById(ID_DAS_ACCOES));
+  }, []);
+  if (!children || !destino) return null;
+  return createPortal(
+    <div className="flex items-center gap-2">{children}</div>,
+    destino,
   );
 }
 

@@ -54,7 +54,11 @@ export function AcessoRapido() {
             aberto ? "Fechar acesso rápido" : "Acesso rápido aos módulos"
           }
           className={cn(
-            "sem-imprimir fixed bottom-6 right-6 z-40 flex size-12 items-center justify-center rounded-full",
+            // ACIMA DA BARRA DOS MÓDULOS. Com os módulos em baixo, um botão
+            // flutuante a 24 px do fundo ficava por cima deles — e o que se
+            // carregava era o que estivesse por baixo.
+            "sem-imprimir fixed right-6 z-40 flex size-12 items-center justify-center rounded-full",
+            "bottom-[calc(var(--altura-modulos,0px)+1.5rem)]",
             "bg-[image:var(--gradiente-marca)] text-white shadow-forte",
             "transition-transform hover:-translate-y-0.5 active:translate-y-0",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento",
