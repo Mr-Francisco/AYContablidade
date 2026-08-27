@@ -103,6 +103,26 @@ export function DocumentoLegal({
   aoFechar: () => void;
 }) {
   const { empresa } = useAuth();
+
+  /*
+   * O NÚMERO DE CERTIFICAÇÃO NÃO SE ESCREVE À MÃO NEM SE OMITE.
+   *
+   * O rodapé dizia «Processado por programa validado» sem número nenhum —
+   * uma afirmação de certificação feita por um documento que não sabia se
+   * ela existe. Quem fica exposto por declarar uma certificação que não
+   * tem é a empresa que emite, não o programa.
+   *
+   * Quem decide o número é a plataforma, e `services/certificacao.py`
+   * resolve-o em três degraus: o da empresa, o da plataforma, ou `0` —
+   * que a norma prevê e quer dizer «ainda sem certificação». Aqui só se
+   * lê e se escreve o que de lá vier.
+   */
+  const { data: cfgCertificacao } = useSWR<{ certificacao_agt?: string }>(
+    "/api/comercial/config",
+    buscador,
+  );
+  const certificacao = (cfgCertificacao?.certificacao_agt ?? "").trim();
+  const certificado = certificacao !== "" && certificacao !== "0";
   /** A4 ou talão de 80 mm. Como no Piloto, escolhe-se na altura de imprimir e
    *  não na ficha do documento: o mesmo documento tanto se arquiva em A4 como
    *  se entrega em papel de balcão. */
@@ -450,7 +470,18 @@ export function DocumentoLegal({
               {/* ---- Rodapé legal ---- */}
               <div className="documento-rodape mt-4 flex items-center justify-between gap-4 border-t border-dashed border-[#bbb] pt-3">
                 <div className="text-[11px] leading-relaxed text-[#555]">
-                  Processado por programa validado — SGD · {empresa?.nome}
+                  {certificado ? (
+                    <>
+                      Processado por programa validado n.º{" "}
+                      <b className="tabular">{certificacao}</b> — SGD ·{" "}
+                      {empresa?.nome}
+                    </>
+                  ) : (
+                    <>
+                      Processado por SGD · {empresa?.nome} — programa ainda sem
+                      número de certificação da AGT.
+                    </>
+                  )}
                   <br />
                   {fiscal ? (
                     <>
