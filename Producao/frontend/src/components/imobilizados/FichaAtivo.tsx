@@ -6,6 +6,7 @@ import { type FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 import { CampoConta } from "@/components/contabilidade/CampoConta";
 import { Alerta, Botao, Campo, Entrada, Selector } from "@/components/ui";
+import { CampoEntidade, type Registo } from "@/components/ui/CampoEntidade";
 import {
   PerguntaDeSaida,
   useGuardaDeSaida,
@@ -83,6 +84,22 @@ export function FichaAtivo({
     condicoes_texto: ativo?.condicoes_texto ?? "",
     valor_sujeito_amortizacao: ativo?.valor_sujeito_amortizacao ?? "",
   });
+  /*
+   * O FORNECEDOR ESCOLHE-SE DA TABELA, em vez de se escrever à mão.
+   *
+   * Escrito à mão, a mesma empresa entrava como «Acme», «ACME, Lda.» e «acme
+   * lda» — e nenhum mapa conseguia dizer quanto se comprou a quem. A tabela
+   * já existia e a compra já a usava; a ficha do bem é que ficou para trás.
+   *
+   * O NOME CONTINUA A PODER ESCREVER-SE quando não há registo escolhido — é
+   * o mesmo que a factura faz com o cliente. Nem todo o fornecedor de um bem
+   * está na tabela, e quem regista imobilizado é o contabilista, que não tem
+   * acesso à Logística para lá o pôr. Sem esta saída, o campo era um beco.
+   *
+   * Uma ficha antiga traz só o nome: fica no campo de texto, que é o que ele
+   * é — não se inventa um registo que não existe.
+   */
+  const [fornecedor, setFornecedor] = useState<Registo | null>(null);
   // Os três interruptores. Fora do `campos` porque são booleanos e aquele
   // guarda texto — misturá-los obrigava a converter em todos os sítios.
   const [naoAmortizavel, setNaoAmortizavel] = useState(
@@ -261,12 +278,33 @@ export function FichaAtivo({
                   { valor: "financeiro", rotulo: "Investimento Financeiro" },
                 ]}
               />
-              <Campo rotulo="Fornecedor">
-                <Entrada
-                  value={campos.fornecedor}
-                  onChange={(e) => alterar("fornecedor", e.target.value)}
+              <Campo
+                rotulo="Fornecedor"
+                dica="F4 ou duplo clique para procurar na tabela."
+              >
+                <CampoEntidade
+                  valor={fornecedor}
+                  aoEscolher={(r) => {
+                    setFornecedor(r);
+                    alterar("fornecedor", r?.nome ?? "");
+                  }}
+                  fonte="/api/imobilizados/fornecedores/tabela"
+                  titulo="Fornecedores"
+                  placeholder="Fornecedor (F4)"
+                  colunas={["Nº", "Nome", "NIF · País"]}
                 />
               </Campo>
+              {!fornecedor && (
+                <Campo
+                  rotulo="Nome do fornecedor"
+                  dica="Só se ainda não estiver na tabela."
+                >
+                  <Entrada
+                    value={campos.fornecedor}
+                    onChange={(e) => alterar("fornecedor", e.target.value)}
+                  />
+                </Campo>
+              )}
               <Campo rotulo="Data de aquisição">
                 <Entrada
                   type="date"

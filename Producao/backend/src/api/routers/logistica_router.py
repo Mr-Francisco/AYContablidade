@@ -391,29 +391,9 @@ def tabela_de_fornecedores(
     empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
 ) -> list[dict]:
     """A tabela de fornecedores, para o F4 das compras."""
-    from src.db.models.terceiros import Terceiro
+    from src.services import terceiros as svc_terceiros
 
-    q = select(Terceiro).where(
-        Terceiro.empresa_id == empresa.id, Terceiro.tipo == "fornecedor"
-    )
-    if procura.strip():
-        termo = f"%{procura.strip()}%"
-        q = q.where(
-            or_(
-                Terceiro.nome.ilike(termo),
-                Terceiro.nif.ilike(termo),
-                Terceiro.numero.ilike(termo),
-            )
-        )
-    return [
-        {
-            "id": str(c.id),
-            "codigo": c.numero or "",
-            "nome": c.nome,
-            "detalhe": " · ".join(x for x in (c.nif, c.pais) if x),
-        }
-        for c in db.scalars(q.order_by(Terceiro.numero).limit(limite)).all()
-    ]
+    return svc_terceiros.tabela_de_fornecedores(db, empresa.id, procura, limite)
 
 
 @router.get("/armazens/tabela")

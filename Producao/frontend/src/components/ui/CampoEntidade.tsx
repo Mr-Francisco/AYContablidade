@@ -75,7 +75,11 @@ export function CampoEntidade({
   const [aberto, setAberto] = useState(false);
   const campo = useRef<HTMLInputElement>(null);
 
-  const texto = valor ? `${valor.codigo} · ${valor.nome}` : "";
+  // Sem código não se escreve o separador: um registo antigo, guardado só
+  // pelo nome, aparecia como « · Acme» com um risco solto à frente.
+  const texto = valor
+    ? [valor.codigo, valor.nome].filter(Boolean).join(" · ")
+    : "";
 
   return (
     <>

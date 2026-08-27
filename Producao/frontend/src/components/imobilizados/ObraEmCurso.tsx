@@ -15,6 +15,7 @@ import {
   Selo,
   Vazio,
 } from "@/components/ui";
+import { CampoEntidade, type Registo } from "@/components/ui/CampoEntidade";
 import { type Coluna, Grelha } from "@/components/ui/Grelha";
 import {
   PerguntaDeSaida,
@@ -318,7 +319,14 @@ function FormularioItem({
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
-  const [fornecedor, setFornecedor] = useState("");
+  // Escolhido da tabela, e não escrito: o mesmo fornecedor entrava com três
+  // grafias diferentes e a obra deixava de dizer a quem se comprou o quê.
+  // Escolhido da tabela, e não escrito: o mesmo fornecedor entrava com três
+  // grafias e a obra deixava de dizer a quem se comprou o quê. O nome
+  // continua a poder escrever-se quando não há registo — nem toda a factura
+  // de uma obra vem de fornecedor fichado.
+  const [fornecedor, setFornecedor] = useState<Registo | null>(null);
+  const [fornecedorNome, setFornecedorNome] = useState("");
   const [documento, setDocumento] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [aJuntar, setAJuntar] = useState(false);
@@ -336,14 +344,15 @@ function FormularioItem({
         data,
         descricao: descricao.trim(),
         valor,
-        fornecedor: fornecedor.trim() || null,
+        fornecedor: fornecedor?.nome ?? fornecedorNome.trim() ?? null,
         documento: documento.trim() || null,
       });
       // Limpa o que muda de item para item; a data fica, porque quem lança
       // três facturas do mesmo mês não a quer escrever três vezes.
       setDescricao("");
       setValor("");
-      setFornecedor("");
+      setFornecedor(null);
+      setFornecedorNome("");
       setDocumento("");
       aoJuntar();
     } catch (e2) {
@@ -391,12 +400,30 @@ function FormularioItem({
             required
           />
         </Campo>
-        <Campo rotulo="Fornecedor" dica="Opcional.">
-          <Entrada
-            value={fornecedor}
-            onChange={(e) => setFornecedor(e.target.value)}
+        <Campo rotulo="Fornecedor" dica="Opcional. F4 para procurar.">
+          <CampoEntidade
+            valor={fornecedor}
+            aoEscolher={(r) => {
+              setFornecedor(r);
+              setFornecedorNome("");
+            }}
+            fonte="/api/imobilizados/fornecedores/tabela"
+            titulo="Fornecedores"
+            placeholder="Fornecedor (F4)"
+            colunas={["Nº", "Nome", "NIF · País"]}
           />
         </Campo>
+        {!fornecedor && (
+          <Campo
+            rotulo="Nome do fornecedor"
+            dica="Só se ainda não estiver na tabela."
+          >
+            <Entrada
+              value={fornecedorNome}
+              onChange={(e) => setFornecedorNome(e.target.value)}
+            />
+          </Campo>
+        )}
         <Campo rotulo="Documento" dica="A factura, o auto de medição.">
           <Entrada
             value={documento}

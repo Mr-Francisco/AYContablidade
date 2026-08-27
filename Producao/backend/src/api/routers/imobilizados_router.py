@@ -171,6 +171,23 @@ def metodos() -> list[dict]:
     return [{"cod": c, "nome": n} for c, n in svc.METODOS]
 
 
+@router.get("/fornecedores/tabela")
+def tabela_de_fornecedores(
+    empresa: EmpresaAtual, db: DB, procura: str = "", limite: int = 50
+) -> list[dict]:
+    """Os fornecedores, para o F4 da ficha do bem e das obras em curso.
+
+    A MESMA TABELA QUE AS COMPRAS LEEM, exposta aqui com `imob.ver`. Estava
+    só na Logística, e quem regista imobilizado é o contabilista, que não tem
+    acesso a essa área: o campo do fornecedor ficava vazio e sem forma de o
+    preencher. Só lê — quem cria fornecedores continua a precisar da sua
+    própria permissão.
+    """
+    from src.services import terceiros as svc_terceiros
+
+    return svc_terceiros.tabela_de_fornecedores(db, empresa.id, procura, limite)
+
+
 @router.get("/ativos")
 def listar_ativos(empresa: EmpresaAtual, db: DB, so_ativos: bool = False) -> list[dict]:
     q = select(Ativo).where(Ativo.empresa_id == empresa.id)
