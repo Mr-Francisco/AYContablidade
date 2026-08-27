@@ -156,7 +156,22 @@ class Venda(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
         DateTime(timezone=True)
     )
     #: Local da entrega ou da prestação — art. 10.º g) do DP 71/25.
+    #: É o ponto de PARTIDA: onde a mercadoria foi carregada ou o serviço
+    #: começou.
     local_operacao: Mapped[str | None] = mapped_column(String(200))
+    #: E o de CHEGADA. Eram a mesma coisa num campo só, e não são: um documento
+    #: que acompanha mercadoria tem de dizer de onde saiu e para onde vai.
+    local_destino: Mapped[str | None] = mapped_column(String(200))
+
+    #: Até quando o cliente tem para pagar. Vazio quer dizer pronto pagamento.
+    vencimento: Mapped[date | None] = mapped_column(Date)
+    #: Como se paga — «Transferência bancária», «Numerário», «Multicaixa».
+    #: Texto e não código: é o que se lê no documento, e a lista de meios de
+    #: pagamento de uma empresa não é a de outra.
+    forma_pagamento: Mapped[str | None] = mapped_column(String(60))
+    #: O que a pessoa quer dizer a quem recebe o documento. Não é a anulação
+    #: nem o motivo de isenção — esses têm o seu campo e a sua consequência.
+    observacoes: Mapped[str | None] = mapped_column(Text)
     #: País do adquirente (`customerCountry`), para não residentes.
     cliente_pais: Mapped[str | None] = mapped_column(String(2))
 

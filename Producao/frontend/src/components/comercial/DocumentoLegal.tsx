@@ -67,7 +67,14 @@ export interface DocumentoParaImprimir {
   hash_controlo?: string | null;
   codigo_validacao?: string | null;
   doc_origem_num?: string | null;
+  /** Onde carregou e para onde vai — art. 10.º g) do DP 71/25. */
   local_operacao?: string | null;
+  local_destino?: string | null;
+  /** Até quando há para pagar, e como. */
+  vencimento?: string | null;
+  forma_pagamento?: string | null;
+  /** O que quem emite quer dizer a quem recebe. */
+  observacoes?: string | null;
   /** Retenção na fonte, quando existe. */
   retencao_perc?: string | null;
   retencao?: string | null;
@@ -299,10 +306,35 @@ export function DocumentoLegal({
                       <b className="tabular">{doc.doc_origem_num}</b>
                     </div>
                   )}
+                  {doc.forma_pagamento && (
+                    <div>
+                      <span className={`block ${KEY}`}>Forma de pagamento</span>
+                      <b>{doc.forma_pagamento}</b>
+                    </div>
+                  )}
+                  {doc.vencimento && (
+                    <div>
+                      <span className={`block ${KEY}`}>Vencimento</span>
+                      <b className="tabular">
+                        {new Date(doc.vencimento).toLocaleDateString("pt-PT")}
+                      </b>
+                    </div>
+                  )}
+                  {/* ORIGEM E DESTINO DIZEM-SE PELO NOME. Estavam a caber
+                      num «Local» só, e um documento que acompanha mercadoria
+                      tem de dizer de onde saiu e para onde vai. */}
                   {doc.local_operacao && (
                     <div>
-                      <span className={`block ${KEY}`}>Local</span>
+                      <span className={`block ${KEY}`}>
+                        {doc.local_destino ? "Origem" : "Local"}
+                      </span>
                       <b>{doc.local_operacao}</b>
+                    </div>
+                  )}
+                  {doc.local_destino && (
+                    <div>
+                      <span className={`block ${KEY}`}>Destino</span>
+                      <b>{doc.local_destino}</b>
                     </div>
                   )}
                 </div>
@@ -483,6 +515,16 @@ export function DocumentoLegal({
                     português num documento oficial. */}
                 <b>{valorPorExtenso(doc.total, "kwanzas", "kwanza")}</b>
               </div>
+
+              {/* ---- Observações ----
+                  Antes do rodapé legal e depois dos totais: é onde quem lê
+                  já sabe quanto é e ainda não passou às letras miudinhas. */}
+              {doc.observacoes && (
+                <div className="documento-observacoes mt-3 rounded border border-[#ddd] px-3 py-2 text-[11.5px] leading-relaxed">
+                  <span className={`block ${KEY}`}>Observações</span>
+                  <span className="whitespace-pre-wrap">{doc.observacoes}</span>
+                </div>
+              )}
 
               {/* ---- Rodapé legal ---- */}
               <div className="documento-rodape mt-4 flex items-center justify-between gap-4 border-t border-dashed border-[#bbb] pt-3">

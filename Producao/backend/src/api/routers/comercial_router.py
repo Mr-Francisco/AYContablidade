@@ -55,6 +55,17 @@ class VendaEntrada(BaseModel):
     retencao_base: Decimal | None = None
     conta_recebimento: str | None = None
     doc_origem_num: str | None = None
+    #: Onde a mercadoria foi carregada e para onde vai — art. 10.º g) do
+    #: DP 71/25. Eram a mesma coisa num campo só, e não são.
+    local_operacao: str | None = None
+    local_destino: str | None = None
+    #: Até quando o cliente tem para pagar, e como. Vazio no vencimento quer
+    #: dizer pronto pagamento.
+    vencimento: Date | None = None
+    forma_pagamento: str | None = None
+    #: O que quem emite quer dizer a quem recebe. Sem consequência fiscal — o
+    #: motivo de isenção e o de anulação têm campos próprios.
+    observacoes: str | None = None
     linhas: list[LinhaEntrada] = Field(default_factory=list)
 
 
@@ -580,6 +591,10 @@ def _venda_publica(v: Venda) -> dict:
         "estado_agt": v.estado_agt,
         "doc_origem_num": v.doc_origem_num,
         "local_operacao": v.local_operacao,
+        "local_destino": v.local_destino,
+        "vencimento": v.vencimento,
+        "forma_pagamento": v.forma_pagamento,
+        "observacoes": v.observacoes,
         # A RETENÇÃO VAI PARA O DOCUMENTO: sem ela, a proforma não mostra o
         # «Total Com Retenção» — que é o que o cliente vai mesmo transferir, e
         # a diferença entre esse número e o total é a razão de ele existir.
@@ -680,6 +695,10 @@ def obter_venda(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
         "estado_agt": v.estado_agt,
         "doc_origem_num": v.doc_origem_num,
         "local_operacao": v.local_operacao,
+        "local_destino": v.local_destino,
+        "vencimento": v.vencimento,
+        "forma_pagamento": v.forma_pagamento,
+        "observacoes": v.observacoes,
         "cliente_pais": v.cliente_pais,
         # A RETENÇÃO VAI PARA O DOCUMENTO: sem ela, a factura não mostra o
         # «Total Com Retenção» — que é o que o cliente vai mesmo transferir, e
@@ -721,6 +740,9 @@ def criar_venda(
         tipo=dados.tipo, cliente_id=dados.cliente_id, cliente_nome=cliente_nome,
         vendedor_id=dados.vendedor_id, iva_perc=iva_perc,
         conta_recebimento=dados.conta_recebimento, doc_origem_num=dados.doc_origem_num,
+        local_operacao=dados.local_operacao, local_destino=dados.local_destino,
+        vencimento=dados.vencimento, forma_pagamento=dados.forma_pagamento,
+        observacoes=dados.observacoes,
         subtotal=t["subtotal"], iva=t["iva"], total=t["total"], estado="rascunho",
         retencao_perc=ret["perc"], retencao_base=ret["base"] or None,
         retencao=ret["retencao"],

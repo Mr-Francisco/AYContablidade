@@ -92,6 +92,13 @@ export function FormularioVenda({
   const [aCriarCliente, setACriarCliente] = useState<string | null>(null);
   const [ivaPerc, setIvaPerc] = useState("14");
   const [docOrigem, setDocOrigem] = useState("");
+  // O que o documento diz sobre PAGAMENTO e sobre TRANSPORTE. Nada disto
+  // entra em contas — entra no papel, que é onde faltava.
+  const [vencimento, setVencimento] = useState("");
+  const [formaPagamento, setFormaPagamento] = useState("");
+  const [localOrigem, setLocalOrigem] = useState("");
+  const [localDestino, setLocalDestino] = useState("");
+  const [observacoes, setObservacoes] = useState("");
   const [linhas, setLinhas] = useState<Linha[]>([linhaVazia()]);
   const [erro, setErro] = useState<string | null>(null);
   const [aGravar, setAGravar] = useState(false);
@@ -171,6 +178,11 @@ export function FormularioVenda({
         vendedor_id: vendedorId || undefined,
         iva_perc: temIva ? paraApi(ivaPerc) : "0",
         doc_origem_num: docOrigem.trim() || undefined,
+        vencimento: vencimento || undefined,
+        forma_pagamento: formaPagamento.trim() || undefined,
+        local_operacao: localOrigem.trim() || undefined,
+        local_destino: localDestino.trim() || undefined,
+        observacoes: observacoes.trim() || undefined,
         linhas: preenchidas.map((l) => ({
           artigo_id: l.artigo_id || undefined,
           descricao: l.descricao || undefined,
@@ -304,6 +316,42 @@ export function FormularioVenda({
               />
             </Campo>
           )}
+          <Campo rotulo="Forma de pagamento" dica="Opcional.">
+            <Entrada
+              value={formaPagamento}
+              onChange={(e) => setFormaPagamento(e.target.value)}
+              placeholder="Ex.: Transferência bancária"
+            />
+          </Campo>
+          <Campo rotulo="Vencimento" dica="Em branco é pronto pagamento.">
+            <Entrada
+              type="date"
+              value={vencimento}
+              onChange={(e) => setVencimento(e.target.value)}
+            />
+          </Campo>
+          <Campo rotulo="Local de origem" dica="Onde a mercadoria é carregada.">
+            <Entrada
+              value={localOrigem}
+              onChange={(e) => setLocalOrigem(e.target.value)}
+            />
+          </Campo>
+          <Campo rotulo="Local de destino" dica="Onde é descarregada.">
+            <Entrada
+              value={localDestino}
+              onChange={(e) => setLocalDestino(e.target.value)}
+            />
+          </Campo>
+          <Campo
+            rotulo="Observações"
+            dica="Sai no documento, por baixo dos totais."
+            className="sm:col-span-2"
+          >
+            <Entrada
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+            />
+          </Campo>
         </div>
 
         <EnvolveTabela>
