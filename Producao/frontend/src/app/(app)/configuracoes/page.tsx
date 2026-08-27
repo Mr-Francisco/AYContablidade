@@ -189,6 +189,7 @@ function FormularioEmpresa({
     telefone: empresa.telefone ?? "",
     email: empresa.email ?? "",
     moeda: empresa.moeda,
+    logo: empresa.logo ?? "",
     regime: empresa.regime,
     forma_juridica: empresa.forma_juridica ?? "lda",
   });
@@ -210,6 +211,7 @@ function FormularioEmpresa({
         localizacao: campos.localizacao.trim() || null,
         telefone: campos.telefone.trim() || null,
         email: campos.email.trim() || null,
+        logo: campos.logo || null,
       });
       aoGravar("Dados da empresa gravados.");
     } catch (e2) {
@@ -273,6 +275,11 @@ function FormularioEmpresa({
               maxLength={8}
             />
           </Campo>
+          <CampoLogotipo
+            valor={campos.logo}
+            aoMudar={(v) => alterar("logo", v)}
+            aoFalhar={aoFalhar}
+          />
           <Selector
             rotulo="Regime de IVA"
             valor={campos.regime}
@@ -553,5 +560,121 @@ function Facto({
       <dd className="mt-1 text-xl font-bold">{valor}</dd>
       {nota && <p className="mt-0.5 text-xs text-texto-suave">{nota}</p>}
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   O logótipo da empresa.
+
+   VAI NO TOPO DE CADA FACTURA E DE CADA MAPA IMPRESSO, e é por isso que a
+   ficha não se grava sem ele. Antes o campo existia na base de dados e não
+   havia ecrã nenhum onde o pôr: o documento saía com um quadrado de duas
+   letras no lugar da marca.
+
+   AS MEDIDAS DIZEM-SE ANTES, e não depois de o servidor recusar. Quem escolhe
+   uma fotografia de dois megabytes não está a desobedecer — está a adivinhar,
+   porque ninguém lhe disse. O limite de peso não é capricho: o logótipo é
+   guardado dentro da ficha da empresa e viaja em cada resposta que a traga.
+--------------------------------------------------------------------------- */
+
+const LOGO_TIPOS = ["image/png", "image/svg+xml", "image/jpeg"];
+const LOGO_MAX_KB = 200;
+const LOGO_LARGURA_MINIMA = 600;
+const LOGO_ALTURA_MINIMA = 200;
+
+function CampoLogotipo({
+  valor,
+  aoMudar,
+  aoFalhar,
+}: {
+  valor: string;
+  aoMudar: (v: string) => void;
+  aoFalhar: (erro: string) => void;
+}) {
+  const [nota, setNota] = useState<string | null>(null);
+
+  function escolher(ficheiro: File) {
+    if (!LOGO_TIPOS.includes(ficheiro.type)) {
+      aoFalhar(
+        "O logótipo tem de ser uma imagem PNG, SVG ou JPEG. Guarde o ficheiro num destes formatos e volte a escolhê-lo.",
+      );
+      return;
+    }
+    if (ficheiro.size > LOGO_MAX_KB * 1024) {
+      aoFalhar(
+        `O logótipo não pode passar de ${LOGO_MAX_KB} KB e este tem ${Math.round(ficheiro.size / 1024)} KB. Guarde a imagem num tamanho menor e volte a escolhê-la.`,
+      );
+      return;
+    }
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      const dados = String(leitor.result);
+      aoMudar(dados);
+      // Pequena demais AVISA mas não impede: um SVG não tem pixéis, e uma
+      // marca antiga em 400 px continua a ser a marca da empresa.
+      if (ficheiro.type !== "image/svg+xml") {
+        const img = new Image();
+        img.onload = () =>
+          setNota(
+            img.width < LOGO_LARGURA_MINIMA || img.height < LOGO_ALTURA_MINIMA
+              ? `Esta imagem tem ${img.width} por ${img.height} pontos e pode sair serrilhada no papel. Se tiver uma maior, use-a.`
+              : null,
+          );
+        img.src = dados;
+      } else {
+        setNota(null);
+      }
+    };
+    leitor.onerror = () =>
+      aoFalhar(
+        "Não foi possível ler o ficheiro. Volte a escolhê-lo e tente outra vez.",
+      );
+    leitor.readAsDataURL(ficheiro);
+  }
+
+  return (
+    <Campo
+      rotulo="Logótipo"
+      dica={`PNG, SVG ou JPEG · a partir de ${LOGO_LARGURA_MINIMA}×${LOGO_ALTURA_MINIMA} pontos · até ${LOGO_MAX_KB} KB`}
+      className="sm:col-span-2"
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex h-[52px] w-[140px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-borda bg-superficie-2">
+          {valor ? (
+            // biome-ignore lint/performance/noImgElement: pré-visualização em `data:` de um ficheiro ainda por gravar — não há endereço que o `next/image` possa optimizar.
+            <img
+              src={valor}
+              alt="Logótipo da empresa"
+              className="h-full w-full object-contain p-1"
+            />
+          ) : (
+            <span className="text-[11px] text-texto-suave">Sem logótipo</span>
+          )}
+        </div>
+        <input
+          type="file"
+          accept={LOGO_TIPOS.join(",")}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) escolher(f);
+            // Limpa para que escolher o MESMO ficheiro outra vez volte a
+            // disparar — sem isto, corrigir e voltar a tentar não fazia nada.
+            e.target.value = "";
+          }}
+          className="text-[13px] file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-borda file:bg-superficie-2 file:px-3 file:py-1.5 file:text-[13px] file:font-semibold file:text-texto"
+        />
+      </div>
+      {!valor && (
+        <Alerta tipo="aviso" className="mt-2">
+          A ficha só se grava com o logótipo carregado, porque ele aparece no
+          topo das facturas e dos mapas impressos.
+        </Alerta>
+      )}
+      {nota && (
+        <Alerta tipo="aviso" className="mt-2">
+          {nota}
+        </Alerta>
+      )}
+    </Campo>
   );
 }

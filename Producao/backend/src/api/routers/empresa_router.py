@@ -80,6 +80,56 @@ class EmpresaAtualizar(BaseModel):
     forma_juridica: str | None = Field(default=None, max_length=20)
 
 
+#: O que o logótipo pode ser.
+#:
+#: GUARDADO COMO TEXTO DENTRO DA FICHA DA EMPRESA, e por isso viaja em cada
+#: resposta que traga a empresa. Um ficheiro de dois megabytes não estraga só o
+#: papel — torna a aplicação mais lenta para essa empresa em todo o lado. Daí o
+#: limite, que é generoso para uma marca e apertado para uma fotografia.
+LOGO_TIPOS = ("image/png", "image/svg+xml", "image/jpeg")
+LOGO_MAX_BYTES = 200 * 1024
+
+
+def _recusar_logo(mensagem: str) -> None:
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=mensagem
+    )
+
+
+def _validar_logo(valor: str) -> None:
+    """O logótipo chega como `data:` — o ecrã lê o ficheiro e envia-o assim."""
+    import base64
+    import re
+
+    m = re.match(r"^data:([-\w.+/]+);base64,(.+)$", valor, re.S)
+    if not m:
+        _recusar_logo(
+            "Não foi possível ler a imagem do logótipo. Volte a escolher o "
+            "ficheiro e grave outra vez."
+        )
+        return
+    tipo, corpo = m.group(1), m.group(2)
+    if tipo not in LOGO_TIPOS:
+        _recusar_logo(
+            "O logótipo tem de ser uma imagem PNG, SVG ou JPEG. Guarde o "
+            "ficheiro num destes formatos e volte a carregá-lo."
+        )
+    try:
+        tamanho = len(base64.b64decode(corpo, validate=True))
+    except Exception:
+        _recusar_logo(
+            "A imagem do logótipo chegou incompleta. Volte a escolher o "
+            "ficheiro e grave outra vez."
+        )
+        return
+    if tamanho > LOGO_MAX_BYTES:
+        _recusar_logo(
+            f"O logótipo não pode passar de {LOGO_MAX_BYTES // 1024} KB e este "
+            f"tem {tamanho // 1024} KB. Guarde a imagem num tamanho menor e "
+            "volte a carregá-la."
+        )
+
+
 class ConfigAtualizar(BaseModel):
     modulos: dict | None = None
     parametrizacoes: dict | None = None
@@ -149,6 +199,21 @@ def atualizar(
     documentos fiscais já emitidos. Mudá-lo exige intervenção do superadmin.
     """
     campos = dados.model_dump(exclude_unset=True)
+
+    # A FICHA NÃO SE GRAVA SEM LOGÓTIPO. Ele vai no topo de cada factura e de
+    # cada mapa impresso, e sem ele o documento sai com um quadrado de iniciais
+    # no lugar da marca. Olha-se ao valor QUE FICA, e não ao que veio no
+    # pedido: mudar só o telefone de uma empresa que nunca carregou o logótipo
+    # também tem de parar aqui, senão a exigência nunca chegava a ninguém.
+    if campos.get("logo"):
+        _validar_logo(campos["logo"])
+    if not (campos.get("logo", empresa.logo) or "").strip():
+        _recusar_logo(
+            "A ficha da empresa só se grava com o logótipo carregado, porque "
+            "ele aparece no topo das facturas e dos mapas impressos. Carregue "
+            "uma imagem PNG, SVG ou JPEG — de preferência com 600 por 200 "
+            "pontos ou mais, até 200 KB."
+        )
 
     # Mudança de regime de IVA entra no histórico: o apuramento de períodos
     # passados tem de continuar a usar o regime que vigorava nessa altura.

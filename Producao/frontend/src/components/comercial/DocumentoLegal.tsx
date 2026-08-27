@@ -217,9 +217,26 @@ export function DocumentoLegal({
               {/* ---- Cabeçalho ---- */}
               <div className="documento-topo flex items-start justify-between gap-4 border-b-2 border-[#1a1a2e] pb-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex size-[46px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#e6007e,#4a4ecb)] text-[17px] font-black text-white">
-                    {iniciais}
-                  </div>
+                  {/* O LOGÓTIPO DA EMPRESA, e as iniciais só como reserva.
+                      Um documento que se entrega a um cliente leva a marca
+                      de quem o emite; o quadrado com duas letras servia para
+                      trabalhar e não para entregar.
+
+                      `object-contain` e não `cover`: a proporção do ficheiro
+                      não é a da caixa, e esticar um logótipo é pior do que
+                      não o pôr. */}
+                  {empresa?.logo ? (
+                    // biome-ignore lint/performance/noImgElement: é um `data:` e esta folha vai a impressão — o `next/image` adia o carregamento e sairia uma folha sem marca.
+                    <img
+                      src={empresa.logo}
+                      alt={empresa.nome}
+                      className="h-[46px] w-auto max-w-[150px] shrink-0 object-contain"
+                    />
+                  ) : (
+                    <div className="flex size-[46px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#e6007e,#4a4ecb)] text-[17px] font-black text-white">
+                      {iniciais}
+                    </div>
+                  )}
                   <div>
                     <b className="text-[15px]">{empresa?.nome}</b>
                     <span className="block text-[11.5px] text-[#555]">

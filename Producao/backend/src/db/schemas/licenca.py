@@ -138,6 +138,9 @@ class EmpresaPublica(BaseModel):
     localizacao: str | None
     telefone: str | None
     email: str | None
+    #: O logótipo, como `data:`. Vai no topo dos documentos impressos — sem ele
+    #: aqui, o ecrã grava-o e nunca mais o volta a ver.
+    logo: str | None = None
     moeda: str
     regime: RegimeIVA
     forma_juridica: str | None
