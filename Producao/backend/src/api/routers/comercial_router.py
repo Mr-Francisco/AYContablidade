@@ -36,6 +36,9 @@ class LinhaEntrada(BaseModel):
     unidade: str | None = None
     qtd: Decimal = Decimal("0")
     preco: Decimal = Decimal("0")
+    #: Desconto DESTA linha. Por linha e não por documento: numa mesma factura
+    #: desconta-se um artigo e mantém-se o preço do outro.
+    desconto_perc: Decimal = Decimal("0")
 
 
 class VendaEntrada(BaseModel):
@@ -590,6 +593,7 @@ def _venda_publica(v: Venda) -> dict:
         "estado_saft": v.estado_saft,
         "estado_agt": v.estado_agt,
         "doc_origem_num": v.doc_origem_num,
+        "desconto": v.desconto,
         "local_operacao": v.local_operacao,
         "local_destino": v.local_destino,
         "vencimento": v.vencimento,
@@ -694,6 +698,7 @@ def obter_venda(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
         "estado_saft": v.estado_saft,
         "estado_agt": v.estado_agt,
         "doc_origem_num": v.doc_origem_num,
+        "desconto": v.desconto,
         "local_operacao": v.local_operacao,
         "local_destino": v.local_destino,
         "vencimento": v.vencimento,
@@ -710,6 +715,7 @@ def obter_venda(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
         "linhas": [
             {"ordem": l.ordem, "artigo_id": l.artigo_id, "descricao": l.descricao,
              "unidade": l.unidade, "qtd": l.qtd, "preco": l.preco, "total": l.total,
+             "desconto_perc": l.desconto_perc,
              "taxa_codigo": l.taxa_codigo, "taxa_perc": l.taxa_perc,
              "motivo_isencao": l.motivo_isencao}
             for l in v.linhas
@@ -726,7 +732,13 @@ def criar_venda(
     iva_perc = dados.iva_perc if td.get("iva") else Decimal("0")
     linhas = [l.model_dump() for l in dados.linhas]
     t = svc.calc_totais(linhas, iva_perc)
-    ret = svc.calc_retencao(t["subtotal"], dados.retencao_perc, dados.retencao_base)
+    # A RETENÇÃO INCIDE SOBRE O QUE FOI FACTURADO, e não sobre o ilíquido:
+    # reter sobre valor que foi descontado seria entregar ao Estado imposto
+    # sobre dinheiro que ninguém cobrou. Uma base indicada à mão continua a
+    # mandar sobre esta.
+    ret = svc.calc_retencao(
+        t["subtotal"] - t["desconto"], dados.retencao_perc, dados.retencao_base
+    )
 
     cliente_nome = dados.cliente_nome
     if dados.cliente_id:
@@ -743,14 +755,21 @@ def criar_venda(
         local_operacao=dados.local_operacao, local_destino=dados.local_destino,
         vencimento=dados.vencimento, forma_pagamento=dados.forma_pagamento,
         observacoes=dados.observacoes,
-        subtotal=t["subtotal"], iva=t["iva"], total=t["total"], estado="rascunho",
+        subtotal=t["subtotal"], desconto=t["desconto"], iva=t["iva"],
+        total=t["total"], estado="rascunho",
         retencao_perc=ret["perc"], retencao_base=ret["base"] or None,
         retencao=ret["retencao"],
         linhas=[
             VendaLinha(
                 ordem=i, artigo_id=l["artigo_id"], descricao=l["descricao"],
                 unidade=l["unidade"], qtd=l["qtd"], preco=l["preco"],
-                total=Decimal(str(l["qtd"])) * Decimal(str(l["preco"])),
+                desconto_perc=l.get("desconto_perc") or Decimal("0"),
+                # O total da linha é o LÍQUIDO, e vem da mesma função que fez
+                # os totais do documento — somar aqui por outra via era o
+                # caminho para as duas contas divergirem num cêntimo.
+                total=svc.liquido_da_linha(
+                    l["qtd"], l["preco"], l.get("desconto_perc")
+                )["liquido"],
             )
             for i, l in enumerate(linhas)
             if l["descricao"] or (l["qtd"] and l["preco"])

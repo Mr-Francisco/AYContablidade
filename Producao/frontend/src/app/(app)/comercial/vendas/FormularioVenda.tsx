@@ -1,5 +1,6 @@
 "use client";
 
+import type { Big } from "big.js";
 import { Plus, Trash2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useMemo, useState } from "react";
@@ -30,6 +31,7 @@ interface Linha {
   unidade: string;
   qtd: string;
   preco: string;
+  desconto: string;
 }
 
 function linhaVazia(): Linha {
@@ -40,7 +42,24 @@ function linhaVazia(): Linha {
     unidade: "",
     qtd: "1",
     preco: "",
+    desconto: "",
   };
+}
+
+/**
+ * O líquido de uma linha, com a MESMA conta que o servidor faz.
+ *
+ * Arredonda-se o líquido e o desconto é a diferença entre os dois — nunca ao
+ * contrário. Pela outra ordem, um documento com muitas linhas acaba com
+ * «ilíquido menos desconto» a dar um cêntimo diferente do total, e o número que
+ * o ecrã mostra deixa de ser o que o documento imprime.
+ */
+function liquidoDaLinha(l: Linha): Big {
+  const bruto = multiplica(l.qtd || "0", l.preco || "0").round(2);
+  const perc = big(l.desconto || "0");
+  if (perc.lte(0)) return bruto;
+  const limitada = perc.gt(100) ? big(100) : perc;
+  return bruto.times(big(100).minus(limitada)).div(100).round(2);
 }
 
 export function FormularioVenda({
@@ -115,16 +134,27 @@ export function FormularioVenda({
   const exigeReferencia = td?.ref === true;
 
   const totais = useMemo(() => {
+    // O SUBTOTAL É O ILÍQUIDO, antes de descontos — o mesmo significado que
+    // tem no servidor e no documento. O desconto vem à parte e o imposto
+    // incide sobre o que sobra.
     const subtotal = soma(
-      ...linhas.map((l) => multiplica(l.qtd || "0", l.preco || "0")),
+      ...linhas.map((l) => multiplica(l.qtd || "0", l.preco || "0").round(2)),
     );
+    const desconto = soma(
+      ...linhas.map((l) =>
+        multiplica(l.qtd || "0", l.preco || "0")
+          .round(2)
+          .minus(liquidoDaLinha(l)),
+      ),
+    );
+    const tributavel = subtotal.minus(desconto);
     const iva = temIva
-      ? subtotal
+      ? tributavel
           .times(big(ivaPerc || "0"))
           .div(100)
           .round(2)
       : big(0);
-    return { subtotal, iva, total: subtotal.plus(iva) };
+    return { subtotal, desconto, iva, total: tributavel.plus(iva) };
   }, [linhas, ivaPerc, temIva]);
 
   function alterar(id: string, campo: keyof Linha, valor: string) {
@@ -189,6 +219,7 @@ export function FormularioVenda({
           unidade: l.unidade || undefined,
           qtd: paraApi(l.qtd, 4),
           preco: paraApi(l.preco),
+          desconto_perc: paraApi(l.desconto || "0"),
         })),
       });
       aoGravar(r.id);
@@ -367,6 +398,9 @@ export function FormularioVenda({
                 <Th numerico className="w-[140px]">
                   Preço
                 </Th>
+                <Th numerico className="w-[90px]">
+                  Desc.%
+                </Th>
                 <Th numerico className="w-[140px]">
                   Total
                 </Th>
@@ -440,11 +474,23 @@ export function FormularioVenda({
                       className="text-right tabular"
                     />
                   </Td>
+                  <Td className="p-1.5">
+                    <Entrada
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={l.desconto}
+                      onChange={(e) =>
+                        alterar(l.id, "desconto", e.target.value)
+                      }
+                      className="text-right tabular"
+                    />
+                  </Td>
+                  {/* O TOTAL DA LINHA JÁ É O LÍQUIDO, como no documento: o que
+                      aqui se lê é o que lá vai sair. */}
                   <Td numerico className="font-semibold">
-                    {formataMoeda(
-                      multiplica(l.qtd || "0", l.preco || "0"),
-                      moeda,
-                    )}
+                    {formataMoeda(liquidoDaLinha(l), moeda)}
                   </Td>
                   <Td className="p-2">
                     <button
@@ -480,6 +526,15 @@ export function FormularioVenda({
               valor={totais.subtotal}
               moeda={moeda}
             />
+            {/* Só quando existe, como no documento: uma linha a zero em todas
+                as facturas é ruído. */}
+            {totais.desconto.gt(0) && (
+              <LinhaTotal
+                rotulo="Desconto"
+                valor={totais.desconto}
+                moeda={moeda}
+              />
+            )}
             {temIva && (
               <LinhaTotal
                 rotulo={`IVA (${ivaPerc || 0}%)`}

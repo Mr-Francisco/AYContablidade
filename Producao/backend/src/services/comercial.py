@@ -201,16 +201,49 @@ def codigo_validacao(venda: Venda) -> str:
 # ---------------------------------------------------------------------------
 # Totais
 # ---------------------------------------------------------------------------
+def liquido_da_linha(qtd, preco, desconto_perc=0) -> dict:
+    """O ilíquido e o líquido de uma linha, e o desconto entre os dois.
+
+    ARREDONDA-SE O LÍQUIDO E SUBTRAI-SE, em vez de arredondar o desconto e
+    subtrair esse: assim o desconto é sempre exactamente a diferença entre os
+    dois números que se imprimem. Pela outra ordem, um documento com muitas
+    linhas acabava com «ilíquido − desconto» a dar um cêntimo diferente do
+    total — e não há explicação que se dê a quem o vê.
+    """
+    bruto = r2(Decimal(str(qtd or 0)) * Decimal(str(preco or 0)))
+    perc = Decimal(str(desconto_perc or 0))
+    if perc <= 0:
+        return {"bruto": bruto, "desconto": ZERO, "liquido": bruto}
+    # Nunca mais do que 100%: um desconto maior seria pagar ao cliente para
+    # levar a mercadoria.
+    perc = min(perc, Decimal("100"))
+    liquido = r2(bruto * (Decimal("100") - perc) / 100)
+    return {"bruto": bruto, "desconto": r2(bruto - liquido), "liquido": liquido}
+
+
 def calc_totais(linhas: list[dict], iva_perc: Decimal) -> dict:
-    subtotal = r2(
-        sum(
-            (Decimal(str(l.get("qtd") or 0)) * Decimal(str(l.get("preco") or 0))
-             for l in linhas),
-            ZERO,
-        )
-    )
-    iva = r2(subtotal * (iva_perc or ZERO) / 100)
-    return {"subtotal": subtotal, "iva": iva, "total": r2(subtotal + iva)}
+    """Os totais do documento.
+
+    O `subtotal` É O ILÍQUIDO — a soma de `qtd x preço` antes de descontos — e
+    continua a ser o que sempre foi, para que nenhum documento já emitido passe
+    a dizer outro número. O desconto vem à parte, e o IVA incide sobre o que
+    sobra: descontar depois de liquidar imposto seria liquidar imposto sobre
+    valor que não foi facturado.
+    """
+    partes = [
+        liquido_da_linha(l.get("qtd"), l.get("preco"), l.get("desconto_perc"))
+        for l in linhas
+    ]
+    subtotal = r2(sum((p["bruto"] for p in partes), ZERO))
+    desconto = r2(sum((p["desconto"] for p in partes), ZERO))
+    tributavel = r2(subtotal - desconto)
+    iva = r2(tributavel * (iva_perc or ZERO) / 100)
+    return {
+        "subtotal": subtotal,
+        "desconto": desconto,
+        "iva": iva,
+        "total": r2(tributavel + iva),
+    }
 
 
 # ---------------------------------------------------------------------------

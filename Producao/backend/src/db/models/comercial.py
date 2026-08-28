@@ -90,7 +90,14 @@ class Venda(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     iva_perc: Mapped[Decimal] = mapped_column(
         Numeric(6, 2), default=Decimal("0"), nullable=False
     )
+    #: O ILÍQUIDO: a soma de `qtd x preço` das linhas, ANTES do desconto.
+    #: Mantém o significado que sempre teve, para que nenhum documento já
+    #: emitido passe a dizer outro número.
     subtotal: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
+    #: O que os descontos de linha somaram. Zero em tudo o que já existe.
+    desconto: Mapped[Decimal] = mapped_column(
+        Money, default=Decimal("0"), nullable=False, server_default="0"
+    )
     iva: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
     total: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
 
@@ -221,6 +228,14 @@ class VendaLinha(UUIDMixin, Base):
         Numeric(18, 4), default=Decimal("0"), nullable=False
     )
     preco: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
+    #: Desconto desta linha, em percentagem. Por LINHA e não por documento:
+    #: numa mesma factura desconta-se um artigo e não o outro, e um desconto
+    #: de cabeçalho não sabe representar isso.
+    desconto_perc: Mapped[Decimal] = mapped_column(
+        Numeric(6, 2), default=Decimal("0"), nullable=False, server_default="0"
+    )
+    #: JÁ LÍQUIDO do desconto — é o que o cliente vê na coluna «Total» e o que
+    #: entra na soma. O ilíquido da linha lê-se em `qtd x preço`.
     total: Mapped[Decimal] = mapped_column(Money, default=Decimal("0"), nullable=False)
 
     # ---- Imposto, por linha ----

@@ -47,6 +47,9 @@ interface Linha {
   unidade: string | null;
   qtd: string;
   preco: string;
+  /** Desconto desta linha, em percentagem. */
+  desconto_perc?: string | null;
+  /** JÁ LÍQUIDO do desconto — é o que soma. */
   total: string;
   taxa_perc?: string | null;
   motivo_isencao?: string | null;
@@ -59,7 +62,10 @@ export interface DocumentoParaImprimir {
   data: string;
   cliente_nome: string | null;
   cliente_id: string | null;
+  /** O ILÍQUIDO, antes de descontos. */
   subtotal: string;
+  /** O que os descontos de linha somaram. */
+  desconto?: string | null;
   iva: string;
   iva_perc?: string;
   total: string;
@@ -359,6 +365,7 @@ export function DocumentoLegal({
                         "Preço s/IVA",
                         "Qtd.",
                         "Uni.",
+                        "Desc.(%)",
                         "Taxa(%)",
                         "Total",
                       ].map((h, i) => (
@@ -395,6 +402,9 @@ export function DocumentoLegal({
                         </td>
                         <td className="border-b border-[#ddd] px-2 py-1.5">
                           {l.unidade || "UN"}
+                        </td>
+                        <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
+                          {percentagem(l.desconto_perc)}
                         </td>
                         <td className="tabular border-b border-[#ddd] px-2 py-1.5 text-right">
                           {percentagem(l.taxa_perc ?? doc.iva_perc)}
@@ -459,6 +469,12 @@ export function DocumentoLegal({
                   {!ehRecibo &&
                     [
                       ["Total Ilíquido", doc.subtotal],
+                      // O DESCONTO SÓ APARECE QUANDO EXISTE, como a retenção:
+                      // uma linha a zero em todas as facturas é ruído, e num
+                      // documento fiscal o ruído lê-se como erro.
+                      ...(Number(doc.desconto ?? 0) > 0
+                        ? [["Total Desconto", doc.desconto as string]]
+                        : []),
                       ["Total Imposto", doc.iva],
                     ].map(([k, v]) => (
                       <div key={k} className="flex justify-between px-2 py-0.5">
