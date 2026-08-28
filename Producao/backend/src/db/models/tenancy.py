@@ -56,6 +56,13 @@ class Empresa(UUIDMixin, TimestampMixin, Base):
     telefone: Mapped[str | None] = mapped_column(String(40))
     email: Mapped[str | None] = mapped_column(String(200))
     logo: Mapped[str | None] = mapped_column(Text)
+    #: ONDE O CLIENTE PAGA, para sair no rodapé dos documentos.
+    #:
+    #: Texto livre e de várias linhas, e não campos separados: uma empresa
+    #: tem um IBAN, outra tem três bancos e um número de transferência
+    #: expressa. Um formulário com «Banco» e «IBAN» servia a primeira e
+    #: obrigava as outras a escrever tudo na mesma casa.
+    coordenadas_bancarias: Mapped[str | None] = mapped_column(Text)
 
     moeda: Mapped[str] = mapped_column(String(8), default="Kz", nullable=False)
     regime: Mapped[RegimeIVA] = mapped_column(

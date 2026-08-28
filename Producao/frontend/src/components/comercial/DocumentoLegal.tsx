@@ -526,6 +526,19 @@ export function DocumentoLegal({
                 </div>
               )}
 
+              {/* ---- Coordenadas bancárias ----
+                  Depois dos totais e antes das letras miudinhas: quem chega
+                  aqui já sabe quanto é e o que quer a seguir é para onde
+                  transferir. Só aparece se a empresa as tiver escrito. */}
+              {empresa?.coordenadas_bancarias && (
+                <div className="documento-banco mt-3 rounded border border-[#ddd] px-3 py-2 text-[11.5px] leading-relaxed">
+                  <span className={`block ${KEY}`}>Coordenadas bancárias</span>
+                  <span className="whitespace-pre-wrap">
+                    {empresa.coordenadas_bancarias}
+                  </span>
+                </div>
+              )}
+
               {/* ---- Rodapé legal ---- */}
               <div className="documento-rodape mt-4 flex items-center justify-between gap-4 border-t border-dashed border-[#bbb] pt-3">
                 <div className="text-[11px] leading-relaxed text-[#555]">

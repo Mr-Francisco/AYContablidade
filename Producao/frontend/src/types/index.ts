@@ -88,6 +88,8 @@ export interface Empresa {
   email: string | null;
   /** O logótipo, como `data:` — vai no topo dos documentos impressos. */
   logo: string | null;
+  /** Onde o cliente paga. Sai no rodapé dos documentos. */
+  coordenadas_bancarias: string | null;
   moeda: string;
   regime: "geral" | "simplificado" | "exclusao";
   forma_juridica: string | null;

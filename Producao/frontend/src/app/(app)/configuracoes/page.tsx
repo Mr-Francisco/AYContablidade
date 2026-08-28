@@ -190,6 +190,7 @@ function FormularioEmpresa({
     email: empresa.email ?? "",
     moeda: empresa.moeda,
     logo: empresa.logo ?? "",
+    coordenadas_bancarias: empresa.coordenadas_bancarias ?? "",
     regime: empresa.regime,
     forma_juridica: empresa.forma_juridica ?? "lda",
   });
@@ -212,6 +213,7 @@ function FormularioEmpresa({
         telefone: campos.telefone.trim() || null,
         email: campos.email.trim() || null,
         logo: campos.logo || null,
+        coordenadas_bancarias: campos.coordenadas_bancarias.trim() || null,
       });
       aoGravar("Dados da empresa gravados.");
     } catch (e2) {
@@ -273,6 +275,22 @@ function FormularioEmpresa({
               value={campos.moeda}
               onChange={(e) => alterar("moeda", e.target.value)}
               maxLength={8}
+            />
+          </Campo>
+          {/* ONDE O CLIENTE PAGA. Uma proforma existe para ser paga, e sem
+              isto obriga a um telefonema só para pedir o IBAN. Texto livre
+              porque uma empresa tem um banco e outra tem três. */}
+          <Campo
+            rotulo="Coordenadas bancárias"
+            dica="Saem no rodapé das facturas e proformas. Uma linha por banco."
+            className="sm:col-span-2"
+          >
+            <textarea
+              value={campos.coordenadas_bancarias}
+              onChange={(e) => alterar("coordenadas_bancarias", e.target.value)}
+              rows={3}
+              placeholder="Ex.: BANCO BAI: AO06 0040 0000 0198 0520 1013 3"
+              className="w-full rounded-[10px] border border-borda bg-superficie px-3 py-2.5 text-sm outline-none focus:border-acento"
             />
           </Campo>
           <CampoLogotipo

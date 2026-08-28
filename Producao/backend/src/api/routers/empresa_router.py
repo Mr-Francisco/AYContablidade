@@ -75,6 +75,7 @@ class EmpresaAtualizar(BaseModel):
     telefone: str | None = Field(default=None, max_length=40)
     email: str | None = Field(default=None, max_length=200)
     logo: str | None = None
+    coordenadas_bancarias: str | None = None
     moeda: str | None = Field(default=None, max_length=8)
     regime: RegimeIVA | None = None
     forma_juridica: str | None = Field(default=None, max_length=20)
