@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, or_, select
 
 from src.api.mestres import aplicar, obter_da_empresa, recusar_se_usado
-from src.api.deps import DB, EmpresaAtual, exigir_cap
+from src.api.deps import DB, EmpresaAtual, UtilizadorAtual, exigir_cap
 from src.api.paginacao import LIMITE_OMISSAO, pagina
 from src.db.models.comercial import TIPOS_DOC, Venda, VendaLinha, Vendedor
 from src.db.models.terceiros import PROVINCIAS, Terceiro
@@ -594,6 +594,8 @@ def _venda_publica(v: Venda) -> dict:
         "estado_agt": v.estado_agt,
         "doc_origem_num": v.doc_origem_num,
         "desconto": v.desconto,
+        "emitido_por_nome": v.emitido_por_nome,
+        "impressoes": v.impressoes,
         "local_operacao": v.local_operacao,
         "local_destino": v.local_destino,
         "vencimento": v.vencimento,
@@ -699,6 +701,8 @@ def obter_venda(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
         "estado_agt": v.estado_agt,
         "doc_origem_num": v.doc_origem_num,
         "desconto": v.desconto,
+        "emitido_por_nome": v.emitido_por_nome,
+        "impressoes": v.impressoes,
         "local_operacao": v.local_operacao,
         "local_destino": v.local_destino,
         "vencimento": v.vencimento,
@@ -785,7 +789,8 @@ def criar_venda(
 
 @router.post("/vendas/{venda_id}/emitir", dependencies=[GERIR])
 def emitir_venda(
-    request: Request, venda_id: UUID, dados: EmitirPedido, empresa: EmpresaAtual, db: DB
+    request: Request, venda_id: UUID, dados: EmitirPedido, empresa: EmpresaAtual,
+    quem: UtilizadorAtual, db: DB,
 ) -> dict:
     """Emite o documento: atribui número, lança na contabilidade e, tratando-se
     de venda de mercadorias, baixa o stock e lança o CMVMC.
@@ -796,10 +801,36 @@ def emitir_venda(
     v = _venda(db, empresa.id, venda_id)
     r = svc.emitir(
         db, empresa_id=empresa.id, venda=v, conta=dados.conta,
-        exercicio_id=dados.exercicio_id,
+        exercicio_id=dados.exercicio_id, quem=quem,
     )
     db.commit()
     return r
+
+
+@router.post("/vendas/{venda_id}/impressao")
+def registar_impressao(venda_id: UUID, empresa: EmpresaAtual, db: DB) -> dict:
+    """Conta mais uma saída em papel, e diz que via foi esta.
+
+    A PRIMEIRA É O ORIGINAL; as seguintes são segundas vias. Sem isto o
+    documento carimbava «Original» em todas as impressões, e imprimir a mesma
+    factura duas vezes dava duas folhas a afirmarem ser a primeira — o que num
+    documento fiscal não é um pormenor de aspecto.
+
+    Não exige permissão de gestão: quem pode ver o documento pode imprimi-lo, e
+    recusar o contador a quem imprime deixaria a contagem errada em vez de
+    impedir a impressão.
+
+    Um rascunho não conta: só se contam vias de documentos emitidos.
+    """
+    v = _venda(db, empresa.id, venda_id)
+    if v.estado != "emitida":
+        return {"impressoes": 0, "via": "rascunho"}
+    v.impressoes = (v.impressoes or 0) + 1
+    db.commit()
+    return {
+        "impressoes": v.impressoes,
+        "via": "original" if v.impressoes == 1 else "segunda",
+    }
 
 
 @router.delete("/vendas/{venda_id}", status_code=status.HTTP_204_NO_CONTENT,

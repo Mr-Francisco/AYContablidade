@@ -136,6 +136,9 @@ export const FORMATOS: { valor: FormatoDeImpressao; rotulo: string }[] = [
 export function imprimirDocumento(
   nome: string,
   formato: FormatoDeImpressao = "a4",
+  /** Corre depois de a janela de impressão fechar. É onde se conta a via: só
+   *  depois de a folha ter saído é que ela existe. */
+  aoTerminar?: () => void,
 ): void {
   if (typeof window === "undefined") return;
 
@@ -144,5 +147,6 @@ export function imprimirDocumento(
 
   imprimirComoPdf(nome, () => {
     document.body.classList.remove("imprimir-documento", "imprimir-talao");
+    aoTerminar?.();
   });
 }

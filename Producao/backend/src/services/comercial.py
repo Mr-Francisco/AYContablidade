@@ -600,6 +600,23 @@ def baixa_stock_venda(
 # ---------------------------------------------------------------------------
 # Emissão
 # ---------------------------------------------------------------------------
+def _gravar_operador(venda: Venda, quem) -> None:
+    """Quem carregou no botão de emitir.
+
+    O NOME VAI A PAR DO `id` porque a conta pode ser apagada ou mudar de nome,
+    e a factura de 2026 tem de continuar a dizer quem a emitiu em 2026 — é o
+    mesmo motivo por que o nome do cliente também fica gravado no documento.
+
+    Numa função à parte porque a emissão tem dois caminhos — o que lança na
+    contabilidade e o que não lança, para a guia de remessa e a pró-forma — e
+    o operador tem de ficar gravado nos dois.
+    """
+    if quem is None:
+        return
+    venda.emitido_por_id = quem.id
+    venda.emitido_por_nome = quem.nome
+
+
 def emitir(
     db: Session,
     *,
@@ -607,6 +624,7 @@ def emitir(
     venda: Venda,
     conta: str | None = None,
     exercicio_id: UUID | None = None,
+    quem=None,
 ) -> dict:
     """Valida o documento, atribui-lhe número e lança na contabilidade."""
     if venda.estado == "emitida":
@@ -781,6 +799,7 @@ def emitir(
         venda.cliente_nome = nome_cli
         venda.codigo_validacao = codigo_validacao(venda)
         venda.emitido_em = agora()
+        _gravar_operador(venda, quem)
         db.flush()
         return {"venda_id": venda.id, "numero": venda.numero, "lancamento_id": None,
                 "avisos_stock": []}
@@ -799,6 +818,7 @@ def emitir(
     venda.numero_op = lanc.numero_op
     venda.codigo_validacao = codigo_validacao(venda)
     venda.emitido_em = agora()
+    _gravar_operador(venda, quem)
 
     avisos = []
     if td["contab"] in ("venda", "venda_pronto"):

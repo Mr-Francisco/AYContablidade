@@ -156,6 +156,24 @@ class Venda(UUIDMixin, EmpresaScopedMixin, TimestampMixin, Base):
     anulado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     motivo_anulacao: Mapped[str | None] = mapped_column(String(200))
 
+    # ---- Quem, e quantas vias ----
+    #: O OPERADOR: quem carregou no botão de emitir. Não é o vendedor, que é
+    #: quem angariou e leva comissão — numa loja é frequente serem pessoas
+    #: diferentes, e o documento tem de dizer as duas.
+    emitido_por_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    #: O nome à data da emissão, gravado com o documento. Como o do cliente: a
+    #: conta pode ser apagada ou mudar de nome, e a factura de 2026 tem de
+    #: continuar a dizer quem a emitiu em 2026.
+    emitido_por_nome: Mapped[str | None] = mapped_column(String(200))
+    #: Quantas vezes já saiu em papel. A PRIMEIRA É O ORIGINAL; as seguintes
+    #: são segundas vias e têm de o dizer. Sem isto, imprimir a mesma factura
+    #: duas vezes dava duas folhas a afirmarem ser a primeira.
+    impressoes: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False, server_default="0"
+    )
+
     #: Data e hora em que o documento foi criado no sistema. É o
     #: `systemEntryDate` da AGT e do SAF-T, e NÃO é a data do documento: um
     #: documento pode ser datado de ontem e ter entrado hoje.

@@ -7,7 +7,7 @@ import useSWR from "swr";
 import { ExtractoDoRecibo } from "@/components/comercial/ExtractoDoRecibo";
 import { Botao, Selector } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
-import { buscador } from "@/lib/api";
+import { api, buscador } from "@/lib/api";
 import { formata, formataMoeda } from "@/lib/dinheiro";
 import { valorPorExtenso } from "@/lib/extenso";
 import {
@@ -81,6 +81,10 @@ export interface DocumentoParaImprimir {
   forma_pagamento?: string | null;
   /** O que quem emite quer dizer a quem recebe. */
   observacoes?: string | null;
+  /** Quem carregou no botão de emitir — o «Operador» do documento. */
+  emitido_por_nome?: string | null;
+  /** Quantas vezes já saiu em papel. Zero quer dizer que esta é a primeira. */
+  impressoes?: number | null;
   /** Retenção na fonte, quando existe. */
   retencao_perc?: string | null;
   retencao?: string | null;
@@ -151,6 +155,36 @@ export function DocumentoLegal({
   );
 
   const doc = completo ?? documento;
+
+  /*
+   * QUE VIA É ESTA.
+   *
+   * O documento carimbava «Original» em todas as impressões: imprimir a mesma
+   * factura duas vezes dava duas folhas a afirmarem, cada uma, ser a primeira.
+   * O servidor conta as saídas em papel, e a partir da segunda o carimbo muda.
+   *
+   * DERIVADO, e não guardado em estado: a carga completa do documento chega
+   * depois da linha da lista, e um `useState` inicializado antes dela ficava
+   * preso no zero — uma factura já impressa continuaria a dizer «Original».
+   * O estado guarda só o que ESTA sessão contou, e o servidor manda no resto.
+   */
+  const [viasContadas, setViasContadas] = useState<number | null>(null);
+  const vias = viasContadas ?? doc.impressoes ?? 0;
+  const segundaVia = vias > 0;
+
+  /** Conta mais uma via. Corre DEPOIS de a janela de impressão fechar. */
+  async function registarVia() {
+    try {
+      const r = await api.post<{ impressoes: number }>(
+        `/api/comercial/vendas/${doc.id}/impressao`,
+        {},
+      );
+      setViasContadas(r.impressoes);
+    } catch {
+      // Falhar a contar não pode impedir de imprimir nem incomodar quem
+      // imprimiu: a folha já saiu. Fica por contar, e a próxima conta.
+    }
+  }
   const td = tipos?.find((t) => t.cod === doc.tipo_doc);
   const nomeTipo = td?.nome ?? doc.tipo_doc;
   const fiscal = td?.fiscal !== false;
@@ -204,6 +238,11 @@ export function DocumentoLegal({
                   imprimirDocumento(
                     nomeDoDocumento(nomeTipo, doc.numero, doc.cliente_nome),
                     formato,
+                    // SÓ DEPOIS DE A FOLHA SAIR é que a via existe: contar
+                    // antes marcaria como tirada uma impressão cancelada, e a
+                    // factura seguinte passaria a dizer «2.ª via» sem nunca ter
+                    // havido primeira.
+                    registarVia,
                   )
                 }
                 title="Abre a janela de impressão. Escolha «Guardar como PDF» para gravar o ficheiro."
@@ -273,7 +312,11 @@ export function DocumentoLegal({
                     {doc.numero ?? "(rascunho)"}
                   </div>
                   <span className="mt-1 inline-block rounded border border-[#b8189355] px-1.5 py-px text-[10px] uppercase tracking-[1px] text-[#b81893]">
-                    {fiscal ? "Original" : "Não fiscal"}
+                    {!fiscal
+                      ? "Não fiscal"
+                      : segundaVia
+                        ? "2.ª via"
+                        : "Original"}
                   </span>
                   {/* O AVISO JUNTO AO NÚMERO, e não só no rodapé. É a
                       primeira coisa que se olha num documento, e uma proforma
@@ -310,6 +353,12 @@ export function DocumentoLegal({
                     <div>
                       <span className={`block ${KEY}`}>Doc. origem</span>
                       <b className="tabular">{doc.doc_origem_num}</b>
+                    </div>
+                  )}
+                  {doc.emitido_por_nome && (
+                    <div>
+                      <span className={`block ${KEY}`}>Operador</span>
+                      <b>{doc.emitido_por_nome}</b>
                     </div>
                   )}
                   {doc.forma_pagamento && (
